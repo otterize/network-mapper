@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/otterize/otternose/sniffer/pkg/client"
 	"sync"
 	"time"
 )
@@ -35,7 +37,20 @@ func (s *StateKeeper) NewIntent(srcIp string, destDns string) {
 func (s *StateKeeper) PublishIntents() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	if len(s.intents) == 0 {
+		return
+	}
 	s.PrintIntents()
+	mapperClient := client.NewMapperClient("http://localhost:8080/query")
+	results := make([]client.CaptureResultForSrcIp, 0, len(s.intents))
+	for srcIp, destinations := range s.intents {
+		results = append(results, client.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations.Items()})
+	}
+	err := mapperClient.ReportCaptureResults(context.TODO(), client.CaptureResults{Results: results})
+	if err != nil {
+		panic(err)
+	}
+	s.intents = make(map[string]*goset.Set[string])
 }
 
 func (s *StateKeeper) PrintIntents() {
@@ -45,7 +60,6 @@ func (s *StateKeeper) PrintIntents() {
 			fmt.Printf("\t%s\n", dest)
 		}
 	}
-	s.intents = make(map[string]*goset.Set[string])
 }
 
 func main() {

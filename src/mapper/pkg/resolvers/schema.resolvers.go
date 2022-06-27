@@ -6,12 +6,16 @@ package resolvers
 import (
 	"context"
 	"fmt"
+
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
 )
 
-func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results *model.CaptureResults) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
+	for _, result := range results.Results {
+		fmt.Printf("%s: %v\n", result.SrcIP, result.Destinations)
+	}
+	return nil, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

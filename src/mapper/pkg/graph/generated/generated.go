@@ -6,12 +6,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	"strconv"
 	"sync"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -42,7 +42,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		ReportCaptureResults func(childComplexity int, results *model.CaptureResults) int
+		ReportCaptureResults func(childComplexity int, results model.CaptureResults) int
 	}
 
 	Query struct {
@@ -50,7 +50,7 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	ReportCaptureResults(ctx context.Context, results *model.CaptureResults) (*bool, error)
+	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error)
 }
 
 type executableSchema struct {
@@ -78,7 +78,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ReportCaptureResults(childComplexity, args["results"].(*model.CaptureResults)), true
+		return e.complexity.Mutation.ReportCaptureResults(childComplexity, args["results"].(model.CaptureResults)), true
 
 	}
 	return 0, false
@@ -156,7 +156,7 @@ input CaptureResults {
 }
 
 type Mutation {
-    reportCaptureResults(results: CaptureResults): Boolean
+    reportCaptureResults(results: CaptureResults!): Boolean
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -168,10 +168,10 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_reportCaptureResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.CaptureResults
+	var arg0 model.CaptureResults
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-		arg0, err = ec.unmarshalOCaptureResults2ᚖotternoseᚋsnifferᚑserverᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx, tmp)
+		arg0, err = ec.unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -258,7 +258,7 @@ func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ReportCaptureResults(rctx, args["results"].(*model.CaptureResults))
+		return ec.resolvers.Mutation().ReportCaptureResults(rctx, args["results"].(model.CaptureResults))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1573,7 +1573,7 @@ func (ec *executionContext) unmarshalInputCaptureResults(ctx context.Context, ob
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-			it.Results, err = ec.unmarshalNCaptureResultForSrcIp2ᚕotternoseᚋsnifferᚑserverᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx, v)
+			it.Results, err = ec.unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2110,12 +2110,12 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCaptureResultForSrcIp2otternoseᚋsnifferᚑserverᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx context.Context, v interface{}) (model.CaptureResultForSrcIP, error) {
+func (ec *executionContext) unmarshalNCaptureResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx context.Context, v interface{}) (model.CaptureResultForSrcIP, error) {
 	res, err := ec.unmarshalInputCaptureResultForSrcIp(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕotternoseᚋsnifferᚑserverᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.CaptureResultForSrcIP, error) {
+func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.CaptureResultForSrcIP, error) {
 	var vSlice []interface{}
 	if v != nil {
 		vSlice = graphql.CoerceList(v)
@@ -2124,12 +2124,17 @@ func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕotternoseᚋsniff
 	res := make([]model.CaptureResultForSrcIP, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNCaptureResultForSrcIp2otternoseᚋsnifferᚑserverᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNCaptureResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx context.Context, v interface{}) (model.CaptureResults, error) {
+	res, err := ec.unmarshalInputCaptureResults(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -2456,14 +2461,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
-}
-
-func (ec *executionContext) unmarshalOCaptureResults2ᚖotternoseᚋsnifferᚑserverᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx context.Context, v interface{}) (*model.CaptureResults, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputCaptureResults(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
