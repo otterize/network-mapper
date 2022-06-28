@@ -2,17 +2,18 @@ package sniffer
 
 import (
 	"context"
-	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/otterize/otternose/sniffer/pkg/client"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
 const mapperApiUrl = "http://localhost:8080/query"
 const reportInterval = 10 * time.Second
+const mapperCallsTimeout = 5 * time.Second
 
 type Sniffer struct {
 	capturedRequests map[string]*goset.Set[string]
@@ -34,10 +35,11 @@ func (s *Sniffer) NewCapturedRequest(srcIp string, destDns string) {
 	}
 }
 
-func (s *Sniffer) ReportCaptureResults() {
+func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	s.lastReportTime = time.Now()
 	if len(s.capturedRequests) == 0 {
-		return
+		logrus.Debugf("No captured requests to report")
+		return nil
 	}
 	s.PrintCapturedRequests()
 	mapperClient := client.NewMapperClient(mapperApiUrl)
@@ -45,24 +47,29 @@ func (s *Sniffer) ReportCaptureResults() {
 	for srcIp, destinations := range s.capturedRequests {
 		results = append(results, client.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations.Items()})
 	}
-	err := mapperClient.ReportCaptureResults(context.TODO(), client.CaptureResults{Results: results})
+	timeoutCtx, cancelFunc := context.WithTimeout(ctx, mapperCallsTimeout)
+	defer cancelFunc()
+	err := mapperClient.ReportCaptureResults(timeoutCtx, client.CaptureResults{Results: results})
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	// delete the reported captured requests
 	s.capturedRequests = make(map[string]*goset.Set[string])
+	return nil
 }
 
 func (s *Sniffer) PrintCapturedRequests() {
-	fmt.Printf("%v", time.Now())
+	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
 	for ip, dests := range s.capturedRequests {
-		fmt.Printf("%s:\n", ip)
+		logrus.Debugf("%s:\n", ip)
 		for _, dest := range dests.Items() {
-			fmt.Printf("\t%s\n", dest)
+			logrus.Debugf("\t%s\n", dest)
 		}
 	}
 }
 
-func (s *Sniffer) RunForever() error {
+func (s *Sniffer) RunForever(ctx context.Context) error {
 	handle, err := pcap.OpenLive("any", 0, true, pcap.BlockForever)
 	if err != nil {
 		return err
@@ -92,7 +99,10 @@ func (s *Sniffer) RunForever() error {
 		case <-time.After(reportInterval):
 		}
 		if s.lastReportTime.Add(reportInterval).Before(time.Now()) {
-			s.ReportCaptureResults()
+			err := s.ReportCaptureResults(ctx)
+			if err != nil {
+				logrus.Errorf("Failed to report captured requests to the Mapper: %s", err)
+			}
 		}
 	}
 }
