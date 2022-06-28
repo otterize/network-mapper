@@ -1,29 +1,4 @@
 
-
 mutation ReportCaptureResults($results: CaptureResults!) {
     reportCaptureResults(results: $results)
 }
-
-#query GetEnvironmentIDByName($name: String!) {
-#    envByName(name: $name) {
-#        id
-#    }
-#}
-#
-#query GetEnvResponseFieldsByID($id: ID!){
-#    envById(id: $id) {
-#        ...EnvironmentResponseFields
-#    }
-#}
-#
-#query GetEnvironmentByAuth0UserID() {
-#    userEnv {
-#        ...EnvironmentResponseFields
-#    }
-#}
-#
-#query GetEnvironmentsByLabels($labels: [LabelInput!]!) {
-#    envsByLabels(labelInputs: $labels) {
-#        ...EnvironmentResponseFields
-#    }
-#}
