@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const mapperApiUrl = "http://localhost:8080/query"
+const mapperApiUrl = "http://localhost:9090/query"
 const reportInterval = 10 * time.Second
 const mapperCallsTimeout = 5 * time.Second
 

@@ -4,16 +4,19 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
+	"github.com/otterize/otternose/mapper/pkg/operators"
 )
 
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Resolver struct{}
+type Resolver struct {
+	podsOperator *operators.PodsOperator
+}
 
-func NewResolver() *Resolver {
-	return &Resolver{}
+func NewResolver(podsOperator *operators.PodsOperator) *Resolver {
+	return &Resolver{podsOperator: podsOperator}
 }
 
 func (r *Resolver) Register(e *echo.Echo) {
