@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/otterize/otternose/mapper/pkg/operators"
+	"github.com/otterize/otternose/mapper/pkg/reconcilers"
 	"github.com/otterize/otternose/mapper/pkg/resolvers"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -20,8 +20,15 @@ func main() {
 		logrus.Errorf("unable to set up overall controller manager: %s", err)
 		os.Exit(1)
 	}
-	podsOperator := operators.NewPodsOperator(mgr.GetClient())
-	err = podsOperator.Register(mgr)
+	podsReconciler := reconcilers.NewPodsReconciler(mgr.GetClient())
+	err = podsReconciler.Register(mgr)
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
+	endpointsReconciler := reconcilers.NewEndpointsReconciler(mgr.GetClient())
+	err = endpointsReconciler.Register(mgr)
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
@@ -41,8 +48,9 @@ func main() {
 		return c.NoContent(http.StatusOK)
 	})
 	e.Use(middleware.Logger())
+	e.Use(middleware.CORS())
 	e.Use(middleware.RemoveTrailingSlash())
-	resolver := resolvers.NewResolver(podsOperator)
+	resolver := resolvers.NewResolver(podsReconciler, endpointsReconciler)
 	resolver.Register(e)
 
 	err = e.Start("0.0.0.0:9090")

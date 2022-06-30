@@ -9,6 +9,12 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
+type Query {
+    # Gqlgen is going crazy when there is no type Query.
+    # delete the placeholder once there are real queries.
+    placeholder: Boolean
+}
+
 type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean
 }

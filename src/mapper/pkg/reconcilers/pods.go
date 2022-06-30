@@ -1,4 +1,4 @@
-package operators
+package reconcilers
 
 import (
 	"context"
@@ -16,21 +16,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-type PodInfo struct {
-	Namespace string
-	Name      string
-}
-
-type PodsOperator struct {
+type PodsReconciler struct {
 	Client      client.Client
 	ipToPodInfo *sync.Map
 }
 
-func NewPodsOperator(client client.Client) *PodsOperator {
-	return &PodsOperator{Client: client, ipToPodInfo: &sync.Map{}}
+func NewPodsReconciler(client client.Client) *PodsReconciler {
+	return &PodsReconciler{Client: client, ipToPodInfo: &sync.Map{}}
 }
 
-func (r *PodsOperator) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+func (r *PodsReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	pod := &v1.Pod{}
 	err := r.Client.Get(ctx, request.NamespacedName, pod)
 	if errors.IsNotFound(err) {
@@ -44,24 +39,29 @@ func (r *PodsOperator) Reconcile(ctx context.Context, request reconcile.Request)
 
 	logrus.WithFields(logrus.Fields{"name": pod.Name, "namespace": pod.Namespace}).Debug("Reconciling Pod")
 	for _, ip := range pod.Status.PodIPs {
-		r.ipToPodInfo.Store(ip.IP, PodInfo{
-			Namespace: pod.Namespace,
-			Name:      pod.Name,
-		})
+		r.ipToPodInfo.Store(ip.IP, pod)
 	}
-
 	return reconcile.Result{}, nil
 }
 
-func (r *PodsOperator) ResolveIpToPodInfo(ip string) (PodInfo, bool) {
-	podInfo, ok := r.ipToPodInfo.Load(ip)
+func (r *PodsReconciler) ResolveIpToPod(ip string) (*v1.Pod, bool) {
+	pod, ok := r.ipToPodInfo.Load(ip)
 	if !ok {
-		return PodInfo{}, false
+		return &v1.Pod{}, false
 	}
-	return podInfo.(PodInfo), ok
+	return pod.(*v1.Pod), ok
 }
 
-func (r *PodsOperator) Register(mgr manager.Manager) error {
+func (r *PodsReconciler) ResolveLabelSelectorToPodsInfo(ctx context.Context, selector client.MatchingLabels) ([]v1.Pod, error) {
+	pods := v1.PodList{}
+	err := r.Client.List(ctx, &pods, selector)
+	if err != nil {
+		return nil, err
+	}
+	return pods.Items, nil
+}
+
+func (r *PodsReconciler) Register(mgr manager.Manager) error {
 	podsController, err := controller.New("pods-controller", mgr, controller.Options{
 		Reconciler: r,
 	})
