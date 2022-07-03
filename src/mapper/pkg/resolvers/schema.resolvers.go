@@ -6,11 +6,11 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/otternose/shared/kubeutils"
 	"strings"
 
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
-	"github.com/otterize/otternose/mapper/pkg/reconcilers"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,10 +19,11 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 		pod, ok := r.podsReconciler.ResolveIpToPod(result.SrcIP)
 		if !ok {
 			logrus.Warningf("Ip %s didn't match any pod", result.SrcIP)
+			continue
 		}
 		destinationsAsPods := make([]string, 0)
 		for _, dest := range result.Destinations {
-			if !strings.HasSuffix(dest, reconcilers.SvcClusterSuffix) {
+			if !strings.HasSuffix(dest, kubeutils.GetClusterDomainOrDefault()) {
 				// not a k8s service, ignore
 				continue
 			}

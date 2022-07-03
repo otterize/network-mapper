@@ -3,6 +3,7 @@ package reconcilers
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/otternose/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -20,8 +21,6 @@ type EndpointsReconciler struct {
 	Client           client.Client
 	serviceNameToIps *sync.Map
 }
-
-const SvcClusterSuffix = "svc.cluster.local"
 
 func NewEndpointsReconciler(client client.Client) *EndpointsReconciler {
 	return &EndpointsReconciler{Client: client, serviceNameToIps: &sync.Map{}}
@@ -46,7 +45,7 @@ func (r *EndpointsReconciler) Reconcile(ctx context.Context, request reconcile.R
 			ips = append(ips, address.IP)
 		}
 	}
-	r.serviceNameToIps.Store(fmt.Sprintf("%s.%s.%s", endpoint.Name, endpoint.Namespace, SvcClusterSuffix), ips)
+	r.serviceNameToIps.Store(fmt.Sprintf("%s.%s.svc.%s", endpoint.Name, endpoint.Namespace, kubeutils.GetClusterDomainOrDefault()), ips)
 
 	return reconcile.Result{}, nil
 }
