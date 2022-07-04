@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// TODO: make these parameters configurable
 const mapperApiUrl = "http://localhost:9090/query"
 const reportInterval = 10 * time.Second
 const mapperCallsTimeout = 5 * time.Second
@@ -49,6 +50,8 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	}
 	timeoutCtx, cancelFunc := context.WithTimeout(ctx, mapperCallsTimeout)
 	defer cancelFunc()
+
+	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
 	err := mapperClient.ReportCaptureResults(timeoutCtx, client.CaptureResults{Results: results})
 	if err != nil {
 		return err
@@ -60,7 +63,6 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 }
 
 func (s *Sniffer) PrintCapturedRequests() {
-	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
 	for ip, dests := range s.capturedRequests {
 		logrus.Debugf("%s:\n", ip)
 		for _, dest := range dests.Items() {
