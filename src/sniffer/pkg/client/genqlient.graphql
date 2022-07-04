@@ -1,0 +1,4 @@
+
+mutation ReportCaptureResults($results: CaptureResults!) {
+    reportCaptureResults(results: $results)
+}

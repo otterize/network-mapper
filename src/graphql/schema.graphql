@@ -1,0 +1,14 @@
+
+
+input CaptureResultForSrcIp {
+    srcIp: String!
+    destinations: [String!]!
+}
+
+input CaptureResults {
+    results: [CaptureResultForSrcIp!]!
+}
+
+type Mutation {
+    reportCaptureResults(results: CaptureResults!): Boolean
+}
