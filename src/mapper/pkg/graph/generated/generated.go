@@ -35,6 +35,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
+	Query() QueryResolver
 }
 
 type DirectiveRoot struct {
@@ -46,11 +47,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Placeholder func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error)
+}
+type QueryResolver interface {
+	Placeholder(ctx context.Context) (*bool, error)
 }
 
 type executableSchema struct {
@@ -79,6 +84,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ReportCaptureResults(childComplexity, args["results"].(model.CaptureResults)), true
+
+	case "Query.placeholder":
+		if e.complexity.Query.Placeholder == nil {
+			break
+		}
+
+		return e.complexity.Query.Placeholder(childComplexity), true
 
 	}
 	return 0, false
@@ -153,6 +165,10 @@ input CaptureResultForSrcIp {
 
 input CaptureResults {
     results: [CaptureResultForSrcIp!]!
+}
+
+type Query {
+    placeholder: Boolean
 }
 
 type Mutation {
@@ -259,6 +275,38 @@ func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().ReportCaptureResults(rctx, args["results"].(model.CaptureResults))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_placeholder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Placeholder(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1647,6 +1695,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "placeholder":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_placeholder(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "__type":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
