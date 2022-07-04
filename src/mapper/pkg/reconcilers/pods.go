@@ -52,15 +52,6 @@ func (r *PodsReconciler) ResolveIpToPod(ip string) (*v1.Pod, bool) {
 	return pod.(*v1.Pod), ok
 }
 
-func (r *PodsReconciler) ResolveLabelSelectorToPodsInfo(ctx context.Context, selector client.MatchingLabels) ([]v1.Pod, error) {
-	pods := v1.PodList{}
-	err := r.Client.List(ctx, &pods, selector)
-	if err != nil {
-		return nil, err
-	}
-	return pods.Items, nil
-}
-
 func (r *PodsReconciler) Register(mgr manager.Manager) error {
 	podsController, err := controller.New("pods-controller", mgr, controller.Options{
 		Reconciler: r,
