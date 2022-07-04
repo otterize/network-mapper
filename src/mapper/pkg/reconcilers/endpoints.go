@@ -3,8 +3,9 @@ package reconcilers
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/otternose/shared/kubeutils"
+	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -23,7 +24,10 @@ type EndpointsReconciler struct {
 }
 
 func NewEndpointsReconciler(client client.Client) *EndpointsReconciler {
-	return &EndpointsReconciler{Client: client, serviceNameToIps: &sync.Map{}}
+	return &EndpointsReconciler{
+		Client:           client,
+		serviceNameToIps: &sync.Map{},
+	}
 }
 
 func (r *EndpointsReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -45,7 +49,7 @@ func (r *EndpointsReconciler) Reconcile(ctx context.Context, request reconcile.R
 			ips = append(ips, address.IP)
 		}
 	}
-	r.serviceNameToIps.Store(fmt.Sprintf("%s.%s.svc.%s", endpoint.Name, endpoint.Namespace, kubeutils.GetClusterDomainOrDefault()), ips)
+	r.serviceNameToIps.Store(fmt.Sprintf("%s.%s.svc.%s", endpoint.Name, endpoint.Namespace, viper.GetString(config.ClusterDomainKey)), ips)
 
 	return reconcile.Result{}, nil
 }

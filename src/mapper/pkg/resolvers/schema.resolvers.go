@@ -6,7 +6,8 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/otternose/shared/kubeutils"
+	"github.com/otterize/otternose/mapper/pkg/config"
+	"github.com/spf13/viper"
 	"strings"
 
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
@@ -23,7 +24,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 		}
 		destinationsAsPods := make([]string, 0)
 		for _, dest := range result.Destinations {
-			if !strings.HasSuffix(dest, kubeutils.GetClusterDomainOrDefault()) {
+			if !strings.HasSuffix(dest, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
 				continue
 			}

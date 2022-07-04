@@ -38,20 +38,3 @@ func GetClusterDomain() (string, error) {
 	}
 	return "", fmt.Errorf("could not deduce cluster domain from %s", resolvFile)
 }
-
-var clusterDomain = ""
-
-// GetClusterDomainOrDefault returns the k8s cluster domain of the cluster we are running in. when cannot resolve, returns
-// the default cluster domain of k8s.
-func GetClusterDomainOrDefault() string {
-	if clusterDomain != "" {
-		return clusterDomain
-	}
-	resolvedClusterDomain, err := GetClusterDomain()
-	if err != nil {
-		clusterDomain = DefaultClusterDomain
-	} else {
-		clusterDomain = resolvedClusterDomain
-	}
-	return clusterDomain
-}

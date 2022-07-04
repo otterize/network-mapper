@@ -3,9 +3,12 @@ package main
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	mapperconfig "github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/reconcilers"
 	"github.com/otterize/otternose/mapper/pkg/resolvers"
+	"github.com/otterize/otternose/shared/kubeutils"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -13,7 +16,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
+func getClusterDomainOrDefault() string {
+	resolvedClusterDomain, err := kubeutils.GetClusterDomain()
+	if err != nil {
+		logrus.WithError(err).Warningf("Could not deduce the cluster domain. Operating on the default domain %s", kubeutils.DefaultClusterDomain)
+		return kubeutils.DefaultClusterDomain
+	} else {
+		return resolvedClusterDomain
+	}
+}
+
 func main() {
+	if !viper.IsSet(mapperconfig.ClusterDomainKey) {
+		viper.Set(mapperconfig.ClusterDomainKey, getClusterDomainOrDefault())
+	}
+
 	// start manager with operators
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{MetricsBindAddress: "0"})
 	if err != nil {
