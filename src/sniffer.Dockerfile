@@ -17,7 +17,7 @@ FROM buildenv as builder
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o /main ./sniffer/cmd
 
 FROM alpine as release
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates libpcap
 WORKDIR /
 COPY --from=builder /main /main
 RUN chmod +x /main
