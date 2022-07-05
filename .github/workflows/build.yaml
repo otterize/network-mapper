@@ -36,7 +36,6 @@ jobs:
 
       - name: Test
         uses: docker/build-push-action@v2
-        if: matrix.service != 'vault-init'
         with:
           target: test
           context: src/
