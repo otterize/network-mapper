@@ -28,7 +28,9 @@ func getClusterDomainOrDefault() string {
 
 func main() {
 	if !viper.IsSet(mapperconfig.ClusterDomainKey) {
-		viper.Set(mapperconfig.ClusterDomainKey, getClusterDomainOrDefault())
+		clusterDomain := getClusterDomainOrDefault()
+		logrus.Info("Detected cluster domain: ", clusterDomain)
+		viper.Set(mapperconfig.ClusterDomainKey, clusterDomain)
 	}
 
 	// start manager with operators
@@ -52,6 +54,7 @@ func main() {
 	}
 
 	go func() {
+		logrus.Info("Starting operator manager")
 		if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 			logrus.Error(err, "unable to run manager")
 			os.Exit(1)
@@ -70,6 +73,7 @@ func main() {
 	resolver := resolvers.NewResolver(podsReconciler, endpointsReconciler)
 	resolver.Register(e)
 
+	logrus.Info("Starting api server")
 	err = e.Start("0.0.0.0:9090")
 	if err != nil {
 		logrus.Error(err)
