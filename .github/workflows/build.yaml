@@ -42,8 +42,6 @@ jobs:
           context: src/
           file: src/${{ matrix.service}}.Dockerfile
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -70,6 +68,4 @@ jobs:
           tags: ${{ secrets.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
