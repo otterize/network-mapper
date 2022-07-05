@@ -88,9 +88,10 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 			if dnsLayer != nil && ipLayer != nil {
 				ip, _ := ipLayer.(*layers.IPv4)
 				dns, _ := dnsLayer.(*layers.DNS)
-				if dns.OpCode == layers.DNSOpCodeQuery {
-					for _, question := range dns.Questions {
-						s.NewCapturedRequest(ip.SrcIP.String(), string(question.Name))
+				if dns.OpCode == layers.DNSOpCodeQuery && dns.ResponseCode == layers.DNSResponseCodeNoErr {
+					for _, answer := range dns.Answers {
+						// This is the DNS Answer, so the Dst IP is the pod IP
+						s.NewCapturedRequest(ip.DstIP.String(), string(answer.Name))
 					}
 				}
 			}

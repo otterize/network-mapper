@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ template "otternose.sniffer.name" . }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "otternose.sniffer.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "otternose.sniffer.name" . }}
+    spec:
+      containers:
+      - name: {{ template "otternose.sniffer.name" . }}
+        image: {{ .Values.registry }}:{{ .Values.snifferImage }}
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        env:
+          - name: OTTERNOSE_MAPPER_API_URL
+            value: http://{{ template "otternose.mapper.name" . }}:9090/query
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
