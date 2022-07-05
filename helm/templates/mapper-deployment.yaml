@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "otternose.mapper.name" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "otternose.mapper.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "otternose.mapper.name" . }}
+    spec:
+      containers:
+        - name: {{ template "otternose.mapper.name" . }}
+          image: "{{ .Values.registry }}:{{ .Values.mapperImage }}"
+          imagePullPolicy: Always
+      serviceAccountName: {{ template "otternose.mapper.name" . }}
