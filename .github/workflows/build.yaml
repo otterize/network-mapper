@@ -42,6 +42,8 @@ jobs:
           context: src/
           file: src/${{ matrix.service}}.Dockerfile
           push: false
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -68,4 +70,6 @@ jobs:
           tags: ${{ secrets.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
 
