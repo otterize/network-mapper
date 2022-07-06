@@ -11,7 +11,6 @@ const (
 )
 
 func init() {
-	viper.SetDefault(ClusterDomainKey, "")
 	viper.SetEnvPrefix(EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()

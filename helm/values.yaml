@@ -1,0 +1,3 @@
+registry: ""
+mapperImage: "mapper-e8ec98f31568b2315284039087b1c46183193a96"
+snifferImage: "sniffer-e8ec98f31568b2315284039087b1c46183193a96"

@@ -70,7 +70,7 @@ func (r *EndpointsReconciler) Register(mgr manager.Manager) error {
 		return fmt.Errorf("unable to set up endpoints controller: %w", err)
 	}
 
-	err = endpointsController.Watch(&source.Kind{Type: &v1.Service{}}, &handler.EnqueueRequestForObject{})
+	err = endpointsController.Watch(&source.Kind{Type: &v1.Endpoints{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return fmt.Errorf("unable to watch Endpoints: %w", err)
 	}
