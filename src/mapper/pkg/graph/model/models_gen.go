@@ -10,3 +10,8 @@ type CaptureResultForSrcIP struct {
 type CaptureResults struct {
 	Results []CaptureResultForSrcIP `json:"results"`
 }
+
+type ServiceIntents struct {
+	Name    string   `json:"name"`
+	Intents []string `json:"intents"`
+}

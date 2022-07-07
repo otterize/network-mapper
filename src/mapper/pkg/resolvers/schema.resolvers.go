@@ -7,12 +7,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/otternose/mapper/pkg/config"
-	"github.com/spf13/viper"
-	"strings"
-
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"strings"
 )
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
@@ -38,14 +37,24 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				logrus.Warningf("Could not resolve pod IP %s", ips[0])
 				continue
 			}
-			destinationsAsPods = append(destinationsAsPods, fmt.Sprintf("%s.%s", destPod.Name, destPod.Namespace))
+			owner, err := r.podsReconciler.ResolvePodToOwnerName(ctx, destPod)
+			if err != nil {
+				continue
+			}
+			destinationsAsPods = append(destinationsAsPods, owner)
 		}
-		fmt.Printf("%s %s.%s: %v\n", result.SrcIP, pod.Name, pod.Namespace, destinationsAsPods)
+		owner, err := r.podsReconciler.ResolvePodToOwnerName(ctx, pod)
+		if err != nil {
+			return nil, err
+		}
+		if len(destinationsAsPods) > 0 {
+			fmt.Printf("%s %s: %v\n", result.SrcIP, owner, destinationsAsPods)
+		}
 	}
 	return nil, nil
 }
 
-func (r *queryResolver) Placeholder(ctx context.Context) (*bool, error) {
+func (r *queryResolver) GetIntents(ctx context.Context) ([]model.ServiceIntents, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
