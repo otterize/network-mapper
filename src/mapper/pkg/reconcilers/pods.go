@@ -74,6 +74,13 @@ func (r *PodsReconciler) ResolvePodToOwnerName(ctx context.Context, pod *coreV1.
 				return "", err
 			}
 			return ds.Name, nil
+		case "StatefulSet":
+			ss := &appsV1.StatefulSet{}
+			err := r.Client.Get(ctx, namespacedName, ss)
+			if err != nil {
+				return "", err
+			}
+			return ss.Name, nil
 		default:
 			logrus.Infof("Unknown owner kind %s for pod %s", owner.Kind, pod.Name)
 		}
