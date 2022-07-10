@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
@@ -15,14 +14,17 @@ import (
 )
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
-	for _, result := range results.Results {
-		pod, ok := r.podsReconciler.ResolveIpToPod(result.SrcIP)
+	for _, captureItem := range results.Results {
+		srcPod, ok := r.podsReconciler.ResolveIpToPod(captureItem.SrcIP)
 		if !ok {
-			logrus.Warningf("Ip %s didn't match any pod", result.SrcIP)
+			logrus.Warningf("Ip %s didn't match any pod", captureItem.SrcIP)
 			continue
 		}
-		destinationsAsPods := make([]string, 0)
-		for _, dest := range result.Destinations {
+		srcIdentity, err := r.podsReconciler.ResolvePodToOwnerName(ctx, srcPod)
+		if err != nil {
+			return nil, err
+		}
+		for _, dest := range captureItem.Destinations {
 			if !strings.HasSuffix(dest, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
 				continue
@@ -37,25 +39,23 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				logrus.Warningf("Could not resolve pod IP %s", ips[0])
 				continue
 			}
-			owner, err := r.podsReconciler.ResolvePodToOwnerName(ctx, destPod)
+			dstIdentity, err := r.podsReconciler.ResolvePodToOwnerName(ctx, destPod)
 			if err != nil {
+				logrus.Warningf("Could not resolve pod %s to identity", ips[0])
 				continue
 			}
-			destinationsAsPods = append(destinationsAsPods, owner)
-		}
-		owner, err := r.podsReconciler.ResolvePodToOwnerName(ctx, pod)
-		if err != nil {
-			return nil, err
-		}
-		if len(destinationsAsPods) > 0 {
-			fmt.Printf("%s %s: %v\n", result.SrcIP, owner, destinationsAsPods)
+			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)
 		}
 	}
 	return nil, nil
 }
 
 func (r *queryResolver) GetIntents(ctx context.Context) ([]model.ServiceIntents, error) {
-	panic(fmt.Errorf("not implemented"))
+	result := make([]model.ServiceIntents, 0)
+	for service, intents := range r.intentsHolder.GetIntentsPerService() {
+		result = append(result, model.ServiceIntents{Name: service, Intents: intents})
+	}
+	return result, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
