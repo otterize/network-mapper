@@ -35,52 +35,54 @@ spec:
           spec:
             description: IntentsSpec defines the desired state of Intents
             properties:
-              service:
-                properties:
-                  calls:
-                    items:
-                      properties:
-                        http_resources:
-                          items:
-                            properties:
-                              method:
-                                type: string
-                              path:
-                                type: string
-                            required:
-                            - method
-                            - path
-                            type: object
-                          type: array
-                        server:
-                          type: string
-                        topics:
-                          items:
-                            properties:
-                              name:
-                                type: string
-                              operation:
-                                type: string
-                            required:
-                            - name
-                            - operation
-                            type: object
-                          type: array
-                        type:
-                          type: string
-                      required:
-                      - server
-                      - type
-                      type: object
-                    type: array
-                  name:
-                    type: string
-                required:
-                - calls
-                - name
-                type: object
+              services:
+                items:
+                  properties:
+                    calls:
+                      items:
+                        properties:
+                          http_resources:
+                            items:
+                              properties:
+                                method:
+                                  type: string
+                                path:
+                                  type: string
+                              required:
+                              - method
+                              - path
+                              type: object
+                            type: array
+                          server:
+                            type: string
+                          topics:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                operation:
+                                  type: string
+                              required:
+                              - name
+                              - operation
+                              type: object
+                            type: array
+                          type:
+                            type: string
+                        required:
+                        - server
+                        - type
+                        type: object
+                      type: array
+                    name:
+                      type: string
+                  required:
+                  - calls
+                  - name
+                  type: object
+                type: array
             required:
-            - service
+            - services
             type: object
           status:
             description: IntentsStatus defines the observed state of Intents

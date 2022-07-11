@@ -20,11 +20,10 @@ func (r *IntentsValidatorReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-
 	for _, service := range intents.Spec.Services {
 		fmt.Println("Intents for service: " + service.Name)
 		for _, intent := range service.Calls {
-			fmt.Printf("%s has intent to access %s. Intent type: %s", service.Name, intent.Server, intent.Type)
+			fmt.Printf("%s has intent to access %s. Intent type: %s\n", service.Name, intent.Server, intent.Type)
 		}
 	}
 

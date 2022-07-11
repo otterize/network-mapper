@@ -18,7 +18,7 @@ package controllers
 
 import (
 	"context"
-	reconcilers "github.com/otterize/otternose/controllers/reconcilers"
+	"github.com/otterize/otternose/controllers/reconcilers"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -50,7 +50,7 @@ type IntentsReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *IntentsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	reconcilersList, err := buildReconcilersList()
+	reconcilersList, err := buildReconcilersList(r.Client, r.Scheme)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -74,10 +74,10 @@ func (r *IntentsReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func buildReconcilersList() ([]reconcile.Reconciler, error) {
+func buildReconcilersList(c client.Client, scheme *runtime.Scheme) ([]reconcile.Reconciler, error) {
 	l := make([]reconcile.Reconciler, 0)
 
-	l = append(l, &reconcilers.IntentsValidatorReconciler{})
+	l = append(l, &reconcilers.IntentsValidatorReconciler{Client: c, Scheme: scheme})
 
 	return l, nil
 }
