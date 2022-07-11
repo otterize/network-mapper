@@ -5,12 +5,15 @@ package resolvers
 
 import (
 	"context"
+	"github.com/otterize/otternose/mapper/pkg/reconcilers"
+	"github.com/samber/lo"
+	"strings"
+
 	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
@@ -53,7 +56,9 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 func (r *queryResolver) GetIntents(ctx context.Context) ([]model.ServiceIntents, error) {
 	result := make([]model.ServiceIntents, 0)
 	for service, intents := range r.intentsHolder.GetIntentsPerService() {
-		result = append(result, model.ServiceIntents{Name: service, Intents: intents})
+		result = append(result, model.ServiceIntents{Name: service, Intents: lo.Map(intents, func(identity reconcilers.ServiceIdentity, _ int) model.Intent {
+			return model.Intent{Name: identity.Name, Namespace: lo.Ternary(identity.Namespace != "", lo.ToPtr(identity.Namespace), nil)}
+		})})
 	}
 	return result, nil
 }
