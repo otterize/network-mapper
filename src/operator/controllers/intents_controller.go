@@ -18,14 +18,14 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+	reconcilers "github.com/otterize/otternose/controllers/reconcilers"
+	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	otterizev1alpha1 "github.com/otterize/otternose/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	otterizev1alpha1 "github.com/otterize/otternose/api/v1alpha1"
 )
 
 // IntentsReconciler reconciles a Intents object
@@ -49,14 +49,21 @@ type IntentsReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *IntentsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-	intents := &otterizev1alpha1.Intents{}
-	err := r.Get(ctx, req.NamespacedName, intents)
+
+	reconcilersList, err := buildReconcilersList()
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	fmt.Println("Intents")
-	fmt.Printf("%v\n", intents)
+
+	logrus.Infoln("## Starting new Otterize reconciliation cycle ##")
+	for _, r := range reconcilersList {
+		logrus.Infof("Starting cycle for %T\n", r)
+		res, err := r.Reconcile(ctx, req)
+		if res.Requeue == true || err != nil {
+			return res, err
+		}
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -65,4 +72,12 @@ func (r *IntentsReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&otterizev1alpha1.Intents{}).
 		Complete(r)
+}
+
+func buildReconcilersList() ([]reconcile.Reconciler, error) {
+	l := make([]reconcile.Reconciler, 0)
+
+	l = append(l, &reconcilers.IntentsValidatorReconciler{})
+
+	return l, nil
 }

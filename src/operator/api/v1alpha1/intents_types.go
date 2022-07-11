@@ -62,7 +62,7 @@ const (
 
 // IntentsSpec defines the desired state of Intents
 type IntentsSpec struct {
-	Service Service `json:"service"`
+	Services []Service `json:"services"`
 }
 
 type Service struct {
