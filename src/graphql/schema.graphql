@@ -9,14 +9,14 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
-type Intent {
+type ServiceIdentity {
     name: String!
-    namespace: String
+    namespace: String!
 }
 
 type ServiceIntents {
     name: String!
-    intents: [Intent!]!
+    intents: [ServiceIdentity!]!
 }
 
 type Query {

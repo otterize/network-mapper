@@ -3,6 +3,7 @@ package reconcilers
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	"github.com/sirupsen/logrus"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
@@ -56,12 +57,7 @@ func (r *PodsReconciler) ResolveIpToPod(ip string) (*coreV1.Pod, bool) {
 	return pod.(*coreV1.Pod), ok
 }
 
-type ServiceIdentity struct {
-	Name      string
-	Namespace string
-}
-
-func (r *PodsReconciler) ResolvePodToOwnerName(ctx context.Context, pod *coreV1.Pod) (ServiceIdentity, error) {
+func (r *PodsReconciler) ResolvePodToServiceIdentity(ctx context.Context, pod *coreV1.Pod) (model.ServiceIdentity, error) {
 	for _, owner := range pod.OwnerReferences {
 		namespacedName := types.NamespacedName{Name: owner.Name, Namespace: pod.Namespace}
 		switch owner.Kind {
@@ -69,28 +65,28 @@ func (r *PodsReconciler) ResolvePodToOwnerName(ctx context.Context, pod *coreV1.
 			rs := &appsV1.ReplicaSet{}
 			err := r.Client.Get(ctx, namespacedName, rs)
 			if err != nil {
-				return ServiceIdentity{}, err
+				return model.ServiceIdentity{}, err
 			}
-			return ServiceIdentity{Name: rs.OwnerReferences[0].Name, Namespace: pod.Namespace}, nil
+			return model.ServiceIdentity{Name: rs.OwnerReferences[0].Name, Namespace: pod.Namespace}, nil
 		case "DaemonSet":
 			ds := &appsV1.DaemonSet{}
 			err := r.Client.Get(ctx, namespacedName, ds)
 			if err != nil {
-				return ServiceIdentity{}, err
+				return model.ServiceIdentity{}, err
 			}
-			return ServiceIdentity{Name: ds.Name, Namespace: pod.Namespace}, nil
+			return model.ServiceIdentity{Name: ds.Name, Namespace: pod.Namespace}, nil
 		case "StatefulSet":
 			ss := &appsV1.StatefulSet{}
 			err := r.Client.Get(ctx, namespacedName, ss)
 			if err != nil {
-				return ServiceIdentity{}, err
+				return model.ServiceIdentity{}, err
 			}
-			return ServiceIdentity{Name: ss.Name, Namespace: pod.Namespace}, nil
+			return model.ServiceIdentity{Name: ss.Name, Namespace: pod.Namespace}, nil
 		default:
 			logrus.Infof("Unknown owner kind %s for pod %s", owner.Kind, pod.Name)
 		}
 	}
-	return ServiceIdentity{}, fmt.Errorf("pod %s has no owner", pod.Name)
+	return model.ServiceIdentity{}, fmt.Errorf("pod %s has no owner", pod.Name)
 }
 
 func (r *PodsReconciler) Register(mgr manager.Manager) error {
