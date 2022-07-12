@@ -17,6 +17,7 @@ rules:
     resources:
       - 'daemonsets'
       - 'replicasets'
+      - 'statefulsets'
     verbs:
       - 'get'
       - 'list'
