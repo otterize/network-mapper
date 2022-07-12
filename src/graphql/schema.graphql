@@ -21,6 +21,7 @@ type ServiceIntents {
 
 type Query {
     getIntents: [ServiceIntents!]!
+    getCrds: String!
 }
 
 type Mutation {

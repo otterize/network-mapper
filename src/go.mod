@@ -8,7 +8,6 @@ require (
 	github.com/amit7itz/goset v1.1.0
 	github.com/google/gopacket v1.1.19
 	github.com/labstack/echo/v4 v4.7.2
-	github.com/samber/lo v1.25.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
 	github.com/vektah/gqlparser/v2 v2.4.5
@@ -77,7 +76,6 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
