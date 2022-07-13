@@ -54,7 +54,5 @@ spec:
     name: {{$key}}
     calls:{{range $service := $value}}
       - name: {{$service.Name}}{{if ne $service.Namespace "" }}
-        metadata:
-          k8s:
-            namespace: {{$service.Namespace}}{{end}}{{end}}
+        namespace: {{$service.Namespace}}{{end}}{{end}}
 {{end}}`
