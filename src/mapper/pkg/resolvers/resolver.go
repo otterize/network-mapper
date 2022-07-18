@@ -14,12 +14,14 @@ import (
 type Resolver struct {
 	podsReconciler      *reconcilers.PodsReconciler
 	endpointsReconciler *reconcilers.EndpointsReconciler
+	intentsHolder       *intentsHolder
 }
 
 func NewResolver(podsOperator *reconcilers.PodsReconciler, endpointsReconciler *reconcilers.EndpointsReconciler) *Resolver {
 	return &Resolver{
 		podsReconciler:      podsOperator,
 		endpointsReconciler: endpointsReconciler,
+		intentsHolder:       NewIntentsHolder(),
 	}
 }
 

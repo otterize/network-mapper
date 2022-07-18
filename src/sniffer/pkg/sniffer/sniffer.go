@@ -61,9 +61,9 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 func (s *Sniffer) PrintCapturedRequests() {
 	for ip, dests := range s.capturedRequests {
 		logrus.Debugf("%s:\n", ip)
-		for _, dest := range dests.Items() {
+		dests.For(func(dest string) {
 			logrus.Debugf("\t%s\n", dest)
-		}
+		})
 	}
 }
 

@@ -9,10 +9,19 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
+type ServiceIdentity {
+    name: String!
+    namespace: String!
+}
+
+type ServiceIntents {
+    name: String!
+    intents: [ServiceIdentity!]!
+}
+
 type Query {
-    # Gqlgen is going crazy when there is no type Query.
-    # delete the placeholder once there are real queries.
-    placeholder: Boolean
+    getIntents: [ServiceIntents!]!
+    getCrds: String!
 }
 
 type Mutation {

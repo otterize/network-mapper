@@ -12,3 +12,13 @@ rules:
       - 'get'
       - 'list'
       - 'watch'
+  - apiGroups:
+      - 'apps'
+    resources:
+      - 'daemonsets'
+      - 'replicasets'
+      - 'statefulsets'
+    verbs:
+      - 'get'
+      - 'list'
+      - 'watch'
