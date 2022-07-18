@@ -1,6 +1,0 @@
-apiVersion: otterize.com/v1alpha1
-kind: Intents
-metadata:
-  name: intents-sample
-spec:
-  # TODO(user): Add fields here
