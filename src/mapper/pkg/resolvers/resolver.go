@@ -4,7 +4,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
-	"github.com/otterize/otternose/mapper/pkg/reconcilers"
+	"github.com/otterize/otternose/mapper/pkg/kubefinder"
 )
 
 // This file will not be regenerated automatically.
@@ -12,16 +12,14 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	podsReconciler      *reconcilers.PodsReconciler
-	endpointsReconciler *reconcilers.EndpointsReconciler
-	intentsHolder       *intentsHolder
+	kubeIndexer   *kubefinder.KubeFinder
+	intentsHolder *intentsHolder
 }
 
-func NewResolver(podsOperator *reconcilers.PodsReconciler, endpointsReconciler *reconcilers.EndpointsReconciler) *Resolver {
+func NewResolver(kubeIndexer *kubefinder.KubeFinder) *Resolver {
 	return &Resolver{
-		podsReconciler:      podsOperator,
-		endpointsReconciler: endpointsReconciler,
-		intentsHolder:       NewIntentsHolder(),
+		kubeIndexer:   kubeIndexer,
+		intentsHolder: NewIntentsHolder(),
 	}
 }
 
