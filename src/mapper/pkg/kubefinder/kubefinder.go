@@ -24,6 +24,8 @@ type KubeFinder struct {
 	client client.Client
 }
 
+var FoundMoreThanOnePodError = fmt.Errorf("ip belongs to more than one pod")
+
 func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
 	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr}
 	err := indexer.initIndexes()
@@ -56,6 +58,8 @@ func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 	}
 	if len(pods.Items) == 0 {
 		return nil, fmt.Errorf("pod with ip %s was not found", ip)
+	} else if len(pods.Items) > 1 {
+		return nil, FoundMoreThanOnePodError
 	}
 	return &pods.Items[0], nil
 }

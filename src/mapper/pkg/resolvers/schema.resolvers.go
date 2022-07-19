@@ -6,6 +6,8 @@ package resolvers
 import (
 	"bytes"
 	"context"
+	"errors"
+	"github.com/otterize/otternose/mapper/pkg/kubefinder"
 	"strings"
 	"text/template"
 
@@ -20,7 +22,11 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	for _, captureItem := range results.Results {
 		srcPod, err := r.kubeIndexer.ResolveIpToPod(ctx, captureItem.SrcIP)
 		if err != nil {
-			logrus.WithError(err).Warningf("Could not resolve %s to pod", captureItem.SrcIP)
+			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", captureItem.SrcIP)
+			} else {
+				logrus.WithError(err).Warningf("Could not resolve %s to pod", captureItem.SrcIP)
+			}
 			continue
 		}
 		srcIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, srcPod)
@@ -39,7 +45,11 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			destPod, err := r.kubeIndexer.ResolveIpToPod(ctx, ips[0])
 			if err != nil {
-				logrus.WithError(err).Warningf("Could not resolve pod IP %s", ips[0])
+				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
+				} else {
+					logrus.WithError(err).Warningf("Could not resolve %s to pod", ips[0])
+				}
 				continue
 			}
 			dstIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, destPod)
