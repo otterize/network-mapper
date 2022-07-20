@@ -46,7 +46,7 @@ func (i *intentsHolder) GetIntentsPerService() map[string][]model.ServiceIdentit
 
 const crdTemplate = `{{range $key, $value := .}}---
 apiVersion: k8s.otterize.com/v1
-kind: clientIntents
+kind: ClientIntents
 metadata:
   name: {{$key}}
 spec:

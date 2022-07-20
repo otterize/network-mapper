@@ -7,13 +7,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/otterize/otternose/mapper/pkg/kubefinder"
 	"strings"
 	"text/template"
 
 	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
+	"github.com/otterize/otternose/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -63,7 +63,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	return nil, nil
 }
 
-func (r *queryResolver) GetIntents(_ context.Context) ([]model.ServiceIntents, error) {
+func (r *queryResolver) ServiceIntents(ctx context.Context) ([]model.ServiceIntents, error) {
 	result := make([]model.ServiceIntents, 0)
 	for service, intents := range r.intentsHolder.GetIntentsPerService() {
 		result = append(result, model.ServiceIntents{Name: service, Intents: intents})
@@ -71,7 +71,7 @@ func (r *queryResolver) GetIntents(_ context.Context) ([]model.ServiceIntents, e
 	return result, nil
 }
 
-func (r *queryResolver) GetCrds(_ context.Context) (string, error) {
+func (r *queryResolver) FormattedCRDs(ctx context.Context) (string, error) {
 	t, err := template.New("crd").Parse(crdTemplate)
 	if err != nil {
 		return "", err

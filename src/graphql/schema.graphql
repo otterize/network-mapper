@@ -20,8 +20,8 @@ type ServiceIntents {
 }
 
 type Query {
-    getIntents: [ServiceIntents!]!
-    getCrds: String!
+    serviceIntents: [ServiceIntents!]!
+    formattedCRDs: String!
 }
 
 type Mutation {
