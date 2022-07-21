@@ -48,8 +48,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetCrds    func(childComplexity int) int
-		GetIntents func(childComplexity int) int
+		FormattedCRDs  func(childComplexity int) int
+		ServiceIntents func(childComplexity int) int
 	}
 
 	ServiceIdentity struct {
@@ -67,8 +67,8 @@ type MutationResolver interface {
 	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error)
 }
 type QueryResolver interface {
-	GetIntents(ctx context.Context) ([]model.ServiceIntents, error)
-	GetCrds(ctx context.Context) (string, error)
+	ServiceIntents(ctx context.Context) ([]model.ServiceIntents, error)
+	FormattedCRDs(ctx context.Context) (string, error)
 }
 
 type executableSchema struct {
@@ -98,19 +98,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ReportCaptureResults(childComplexity, args["results"].(model.CaptureResults)), true
 
-	case "Query.getCrds":
-		if e.complexity.Query.GetCrds == nil {
+	case "Query.formattedCRDs":
+		if e.complexity.Query.FormattedCRDs == nil {
 			break
 		}
 
-		return e.complexity.Query.GetCrds(childComplexity), true
+		return e.complexity.Query.FormattedCRDs(childComplexity), true
 
-	case "Query.getIntents":
-		if e.complexity.Query.GetIntents == nil {
+	case "Query.serviceIntents":
+		if e.complexity.Query.ServiceIntents == nil {
 			break
 		}
 
-		return e.complexity.Query.GetIntents(childComplexity), true
+		return e.complexity.Query.ServiceIntents(childComplexity), true
 
 	case "ServiceIdentity.name":
 		if e.complexity.ServiceIdentity.Name == nil {
@@ -226,8 +226,8 @@ type ServiceIntents {
 }
 
 type Query {
-    getIntents: [ServiceIntents!]!
-    getCrds: String!
+    serviceIntents: [ServiceIntents!]!
+    formattedCRDs: String!
 }
 
 type Mutation {
@@ -347,7 +347,7 @@ func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, 
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_getIntents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -365,7 +365,7 @@ func (ec *executionContext) _Query_getIntents(ctx context.Context, field graphql
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetIntents(rctx)
+		return ec.resolvers.Query().ServiceIntents(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -382,7 +382,7 @@ func (ec *executionContext) _Query_getIntents(ctx context.Context, field graphql
 	return ec.marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_getCrds(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_formattedCRDs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -400,7 +400,7 @@ func (ec *executionContext) _Query_getCrds(ctx context.Context, field graphql.Co
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetCrds(rctx)
+		return ec.resolvers.Query().FormattedCRDs(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1932,7 +1932,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "getIntents":
+		case "serviceIntents":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -1941,7 +1941,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getIntents(ctx, field)
+				res = ec._Query_serviceIntents(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -1955,7 +1955,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "getCrds":
+		case "formattedCRDs":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -1964,7 +1964,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getCrds(ctx, field)
+				res = ec._Query_formattedCRDs(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

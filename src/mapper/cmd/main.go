@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/otterize/otternose/mapper/pkg/config"
-	"github.com/otterize/otternose/mapper/pkg/reconcilers"
+	"github.com/otterize/otternose/mapper/pkg/kubefinder"
 	"github.com/otterize/otternose/mapper/pkg/resolvers"
 	"github.com/otterize/otternose/shared/kubeutils"
 	"github.com/sirupsen/logrus"
@@ -39,15 +39,8 @@ func main() {
 		logrus.Errorf("unable to set up overall controller manager: %s", err)
 		os.Exit(1)
 	}
-	podsReconciler := reconcilers.NewPodsReconciler(mgr.GetClient())
-	err = podsReconciler.Register(mgr)
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
 
-	endpointsReconciler := reconcilers.NewEndpointsReconciler(mgr.GetClient())
-	err = endpointsReconciler.Register(mgr)
+	kubeFinder, err := kubefinder.NewKubeFinder(mgr)
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
@@ -70,7 +63,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RemoveTrailingSlash())
-	resolver := resolvers.NewResolver(podsReconciler, endpointsReconciler)
+	resolver := resolvers.NewResolver(kubeFinder)
 	resolver.Register(e)
 
 	logrus.Info("Starting api server")
