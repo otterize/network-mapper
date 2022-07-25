@@ -1,0 +1,14 @@
+
+query FormattedCRDs {
+    formattedCRDs
+}
+
+query ServiceIntents {
+    serviceIntents {
+        name
+        intents {
+            name
+            namespace
+        }
+    }
+}
