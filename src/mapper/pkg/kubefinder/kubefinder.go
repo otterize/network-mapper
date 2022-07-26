@@ -96,7 +96,7 @@ func (k *KubeFinder) ResolvePodToServiceIdentity(ctx context.Context, pod *coreV
 		return model.ServiceIdentity{Name: otterizeIdentity, Namespace: pod.Namespace}, nil
 	}
 
-	return nil, fmt.Errorf("pod %s has no owner", pod.Name)
+	return model.ServiceIdentity{}, fmt.Errorf("pod %s has no owner", pod.Name)
 }
 
 func (k *KubeFinder) getOtterizeIdentityFromObject(obj client.Object) string {
