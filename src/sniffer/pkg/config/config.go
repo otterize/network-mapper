@@ -22,6 +22,7 @@ func init() {
 	viper.SetDefault(MapperApiUrlKey, MapperApiUrlDefault)
 	viper.SetDefault(ReportIntervalKey, ReportIntervalDefault)
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
+	viper.SetDefault(HostProcDirKey, HostProcDirDefault)
 	viper.SetEnvPrefix(EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()

@@ -24,5 +24,14 @@ spec:
         env:
           - name: OTTERNOSE_MAPPER_API_URL
             value: http://{{ template "otternose.mapper.name" . }}:9090/query
+        volumeMounts:
+          - mountPath: /hostproc
+            name: proc
+            readOnly: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - hostPath:
+            path: /proc
+            type: ""
+          name: proc

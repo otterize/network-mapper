@@ -15,8 +15,6 @@ import (
 	"strings"
 )
 
-const procDir = "/hostproc"
-
 func ipFromHex(hexIp string) string {
 	z, _ := hex.DecodeString(hexIp)
 	return fmt.Sprintf("%d.%d.%d.%d", z[3], z[2], z[1], z[0])
@@ -96,7 +94,8 @@ func (s *SocketScanner) scanTcpFile(path string) {
 }
 
 func (s *SocketScanner) ScanProcDir() error {
-	files, err := ioutil.ReadDir(viper.GetString(config.HostProcDirKey))
+	hostProcDir := viper.GetString(config.HostProcDirKey)
+	files, err := ioutil.ReadDir(hostProcDir)
 	if err != nil {
 		return err
 	}
@@ -106,7 +105,7 @@ func (s *SocketScanner) ScanProcDir() error {
 			// name is not a number, meaning it's not a process dir, skip
 			continue
 		}
-		s.scanTcpFile(fmt.Sprintf("%s/%s/net/tcp", procDir, f.Name()))
+		s.scanTcpFile(fmt.Sprintf("%s/%s/net/tcp", hostProcDir, f.Name()))
 	}
 	return nil
 }
