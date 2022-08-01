@@ -9,6 +9,15 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
+input SocketScanResultForSrcIp {
+    srcIp: String!
+    destIps: [String!]!
+}
+
+input SocketScanResults {
+    results: [SocketScanResultForSrcIp!]!
+}
+
 type ServiceIdentity {
     name: String!
     namespace: String!
@@ -26,4 +35,5 @@ type Query {
 
 type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean
+    reportSocketScanResults(results: SocketScanResults!): Boolean
 }

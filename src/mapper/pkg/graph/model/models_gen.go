@@ -20,3 +20,12 @@ type ServiceIntents struct {
 	Name    string            `json:"name"`
 	Intents []ServiceIdentity `json:"intents"`
 }
+
+type SocketScanResultForSrcIP struct {
+	SrcIP   string   `json:"srcIp"`
+	DestIps []string `json:"destIps"`
+}
+
+type SocketScanResults struct {
+	Results []SocketScanResultForSrcIP `json:"results"`
+}
