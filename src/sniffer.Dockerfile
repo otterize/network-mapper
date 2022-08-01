@@ -11,10 +11,10 @@ COPY . .
 RUN go generate ./sniffer/...
 
 FROM buildenv as test
-RUN --mount=type=cache,target=/root/.cache/go-build go test ./sniffer/...
+RUN go test ./sniffer/...
 
-FROM buildenv as builder
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o /main ./sniffer/cmd
+FROM test as builder
+RUN go build -o /main ./sniffer/cmd
 
 FROM alpine as release
 RUN apk add --no-cache ca-certificates libpcap

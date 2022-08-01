@@ -31,7 +31,8 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 		}
 		srcIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
-			return nil, err
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+			continue
 		}
 		for _, dest := range captureItem.Destinations {
 			if !strings.HasSuffix(dest, viper.GetString(config.ClusterDomainKey)) {
@@ -54,7 +55,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			dstIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, destPod)
 			if err != nil {
-				logrus.Warningf("Could not resolve pod %s to identity", destPod.Name)
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue
 			}
 			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)
@@ -76,7 +77,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 		}
 		srcIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
-			return nil, err
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+			continue
 		}
 		for _, destIp := range socketScanItem.DestIps {
 			destPod, err := r.kubeIndexer.ResolveIpToPod(ctx, destIp)
@@ -90,7 +92,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			}
 			dstIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, destPod)
 			if err != nil {
-				logrus.Warningf("Could not resolve pod %s to identity", destPod.Name)
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue
 			}
 			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)

@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+const localhost = "127.0.0.1"
+
 func ipFromHex(hexIp string) string {
 	z, _ := hex.DecodeString(hexIp)
 	return fmt.Sprintf("%d.%d.%d.%d", z[3], z[2], z[1], z[0])
@@ -75,6 +77,10 @@ func (s *SocketScanner) scanTcpFile(path string) {
 		}
 		local := parsePair(parts[1])
 		foreign := parsePair(parts[2])
+		if local.ip == localhost || foreign.ip == localhost {
+			// ignore localhost connections as they are irrelevant to the mapping
+			continue
+		}
 		if parts[3] == "0A" {
 			// LISTEN port
 			listenPorts[local.port] = true

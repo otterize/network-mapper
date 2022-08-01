@@ -11,10 +11,10 @@ COPY . .
 RUN go generate ./mapper/...
 
 FROM buildenv as test
-RUN --mount=type=cache,target=/root/.cache/go-build go test ./mapper/...
+RUN go test ./mapper/...
 
-FROM buildenv as builder
-RUN --mount=type=cache,target=/root/.cache/go-build go build -o /main ./mapper/cmd
+FROM test as builder
+RUN go build -o /main ./mapper/cmd
 
 FROM alpine as release
 RUN apk add --no-cache ca-certificates
