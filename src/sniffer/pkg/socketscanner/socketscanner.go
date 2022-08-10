@@ -3,8 +3,8 @@ package socketscanner
 import (
 	"context"
 	"fmt"
-	"github.com/amit7itz/go-procnet/procnet"
 	"github.com/amit7itz/goset"
+	"github.com/otterize/go-procnet/procnet"
 	"github.com/otterize/otternose/sniffer/pkg/client"
 	"github.com/otterize/otternose/sniffer/pkg/config"
 	"github.com/spf13/viper"

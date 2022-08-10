@@ -74,8 +74,6 @@ github.com/alexflint/go-arg v1.4.2 h1:lDWZAXxpAnZUq4qwb86p/3rIJJ2Li81EoMbTMujhVa
 github.com/alexflint/go-arg v1.4.2/go.mod h1:9iRbDxne7LcR/GSvEr7ma++GLpdIU1zrghf2y2768kM=
 github.com/alexflint/go-scalar v1.0.0 h1:NGupf1XV/Xb04wXskDFzS0KWOLH632W/EO4fAFi+A70=
 github.com/alexflint/go-scalar v1.0.0/go.mod h1:GpHzbCOZXEKMEcygYQ5n/aa4Aq84zbxjy3MxYW0gjYw=
-github.com/amit7itz/go-procnet v0.1.0 h1:xTL2ZtQ2JxHMkiQkxmDfjXgaPaEgCFnZcTc9/B2wOgk=
-github.com/amit7itz/go-procnet v0.1.0/go.mod h1:Qpko63F0NaYfqZKd8FH0n7pd/7eYKy2pFWOLCE2oWTY=
 github.com/amit7itz/goset v1.1.0 h1:hAP5zQhO9a08qrloYRZ5KYXELQmkQ1wt8En9juRvzYA=
 github.com/amit7itz/goset v1.1.0/go.mod h1:i8ni2YcxUMAwLBOkHWpy3glFviYdTcWqCvFgp91EMGI=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
@@ -358,6 +356,8 @@ github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGV
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
 github.com/onsi/gomega v1.18.1 h1:M1GfJqGRrBrrGGsbxzV5dqM2U2ApXefZCQpkukxYRLE=
+github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4og8Kk=
+github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pelletier/go-toml/v2 v2.0.1 h1:8e3L2cCQzLFi2CR4g7vGFuFxX7Jl1kKX8gW+iV0GUKU=
