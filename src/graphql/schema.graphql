@@ -18,14 +18,14 @@ input SocketScanResults {
     results: [SocketScanResultForSrcIp!]!
 }
 
-type ServiceIdentity {
+type OtterizeServiceIdentity {
     name: String!
     namespace: String!
 }
 
 type ServiceIntents {
     name: String!
-    intents: [ServiceIdentity!]!
+    intents: [OtterizeServiceIdentity!]!
 }
 
 type Query {

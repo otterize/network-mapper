@@ -29,7 +29,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, srcPod)
+		srcIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 			continue
@@ -53,7 +53,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, destPod)
+			dstIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue
@@ -75,7 +75,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, srcPod)
+		srcIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 			continue
@@ -90,7 +90,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, destPod)
+			dstIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue

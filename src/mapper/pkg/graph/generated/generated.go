@@ -48,14 +48,14 @@ type ComplexityRoot struct {
 		ReportSocketScanResults func(childComplexity int, results model.SocketScanResults) int
 	}
 
+	OtterizeServiceIdentity struct {
+		Name      func(childComplexity int) int
+		Namespace func(childComplexity int) int
+	}
+
 	Query struct {
 		FormattedCRDs  func(childComplexity int) int
 		ServiceIntents func(childComplexity int) int
-	}
-
-	ServiceIdentity struct {
-		Name      func(childComplexity int) int
-		Namespace func(childComplexity int) int
 	}
 
 	ServiceIntents struct {
@@ -112,6 +112,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ReportSocketScanResults(childComplexity, args["results"].(model.SocketScanResults)), true
 
+	case "OtterizeServiceIdentity.name":
+		if e.complexity.OtterizeServiceIdentity.Name == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.Name(childComplexity), true
+
+	case "OtterizeServiceIdentity.namespace":
+		if e.complexity.OtterizeServiceIdentity.Namespace == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.Namespace(childComplexity), true
+
 	case "Query.formattedCRDs":
 		if e.complexity.Query.FormattedCRDs == nil {
 			break
@@ -125,20 +139,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ServiceIntents(childComplexity), true
-
-	case "ServiceIdentity.name":
-		if e.complexity.ServiceIdentity.Name == nil {
-			break
-		}
-
-		return e.complexity.ServiceIdentity.Name(childComplexity), true
-
-	case "ServiceIdentity.namespace":
-		if e.complexity.ServiceIdentity.Namespace == nil {
-			break
-		}
-
-		return e.complexity.ServiceIdentity.Namespace(childComplexity), true
 
 	case "ServiceIntents.intents":
 		if e.complexity.ServiceIntents.Intents == nil {
@@ -238,14 +238,14 @@ input SocketScanResults {
     results: [SocketScanResultForSrcIp!]!
 }
 
-type ServiceIdentity {
+type OtterizeServiceIdentity {
     name: String!
     namespace: String!
 }
 
 type ServiceIntents {
     name: String!
-    intents: [ServiceIdentity!]!
+    intents: [OtterizeServiceIdentity!]!
 }
 
 type Query {
@@ -425,6 +425,76 @@ func (ec *executionContext) _Mutation_reportSocketScanResults(ctx context.Contex
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _OtterizeServiceIdentity_name(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OtterizeServiceIdentity_namespace(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Namespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -566,76 +636,6 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ServiceIdentity_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIdentity) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ServiceIdentity",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ServiceIdentity_namespace(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIdentity) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ServiceIdentity",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Namespace, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _ServiceIntents_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIntents) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -701,9 +701,9 @@ func (ec *executionContext) _ServiceIntents_intents(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.ServiceIdentity)
+	res := resTmp.([]model.OtterizeServiceIdentity)
 	fc.Result = res
-	return ec.marshalNServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentityᚄ(ctx, field.Selections, res)
+	return ec.marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2052,6 +2052,47 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var otterizeServiceIdentityImplementors = []string{"OtterizeServiceIdentity"}
+
+func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, obj *model.OtterizeServiceIdentity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, otterizeServiceIdentityImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OtterizeServiceIdentity")
+		case "name":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._OtterizeServiceIdentity_name(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "namespace":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._OtterizeServiceIdentity_namespace(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2131,47 +2172,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var serviceIdentityImplementors = []string{"ServiceIdentity"}
-
-func (ec *executionContext) _ServiceIdentity(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceIdentity) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, serviceIdentityImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ServiceIdentity")
-		case "name":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ServiceIdentity_name(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "namespace":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ServiceIdentity_namespace(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2689,11 +2689,11 @@ func (ec *executionContext) unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.ServiceIdentity) graphql.Marshaler {
-	return ec._ServiceIdentity(ctx, sel, &v)
+func (ec *executionContext) marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.OtterizeServiceIdentity) graphql.Marshaler {
+	return ec._OtterizeServiceIdentity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ServiceIdentity) graphql.Marshaler {
+func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []model.OtterizeServiceIdentity) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2717,7 +2717,7 @@ func (ec *executionContext) marshalNServiceIdentity2ᚕgithubᚗcomᚋotterize�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentity(ctx, sel, v[i])
+			ret[i] = ec.marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
