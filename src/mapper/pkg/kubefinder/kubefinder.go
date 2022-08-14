@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -17,13 +16,6 @@ import (
 
 const (
 	podIpIndexField = "ip"
-)
-
-const (
-	OwnerTypeReplicaSet  = "ReplicaSet"
-	OwnerTypeStatefulSet = "StatefulSet"
-	OwnerTypeDaemonSet   = "DaemonSet"
-	OwnerTypeDeployment  = "Deployment"
 )
 
 type KubeFinder struct {
@@ -72,39 +64,20 @@ func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 }
 
 func (k *KubeFinder) ResolvePodToOtterizeServiceIdentity(ctx context.Context, pod *coreV1.Pod) (model.OtterizeServiceIdentity, error) {
-	var otterizeIdentity string
-	var ownerKind client.Object
-	for _, owner := range pod.OwnerReferences {
-		namespacedName := types.NamespacedName{Name: owner.Name, Namespace: pod.Namespace}
-		switch owner.Kind {
-		case OwnerTypeReplicaSet:
-			ownerKind = &appsV1.ReplicaSet{}
-		case OwnerTypeDaemonSet:
-			ownerKind = &appsV1.DaemonSet{}
-		case OwnerTypeStatefulSet:
-			ownerKind = &appsV1.StatefulSet{}
-		case OwnerTypeDeployment:
-			ownerKind = &appsV1.Deployment{}
-		default:
-			logrus.Infof("Unknown owner kind %s for pod %s", owner.Kind, pod.Name)
-		}
-		err := k.client.Get(ctx, namespacedName, ownerKind)
+	var obj client.Object
+	obj = pod
+	for len(obj.GetOwnerReferences()) > 0 {
+		owner := obj.GetOwnerReferences()[0]
+		ownerObj := &unstructured.Unstructured{}
+		ownerObj.SetAPIVersion(owner.APIVersion)
+		ownerObj.SetKind(owner.Kind)
+		err := k.client.Get(ctx, types.NamespacedName{Name: owner.Name, Namespace: obj.GetNamespace()}, ownerObj)
 		if err != nil {
-			return model.OtterizeServiceIdentity{}, err
+			return model.OtterizeServiceIdentity{}, nil
 		}
-		otterizeIdentity = k.getOtterizeIdentityFromObject(ownerKind)
-		return model.OtterizeServiceIdentity{Name: otterizeIdentity, Namespace: pod.Namespace}, nil
+		obj = ownerObj
 	}
-
-	return model.OtterizeServiceIdentity{}, fmt.Errorf("pod %s has no owner", pod.Name)
-}
-
-func (k *KubeFinder) getOtterizeIdentityFromObject(obj client.Object) string {
-	owners := obj.GetOwnerReferences()
-	if len(owners) != 0 {
-		return owners[0].Name
-	}
-	return obj.GetName()
+	return model.OtterizeServiceIdentity{Name: obj.GetName(), Namespace: obj.GetNamespace()}, nil
 }
 
 func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
