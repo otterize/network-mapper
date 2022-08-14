@@ -28,29 +28,29 @@ func (v *ServiceIntentsResponse) GetServiceIntents() []ServiceIntentsServiceInte
 
 // ServiceIntentsServiceIntents includes the requested fields of the GraphQL type ServiceIntents.
 type ServiceIntentsServiceIntents struct {
-	Name    string                                               `json:"name"`
-	Intents []ServiceIntentsServiceIntentsIntentsServiceIdentity `json:"intents"`
+	Name    string                                                       `json:"name"`
+	Intents []ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity `json:"intents"`
 }
 
 // GetName returns ServiceIntentsServiceIntents.Name, and is useful for accessing the field via an interface.
 func (v *ServiceIntentsServiceIntents) GetName() string { return v.Name }
 
 // GetIntents returns ServiceIntentsServiceIntents.Intents, and is useful for accessing the field via an interface.
-func (v *ServiceIntentsServiceIntents) GetIntents() []ServiceIntentsServiceIntentsIntentsServiceIdentity {
+func (v *ServiceIntentsServiceIntents) GetIntents() []ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity {
 	return v.Intents
 }
 
-// ServiceIntentsServiceIntentsIntentsServiceIdentity includes the requested fields of the GraphQL type ServiceIdentity.
-type ServiceIntentsServiceIntentsIntentsServiceIdentity struct {
+// ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity includes the requested fields of the GraphQL type OtterizeServiceIdentity.
+type ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
-// GetName returns ServiceIntentsServiceIntentsIntentsServiceIdentity.Name, and is useful for accessing the field via an interface.
-func (v *ServiceIntentsServiceIntentsIntentsServiceIdentity) GetName() string { return v.Name }
+// GetName returns ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetName() string { return v.Name }
 
-// GetNamespace returns ServiceIntentsServiceIntentsIntentsServiceIdentity.Namespace, and is useful for accessing the field via an interface.
-func (v *ServiceIntentsServiceIntentsIntentsServiceIdentity) GetNamespace() string {
+// GetNamespace returns ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetNamespace() string {
 	return v.Namespace
 }
 

@@ -19,6 +19,11 @@ func NewMapperClient(mapperAddress string) *MapperClient {
 }
 
 func (c *MapperClient) ReportCaptureResults(ctx context.Context, results CaptureResults) error {
-	_, err := ReportCaptureResults(ctx, c.gqlClient, results)
+	_, err := reportCaptureResults(ctx, c.gqlClient, results)
+	return err
+}
+
+func (c *MapperClient) ReportSocketScanResults(ctx context.Context, results SocketScanResults) error {
+	_, err := reportSocketScanResults(ctx, c.gqlClient, results)
 	return err
 }

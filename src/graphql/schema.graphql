@@ -9,14 +9,23 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
-type ServiceIdentity {
+input SocketScanResultForSrcIp {
+    srcIp: String!
+    destIps: [String!]!
+}
+
+input SocketScanResults {
+    results: [SocketScanResultForSrcIp!]!
+}
+
+type OtterizeServiceIdentity {
     name: String!
     namespace: String!
 }
 
 type ServiceIntents {
     name: String!
-    intents: [ServiceIdentity!]!
+    intents: [OtterizeServiceIdentity!]!
 }
 
 type Query {
@@ -26,4 +35,5 @@ type Query {
 
 type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean
+    reportSocketScanResults(results: SocketScanResults!): Boolean
 }

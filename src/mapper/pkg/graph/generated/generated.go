@@ -44,17 +44,18 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		ReportCaptureResults func(childComplexity int, results model.CaptureResults) int
+		ReportCaptureResults    func(childComplexity int, results model.CaptureResults) int
+		ReportSocketScanResults func(childComplexity int, results model.SocketScanResults) int
+	}
+
+	OtterizeServiceIdentity struct {
+		Name      func(childComplexity int) int
+		Namespace func(childComplexity int) int
 	}
 
 	Query struct {
 		FormattedCRDs  func(childComplexity int) int
 		ServiceIntents func(childComplexity int) int
-	}
-
-	ServiceIdentity struct {
-		Name      func(childComplexity int) int
-		Namespace func(childComplexity int) int
 	}
 
 	ServiceIntents struct {
@@ -65,6 +66,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error)
+	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (*bool, error)
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context) ([]model.ServiceIntents, error)
@@ -98,6 +100,32 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ReportCaptureResults(childComplexity, args["results"].(model.CaptureResults)), true
 
+	case "Mutation.reportSocketScanResults":
+		if e.complexity.Mutation.ReportSocketScanResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportSocketScanResults_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportSocketScanResults(childComplexity, args["results"].(model.SocketScanResults)), true
+
+	case "OtterizeServiceIdentity.name":
+		if e.complexity.OtterizeServiceIdentity.Name == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.Name(childComplexity), true
+
+	case "OtterizeServiceIdentity.namespace":
+		if e.complexity.OtterizeServiceIdentity.Namespace == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.Namespace(childComplexity), true
+
 	case "Query.formattedCRDs":
 		if e.complexity.Query.FormattedCRDs == nil {
 			break
@@ -111,20 +139,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ServiceIntents(childComplexity), true
-
-	case "ServiceIdentity.name":
-		if e.complexity.ServiceIdentity.Name == nil {
-			break
-		}
-
-		return e.complexity.ServiceIdentity.Name(childComplexity), true
-
-	case "ServiceIdentity.namespace":
-		if e.complexity.ServiceIdentity.Namespace == nil {
-			break
-		}
-
-		return e.complexity.ServiceIdentity.Namespace(childComplexity), true
 
 	case "ServiceIntents.intents":
 		if e.complexity.ServiceIntents.Intents == nil {
@@ -215,14 +229,23 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
-type ServiceIdentity {
+input SocketScanResultForSrcIp {
+    srcIp: String!
+    destIps: [String!]!
+}
+
+input SocketScanResults {
+    results: [SocketScanResultForSrcIp!]!
+}
+
+type OtterizeServiceIdentity {
     name: String!
     namespace: String!
 }
 
 type ServiceIntents {
     name: String!
-    intents: [ServiceIdentity!]!
+    intents: [OtterizeServiceIdentity!]!
 }
 
 type Query {
@@ -232,6 +255,7 @@ type Query {
 
 type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean
+    reportSocketScanResults(results: SocketScanResults!): Boolean
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -247,6 +271,21 @@ func (ec *executionContext) field_Mutation_reportCaptureResults_args(ctx context
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
 		arg0, err = ec.unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["results"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportSocketScanResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SocketScanResults
+	if tmp, ok := rawArgs["results"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+		arg0, err = ec.unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -345,6 +384,115 @@ func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, 
 	res := resTmp.(*bool)
 	fc.Result = res
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_reportSocketScanResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_reportSocketScanResults_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportSocketScanResults(rctx, args["results"].(model.SocketScanResults))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OtterizeServiceIdentity_name(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OtterizeServiceIdentity_namespace(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Namespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -488,76 +636,6 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ServiceIdentity_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIdentity) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ServiceIdentity",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ServiceIdentity_namespace(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIdentity) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ServiceIdentity",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Namespace, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _ServiceIntents_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIntents) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -623,9 +701,9 @@ func (ec *executionContext) _ServiceIntents_intents(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.ServiceIdentity)
+	res := resTmp.([]model.OtterizeServiceIdentity)
 	fc.Result = res
-	return ec.marshalNServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentityᚄ(ctx, field.Selections, res)
+	return ec.marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -1868,6 +1946,60 @@ func (ec *executionContext) unmarshalInputCaptureResults(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.Context, obj interface{}) (model.SocketScanResultForSrcIP, error) {
+	var it model.SocketScanResultForSrcIP
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "srcIp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
+			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "destIps":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destIps"))
+			it.DestIps, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSocketScanResults(ctx context.Context, obj interface{}) (model.SocketScanResults, error) {
+	var it model.SocketScanResults
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "results":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+			it.Results, err = ec.unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIPᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -1902,6 +2034,54 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
+		case "reportSocketScanResults":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportSocketScanResults(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var otterizeServiceIdentityImplementors = []string{"OtterizeServiceIdentity"}
+
+func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, obj *model.OtterizeServiceIdentity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, otterizeServiceIdentityImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OtterizeServiceIdentity")
+		case "name":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._OtterizeServiceIdentity_name(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "namespace":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._OtterizeServiceIdentity_namespace(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1992,47 +2172,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var serviceIdentityImplementors = []string{"ServiceIdentity"}
-
-func (ec *executionContext) _ServiceIdentity(ctx context.Context, sel ast.SelectionSet, obj *model.ServiceIdentity) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, serviceIdentityImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ServiceIdentity")
-		case "name":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ServiceIdentity_name(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "namespace":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ServiceIdentity_namespace(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2550,11 +2689,11 @@ func (ec *executionContext) unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.ServiceIdentity) graphql.Marshaler {
-	return ec._ServiceIdentity(ctx, sel, &v)
+func (ec *executionContext) marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.OtterizeServiceIdentity) graphql.Marshaler {
+	return ec._OtterizeServiceIdentity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ServiceIdentity) graphql.Marshaler {
+func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []model.OtterizeServiceIdentity) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2578,7 +2717,7 @@ func (ec *executionContext) marshalNServiceIdentity2ᚕgithubᚗcomᚋotterize�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIdentity(ctx, sel, v[i])
+			ret[i] = ec.marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2644,6 +2783,33 @@ func (ec *executionContext) marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIP(ctx context.Context, v interface{}) (model.SocketScanResultForSrcIP, error) {
+	res, err := ec.unmarshalInputSocketScanResultForSrcIp(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.SocketScanResultForSrcIP, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.SocketScanResultForSrcIP, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSocketScanResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIP(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx context.Context, v interface{}) (model.SocketScanResults, error) {
+	res, err := ec.unmarshalInputSocketScanResults(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {

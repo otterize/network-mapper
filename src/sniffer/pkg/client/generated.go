@@ -26,41 +26,107 @@ type CaptureResults struct {
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
 func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
 
-// ReportCaptureResultsResponse is returned by ReportCaptureResults on success.
-type ReportCaptureResultsResponse struct {
-	ReportCaptureResults bool `json:"reportCaptureResults"`
+type SocketScanResultForSrcIp struct {
+	SrcIp   string   `json:"srcIp"`
+	DestIps []string `json:"destIps"`
 }
 
-// GetReportCaptureResults returns ReportCaptureResultsResponse.ReportCaptureResults, and is useful for accessing the field via an interface.
-func (v *ReportCaptureResultsResponse) GetReportCaptureResults() bool { return v.ReportCaptureResults }
+// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
+func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
 
-// __ReportCaptureResultsInput is used internally by genqlient
-type __ReportCaptureResultsInput struct {
+// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
+func (v *SocketScanResultForSrcIp) GetDestIps() []string { return v.DestIps }
+
+type SocketScanResults struct {
+	Results []SocketScanResultForSrcIp `json:"results"`
+}
+
+// GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
+func (v *SocketScanResults) GetResults() []SocketScanResultForSrcIp { return v.Results }
+
+// __reportCaptureResultsInput is used internally by genqlient
+type __reportCaptureResultsInput struct {
 	Results CaptureResults `json:"results"`
 }
 
-// GetResults returns __ReportCaptureResultsInput.Results, and is useful for accessing the field via an interface.
-func (v *__ReportCaptureResultsInput) GetResults() CaptureResults { return v.Results }
+// GetResults returns __reportCaptureResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportCaptureResultsInput) GetResults() CaptureResults { return v.Results }
 
-func ReportCaptureResults(
+// __reportSocketScanResultsInput is used internally by genqlient
+type __reportSocketScanResultsInput struct {
+	Results SocketScanResults `json:"results"`
+}
+
+// GetResults returns __reportSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportSocketScanResultsInput) GetResults() SocketScanResults { return v.Results }
+
+// reportCaptureResultsResponse is returned by reportCaptureResults on success.
+type reportCaptureResultsResponse struct {
+	ReportCaptureResults bool `json:"reportCaptureResults"`
+}
+
+// GetReportCaptureResults returns reportCaptureResultsResponse.ReportCaptureResults, and is useful for accessing the field via an interface.
+func (v *reportCaptureResultsResponse) GetReportCaptureResults() bool { return v.ReportCaptureResults }
+
+// reportSocketScanResultsResponse is returned by reportSocketScanResults on success.
+type reportSocketScanResultsResponse struct {
+	ReportSocketScanResults bool `json:"reportSocketScanResults"`
+}
+
+// GetReportSocketScanResults returns reportSocketScanResultsResponse.ReportSocketScanResults, and is useful for accessing the field via an interface.
+func (v *reportSocketScanResultsResponse) GetReportSocketScanResults() bool {
+	return v.ReportSocketScanResults
+}
+
+func reportCaptureResults(
 	ctx context.Context,
 	client graphql.Client,
 	results CaptureResults,
-) (*ReportCaptureResultsResponse, error) {
+) (*reportCaptureResultsResponse, error) {
 	req := &graphql.Request{
-		OpName: "ReportCaptureResults",
+		OpName: "reportCaptureResults",
 		Query: `
-mutation ReportCaptureResults ($results: CaptureResults!) {
+mutation reportCaptureResults ($results: CaptureResults!) {
 	reportCaptureResults(results: $results)
 }
 `,
-		Variables: &__ReportCaptureResultsInput{
+		Variables: &__reportCaptureResultsInput{
 			Results: results,
 		},
 	}
 	var err error
 
-	var data ReportCaptureResultsResponse
+	var data reportCaptureResultsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func reportSocketScanResults(
+	ctx context.Context,
+	client graphql.Client,
+	results SocketScanResults,
+) (*reportSocketScanResultsResponse, error) {
+	req := &graphql.Request{
+		OpName: "reportSocketScanResults",
+		Query: `
+mutation reportSocketScanResults ($results: SocketScanResults!) {
+	reportSocketScanResults(results: $results)
+}
+`,
+		Variables: &__reportSocketScanResultsInput{
+			Results: results,
+		},
+	}
+	var err error
+
+	var data reportSocketScanResultsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

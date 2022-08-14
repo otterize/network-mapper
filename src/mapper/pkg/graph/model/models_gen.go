@@ -11,12 +11,21 @@ type CaptureResults struct {
 	Results []CaptureResultForSrcIP `json:"results"`
 }
 
-type ServiceIdentity struct {
+type OtterizeServiceIdentity struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
 type ServiceIntents struct {
-	Name    string            `json:"name"`
-	Intents []ServiceIdentity `json:"intents"`
+	Name    string                    `json:"name"`
+	Intents []OtterizeServiceIdentity `json:"intents"`
+}
+
+type SocketScanResultForSrcIP struct {
+	SrcIP   string   `json:"srcIp"`
+	DestIps []string `json:"destIps"`
+}
+
+type SocketScanResults struct {
+	Results []SocketScanResultForSrcIP `json:"results"`
 }

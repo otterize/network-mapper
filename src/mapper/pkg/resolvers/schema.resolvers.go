@@ -29,9 +29,10 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, srcPod)
+		srcIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
 		if err != nil {
-			return nil, err
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+			continue
 		}
 		for _, dest := range captureItem.Destinations {
 			if !strings.HasSuffix(dest, viper.GetString(config.ClusterDomainKey)) {
@@ -52,9 +53,46 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeIndexer.ResolvePodToServiceIdentity(ctx, destPod)
+			dstIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
 			if err != nil {
-				logrus.Warningf("Could not resolve pod %s to identity", ips[0])
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+				continue
+			}
+			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)
+		}
+	}
+	return nil, nil
+}
+
+func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (*bool, error) {
+	for _, socketScanItem := range results.Results {
+		srcPod, err := r.kubeIndexer.ResolveIpToPod(ctx, socketScanItem.SrcIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", socketScanItem.SrcIP)
+			} else {
+				logrus.WithError(err).Warningf("Could not resolve %s to pod", socketScanItem.SrcIP)
+			}
+			continue
+		}
+		srcIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+			continue
+		}
+		for _, destIp := range socketScanItem.DestIps {
+			destPod, err := r.kubeIndexer.ResolveIpToPod(ctx, destIp)
+			if err != nil {
+				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
+				} else {
+					logrus.WithError(err).Warningf("Could not resolve %s to pod", destIp)
+				}
+				continue
+			}
+			dstIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
+			if err != nil {
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue
 			}
 			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)
