@@ -25,7 +25,7 @@ spec:
           - name: OTTERNOSE_MAPPER_API_URL
             value: http://{{ template "otternose.mapper.name" . }}:9090/query
           - name: OTTERNOSE_DEBUG
-            value: {{ .Values.debug }}
+            value: {{ .Values.debug | quote }}
         volumeMounts:
           - mountPath: /hostproc
             name: proc

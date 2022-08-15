@@ -18,5 +18,5 @@ spec:
           imagePullPolicy: Always
           env:
             - name: OTTERNOSE_DEBUG
-              value: { { .Values.debug } }
+              value: {{ .Values.debug | quote }}
       serviceAccountName: {{ template "otternose.mapper.name" . }}
