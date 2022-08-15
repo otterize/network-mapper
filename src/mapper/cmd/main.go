@@ -28,6 +28,10 @@ func getClusterDomainOrDefault() string {
 }
 
 func main() {
+	if viper.GetBool(config.DebugKey) {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)

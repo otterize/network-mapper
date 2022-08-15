@@ -25,7 +25,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", captureItem.SrcIP)
 			} else {
-				logrus.WithError(err).Warningf("Could not resolve %s to pod", captureItem.SrcIP)
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", captureItem.SrcIP)
 			}
 			continue
 		}
@@ -49,7 +49,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
 				} else {
-					logrus.WithError(err).Warningf("Could not resolve %s to pod", ips[0])
+					logrus.WithError(err).Debugf("Could not resolve %s to pod", ips[0])
 				}
 				continue
 			}
@@ -71,7 +71,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", socketScanItem.SrcIP)
 			} else {
-				logrus.WithError(err).Warningf("Could not resolve %s to pod", socketScanItem.SrcIP)
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", socketScanItem.SrcIP)
 			}
 			continue
 		}
@@ -86,7 +86,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
 				} else {
-					logrus.WithError(err).Warningf("Could not resolve %s to pod", destIp)
+					logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp)
 				}
 				continue
 			}

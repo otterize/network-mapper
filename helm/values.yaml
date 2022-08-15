@@ -1,3 +1,4 @@
 registry: ""
-mapperImage: "mapper-29312330dab485a60ce1f9801a8921fb1bbd4f62"
-snifferImage: "sniffer-29312330dab485a60ce1f9801a8921fb1bbd4f62"
+mapperImage: "mapper-1f0c21d658a5ac41aac218344cd607939438519e"
+snifferImage: "sniffer-1f0c21d658a5ac41aac218344cd607939438519e"
+debug: false

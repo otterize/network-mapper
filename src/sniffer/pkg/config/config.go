@@ -16,6 +16,8 @@ const (
 	CallsTimeoutDefault   = 5 * time.Second
 	HostProcDirKey        = "host-proc-dir"
 	HostProcDirDefault    = "/hostproc"
+	DebugKey              = "debug"
+	DebugDefault          = false
 )
 
 func init() {
@@ -23,6 +25,7 @@ func init() {
 	viper.SetDefault(ReportIntervalKey, ReportIntervalDefault)
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
 	viper.SetDefault(HostProcDirKey, HostProcDirDefault)
+	viper.SetDefault(DebugKey, DebugDefault)
 	viper.SetEnvPrefix(EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
