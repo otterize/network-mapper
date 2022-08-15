@@ -73,7 +73,7 @@ func (k *KubeFinder) ResolvePodToOtterizeServiceIdentity(ctx context.Context, po
 		ownerObj.SetKind(owner.Kind)
 		err := k.client.Get(ctx, types.NamespacedName{Name: owner.Name, Namespace: obj.GetNamespace()}, ownerObj)
 		if err != nil {
-			return model.OtterizeServiceIdentity{}, nil
+			return model.OtterizeServiceIdentity{}, err
 		}
 		obj = ownerObj
 	}
