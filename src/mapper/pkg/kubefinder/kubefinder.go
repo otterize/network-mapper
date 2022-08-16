@@ -7,6 +7,7 @@ import (
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	"github.com/spf13/viper"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,6 +74,10 @@ func (k *KubeFinder) ResolvePodToOtterizeServiceIdentity(ctx context.Context, po
 		ownerObj.SetKind(owner.Kind)
 		err := k.client.Get(ctx, types.NamespacedName{Name: owner.Name, Namespace: obj.GetNamespace()}, ownerObj)
 		if err != nil {
+			if errors.IsForbidden(err) {
+				// We don't have permissions to the owner object, as we treat it as the identity.
+				return model.OtterizeServiceIdentity{Name: owner.Name, Namespace: obj.GetNamespace()}, nil
+			}
 			return model.OtterizeServiceIdentity{}, err
 		}
 		obj = ownerObj

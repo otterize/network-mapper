@@ -13,8 +13,19 @@ rules:
       - 'list'
       - 'watch'
   - apiGroups:
+      - 'apps'
+    resources:
+      - 'deployments'
+      - 'daemonsets'
+      - 'replicasets'
+      - 'statefulsets'
+    verbs:
+      - 'get'
+{{ if .Values.allowGetAllResources }}
+  - apiGroups:
       - '*'
     resources:
       - '*'
     verbs:
       - 'get'
+{{ end }}
