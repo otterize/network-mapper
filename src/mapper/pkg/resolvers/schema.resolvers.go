@@ -44,6 +44,10 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
 				continue
 			}
+			if len(ips) == 0 {
+				logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", dest)
+				continue
+			}
 			destPod, err := r.kubeIndexer.ResolveIpToPod(ctx, ips[0])
 			if err != nil {
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
