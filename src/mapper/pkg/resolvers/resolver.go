@@ -12,13 +12,13 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	kubeIndexer   *kubefinder.KubeFinder
+	kubeFinder    *kubefinder.KubeFinder
 	intentsHolder *intentsHolder
 }
 
 func NewResolver(kubeIndexer *kubefinder.KubeFinder) *Resolver {
 	return &Resolver{
-		kubeIndexer:   kubeIndexer,
+		kubeFinder:    kubeIndexer,
 		intentsHolder: NewIntentsHolder(),
 	}
 }
