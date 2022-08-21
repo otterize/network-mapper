@@ -99,8 +99,12 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 			There are more forms that records, based on pods hostnames/subdomains/ips, but we ignore them and resolve based on the
 			service name for simplicity, as it should be good-enough for intents detection.
 		*/
-		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1]
-		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
+		if len(fqdnWithoutClusterDomainParts) < 3 {
+			// expected at least service-name.namespace.svc
+			return nil, fmt.Errorf("service address %s is too short", fqdn)
+		}
+		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
+		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-3]
 		endpoints := &coreV1.Endpoints{}
 		err := k.client.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints)
 		if err != nil {
