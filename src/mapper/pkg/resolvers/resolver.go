@@ -16,9 +16,9 @@ type Resolver struct {
 	intentsHolder *intentsHolder
 }
 
-func NewResolver(kubeIndexer *kubefinder.KubeFinder) *Resolver {
+func NewResolver(kubeFinder *kubefinder.KubeFinder) *Resolver {
 	return &Resolver{
-		kubeFinder:    kubeIndexer,
+		kubeFinder:    kubeFinder,
 		intentsHolder: NewIntentsHolder(),
 	}
 }

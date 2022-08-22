@@ -96,8 +96,8 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 	case "svc":
 		/*
 			The basic form of service record is service-name.my-namespace.svc.cluster-domain.example
-			There are more forms that records, based on pods hostnames/subdomains/ips, but we ignore them and resolve based on the
-			service name for simplicity, as it should be good-enough for intents detection.
+			There are more forms of records, based on pods hostnames/subdomains/ips, but we ignore them and resolve based on the
+			service name for simplicity, as it should be good enough for intents detection.
 		*/
 		if len(fqdnWithoutClusterDomainParts) < 3 {
 			// expected at least service-name.namespace.svc
