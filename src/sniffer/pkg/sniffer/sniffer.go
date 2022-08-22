@@ -95,6 +95,9 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 				if dns.OpCode == layers.DNSOpCodeQuery && dns.ResponseCode == layers.DNSResponseCodeNoErr {
 					for _, answer := range dns.Answers {
 						// This is the DNS Answer, so the Dst IP is the pod IP
+						if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
+							continue
+						}
 						s.NewCapturedRequest(ip.DstIP.String(), string(answer.Name))
 					}
 				}

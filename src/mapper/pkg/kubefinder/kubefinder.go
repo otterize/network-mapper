@@ -86,21 +86,41 @@ func (k *KubeFinder) ResolvePodToOtterizeServiceIdentity(ctx context.Context, po
 }
 
 func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
-	if !strings.HasSuffix(fqdn, viper.GetString(config.ClusterDomainKey)) {
+	clusterDomain := viper.GetString(config.ClusterDomainKey)
+	if !strings.HasSuffix(fqdn, clusterDomain) {
 		return nil, fmt.Errorf("address %s is not in the cluster", fqdn)
 	}
-	endpointName := strings.Split(fqdn, ".")[0]
-	namespace := strings.Split(fqdn, ".")[1]
-	endpoint := &coreV1.Endpoints{}
-	err := k.client.Get(ctx, types.NamespacedName{Name: endpointName, Namespace: namespace}, endpoint)
-	if err != nil {
-		return nil, err
-	}
-	ips := make([]string, 0)
-	for _, subset := range endpoint.Subsets {
-		for _, address := range subset.Addresses {
-			ips = append(ips, address.IP)
+	fqdnWithoutClusterDomain := fqdn[:len(fqdn)-len("."+clusterDomain)]
+	fqdnWithoutClusterDomainParts := strings.Split(fqdnWithoutClusterDomain, ".")
+	switch fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1] {
+	case "svc":
+		/*
+			The basic form of service record is service-name.my-namespace.svc.cluster-domain.example
+			There are more forms of records, based on pods hostnames/subdomains/ips, but we ignore them and resolve based on the
+			service name for simplicity, as it should be good enough for intents detection.
+		*/
+		if len(fqdnWithoutClusterDomainParts) < 3 {
+			// expected at least service-name.namespace.svc
+			return nil, fmt.Errorf("service address %s is too short", fqdn)
 		}
+		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
+		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-3]
+		endpoints := &coreV1.Endpoints{}
+		err := k.client.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints)
+		if err != nil {
+			return nil, err
+		}
+		ips := make([]string, 0)
+		for _, subset := range endpoints.Subsets {
+			for _, address := range subset.Addresses {
+				ips = append(ips, address.IP)
+			}
+		}
+		return ips, nil
+	case "pod":
+		// for address format of pods: 172-17-0-3.default.pod.cluster.local
+		return []string{strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")}, nil
+	default:
+		return nil, fmt.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
 	}
-	return ips, nil
 }

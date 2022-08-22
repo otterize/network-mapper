@@ -1,6 +1,6 @@
 registry: ""
-mapperImage: "mapper-31d7380544586fd3b149abe9abad0ad08314d4d7"
-snifferImage: "sniffer-31d7380544586fd3b149abe9abad0ad08314d4d7"
+mapperImage: "mapper-553983a3edad34c711705c651bc9528d74b560ec"
+snifferImage: "sniffer-553983a3edad34c711705c651bc9528d74b560ec"
 debug: false
 # allowGetAllResources give get permission to the mapper on all resources. it might be used to improve identity resolution of pods
 # note this setting makes the mapper accessible to secrets as a side effect, which can lead to security issues.

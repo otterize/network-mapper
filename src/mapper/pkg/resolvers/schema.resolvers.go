@@ -20,7 +20,7 @@ import (
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
 	for _, captureItem := range results.Results {
-		srcPod, err := r.kubeIndexer.ResolveIpToPod(ctx, captureItem.SrcIP)
+		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, captureItem.SrcIP)
 		if err != nil {
 			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", captureItem.SrcIP)
@@ -29,7 +29,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
+		srcIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 			continue
@@ -39,7 +39,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				// not a k8s service, ignore
 				continue
 			}
-			ips, err := r.kubeIndexer.ResolveServiceAddressToIps(ctx, dest)
+			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, dest)
 			if err != nil {
 				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
 				continue
@@ -48,7 +48,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", dest)
 				continue
 			}
-			destPod, err := r.kubeIndexer.ResolveIpToPod(ctx, ips[0])
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, ips[0])
 			if err != nil {
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
@@ -57,7 +57,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
+			dstIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue
@@ -70,7 +70,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (*bool, error) {
 	for _, socketScanItem := range results.Results {
-		srcPod, err := r.kubeIndexer.ResolveIpToPod(ctx, socketScanItem.SrcIP)
+		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, socketScanItem.SrcIP)
 		if err != nil {
 			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", socketScanItem.SrcIP)
@@ -79,13 +79,13 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
+		srcIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 			continue
 		}
 		for _, destIp := range socketScanItem.DestIps {
-			destPod, err := r.kubeIndexer.ResolveIpToPod(ctx, destIp)
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp)
 			if err != nil {
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
@@ -94,7 +94,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeIndexer.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
+			dstIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
 				continue
