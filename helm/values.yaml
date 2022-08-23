@@ -1,4 +1,4 @@
-registry: ""
+registry: "353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize"
 mapperImage: "mapper-553983a3edad34c711705c651bc9528d74b560ec"
 snifferImage: "sniffer-553983a3edad34c711705c651bc9528d74b560ec"
 debug: false
