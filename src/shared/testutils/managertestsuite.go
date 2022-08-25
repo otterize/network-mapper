@@ -87,3 +87,29 @@ func (suite *ManagerTestSuite) AddPod(name string, ip string) {
 		suite.Require().NoError(err)
 	}
 }
+
+func (suite *ManagerTestSuite) AddEndpoints(name string, ips []string) {
+	addresses := make([]corev1.EndpointAddress, 0, len(ips))
+	for _, ip := range ips {
+		addresses = append(addresses, corev1.EndpointAddress{IP: ip})
+	}
+
+	var endpoints = &corev1.Endpoints{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
+		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}}}},
+	}
+
+	err := suite.Mgr.GetClient().Create(context.Background(), endpoints)
+	suite.Require().NoError(err)
+}
+
+func (suite *ManagerTestSuite) AddService(name string) {
+	pod := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
+		Spec: corev1.ServiceSpec{Selector: map[string]string{},
+			Ports: []corev1.ServicePort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}},
+		},
+	}
+	err := suite.Mgr.GetClient().Create(context.Background(), pod)
+	suite.Require().NoError(err)
+}
