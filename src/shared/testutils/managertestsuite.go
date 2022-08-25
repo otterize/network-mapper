@@ -44,7 +44,7 @@ func (suite *ManagerTestSuite) TearDownSuite() {
 
 func (suite *ManagerTestSuite) BeforeTest(suiteName, testName string) {
 	suite.mgrCtx, suite.mgrCtxCancelFunc = context.WithCancel(context.Background())
-	suite.TestNamespace = strings.ToLower(fmt.Sprintf("test-%s-%s-%s", suiteName, testName, time.Now().Format("20060102150405")))
+	suite.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
 	testNamespaceObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: suite.TestNamespace},
 	}
