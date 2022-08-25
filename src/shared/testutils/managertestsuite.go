@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"fmt"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,10 +90,9 @@ func (suite *ManagerTestSuite) AddPod(name string, ip string) {
 }
 
 func (suite *ManagerTestSuite) AddEndpoints(name string, ips []string) {
-	addresses := make([]corev1.EndpointAddress, 0, len(ips))
-	for _, ip := range ips {
-		addresses = append(addresses, corev1.EndpointAddress{IP: ip})
-	}
+	addresses := lo.Map(ips, func(ip string, _ int) corev1.EndpointAddress {
+		return corev1.EndpointAddress{IP: ip}
+	})
 
 	var endpoints = &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
@@ -104,12 +104,13 @@ func (suite *ManagerTestSuite) AddEndpoints(name string, ips []string) {
 }
 
 func (suite *ManagerTestSuite) AddService(name string) {
-	pod := &corev1.Service{
+	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
 		Spec: corev1.ServiceSpec{Selector: map[string]string{},
 			Ports: []corev1.ServicePort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}},
+			Type:  corev1.ServiceTypeClusterIP,
 		},
 	}
-	err := suite.Mgr.GetClient().Create(context.Background(), pod)
+	err := suite.Mgr.GetClient().Create(context.Background(), service)
 	suite.Require().NoError(err)
 }
