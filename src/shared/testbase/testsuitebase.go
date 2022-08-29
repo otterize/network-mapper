@@ -1,4 +1,4 @@
-package testutils
+package testbase
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-type ManagerTestSuite struct {
+type ControllerManagerTestSuiteBase struct {
 	suite.Suite
 	testEnv          *envtest.Environment
 	cfg              *rest.Config
@@ -27,7 +27,7 @@ type ManagerTestSuite struct {
 	Mgr              manager.Manager
 }
 
-func (suite *ManagerTestSuite) SetupSuite() {
+func (suite *ControllerManagerTestSuiteBase) SetupSuite() {
 	suite.testEnv = &envtest.Environment{}
 	var err error
 	suite.cfg, err = suite.testEnv.Start()
@@ -39,11 +39,11 @@ func (suite *ManagerTestSuite) SetupSuite() {
 	suite.Require().NotNil(suite.K8sDirectClient)
 }
 
-func (suite *ManagerTestSuite) TearDownSuite() {
+func (suite *ControllerManagerTestSuiteBase) TearDownSuite() {
 	suite.Require().NoError(suite.testEnv.Stop())
 }
 
-func (suite *ManagerTestSuite) BeforeTest(_, testName string) {
+func (suite *ControllerManagerTestSuiteBase) BeforeTest(_, testName string) {
 	suite.mgrCtx, suite.mgrCtxCancelFunc = context.WithCancel(context.Background())
 	suite.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
 	testNamespaceObj := &corev1.Namespace{
@@ -61,13 +61,13 @@ func (suite *ManagerTestSuite) BeforeTest(_, testName string) {
 	}()
 }
 
-func (suite *ManagerTestSuite) AfterTest(_, _ string) {
+func (suite *ControllerManagerTestSuiteBase) AfterTest(_, _ string) {
 	suite.mgrCtxCancelFunc()
 	err := suite.K8sDirectClient.CoreV1().Namespaces().Delete(context.Background(), suite.TestNamespace, metav1.DeleteOptions{})
 	suite.Require().NoError(err)
 }
 
-func (suite *ManagerTestSuite) AddPod(name string, podIp string, labels map[string]string) *corev1.Pod {
+func (suite *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, labels map[string]string) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace, Labels: labels},
 		Spec: corev1.PodSpec{Containers: []corev1.Container{
@@ -91,7 +91,7 @@ func (suite *ManagerTestSuite) AddPod(name string, podIp string, labels map[stri
 	return pod
 }
 
-func (suite *ManagerTestSuite) AddEndpoints(name string, podIps []string) *corev1.Endpoints {
+func (suite *ControllerManagerTestSuiteBase) AddEndpoints(name string, podIps []string) *corev1.Endpoints {
 	addresses := lo.Map(podIps, func(ip string, _ int) corev1.EndpointAddress {
 		return corev1.EndpointAddress{IP: ip}
 	})
@@ -106,7 +106,7 @@ func (suite *ManagerTestSuite) AddEndpoints(name string, podIps []string) *corev
 	return endpoints
 }
 
-func (suite *ManagerTestSuite) AddService(name string, podIps []string, selector map[string]string) *corev1.Service {
+func (suite *ControllerManagerTestSuiteBase) AddService(name string, podIps []string, selector map[string]string) *corev1.Service {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
 		Spec: corev1.ServiceSpec{Selector: selector,
@@ -121,7 +121,7 @@ func (suite *ManagerTestSuite) AddService(name string, podIps []string, selector
 	return service
 }
 
-func (suite *ManagerTestSuite) AddReplicaSet(name string, podIps []string, podLabels map[string]string) *appsv1.ReplicaSet {
+func (suite *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []string, podLabels map[string]string) *appsv1.ReplicaSet {
 	replicaSet := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
 		Spec: appsv1.ReplicaSetSpec{
@@ -162,7 +162,7 @@ func (suite *ManagerTestSuite) AddReplicaSet(name string, podIps []string, podLa
 	return replicaSet
 }
 
-func (suite *ManagerTestSuite) AddDeployment(name string, podIps []string, podLabels map[string]string) *appsv1.Deployment {
+func (suite *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []string, podLabels map[string]string) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
 		Spec: appsv1.DeploymentSpec{
@@ -201,7 +201,7 @@ func (suite *ManagerTestSuite) AddDeployment(name string, podIps []string, podLa
 	return deployment
 }
 
-func (suite *ManagerTestSuite) AddDeploymentWithService(name string, podIps []string, podLabels map[string]string) (*appsv1.Deployment, *corev1.Service) {
+func (suite *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, podIps []string, podLabels map[string]string) (*appsv1.Deployment, *corev1.Service) {
 	deployment := suite.AddDeployment(name, podIps, podLabels)
 	service := suite.AddService(name, podIps, podLabels)
 	return deployment, service

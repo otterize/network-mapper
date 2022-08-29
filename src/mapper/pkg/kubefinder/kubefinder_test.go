@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
-	"github.com/otterize/otternose/shared/testutils"
+	"github.com/otterize/otternose/shared/testbase"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,7 +12,7 @@ import (
 )
 
 type KubeFinderTestSuite struct {
-	testutils.ManagerTestSuite
+	testbase.ControllerManagerTestSuiteBase
 }
 
 func (suite *KubeFinderTestSuite) TestResolveIpToPod() {
