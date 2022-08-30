@@ -96,7 +96,7 @@ func (suite *ControllerManagerTestSuiteBase) AddEndpoints(name string, podIps []
 		return corev1.EndpointAddress{IP: ip}
 	})
 
-	var endpoints = &corev1.Endpoints{
+	endpoints := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: suite.TestNamespace},
 		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}}}},
 	}
