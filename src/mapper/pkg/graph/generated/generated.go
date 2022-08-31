@@ -54,7 +54,6 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		FormattedCRDs  func(childComplexity int) int
 		ServiceIntents func(childComplexity int) int
 	}
 
@@ -70,7 +69,6 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context) ([]model.ServiceIntents, error)
-	FormattedCRDs(ctx context.Context) (string, error)
 }
 
 type executableSchema struct {
@@ -125,13 +123,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OtterizeServiceIdentity.Namespace(childComplexity), true
-
-	case "Query.formattedCRDs":
-		if e.complexity.Query.FormattedCRDs == nil {
-			break
-		}
-
-		return e.complexity.Query.FormattedCRDs(childComplexity), true
 
 	case "Query.serviceIntents":
 		if e.complexity.Query.ServiceIntents == nil {
@@ -250,7 +241,6 @@ type ServiceIntents {
 
 type Query {
     serviceIntents: [ServiceIntents!]!
-    formattedCRDs: String!
 }
 
 type Mutation {
@@ -528,41 +518,6 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	res := resTmp.([]model.ServiceIntents)
 	fc.Result = res
 	return ec.marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_formattedCRDs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().FormattedCRDs(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2122,29 +2077,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_serviceIntents(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return rrm(innerCtx)
-			})
-		case "formattedCRDs":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_formattedCRDs(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
