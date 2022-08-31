@@ -439,6 +439,8 @@ github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4o
 github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
 github.com/otterize/intents-operator/src v0.0.0-20220831153044-d57749f367e5 h1:h6twqdFNM1KocpE1h5Qt6Hf0e7nTejcDHSwG18Tchco=
 github.com/otterize/intents-operator/src v0.0.0-20220831153044-d57749f367e5/go.mod h1:NZ85GvU6ONcrXH15bkajVht8vEFa+9uUFyVwe/DB224=
+github.com/otterize/intents-operator/src v0.0.0-20220831175037-180916bbe0f1 h1:0cPtLFhRkQOTDnxm1mXTzj3xgJW1Tkkd0SBTDUF4mEA=
+github.com/otterize/intents-operator/src v0.0.0-20220831175037-180916bbe0f1/go.mod h1:NZ85GvU6ONcrXH15bkajVht8vEFa+9uUFyVwe/DB224=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
