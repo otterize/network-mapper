@@ -1,0 +1,17 @@
+query ServiceIntents {
+    serviceIntents {
+        name
+        intents {
+            name
+            namespace
+        }
+    }
+}
+
+mutation ReportCaptureResults($results: CaptureResults!) {
+    reportCaptureResults(results: $results)
+}
+
+mutation ReportSocketScanResults($results: SocketScanResults!) {
+    reportSocketScanResults(results: $results)
+}

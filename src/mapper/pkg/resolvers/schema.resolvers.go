@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -110,6 +111,10 @@ func (r *queryResolver) ServiceIntents(ctx context.Context) ([]model.ServiceInte
 	for service, intents := range r.intentsHolder.GetIntentsPerService() {
 		result = append(result, model.ServiceIntents{Name: service, Intents: intents})
 	}
+	// sorting by service name so results are more consistent
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
 	return result, nil
 }
 
@@ -119,7 +124,11 @@ func (r *queryResolver) FormattedCRDs(ctx context.Context) (string, error) {
 		return "", err
 	}
 	stringBuffer := bytes.NewBufferString("")
-	err = t.Execute(stringBuffer, r.intentsHolder.GetIntentsPerService())
+	sortedIntents, err := r.ServiceIntents(ctx)
+	if err != nil {
+		return "", err
+	}
+	err = t.Execute(stringBuffer, sortedIntents)
 	if err != nil {
 		return "", err
 	}

@@ -43,8 +43,22 @@ func (suite *ControllerManagerTestSuiteBase) TearDownSuite() {
 	suite.Require().NoError(suite.testEnv.Stop())
 }
 
-func (suite *ControllerManagerTestSuiteBase) BeforeTest(_, testName string) {
+func (suite *ControllerManagerTestSuiteBase) SetupTest() {
 	suite.mgrCtx, suite.mgrCtxCancelFunc = context.WithCancel(context.Background())
+
+	var err error
+	suite.Mgr, err = manager.New(suite.cfg, manager.Options{MetricsBindAddress: "0"})
+	suite.Require().NoError(err)
+}
+
+// BeforeTest happens AFTER the SetupTest()
+func (suite *ControllerManagerTestSuiteBase) BeforeTest(_, testName string) {
+	go func() {
+		// We start the manager in "Before test" to allow operations that should happen before start to be run at SetupTest()
+		err := suite.Mgr.Start(suite.mgrCtx)
+		suite.Require().NoError(err)
+	}()
+
 	suite.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
 	testNamespaceObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: suite.TestNamespace},
@@ -52,16 +66,9 @@ func (suite *ControllerManagerTestSuiteBase) BeforeTest(_, testName string) {
 	var err error
 	_, err = suite.K8sDirectClient.CoreV1().Namespaces().Create(context.Background(), testNamespaceObj, metav1.CreateOptions{})
 	suite.Require().NoError(err)
-
-	suite.Mgr, err = manager.New(suite.cfg, manager.Options{MetricsBindAddress: "0"})
-	suite.Require().NoError(err)
-	go func() {
-		err := suite.Mgr.Start(suite.mgrCtx)
-		suite.Require().NoError(err)
-	}()
 }
 
-func (suite *ControllerManagerTestSuiteBase) AfterTest(_, _ string) {
+func (suite *ControllerManagerTestSuiteBase) TearDownTest() {
 	suite.mgrCtxCancelFunc()
 	err := suite.K8sDirectClient.CoreV1().Namespaces().Delete(context.Background(), suite.TestNamespace, metav1.DeleteOptions{})
 	suite.Require().NoError(err)
