@@ -2,8 +2,6 @@ module github.com/otterize/otternose
 
 go 1.18
 
-replace github.com/otterize/intents-operator/src => ../../intents-operator/src
-
 require (
 	github.com/99designs/gqlgen v0.17.10
 	github.com/Khan/genqlient v0.5.0

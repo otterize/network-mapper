@@ -43,16 +43,3 @@ func (i *intentsHolder) GetIntentsPerService() map[string][]model.OtterizeServic
 	}
 	return result
 }
-
-const crdTemplate = `{{range $key, $value := .}}---
-apiVersion: k8s.otterize.com/v1
-kind: ClientIntents
-metadata:
-  name: {{$key}}
-spec:
-  service:
-    name: {{$key}}
-    calls:{{range $service := $value}}
-      - name: {{$service.Name}}{{if ne $service.Namespace "" }}
-        namespace: {{$service.Namespace}}{{end}}{{end}}
-{{end}}`
