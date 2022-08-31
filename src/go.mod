@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.10
 	github.com/Khan/genqlient v0.5.0
 	github.com/amit7itz/goset v1.1.0
+	github.com/golang/mock v1.5.0
 	github.com/google/gopacket v1.1.19
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/otterize/go-procnet v0.1.1
