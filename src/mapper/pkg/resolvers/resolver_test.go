@@ -15,18 +15,18 @@ import (
 
 type ResolverTestSuite struct {
 	testbase.ControllerManagerTestSuiteBase
-	server *httptest.Server
-	client graphql.Client
-	kf     *kubefinder.KubeFinder
+	server     *httptest.Server
+	client     graphql.Client
+	kubeFinder *kubefinder.KubeFinder
 }
 
 func (s *ResolverTestSuite) SetupTest() {
 	s.ControllerManagerTestSuiteBase.SetupTest()
 	e := echo.New()
 	var err error
-	s.kf, err = kubefinder.NewKubeFinder(s.Mgr)
+	s.kubeFinder, err = kubefinder.NewKubeFinder(s.Mgr)
 	s.Require().NoError(err)
-	resolver := NewResolver(s.kf)
+	resolver := NewResolver(s.kubeFinder)
 	resolver.Register(e)
 	s.server = httptest.NewServer(e)
 	s.client = graphql.NewClient(s.server.URL+"/query", s.server.Client())
