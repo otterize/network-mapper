@@ -2,7 +2,7 @@ package resolvers
 
 import (
 	"github.com/amit7itz/goset"
-	"github.com/otterize/otternose/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
 	"sort"
 	"sync"
 )

@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ template "otternose.sniffer.name" . }}
+  name: {{ template "otterize.sniffer.name" . }}
 spec:
   selector:
     matchLabels:
-      app: {{ template "otternose.sniffer.name" . }}
+      app: {{ template "otterize.sniffer.name" . }}
   template:
     metadata:
       labels:
-        app: {{ template "otternose.sniffer.name" . }}
+        app: {{ template "otterize.sniffer.name" . }}
     spec:
       containers:
-      - name: {{ template "otternose.sniffer.name" . }}
+      - name: {{ template "otterize.sniffer.name" . }}
         image: {{ .Values.registry }}:{{ .Values.snifferImage }}
         imagePullPolicy: Always
         resources:
@@ -22,9 +22,9 @@ spec:
             cpu: 100m
             memory: 200Mi
         env:
-          - name: OTTERNOSE_MAPPER_API_URL
-            value: http://{{ template "otternose.mapper.name" . }}:9090/query
-          - name: OTTERNOSE_DEBUG
+          - name: OTTERIZE_MAPPER_API_URL
+            value: http://{{ template "otterize.mapper.name" . }}:9090/query
+          - name: OTTERIZE_DEBUG
             value: {{ .Values.debug | quote }}
         volumeMounts:
           - mountPath: /hostproc

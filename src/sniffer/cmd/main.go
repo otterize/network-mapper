@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/otterize/otternose/sniffer/pkg/client"
-	"github.com/otterize/otternose/sniffer/pkg/config"
-	"github.com/otterize/otternose/sniffer/pkg/sniffer"
+	"github.com/otterize/network-mapper/sniffer/pkg/client"
+	"github.com/otterize/network-mapper/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/sniffer/pkg/sniffer"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

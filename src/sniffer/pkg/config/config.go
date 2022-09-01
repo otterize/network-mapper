@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	EnvPrefix             = "OTTERNOSE"
+	EnvPrefix             = "OTTERIZE"
 	MapperApiUrlKey       = "mapper-api-url"
 	MapperApiUrlDefault   = "http://mapper:9090/query"
 	ReportIntervalKey     = "report-interval"

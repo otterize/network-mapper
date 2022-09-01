@@ -1,4 +1,4 @@
-module github.com/otterize/otternose
+module github.com/otterize/network-mapper
 
 go 1.18
 

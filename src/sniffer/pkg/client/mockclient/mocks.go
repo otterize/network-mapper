@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	client "github.com/otterize/otternose/sniffer/pkg/client"
+	client "github.com/otterize/network-mapper/sniffer/pkg/client"
 )
 
 // MockMapperClient is a mock of MapperClient interface.

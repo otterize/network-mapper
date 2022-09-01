@@ -3,9 +3,9 @@ package socketscanner
 import (
 	"context"
 	"github.com/golang/mock/gomock"
-	"github.com/otterize/otternose/sniffer/pkg/client"
-	mock_client "github.com/otterize/otternose/sniffer/pkg/client/mockclient"
-	"github.com/otterize/otternose/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/sniffer/pkg/client"
+	mock_client "github.com/otterize/network-mapper/sniffer/pkg/client/mockclient"
+	"github.com/otterize/network-mapper/sniffer/pkg/config"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 	"os"

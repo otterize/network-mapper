@@ -1,8 +1,8 @@
 package intents
 
 import (
-	"github.com/otterize/otternose/cli/cmd/intents/crd"
-	"github.com/otterize/otternose/cli/cmd/intents/list"
+	"github.com/otterize/network-mapper/cli/cmd/intents/crd"
+	"github.com/otterize/network-mapper/cli/cmd/intents/list"
 	"github.com/spf13/cobra"
 )
 

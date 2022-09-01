@@ -3,8 +3,8 @@ package kubefinder
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/otternose/mapper/pkg/config"
-	"github.com/otterize/otternose/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/mapper/pkg/config"
+	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
 	"github.com/spf13/viper"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

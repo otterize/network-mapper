@@ -1,6 +1,6 @@
-{{- define "otternose.sniffer.name" -}}
-otternose-sniffer
+{{- define "otterize.sniffer.name" -}}
+otterize-network-sniffer
 {{- end -}}
-{{- define "otternose.mapper.name" -}}
-otternose-mapper
+{{- define "otterize.mapper.name" -}}
+otterize-network-mapper
 {{- end -}}

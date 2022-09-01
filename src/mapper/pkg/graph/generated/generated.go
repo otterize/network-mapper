@@ -12,7 +12,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/otterize/otternose/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -270,7 +270,7 @@ func (ec *executionContext) field_Mutation_reportCaptureResults_args(ctx context
 	var arg0 model.CaptureResults
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-		arg0, err = ec.unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx, tmp)
+		arg0, err = ec.unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -285,7 +285,7 @@ func (ec *executionContext) field_Mutation_reportSocketScanResults_args(ctx cont
 	var arg0 model.SocketScanResults
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-		arg0, err = ec.unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx, tmp)
+		arg0, err = ec.unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -527,7 +527,7 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	}
 	res := resTmp.([]model.ServiceIntents)
 	fc.Result = res
-	return ec.marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx, field.Selections, res)
+	return ec.marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_formattedCRDs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -703,7 +703,7 @@ func (ec *executionContext) _ServiceIntents_intents(ctx context.Context, field g
 	}
 	res := resTmp.([]model.OtterizeServiceIdentity)
 	fc.Result = res
-	return ec.marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx, field.Selections, res)
+	return ec.marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -1936,7 +1936,7 @@ func (ec *executionContext) unmarshalInputCaptureResults(ctx context.Context, ob
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-			it.Results, err = ec.unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx, v)
+			it.Results, err = ec.unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -1990,7 +1990,7 @@ func (ec *executionContext) unmarshalInputSocketScanResults(ctx context.Context,
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
-			it.Results, err = ec.unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIPᚄ(ctx, v)
+			it.Results, err = ec.unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIPᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2662,12 +2662,12 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCaptureResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx context.Context, v interface{}) (model.CaptureResultForSrcIP, error) {
+func (ec *executionContext) unmarshalNCaptureResultForSrcIp2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx context.Context, v interface{}) (model.CaptureResultForSrcIP, error) {
 	res, err := ec.unmarshalInputCaptureResultForSrcIp(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.CaptureResultForSrcIP, error) {
+func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.CaptureResultForSrcIP, error) {
 	var vSlice []interface{}
 	if v != nil {
 		vSlice = graphql.CoerceList(v)
@@ -2676,7 +2676,7 @@ func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋot
 	res := make([]model.CaptureResultForSrcIP, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNCaptureResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNCaptureResultForSrcIp2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResultForSrcIP(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -2684,16 +2684,16 @@ func (ec *executionContext) unmarshalNCaptureResultForSrcIp2ᚕgithubᚗcomᚋot
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx context.Context, v interface{}) (model.CaptureResults, error) {
+func (ec *executionContext) unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx context.Context, v interface{}) (model.CaptureResults, error) {
 	res, err := ec.unmarshalInputCaptureResults(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.OtterizeServiceIdentity) graphql.Marshaler {
+func (ec *executionContext) marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.OtterizeServiceIdentity) graphql.Marshaler {
 	return ec._OtterizeServiceIdentity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []model.OtterizeServiceIdentity) graphql.Marshaler {
+func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityᚄ(ctx context.Context, sel ast.SelectionSet, v []model.OtterizeServiceIdentity) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2717,7 +2717,7 @@ func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋot
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, sel, v[i])
+			ret[i] = ec.marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2737,11 +2737,11 @@ func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋot
 	return ret
 }
 
-func (ec *executionContext) marshalNServiceIntents2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx context.Context, sel ast.SelectionSet, v model.ServiceIntents) graphql.Marshaler {
+func (ec *executionContext) marshalNServiceIntents2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx context.Context, sel ast.SelectionSet, v model.ServiceIntents) graphql.Marshaler {
 	return ec._ServiceIntents(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ServiceIntents) graphql.Marshaler {
+func (ec *executionContext) marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx context.Context, sel ast.SelectionSet, v []model.ServiceIntents) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2765,7 +2765,7 @@ func (ec *executionContext) marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNServiceIntents2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx, sel, v[i])
+			ret[i] = ec.marshalNServiceIntents2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2785,12 +2785,12 @@ func (ec *executionContext) marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋ
 	return ret
 }
 
-func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIP(ctx context.Context, v interface{}) (model.SocketScanResultForSrcIP, error) {
+func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIP(ctx context.Context, v interface{}) (model.SocketScanResultForSrcIP, error) {
 	res, err := ec.unmarshalInputSocketScanResultForSrcIp(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.SocketScanResultForSrcIP, error) {
+func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIPᚄ(ctx context.Context, v interface{}) ([]model.SocketScanResultForSrcIP, error) {
 	var vSlice []interface{}
 	if v != nil {
 		vSlice = graphql.CoerceList(v)
@@ -2799,7 +2799,7 @@ func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcom�
 	res := make([]model.SocketScanResultForSrcIP, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNSocketScanResultForSrcIp2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIP(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNSocketScanResultForSrcIp2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResultForSrcIP(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -2807,7 +2807,7 @@ func (ec *executionContext) unmarshalNSocketScanResultForSrcIp2ᚕgithubᚗcom�
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋotternoseᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx context.Context, v interface{}) (model.SocketScanResults, error) {
+func (ec *executionContext) unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx context.Context, v interface{}) (model.SocketScanResults, error) {
 	res, err := ec.unmarshalInputSocketScanResults(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
