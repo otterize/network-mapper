@@ -8,14 +8,6 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-// FormattedCRDsResponse is returned by FormattedCRDs on success.
-type FormattedCRDsResponse struct {
-	FormattedCRDs string `json:"formattedCRDs"`
-}
-
-// GetFormattedCRDs returns FormattedCRDsResponse.FormattedCRDs, and is useful for accessing the field via an interface.
-func (v *FormattedCRDsResponse) GetFormattedCRDs() string { return v.FormattedCRDs }
-
 // ServiceIntentsResponse is returned by ServiceIntents on success.
 type ServiceIntentsResponse struct {
 	ServiceIntents []ServiceIntentsServiceIntents `json:"serviceIntents"`
@@ -52,32 +44,6 @@ func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetName() s
 // GetNamespace returns ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
 func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetNamespace() string {
 	return v.Namespace
-}
-
-func FormattedCRDs(
-	ctx context.Context,
-	client graphql.Client,
-) (*FormattedCRDsResponse, error) {
-	req := &graphql.Request{
-		OpName: "FormattedCRDs",
-		Query: `
-query FormattedCRDs {
-	formattedCRDs
-}
-`,
-	}
-	var err error
-
-	var data FormattedCRDsResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
 }
 
 func ServiceIntents(

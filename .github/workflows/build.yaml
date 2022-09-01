@@ -61,4 +61,5 @@ jobs:
           network: host
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
+          secrets: |
+            "github_token=${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}"

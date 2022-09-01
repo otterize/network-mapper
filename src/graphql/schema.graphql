@@ -30,7 +30,6 @@ type ServiceIntents {
 
 type Query {
     serviceIntents: [ServiceIntents!]!
-    formattedCRDs: String!
 }
 
 type Mutation {

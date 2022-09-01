@@ -34,14 +34,6 @@ func WithClient(f func(c *Client) error) error {
 	return f(c)
 }
 
-func (c *Client) FormattedCRDs(ctx context.Context) (string, error) {
-	res, err := FormattedCRDs(ctx, c.client)
-	if err != nil {
-		return "", err
-	}
-	return res.FormattedCRDs, nil
-}
-
 func (c *Client) ServiceIntents(ctx context.Context) ([]ServiceIntentsServiceIntents, error) {
 	res, err := ServiceIntents(ctx, c.client)
 	if err != nil {
