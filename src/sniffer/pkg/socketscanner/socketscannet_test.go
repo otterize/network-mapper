@@ -2,6 +2,7 @@ package socketscanner
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/sniffer/pkg/client"
 	mock_client "github.com/otterize/network-mapper/sniffer/pkg/client/mockclient"
@@ -23,6 +24,30 @@ func (s *SocketScannerTestSuite) SetupSuite() {
 	s.mockMapperClient = mock_client.NewMockMapperClient(s.mockController)
 }
 
+type matchOne[T any] struct {
+	validResults []T
+}
+
+func (m matchOne[T]) Matches(x interface{}) bool {
+	for _, option := range m.validResults {
+		if gomock.Eq(option).Matches(x) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m matchOne[T]) String() string {
+	return fmt.Sprintf("One of the following: %v", m.validResults)
+}
+
+// MatchOne makes sure that object matches one of the validResults
+func MatchOne[T any](validResults []T) gomock.Matcher {
+	return matchOne[T]{
+		validResults: validResults,
+	}
+}
+
 func (s *SocketScannerTestSuite) TestScanProcDir() {
 	mockProcDir, err := os.MkdirTemp("", "testscamprocdir")
 	s.Require().NoError(err)
@@ -36,20 +61,25 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	sniffer := NewSocketScanner(s.mockMapperClient)
 	s.Require().NoError(sniffer.ScanProcDir())
 
-	s.mockMapperClient.EXPECT().ReportSocketScanResults(gomock.Any(), client.SocketScanResults{
-		Results: []client.SocketScanResultForSrcIp{
-			// We should only see sockets that this pod serves to other clients.
-			// all other sockets should be ignored (because parsing the server sides on all pods is enough)
-			{
-				SrcIp:   "192.168.35.14",
-				DestIps: []string{"192.168.38.211"},
-			},
-			{
-				SrcIp:   "176.168.35.14",
-				DestIps: []string{"192.168.38.211"},
-			},
+	// We should only see sockets that this pod serves to other clients.
+	// all other sockets should be ignored (because parsing the server sides on all pods is enough)
+	expectedResult := []client.SocketScanResultForSrcIp{
+		{
+			SrcIp:   "192.168.35.141",
+			DestIps: []string{"192.168.38.211"},
 		},
-	})
+		{
+			SrcIp:   "176.168.35.14",
+			DestIps: []string{"192.168.38.211"},
+		},
+	}
+	// order is random in the response, so we mark both orders as valid
+	validResults := []client.SocketScanResults{
+		{Results: expectedResult},
+		{Results: []client.SocketScanResultForSrcIp{expectedResult[1], expectedResult[0]}},
+	}
+
+	s.mockMapperClient.EXPECT().ReportSocketScanResults(gomock.Any(), MatchOne(validResults))
 	err = sniffer.ReportSocketScanResults(context.Background())
 	s.Require().NoError(err)
 }

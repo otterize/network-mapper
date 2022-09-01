@@ -43,7 +43,10 @@ func (i *intentsHolder) GetIntentsPerService() map[string][]model.OtterizeServic
 		// sorting the intents so results will be consistent
 		intentsSlice := intents.Items()
 		sort.Slice(intentsSlice, func(i, j int) bool {
-			return intentsSlice[i].Name < intentsSlice[j].Name && intentsSlice[i].Namespace < intentsSlice[j].Namespace
+			if intentsSlice[i].Name != intentsSlice[j].Name {
+				return intentsSlice[i].Name < intentsSlice[j].Name
+			}
+			return intentsSlice[i].Namespace < intentsSlice[j].Namespace
 		})
 		result[service] = intentsSlice
 	}
