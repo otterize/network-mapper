@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
-	"github.com/otterize/otternose/cli/pkg/config"
-	"github.com/otterize/otternose/cli/pkg/portforwarder"
+	"github.com/otterize/network-mapper/cli/pkg/config"
+	"github.com/otterize/network-mapper/cli/pkg/portforwarder"
 	"github.com/spf13/viper"
 	"net/http"
 )

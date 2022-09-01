@@ -9,10 +9,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/otterize/otternose/mapper/pkg/config"
-	"github.com/otterize/otternose/mapper/pkg/graph/generated"
-	"github.com/otterize/otternose/mapper/pkg/graph/model"
-	"github.com/otterize/otternose/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/mapper/pkg/config"
+	"github.com/otterize/network-mapper/mapper/pkg/graph/generated"
+	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

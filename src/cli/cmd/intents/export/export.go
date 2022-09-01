@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/otterize/intents-operator/src/operator/api/v1alpha1"
-	"github.com/otterize/otternose/cli/pkg/mapperclient"
+	"github.com/otterize/network-mapper/cli/pkg/mapperclient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"

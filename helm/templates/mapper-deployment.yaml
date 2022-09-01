@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "otternose.mapper.name" . }}
+  name: {{ template "otterize.mapper.name" . }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ template "otternose.mapper.name" . }}
+      app: {{ template "otterize.mapper.name" . }}
   template:
     metadata:
       labels:
-        app: {{ template "otternose.mapper.name" . }}
+        app: {{ template "otterize.mapper.name" . }}
     spec:
       containers:
-        - name: {{ template "otternose.mapper.name" . }}
+        - name: {{ template "otterize.mapper.name" . }}
           image: "{{ .Values.registry }}:{{ .Values.mapperImage }}"
           imagePullPolicy: Always
           env:
-            - name: OTTERNOSE_DEBUG
+            - name: OTTERIZE_DEBUG
               value: {{ .Values.debug | quote }}
-      serviceAccountName: {{ template "otternose.mapper.name" . }}
+      serviceAccountName: {{ template "otterize.mapper.name" . }}

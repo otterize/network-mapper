@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/otterize/otternose/cli/cmd/intents"
-	"github.com/otterize/otternose/cli/pkg/config"
+	"github.com/otterize/network-mapper/cli/cmd/intents"
+	"github.com/otterize/network-mapper/cli/pkg/config"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "otternose",
+	Use:   "networkmapper",
 	Short: "",
 	Long:  ``,
 }

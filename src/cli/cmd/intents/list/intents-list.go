@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/otternose/cli/pkg/mapperclient"
+	"github.com/otterize/network-mapper/cli/pkg/mapperclient"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 )

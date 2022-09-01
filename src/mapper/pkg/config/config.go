@@ -1,13 +1,13 @@
 package config
 
 import (
-	"github.com/otterize/otternose/shared/kubeutils"
+	"github.com/otterize/network-mapper/shared/kubeutils"
 	"github.com/spf13/viper"
 	"strings"
 )
 
 const (
-	EnvPrefix            = "OTTERNOSE"
+	EnvPrefix            = "OTTERIZE"
 	ClusterDomainKey     = "cluster-domain"
 	ClusterDomainDefault = kubeutils.DefaultClusterDomain
 	DebugKey             = "debug"
