@@ -1,6 +1,6 @@
 registry: "353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize"
-mapperImage: "mapper-553983a3edad34c711705c651bc9528d74b560ec"
-snifferImage: "sniffer-553983a3edad34c711705c651bc9528d74b560ec"
+mapperImage: "mapper-ccf453cc823f4b4d6e8bdc298df3071f516a5fa7"
+snifferImage: "sniffer-ccf453cc823f4b4d6e8bdc298df3071f516a5fa7"
 debug: false
 # allowGetAllResources give get permission to the mapper on all resources. it might be used to improve identity resolution of pods
 # note this setting makes the mapper accessible to secrets as a side effect, which can lead to security issues.
