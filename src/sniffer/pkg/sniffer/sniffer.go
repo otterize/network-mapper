@@ -18,17 +18,37 @@ type Sniffer struct {
 	capturedRequests map[string]*goset.Set[string]
 	socketScanner    *socketscanner.SocketScanner
 	lastReportTime   time.Time
+	mapperClient     client.MapperClient
 }
 
-func NewSniffer() *Sniffer {
+func NewSniffer(mapperClient client.MapperClient) *Sniffer {
 	return &Sniffer{
 		capturedRequests: make(map[string]*goset.Set[string]),
-		socketScanner:    socketscanner.NewSocketScanner(),
+		socketScanner:    socketscanner.NewSocketScanner(mapperClient),
 		lastReportTime:   time.Now(),
+		mapperClient:     mapperClient,
 	}
 }
 
-func (s *Sniffer) NewCapturedRequest(srcIp string, destDns string) {
+func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
+	ipLayer := packet.Layer(layers.LayerTypeIPv4)
+	dnsLayer := packet.Layer(layers.LayerTypeDNS)
+	if dnsLayer != nil && ipLayer != nil {
+		ip, _ := ipLayer.(*layers.IPv4)
+		dns, _ := dnsLayer.(*layers.DNS)
+		if dns.OpCode == layers.DNSOpCodeQuery && dns.ResponseCode == layers.DNSResponseCodeNoErr {
+			for _, answer := range dns.Answers {
+				// This is the DNS Answer, so the Dst IP is the pod IP
+				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
+					continue
+				}
+				s.addCapturedRequest(ip.DstIP.String(), string(answer.Name))
+			}
+		}
+	}
+}
+
+func (s *Sniffer) addCapturedRequest(srcIp string, destDns string) {
 	if _, ok := s.capturedRequests[srcIp]; !ok {
 		s.capturedRequests[srcIp] = goset.NewSet[string](destDns)
 	} else {
@@ -43,7 +63,6 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 		return nil
 	}
 	s.PrintCapturedRequests()
-	mapperClient := client.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
 	results := make([]client.CaptureResultForSrcIp, 0, len(s.capturedRequests))
 	for srcIp, destinations := range s.capturedRequests {
 		results = append(results, client.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations.Items()})
@@ -52,7 +71,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	defer cancelFunc()
 
 	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
-	err := mapperClient.ReportCaptureResults(timeoutCtx, client.CaptureResults{Results: results})
+	err := s.mapperClient.ReportCaptureResults(timeoutCtx, client.CaptureResults{Results: results})
 	if err != nil {
 		return err
 	}
@@ -87,21 +106,7 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 	for {
 		select {
 		case packet := <-packetsChan:
-			ipLayer := packet.Layer(layers.LayerTypeIPv4)
-			dnsLayer := packet.Layer(layers.LayerTypeDNS)
-			if dnsLayer != nil && ipLayer != nil {
-				ip, _ := ipLayer.(*layers.IPv4)
-				dns, _ := dnsLayer.(*layers.DNS)
-				if dns.OpCode == layers.DNSOpCodeQuery && dns.ResponseCode == layers.DNSResponseCodeNoErr {
-					for _, answer := range dns.Answers {
-						// This is the DNS Answer, so the Dst IP is the pod IP
-						if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
-							continue
-						}
-						s.NewCapturedRequest(ip.DstIP.String(), string(answer.Name))
-					}
-				}
-			}
+			s.HandlePacket(packet)
 		case <-time.After(viper.GetDuration(config.ReportIntervalKey)):
 		}
 		if s.lastReportTime.Add(viper.GetDuration(config.ReportIntervalKey)).Before(time.Now()) {

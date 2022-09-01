@@ -13,11 +13,15 @@ import (
 )
 
 type SocketScanner struct {
-	scanResults map[string]*goset.Set[string]
+	scanResults  map[string]*goset.Set[string]
+	mapperClient client.MapperClient
 }
 
-func NewSocketScanner() *SocketScanner {
-	return &SocketScanner{scanResults: make(map[string]*goset.Set[string])}
+func NewSocketScanner(mapperClient client.MapperClient) *SocketScanner {
+	return &SocketScanner{
+		scanResults:  make(map[string]*goset.Set[string]),
+		mapperClient: mapperClient,
+	}
 }
 
 func (s *SocketScanner) scanTcpFile(path string) {
@@ -66,12 +70,11 @@ func (s *SocketScanner) ScanProcDir() error {
 }
 
 func (s *SocketScanner) ReportSocketScanResults(ctx context.Context) error {
-	mapperClient := client.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
 	results := client.SocketScanResults{}
 	for srcIp, destIps := range s.scanResults {
 		results.Results = append(results.Results, client.SocketScanResultForSrcIp{SrcIp: srcIp, DestIps: destIps.Items()})
 	}
-	err := mapperClient.ReportSocketScanResults(ctx, results)
+	err := s.mapperClient.ReportSocketScanResults(ctx, results)
 	if err != nil {
 		return err
 	}
