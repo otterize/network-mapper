@@ -1,4 +1,4 @@
-package serialize
+package export
 
 import (
 	"bytes"
@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/printers"
 	"os"
 	"time"
@@ -21,15 +20,8 @@ const OutputFormatKey = "format"
 const OutputFormatYAML = "yaml"
 const OutputFormatJSON = "json"
 
-type IntentsWithoutStatus struct {
-	metav1.TypeMeta   `json:",inline" yaml:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-
-	Spec *v1alpha1.IntentsSpec `json:"spec,omitempty" yaml:"spec,omitempty"`
-}
-
-var SerializeCmd = &cobra.Command{
-	Use:   "serialize",
+var ExportCmd = &cobra.Command{
+	Use:   "export",
 	Short: "",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -104,7 +96,7 @@ var SerializeCmd = &cobra.Command{
 func getFormattedIntents(intentList []v1alpha1.Intents) (string, error) {
 	switch outputFormatVal := viper.GetString(OutputFormatKey); {
 	case outputFormatVal == OutputFormatJSON:
-		formatted, err := json.MarshalIndent(intentList, "", "\t")
+		formatted, err := json.MarshalIndent(intentList, "", "  ")
 		if err != nil {
 			return "", err
 		}
@@ -122,11 +114,11 @@ func getFormattedIntents(intentList []v1alpha1.Intents) (string, error) {
 		}
 		return buf.String(), nil
 	default:
-		return "", fmt.Errorf("unexpected output format %s", outputFormatVal)
+		return "", fmt.Errorf("unexpected output format %s, use one of (%s, %s)", outputFormatVal, OutputFormatJSON, OutputFormatYAML)
 	}
 }
 
 func init() {
-	SerializeCmd.Flags().String(OutputFileKey, "", "file path to write the output into")
-	SerializeCmd.Flags().String(OutputFormatKey, OutputFormatYAML, "format to output the intents - yaml/json")
+	ExportCmd.Flags().String(OutputFileKey, "", "file path to write the output into")
+	ExportCmd.Flags().String(OutputFormatKey, OutputFormatYAML, "format to output the intents - yaml/json")
 }
