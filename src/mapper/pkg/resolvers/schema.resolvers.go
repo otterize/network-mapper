@@ -4,12 +4,10 @@ package resolvers
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"sort"
 	"strings"
-	"text/template"
 
 	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
@@ -116,23 +114,6 @@ func (r *queryResolver) ServiceIntents(ctx context.Context) ([]model.ServiceInte
 		return result[i].Name < result[j].Name
 	})
 	return result, nil
-}
-
-func (r *queryResolver) FormattedCRDs(ctx context.Context) (string, error) {
-	t, err := template.New("crd").Parse(crdTemplate)
-	if err != nil {
-		return "", err
-	}
-	stringBuffer := bytes.NewBufferString("")
-	sortedIntents, err := r.ServiceIntents(ctx)
-	if err != nil {
-		return "", err
-	}
-	err = t.Execute(stringBuffer, sortedIntents)
-	if err != nil {
-		return "", err
-	}
-	return stringBuffer.String(), nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

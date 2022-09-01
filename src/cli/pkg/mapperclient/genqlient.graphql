@@ -1,8 +1,4 @@
 
-query FormattedCRDs {
-    formattedCRDs
-}
-
 query ServiceIntents {
     serviceIntents {
         name
