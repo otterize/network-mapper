@@ -3,6 +3,7 @@ package resolvers
 import (
 	"github.com/amit7itz/goset"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
+	"sort"
 	"sync"
 )
 
@@ -39,7 +40,12 @@ func (i *intentsHolder) GetIntentsPerService() map[string][]model.OtterizeServic
 	defer i.lock.Unlock()
 	result := make(map[string][]model.OtterizeServiceIdentity)
 	for service, intents := range i.store {
-		result[service] = intents.Items()
+		// sorting the intents so results will be consistent
+		intentsSlice := intents.Items()
+		sort.Slice(intentsSlice, func(i, j int) bool {
+			return intentsSlice[i].Name < intentsSlice[j].Name && intentsSlice[i].Namespace < intentsSlice[j].Namespace
+		})
+		result[service] = intentsSlice
 	}
 	return result
 }

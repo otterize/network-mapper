@@ -6,13 +6,15 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"sort"
+	"strings"
+
 	"github.com/otterize/otternose/mapper/pkg/config"
 	"github.com/otterize/otternose/mapper/pkg/graph/generated"
 	"github.com/otterize/otternose/mapper/pkg/graph/model"
 	"github.com/otterize/otternose/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
@@ -107,6 +109,10 @@ func (r *queryResolver) ServiceIntents(ctx context.Context) ([]model.ServiceInte
 	for service, intents := range r.intentsHolder.GetIntentsPerService() {
 		result = append(result, model.ServiceIntents{Name: service, Intents: intents})
 	}
+	// sorting by service name so results are more consistent
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
 	return result, nil
 }
 
