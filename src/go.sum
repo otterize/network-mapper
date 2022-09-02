@@ -440,6 +440,8 @@ github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4o
 github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
 github.com/otterize/intents-operator/src v0.0.0-20220831175037-180916bbe0f1 h1:0cPtLFhRkQOTDnxm1mXTzj3xgJW1Tkkd0SBTDUF4mEA=
 github.com/otterize/intents-operator/src v0.0.0-20220831175037-180916bbe0f1/go.mod h1:NZ85GvU6ONcrXH15bkajVht8vEFa+9uUFyVwe/DB224=
+github.com/otterize/intents-operator/src v0.0.0-20220902155853-76e8fe51074d h1:uQrc+J8oglA7wNyfHdiWrGvrtbIqOqe0s0N+iO7S9+0=
+github.com/otterize/intents-operator/src v0.0.0-20220902155853-76e8fe51074d/go.mod h1:NZ85GvU6ONcrXH15bkajVht8vEFa+9uUFyVwe/DB224=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
@@ -742,6 +744,7 @@ golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201207232520-09787c993a3a/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20180823144017-11551d06cbcc/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20180830151530-49385e6e1522/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
