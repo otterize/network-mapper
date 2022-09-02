@@ -25,5 +25,5 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-                - all
+                - "ALL"
       serviceAccountName: {{ template "otterize.mapper.name" . }}
