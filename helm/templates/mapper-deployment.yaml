@@ -23,4 +23,7 @@ spec:
               value: {{ .Values.debug | quote }}
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - all
       serviceAccountName: {{ template "otterize.mapper.name" . }}
