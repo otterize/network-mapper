@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ template "otterize.sniffer.name" . }}
+  name: {{ template "otterize.sniffer.fullName" . }}
 spec:
   selector:
     matchLabels:
-      app: {{ template "otterize.sniffer.name" . }}
+      app: {{ template "otterize.sniffer.fullName" . }}
   template:
     metadata:
       labels:
-        app: {{ template "otterize.sniffer.name" . }}
+        app: {{ template "otterize.sniffer.fullName" . }}
     spec:
       containers:
-      - name: {{ template "otterize.sniffer.name" . }}
+      - name: {{ template "otterize.sniffer.fullName" . }}
         image: {{ .Values.registry }}:{{ .Values.snifferImage }}
         imagePullPolicy: Always
         resources:
@@ -23,7 +23,7 @@ spec:
             memory: 200Mi
         env:
           - name: OTTERIZE_MAPPER_API_URL
-            value: http://{{ template "otterize.mapper.name" . }}:9090/query
+            value: http://{{ template "otterize.mapper.fullName" . }}:9090/query
           - name: OTTERIZE_DEBUG
             value: {{ .Values.debug | quote }}
         volumeMounts:
