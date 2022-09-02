@@ -12,6 +12,8 @@ spec:
       labels:
         app: {{ template "otterize.mapper.name" . }}
     spec:
+      securityContext:
+        runAsUser: 65532
       containers:
         - name: {{ template "otterize.mapper.name" . }}
           image: "{{ .Values.registry }}:{{ .Values.mapperImage }}"
@@ -19,4 +21,6 @@ spec:
           env:
             - name: OTTERIZE_DEBUG
               value: {{ .Values.debug | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
       serviceAccountName: {{ template "otterize.mapper.name" . }}
