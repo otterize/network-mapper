@@ -70,8 +70,7 @@ func (s *ControllerManagerTestSuiteBase) BeforeTest(_, testName string) {
 	testNamespaceObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: s.TestNamespace},
 	}
-	var err error
-	_, err = s.K8sDirectClient.CoreV1().Namespaces().Create(context.Background(), testNamespaceObj, metav1.CreateOptions{})
+	_, err := s.K8sDirectClient.CoreV1().Namespaces().Create(context.Background(), testNamespaceObj, metav1.CreateOptions{})
 	s.Require().NoError(err)
 }
 
@@ -82,9 +81,9 @@ func (s *ControllerManagerTestSuiteBase) TearDownTest() {
 }
 
 // waitForObjectToBeCreated tries to get an object multiple times until it is available in the k8s API server
-func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(key types.NamespacedName, obj client.Object) {
+func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Object) {
 	s.Require().NoError(wait.PollImmediate(waitForCreationInterval, waitForCreationTimeout, func() (done bool, err error) {
-		err = s.Mgr.GetClient().Get(context.Background(), key, obj)
+		err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
 		if errors.IsNotFound(err) {
 			return false, nil
 		}
@@ -116,7 +115,7 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 		pod, err = s.K8sDirectClient.CoreV1().Pods(s.TestNamespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
 		s.Require().NoError(err)
 	}
-	s.waitForObjectToBeCreated(types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, &corev1.Pod{})
+	s.waitForObjectToBeCreated(pod)
 	return pod
 }
 
@@ -133,7 +132,7 @@ func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, podIps []stri
 	err := s.Mgr.GetClient().Create(context.Background(), endpoints)
 	s.Require().NoError(err)
 
-	s.waitForObjectToBeCreated(types.NamespacedName{Name: endpoints.Name, Namespace: endpoints.Namespace}, &corev1.Endpoints{})
+	s.waitForObjectToBeCreated(endpoints)
 	return endpoints
 }
 
@@ -148,7 +147,7 @@ func (s *ControllerManagerTestSuiteBase) AddService(name string, podIps []string
 	err := s.Mgr.GetClient().Create(context.Background(), service)
 	s.Require().NoError(err)
 
-	s.waitForObjectToBeCreated(types.NamespacedName{Name: service.Name, Namespace: service.Namespace}, &corev1.Service{})
+	s.waitForObjectToBeCreated(service)
 
 	s.AddEndpoints(name, podIps)
 	return service
@@ -176,7 +175,7 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 	err := s.Mgr.GetClient().Create(context.Background(), replicaSet)
 	s.Require().NoError(err)
 
-	s.waitForObjectToBeCreated(types.NamespacedName{Name: replicaSet.Name, Namespace: replicaSet.Namespace}, &appsv1.ReplicaSet{})
+	s.waitForObjectToBeCreated(replicaSet)
 
 	for i, ip := range podIps {
 		pod := s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels)
@@ -219,7 +218,7 @@ func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []str
 	err := s.Mgr.GetClient().Create(context.Background(), deployment)
 	s.Require().NoError(err)
 
-	s.waitForObjectToBeCreated(types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}, &appsv1.Deployment{})
+	s.waitForObjectToBeCreated(deployment)
 
 	replicaSet := s.AddReplicaSet(name, podIps, podLabels)
 	replicaSet.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
