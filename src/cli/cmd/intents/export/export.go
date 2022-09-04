@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/otterize/intents-operator/src/operator/api/v1alpha1"
+	"github.com/otterize/network-mapper/cli/pkg/consts"
 	"github.com/otterize/network-mapper/cli/pkg/intentsprinter"
 	"github.com/otterize/network-mapper/cli/pkg/mapperclient"
 	"github.com/spf13/cobra"
@@ -53,8 +54,8 @@ var ExportCmd = &cobra.Command{
 
 				intentsOutput := v1alpha1.ClientIntents{
 					TypeMeta: v1.TypeMeta{
-						Kind:       "ClientIntents",
-						APIVersion: "k8s.otterize.com/v1alpha1",
+						Kind:       consts.IntentsKind,
+						APIVersion: consts.IntentsAPIVersion,
 					},
 					ObjectMeta: v1.ObjectMeta{
 						Name: serviceIntents.Name,

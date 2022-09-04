@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/amit7itz/goset"
 	"github.com/otterize/intents-operator/src/operator/api/v1alpha1"
+	"github.com/otterize/network-mapper/cli/pkg/consts"
 	"github.com/otterize/network-mapper/cli/pkg/intentsprinter"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"os"
 	"path/filepath"
@@ -18,14 +19,14 @@ import (
 )
 
 const regularFile = 0
-const DirPathKey = "path"
-const DirPathShorthand = "f"
+const FilepathKey = "filename"
+const FilepathShorthand = "f"
 
 func NewIntentsResourceFromIntentsSpec(spec v1alpha1.IntentsSpec) *v1alpha1.ClientIntents {
 	return &v1alpha1.ClientIntents{
 		TypeMeta: v1.TypeMeta{
-			Kind:       "ClientIntents",
-			APIVersion: "k8s.otterize.com/v1alpha1",
+			Kind:       consts.IntentsKind,
+			APIVersion: consts.IntentsAPIVersion,
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name: spec.Service.Name,
@@ -40,23 +41,29 @@ var ConvertCmd = &cobra.Command{
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		printer := intentsprinter.IntentsPrinter{}
-		allowedExts := sets.NewString(".yaml", ".yml")
-		entries, err := os.ReadDir(viper.GetString(DirPathKey))
+		allowedExts := goset.NewSet(".yaml", ".yml")
+		fileInfo, err := os.Stat(viper.GetString(FilepathKey))
 		if err != nil {
-			return fmt.Errorf("failed to read dir %s: %w", viper.GetString(DirPathKey), err)
+			return fmt.Errorf("failed to get info for path %s: %w", viper.GetString(FilepathKey), err)
+		}
+		filePaths := make([]string, 0)
+		if fileInfo.IsDir() {
+			entries, err := os.ReadDir(viper.GetString(FilepathKey))
+			if err != nil {
+				return fmt.Errorf("failed to read dir %s: %w", viper.GetString(FilepathKey), err)
+			}
+			for _, entry := range entries {
+				if !allowedExts.Contains(filepath.Ext(entry.Name())) || entry.Type() != regularFile {
+					continue
+				}
+				filePaths = append(filePaths, filepath.Join(viper.GetString(FilepathKey), entry.Name()))
+			}
+		} else {
+			filePaths = append(filePaths, viper.GetString(FilepathKey))
 		}
 
-		for _, entry := range entries {
+		for _, path := range filePaths {
 			err := func() error {
-				if !allowedExts.Has(filepath.Ext(entry.Name())) || entry.Type() != regularFile {
-					return nil
-				}
-				if err != nil {
-					return err
-				}
-
-				path := filepath.Join(viper.GetString(DirPathKey), entry.Name())
-
 				file, err := os.Open(path)
 				if err != nil {
 					return err
@@ -64,7 +71,6 @@ var ConvertCmd = &cobra.Command{
 				defer file.Close()
 				yamlReader := k8syaml.NewYAMLReader(bufio.NewReader(file))
 				for {
-					// Read document
 					doc, err := yamlReader.Read()
 					if err != nil {
 						if errors.Is(err, io.EOF) {
@@ -93,14 +99,11 @@ var ConvertCmd = &cobra.Command{
 			}
 		}
 
-		if err != nil {
-			return err
-		}
-
 		return nil
 	},
 }
 
 func init() {
-	ConvertCmd.Flags().StringP(DirPathKey, DirPathShorthand, ".", "directory containing intents")
+	ConvertCmd.Flags().StringP(FilepathKey, FilepathShorthand, ".",
+		"filename that contains the intents, or a directory containing intents")
 }
