@@ -13,7 +13,7 @@ spec:
         app: {{ template "otterize.mapper.name" . }}
     spec:
       securityContext:
-        runAsUser: 65532
+        runAsNonRoot: true
       containers:
         - name: {{ template "otterize.mapper.name" . }}
           image: "{{ .Values.registry }}:{{ .Values.mapperImage }}"
