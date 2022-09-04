@@ -36,7 +36,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"})
 	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"})
 	s.AddDeploymentWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"})
-	s.Mgr.GetCache().WaitForCacheSync(context.Background())
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
 		Results: []test_gql_client.CaptureResultForSrcIp{
@@ -77,7 +77,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 	s.AddDeploymentWithService("service1", []string{"1.1.2.1"}, map[string]string{"app": "service1"})
 	s.AddDeploymentWithService("service2", []string{"1.1.2.2"}, map[string]string{"app": "service2"})
 	s.AddDeploymentWithService("service3", []string{"1.1.2.3"}, map[string]string{"app": "service3"})
-	s.Mgr.GetCache().WaitForCacheSync(context.Background())
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	_, err := test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
 		Results: []test_gql_client.SocketScanResultForSrcIp{
