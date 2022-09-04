@@ -65,7 +65,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	// all other sockets should be ignored (because parsing the server sides on all pods is enough)
 	expectedResult := []client.SocketScanResultForSrcIp{
 		{
-			SrcIp:   "192.168.35.141",
+			SrcIp:   "192.168.35.14",
 			DestIps: []string{"192.168.38.211"},
 		},
 		{
