@@ -1,7 +1,14 @@
 registry: "353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize"
-mapperImage: "mapper-ccf453cc823f4b4d6e8bdc298df3071f516a5fa7"
-snifferImage: "sniffer-ccf453cc823f4b4d6e8bdc298df3071f516a5fa7"
+mapperImage: "mapper-latest"
+snifferImage: "sniffer-latest"
 debug: false
-# allowGetAllResources give get permission to the mapper on all resources. it might be used to improve identity resolution of pods
-# note this setting makes the mapper accessible to secrets as a side effect, which can lead to security issues.
-allowGetAllResources: false
+# allowGetAllResources gives get permission to the mapper on all resources. If disabled, the mapper will only
+# be able to resolve pods up to their built-in owners. For example, a Pod is owned by a ReplicaSet that is owned by a Deployment.
+# If that Deployment is owned by a custom resource, the mapper will not be able to resolve it.
+# For this resolving to be successful, the mapper needs to be able to `get` all resources.
+# If you set this to false, the mapper is only able to read the following resources:
+# Endpoints, Pods, Deployments, DaemonSets, ReplicaSets, StatefulSets.
+allowGetAllResources: true
+
+# Whether to set network policies that allow the sniffers to communicate with the mapper.
+setNetworkPolicies: true
