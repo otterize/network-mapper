@@ -3,12 +3,10 @@ package kubefinder
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/mapper/pkg/config"
-	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
 	"github.com/spf13/viper"
 	coreV1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -20,14 +18,15 @@ const (
 )
 
 type KubeFinder struct {
-	mgr    manager.Manager
-	client client.Client
+	mgr               manager.Manager
+	client            client.Client
+	serviceIdResolver *serviceidresolver.Resolver
 }
 
 var FoundMoreThanOnePodError = fmt.Errorf("ip belongs to more than one pod")
 
 func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
-	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr}
+	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
 	err := indexer.initIndexes()
 	if err != nil {
 		return nil, err
@@ -62,27 +61,6 @@ func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 		return nil, FoundMoreThanOnePodError
 	}
 	return &pods.Items[0], nil
-}
-
-func (k *KubeFinder) ResolvePodToOtterizeServiceIdentity(ctx context.Context, pod *coreV1.Pod) (model.OtterizeServiceIdentity, error) {
-	var obj client.Object
-	obj = pod
-	for len(obj.GetOwnerReferences()) > 0 {
-		owner := obj.GetOwnerReferences()[0]
-		ownerObj := &unstructured.Unstructured{}
-		ownerObj.SetAPIVersion(owner.APIVersion)
-		ownerObj.SetKind(owner.Kind)
-		err := k.client.Get(ctx, types.NamespacedName{Name: owner.Name, Namespace: obj.GetNamespace()}, ownerObj)
-		if err != nil {
-			if errors.IsForbidden(err) {
-				// We don't have permissions to the owner object, as we treat it as the identity.
-				return model.OtterizeServiceIdentity{Name: owner.Name, Namespace: obj.GetNamespace()}, nil
-			}
-			return model.OtterizeServiceIdentity{}, err
-		}
-		obj = ownerObj
-	}
-	return model.OtterizeServiceIdentity{Name: obj.GetName(), Namespace: obj.GetNamespace()}, nil
 }
 
 func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {

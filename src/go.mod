@@ -10,7 +10,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20220831175037-180916bbe0f1
+	github.com/otterize/intents-operator/src v0.0.0-20220904184811-c44f32f5e813
 	github.com/samber/lo v1.26.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.5.0
