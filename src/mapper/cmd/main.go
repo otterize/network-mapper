@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/mapper/pkg/config"
 	"github.com/otterize/network-mapper/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/mapper/pkg/resolvers"
@@ -67,7 +68,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RemoveTrailingSlash())
-	resolver := resolvers.NewResolver(kubeFinder)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()))
 	resolver.Register(e)
 
 	logrus.Info("Starting api server")
