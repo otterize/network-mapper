@@ -19,12 +19,12 @@ metadata:
 spec:
   service:
     name: {{ .Spec.Service.Name }}
-    calls:
+  calls:
 {{- range $intent := .Spec.Calls }}
-      - name: {{ $intent.Name }}
-        type: {{ $intent.Type }}
+    - name: {{ $intent.Name }}
+      type: {{ $intent.Type }}
 {{- if ne $intent.Namespace "" }}
-        namespace: {{ $intent.Namespace }}
+      namespace: {{ $intent.Namespace }}
 {{- end -}}
 {{ end }}`
 
