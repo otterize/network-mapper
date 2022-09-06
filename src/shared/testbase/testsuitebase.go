@@ -180,7 +180,8 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 	for i, ip := range podIps {
 		pod := s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels)
 		s.waitForObjectToBeCreated(pod)
-		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+		podCopy := pod.DeepCopy()
+		podCopy.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 			{
 				APIVersion:         "apps/v1",
 				Kind:               "ReplicaSet",
@@ -190,7 +191,7 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 				UID:                replicaSet.UID,
 			},
 		}
-		err := s.Mgr.GetClient().Update(context.Background(), pod)
+		err := s.Mgr.GetClient().Patch(context.Background(), podCopy, client.MergeFrom(pod))
 		s.Require().NoError(err)
 	}
 
