@@ -179,6 +179,7 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 
 	for i, ip := range podIps {
 		pod := s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels)
+		s.waitForObjectToBeCreated(pod)
 		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 			{
 				APIVersion:         "apps/v1",
