@@ -26,11 +26,11 @@ RUN go test ./mapper/...
 FROM test as builder
 RUN go build -o /main ./mapper/cmd
 
-FROM alpine as release
-RUN apk add --no-cache ca-certificates
-WORKDIR /
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM gcr.io/distroless/static:nonroot
 COPY --from=builder /main /main
-RUN chmod +x /main
+USER 65532:65532
 
 EXPOSE 9090
 ENTRYPOINT ["/main"]

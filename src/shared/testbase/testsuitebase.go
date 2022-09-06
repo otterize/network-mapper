@@ -94,7 +94,7 @@ func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Obj
 	}))
 }
 
-func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, labels map[string]string) *corev1.Pod {
+func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, labels map[string]string, ownerRefs []metav1.OwnerReference) *corev1.Pod {
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace, Labels: labels},
 		Spec: corev1.PodSpec{Containers: []corev1.Container{
@@ -106,6 +106,11 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 		},
 		},
 	}
+
+	if len(ownerRefs) != 0 {
+		pod.SetOwnerReferences(ownerRefs)
+	}
+
 	err := s.Mgr.GetClient().Create(context.Background(), pod)
 	s.Require().NoError(err)
 
@@ -178,9 +183,7 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 	s.waitForObjectToBeCreated(replicaSet)
 
 	for i, ip := range podIps {
-		pod := s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels)
-		s.waitForObjectToBeCreated(pod)
-		pod.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+		s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels, []metav1.OwnerReference{
 			{
 				APIVersion:         "apps/v1",
 				Kind:               "ReplicaSet",
@@ -189,9 +192,7 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 				Name:               replicaSet.Name,
 				UID:                replicaSet.UID,
 			},
-		}
-		err := s.Mgr.GetClient().Update(context.Background(), pod)
-		s.Require().NoError(err)
+		})
 	}
 
 	return replicaSet

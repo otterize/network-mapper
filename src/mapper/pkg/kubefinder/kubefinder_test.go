@@ -26,9 +26,9 @@ func (s *KubeFinderTestSuite) TestResolveIpToPod() {
 	s.Require().Nil(pod)
 	s.Require().Error(err)
 
-	s.AddPod("some-pod", "2.2.2.2", nil)
-	s.AddPod("test-pod", "1.1.1.1", nil)
-	s.AddPod("pod-with-no-ip", "", nil)
+	s.AddPod("some-pod", "2.2.2.2", nil, nil)
+	s.AddPod("test-pod", "1.1.1.1", nil, nil)
+	s.AddPod("pod-with-no-ip", "", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	pod, err = s.kubeFinder.ResolveIpToPod(context.Background(), "1.1.1.1")
