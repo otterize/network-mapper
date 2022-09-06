@@ -19,9 +19,9 @@ require (
 	github.com/vektah/gqlparser/v2 v2.4.5
 	k8s.io/api v0.25.0
 	k8s.io/apimachinery v0.25.0
-	k8s.io/cli-runtime v0.25.0
 	k8s.io/client-go v0.25.0
 	sigs.k8s.io/controller-runtime v0.12.2
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
@@ -57,7 +57,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
-	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matryer/moq v0.2.7 // indirect
@@ -112,5 +111,4 @@ require (
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
 )
