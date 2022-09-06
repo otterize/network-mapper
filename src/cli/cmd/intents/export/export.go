@@ -35,7 +35,7 @@ var ExportCmd = &cobra.Command{
 
 			intentsFromMapper = append(intentsFromMapper, intentsFromMapper[0])
 
-			outputList := make([]v1alpha1.Intents, 0)
+			outputList := make([]v1alpha1.ClientIntents, 0)
 
 			for _, serviceIntents := range intentsFromMapper {
 				intentList := make([]v1alpha1.Intent, 0)
@@ -51,7 +51,7 @@ var ExportCmd = &cobra.Command{
 					intentList = append(intentList, intent)
 				}
 
-				intentsOutput := v1alpha1.Intents{
+				intentsOutput := v1alpha1.ClientIntents{
 					TypeMeta: v1.TypeMeta{
 						Kind:       "ClientIntents",
 						APIVersion: "k8s.otterize.com/v1alpha1",
@@ -63,7 +63,7 @@ var ExportCmd = &cobra.Command{
 				}
 
 				if len(intentList) != 0 {
-					intentsOutput.Spec.Service.Calls = intentList
+					intentsOutput.Spec.Calls = intentList
 				}
 
 				outputList = append(outputList, intentsOutput)
@@ -93,7 +93,7 @@ var ExportCmd = &cobra.Command{
 	},
 }
 
-func getFormattedIntents(intentList []v1alpha1.Intents) (string, error) {
+func getFormattedIntents(intentList []v1alpha1.ClientIntents) (string, error) {
 	switch outputFormatVal := viper.GetString(OutputFormatKey); {
 	case outputFormatVal == OutputFormatJSON:
 		formatted, err := json.MarshalIndent(intentList, "", "  ")
