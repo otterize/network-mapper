@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/mapper/pkg/resolvers/test_gql_client"
 	"github.com/otterize/network-mapper/shared/testbase"
@@ -26,7 +27,7 @@ func (s *ResolverTestSuite) SetupTest() {
 	var err error
 	s.kubeFinder, err = kubefinder.NewKubeFinder(s.Mgr)
 	s.Require().NoError(err)
-	resolver := NewResolver(s.kubeFinder)
+	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()))
 	resolver.Register(e)
 	s.server = httptest.NewServer(e)
 	s.client = graphql.NewClient(s.server.URL+"/query", s.server.Client())

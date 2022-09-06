@@ -10,14 +10,13 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20220902155853-76e8fe51074d
+	github.com/otterize/intents-operator/src v0.0.0-20220904184811-c44f32f5e813
 	github.com/samber/lo v1.26.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
 	github.com/vektah/gqlparser/v2 v2.4.5
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	k8s.io/api v0.25.0
 	k8s.io/apimachinery v0.25.0
 	k8s.io/client-go v0.25.0
@@ -58,7 +57,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
-	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matryer/moq v0.2.7 // indirect

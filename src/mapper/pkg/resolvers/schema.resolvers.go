@@ -28,9 +28,9 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
@@ -56,12 +56,15 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
+			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 			if err != nil {
-				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
 				continue
 			}
-			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)
+			r.intentsHolder.AddIntent(
+				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
+				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+			)
 		}
 	}
 	return nil, nil
@@ -78,9 +81,9 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			}
 			continue
 		}
-		srcIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, srcPod)
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
 			continue
 		}
 		for _, destIp := range socketScanItem.DestIps {
@@ -93,12 +96,15 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				}
 				continue
 			}
-			dstIdentity, err := r.kubeFinder.ResolvePodToOtterizeServiceIdentity(ctx, destPod)
+			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 			if err != nil {
-				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcIdentity.Name)
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
 				continue
 			}
-			r.intentsHolder.AddIntent(srcIdentity, dstIdentity)
+			r.intentsHolder.AddIntent(
+				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
+				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+			)
 		}
 	}
 	return nil, nil
