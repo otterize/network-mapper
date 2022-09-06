@@ -3,11 +3,9 @@ package kubefinder
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/shared/testbase"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 )
 
@@ -66,22 +64,6 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	ips, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
 	s.Require().NoError(err)
 	s.Require().ElementsMatch(ips, []string{"4.4.4.4"})
-}
-
-func (s *KubeFinderTestSuite) TestResolvePodToOtterizeServiceIdentity() {
-	s.AddDeploymentWithService("service0", []string{"1.1.1.1", "1.1.1.2"}, map[string]string{"app": "test"})
-	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
-
-	podList := &corev1.PodList{}
-	err := s.Mgr.GetClient().List(context.Background(), podList, client.HasLabels{"app=test"}, client.InNamespace(s.TestNamespace))
-	s.Require().NoError(err)
-	s.Require().NotEmpty(podList.Items)
-
-	for _, pod := range podList.Items {
-		identity, err := s.kubeFinder.ResolvePodToOtterizeServiceIdentity(context.Background(), &pod)
-		s.Require().NoError(err)
-		s.Require().Equal(model.OtterizeServiceIdentity{Name: "service0", Namespace: s.TestNamespace}, identity)
-	}
 }
 
 func TestKubeFinderTestSuite(t *testing.T) {
