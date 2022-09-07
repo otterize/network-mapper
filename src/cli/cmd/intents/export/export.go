@@ -34,8 +34,6 @@ var ExportCmd = &cobra.Command{
 				return err
 			}
 
-			intentsFromMapper = append(intentsFromMapper, intentsFromMapper[0])
-
 			outputList := make([]v1alpha1.ClientIntents, 0)
 
 			for _, serviceIntents := range intentsFromMapper {
