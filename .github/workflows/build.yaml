@@ -11,6 +11,10 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
+  REPOSITORY_NAME: otterize
+
 jobs:
 
   build:
