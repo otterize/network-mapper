@@ -24,7 +24,7 @@ RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \
 RUN go test ./mapper/...
 
 FROM test as builder
-RUN go build -o /main ./mapper/cmd
+RUN CGO_ENABLED=0 go build -o /main ./mapper/cmd
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
