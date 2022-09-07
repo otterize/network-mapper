@@ -60,7 +60,7 @@ jobs:
         with:
           context: src/
           file: src/${{ matrix.service }}.Dockerfile
-          tags: ${{ secrets.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
+          tags: ${{ env.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
           cache-from: type=gha
