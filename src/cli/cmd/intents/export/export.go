@@ -9,6 +9,7 @@ import (
 	"github.com/otterize/network-mapper/cli/pkg/consts"
 	"github.com/otterize/network-mapper/cli/pkg/intentsprinter"
 	"github.com/otterize/network-mapper/cli/pkg/mapperclient"
+	"github.com/otterize/network-mapper/cli/pkg/output"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +21,8 @@ const OutputFileKey = "file"
 const OutputFormatKey = "format"
 const OutputFormatYAML = "yaml"
 const OutputFormatJSON = "json"
+const NamespacesKey = "namespaces"
+const NamespacesShorthand = "n"
 
 var ExportCmd = &cobra.Command{
 	Use:   "export",
@@ -29,7 +32,8 @@ var ExportCmd = &cobra.Command{
 		return mapperclient.WithClient(func(c *mapperclient.Client) error {
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			intentsFromMapper, err := c.ServiceIntents(ctxTimeout)
+			namespacesFilter := viper.GetStringSlice(NamespacesKey)
+			intentsFromMapper, err := c.ServiceIntents(ctxTimeout, namespacesFilter)
 			if err != nil {
 				return err
 			}
@@ -56,9 +60,10 @@ var ExportCmd = &cobra.Command{
 						APIVersion: consts.IntentsAPIVersion,
 					},
 					ObjectMeta: v1.ObjectMeta{
-						Name: serviceIntents.Name,
+						Name:      serviceIntents.Client.Name,
+						Namespace: serviceIntents.Client.Namespace,
 					},
-					Spec: &v1alpha1.IntentsSpec{Service: v1alpha1.Service{Name: serviceIntents.Name}},
+					Spec: &v1alpha1.IntentsSpec{Service: v1alpha1.Service{Name: serviceIntents.Client.Name}},
 				}
 
 				if len(intentList) != 0 {
@@ -83,9 +88,9 @@ var ExportCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				fmt.Printf("Successfully wrote intents into %s\n", viper.GetString(OutputFileKey))
+				output.PrintStderr("Successfully wrote intents into %s\n", viper.GetString(OutputFileKey))
 			} else {
-				println(formatted)
+				output.PrintStdout(formatted)
 			}
 			return nil
 		})
@@ -120,4 +125,5 @@ func getFormattedIntents(intentList []v1alpha1.ClientIntents) (string, error) {
 func init() {
 	ExportCmd.Flags().String(OutputFileKey, "", "file path to write the output into")
 	ExportCmd.Flags().String(OutputFormatKey, OutputFormatYAML, "format to output the intents - yaml/json")
+	ExportCmd.Flags().StringSliceP(NamespacesKey, NamespacesShorthand, nil, "filter for specific namespaces")
 }

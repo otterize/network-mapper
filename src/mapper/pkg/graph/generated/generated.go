@@ -54,12 +54,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		ServiceIntents func(childComplexity int) int
+		ServiceIntents func(childComplexity int, namespaces []string) int
 	}
 
 	ServiceIntents struct {
+		Client  func(childComplexity int) int
 		Intents func(childComplexity int) int
-		Name    func(childComplexity int) int
 	}
 }
 
@@ -68,7 +68,7 @@ type MutationResolver interface {
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (*bool, error)
 }
 type QueryResolver interface {
-	ServiceIntents(ctx context.Context) ([]model.ServiceIntents, error)
+	ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error)
 }
 
 type executableSchema struct {
@@ -129,7 +129,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.ServiceIntents(childComplexity), true
+		args, err := ec.field_Query_serviceIntents_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string)), true
+
+	case "ServiceIntents.client":
+		if e.complexity.ServiceIntents.Client == nil {
+			break
+		}
+
+		return e.complexity.ServiceIntents.Client(childComplexity), true
 
 	case "ServiceIntents.intents":
 		if e.complexity.ServiceIntents.Intents == nil {
@@ -137,13 +149,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ServiceIntents.Intents(childComplexity), true
-
-	case "ServiceIntents.name":
-		if e.complexity.ServiceIntents.Name == nil {
-			break
-		}
-
-		return e.complexity.ServiceIntents.Name(childComplexity), true
 
 	}
 	return 0, false
@@ -235,12 +240,12 @@ type OtterizeServiceIdentity {
 }
 
 type ServiceIntents {
-    name: String!
+    client: OtterizeServiceIdentity!
     intents: [OtterizeServiceIdentity!]!
 }
 
 type Query {
-    serviceIntents: [ServiceIntents!]!
+    serviceIntents(namespaces: [String!]): [ServiceIntents!]!
 }
 
 type Mutation {
@@ -296,6 +301,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_serviceIntents_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []string
+	if tmp, ok := rawArgs["namespaces"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaces"))
+		arg0, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["namespaces"] = arg0
 	return args, nil
 }
 
@@ -501,9 +521,16 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_serviceIntents_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ServiceIntents(rctx)
+		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -591,7 +618,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ServiceIntents_name(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIntents) (ret graphql.Marshaler) {
+func (ec *executionContext) _ServiceIntents_client(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIntents) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -609,7 +636,7 @@ func (ec *executionContext) _ServiceIntents_name(ctx context.Context, field grap
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
+		return obj.Client, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -621,9 +648,9 @@ func (ec *executionContext) _ServiceIntents_name(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.OtterizeServiceIdentity)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ServiceIntents_intents(ctx context.Context, field graphql.CollectedField, obj *model.ServiceIntents) (ret graphql.Marshaler) {
@@ -2125,9 +2152,9 @@ func (ec *executionContext) _ServiceIntents(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ServiceIntents")
-		case "name":
+		case "client":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._ServiceIntents_name(ctx, field, obj)
+				return ec._ServiceIntents_client(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -2669,6 +2696,16 @@ func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚕgithubᚗcomᚋot
 	return ret
 }
 
+func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, v *model.OtterizeServiceIdentity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._OtterizeServiceIdentity(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNServiceIntents2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx context.Context, sel ast.SelectionSet, v model.ServiceIntents) graphql.Marshaler {
 	return ec._ServiceIntents(ctx, sel, &v)
 }
@@ -3068,6 +3105,44 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

@@ -34,8 +34,8 @@ func WithClient(f func(c *Client) error) error {
 	return f(c)
 }
 
-func (c *Client) ServiceIntents(ctx context.Context) ([]ServiceIntentsServiceIntents, error) {
-	res, err := ServiceIntents(ctx, c.client)
+func (c *Client) ServiceIntents(ctx context.Context, namespaces []string) ([]ServiceIntentsServiceIntents, error) {
+	res, err := ServiceIntents(ctx, c.client, namespaces)
 	if err != nil {
 		return nil, err
 	}

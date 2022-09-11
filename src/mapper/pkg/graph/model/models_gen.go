@@ -17,7 +17,7 @@ type OtterizeServiceIdentity struct {
 }
 
 type ServiceIntents struct {
-	Name    string                    `json:"name"`
+	Client  *OtterizeServiceIdentity  `json:"client"`
 	Intents []OtterizeServiceIdentity `json:"intents"`
 }
 
