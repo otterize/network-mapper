@@ -13,6 +13,7 @@ import (
 	"github.com/otterize/network-mapper/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/mapper/pkg/kubefinder"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -110,14 +111,14 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	return nil, nil
 }
 
-func (r *queryResolver) ServiceIntents(ctx context.Context) ([]model.ServiceIntents, error) {
+func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {
 	result := make([]model.ServiceIntents, 0)
-	for service, intents := range r.intentsHolder.GetIntentsPerService() {
-		result = append(result, model.ServiceIntents{Name: service, Intents: intents})
+	for service, intents := range r.intentsHolder.GetIntentsPerService(namespaces) {
+		result = append(result, model.ServiceIntents{Client: lo.ToPtr(service), Intents: intents})
 	}
 	// sorting by service name so results are more consistent
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Name < result[j].Name
+		return result[i].Client.Name < result[j].Client.Name
 	})
 	return result, nil
 }

@@ -1,6 +1,9 @@
-query ServiceIntents {
-    serviceIntents {
-        name
+query ServiceIntents($namespaces: [String!]) {
+    serviceIntents(namespaces: $namespaces) {
+        client {
+            name
+            namespace
+        }
         intents {
             name
             namespace

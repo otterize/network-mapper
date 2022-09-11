@@ -56,16 +56,22 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	})
 	s.Require().NoError(err)
 
-	res, err := test_gql_client.ServiceIntents(context.Background(), s.client)
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
 		{
-			Name: "service1",
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "service1",
+				Namespace: s.TestNamespace,
+			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{Name: "service2"},
 			},
 		},
 		{
-			Name: "service3",
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "service3",
+				Namespace: s.TestNamespace,
+			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{Name: "service1"},
 				{Name: "service2"},
@@ -94,16 +100,23 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 	})
 	s.Require().NoError(err)
 
-	res, err := test_gql_client.ServiceIntents(context.Background(), s.client)
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
 		{
-			Name: "service1",
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "service1",
+				Namespace: s.TestNamespace,
+			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{Name: "service2"},
 			},
 		},
 		{
-			Name: "service3",
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "service3",
+				Namespace: s.TestNamespace,
+			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{Name: "service1"},
 				{Name: "service2"},

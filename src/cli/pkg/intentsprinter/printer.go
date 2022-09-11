@@ -16,6 +16,9 @@ const crdTemplate = `apiVersion: {{ .APIVersion }}
 kind: {{ .Kind }}
 metadata:
   name: {{ .Name }}
+{{- if .Namespace }}
+  namespace: {{ .Namespace }}
+{{- end }}
 spec:
   service:
     name: {{ .Spec.Service.Name }}

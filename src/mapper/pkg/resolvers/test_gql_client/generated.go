@@ -56,16 +56,32 @@ func (v *ServiceIntentsResponse) GetServiceIntents() []ServiceIntentsServiceInte
 
 // ServiceIntentsServiceIntents includes the requested fields of the GraphQL type ServiceIntents.
 type ServiceIntentsServiceIntents struct {
-	Name    string                                                       `json:"name"`
+	Client  ServiceIntentsServiceIntentsClientOtterizeServiceIdentity    `json:"client"`
 	Intents []ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity `json:"intents"`
 }
 
-// GetName returns ServiceIntentsServiceIntents.Name, and is useful for accessing the field via an interface.
-func (v *ServiceIntentsServiceIntents) GetName() string { return v.Name }
+// GetClient returns ServiceIntentsServiceIntents.Client, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntents) GetClient() ServiceIntentsServiceIntentsClientOtterizeServiceIdentity {
+	return v.Client
+}
 
 // GetIntents returns ServiceIntentsServiceIntents.Intents, and is useful for accessing the field via an interface.
 func (v *ServiceIntentsServiceIntents) GetIntents() []ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity {
 	return v.Intents
+}
+
+// ServiceIntentsServiceIntentsClientOtterizeServiceIdentity includes the requested fields of the GraphQL type OtterizeServiceIdentity.
+type ServiceIntentsServiceIntentsClientOtterizeServiceIdentity struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// GetName returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentity) GetName() string { return v.Name }
+
+// GetNamespace returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentity) GetNamespace() string {
+	return v.Namespace
 }
 
 // ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity includes the requested fields of the GraphQL type OtterizeServiceIdentity.
@@ -115,6 +131,14 @@ type __ReportSocketScanResultsInput struct {
 
 // GetResults returns __ReportSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__ReportSocketScanResultsInput) GetResults() SocketScanResults { return v.Results }
+
+// __ServiceIntentsInput is used internally by genqlient
+type __ServiceIntentsInput struct {
+	Namespaces []string `json:"namespaces"`
+}
+
+// GetNamespaces returns __ServiceIntentsInput.Namespaces, and is useful for accessing the field via an interface.
+func (v *__ServiceIntentsInput) GetNamespaces() []string { return v.Namespaces }
 
 func ReportCaptureResults(
 	ctx context.Context,
@@ -179,13 +203,17 @@ mutation ReportSocketScanResults ($results: SocketScanResults!) {
 func ServiceIntents(
 	ctx context.Context,
 	client graphql.Client,
+	namespaces []string,
 ) (*ServiceIntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ServiceIntents",
 		Query: `
-query ServiceIntents {
-	serviceIntents {
-		name
+query ServiceIntents ($namespaces: [String!]) {
+	serviceIntents(namespaces: $namespaces) {
+		client {
+			name
+			namespace
+		}
 		intents {
 			name
 			namespace
@@ -193,6 +221,9 @@ query ServiceIntents {
 	}
 }
 `,
+		Variables: &__ServiceIntentsInput{
+			Namespaces: namespaces,
+		},
 	}
 	var err error
 

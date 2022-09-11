@@ -24,12 +24,12 @@ type OtterizeServiceIdentity {
 }
 
 type ServiceIntents {
-    name: String!
+    client: OtterizeServiceIdentity!
     intents: [OtterizeServiceIdentity!]!
 }
 
 type Query {
-    serviceIntents: [ServiceIntents!]!
+    serviceIntents(namespaces: [String!]): [ServiceIntents!]!
 }
 
 type Mutation {
