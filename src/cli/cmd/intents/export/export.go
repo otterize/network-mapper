@@ -14,15 +14,39 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
+	"path/filepath"
 	"time"
 )
 
-const OutputFileKey = "file"
+const OutputLocationKey = "output"
+const OutputLocationShorthand = "o"
+const OutputTypeKey = "output-type"
+const OutputTypeDefault = OutputTypeSingleFile
+const OutputTypeSingleFile = "single-file"
+const OutputTypeDirectory = "dir"
 const OutputFormatKey = "format"
+const OutputFormatDefault = OutputFormatYAML
 const OutputFormatYAML = "yaml"
 const OutputFormatJSON = "json"
 const NamespacesKey = "namespaces"
 const NamespacesShorthand = "n"
+
+func writeIntentsFile(filePath string, intents []v1alpha1.ClientIntents) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	formatted, err := getFormattedIntents(intents)
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(formatted)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 var ExportCmd = &cobra.Command{
 	Use:   "export",
@@ -73,23 +97,41 @@ var ExportCmd = &cobra.Command{
 				outputList = append(outputList, intentsOutput)
 			}
 
-			formatted, err := getFormattedIntents(outputList)
-			if err != nil {
-				return err
-			}
+			if viper.GetString(OutputLocationKey) != "" {
+				switch outputTypeVal := viper.GetString(OutputTypeKey); {
+				case outputTypeVal == OutputTypeSingleFile:
+					err := writeIntentsFile(viper.GetString(OutputLocationKey), outputList)
+					if err != nil {
+						return err
+					}
+					output.PrintStderr("Successfully wrote intents into %s", viper.GetString(OutputLocationKey))
+				case outputTypeVal == OutputTypeDirectory:
+					err := os.MkdirAll(viper.GetString(OutputLocationKey), 0700)
+					if err != nil {
+						return fmt.Errorf("could not create dir %s: %w", viper.GetString(OutputLocationKey), err)
+					}
 
-			if viper.GetString(OutputFileKey) != "" {
-				f, err := os.Create(viper.GetString(OutputFileKey))
-				if err != nil {
-					return err
+					for _, intent := range outputList {
+						filePath := fmt.Sprintf("%s.%s.yaml", intent.Name, intent.Namespace)
+						if err != nil {
+							return err
+						}
+						filePath = filepath.Join(viper.GetString(OutputLocationKey), filePath)
+						err := writeIntentsFile(filePath, []v1alpha1.ClientIntents{intent})
+						if err != nil {
+							return err
+						}
+					}
+					output.PrintStderr("Successfully wrote intents into %s", viper.GetString(OutputLocationKey))
+				default:
+					return fmt.Errorf("unexpected output type %s, use one of (%s, %s)", outputTypeVal, OutputTypeSingleFile, OutputTypeDirectory)
 				}
-				defer f.Close()
-				_, err = f.WriteString(formatted)
-				if err != nil {
-					return err
-				}
-				output.PrintStderr("Successfully wrote intents into %s\n", viper.GetString(OutputFileKey))
+
 			} else {
+				formatted, err := getFormattedIntents(outputList)
+				if err != nil {
+					return err
+				}
 				output.PrintStdout(formatted)
 			}
 			return nil
@@ -123,7 +165,8 @@ func getFormattedIntents(intentList []v1alpha1.ClientIntents) (string, error) {
 }
 
 func init() {
-	ExportCmd.Flags().String(OutputFileKey, "", "file path to write the output into")
-	ExportCmd.Flags().String(OutputFormatKey, OutputFormatYAML, "format to output the intents - yaml/json")
+	ExportCmd.Flags().StringP(OutputLocationKey, OutputLocationShorthand, "", "file or dir path to write the output into")
+	ExportCmd.Flags().String(OutputTypeKey, OutputTypeDefault, fmt.Sprintf("whether to write output to file or dir: %s/%s", OutputTypeSingleFile, OutputTypeDirectory))
+	ExportCmd.Flags().String(OutputFormatKey, OutputFormatDefault, fmt.Sprintf("format to output the intents - %s/%s", OutputFormatYAML, OutputFormatJSON))
 	ExportCmd.Flags().StringSliceP(NamespacesKey, NamespacesShorthand, nil, "filter for specific namespaces")
 }
