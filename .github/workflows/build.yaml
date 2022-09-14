@@ -1,6 +1,6 @@
 name: Build and Deploy
 concurrency:
-  group: "${{github.repository}}${{ github.ref }}"
+  group: "${{ github.repository }}${{ github.ref }}"
   cancel-in-progress: true
 on:
   pull_request:

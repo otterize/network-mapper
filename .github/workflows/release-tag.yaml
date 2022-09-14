@@ -1,0 +1,51 @@
+name: Build
+concurrency:
+  group: "${{ github.repository }}${{ github.ref }}-release"
+
+on:
+  release:
+    types:
+      - published
+
+env:
+  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
+  REPOSITORY_NAME: otterize
+
+jobs:
+  push-dockerhub:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: otterize
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        run: |-
+          docker pull ${{ env.REGISTRY }}:mapper-${{ github.sha }}
+          docker pull ${{ env.REGISTRY }}:sniffer-${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}:mapper-${{ github.sha }} otterize/network-mapper:${{ github.ref_name }}
+          docker tag ${{ env.REGISTRY }}:mapper-${{ github.sha }} otterize/network-mapper:latest
+          docker tag ${{ env.REGISTRY }}:sniffer-${{ github.sha }} otterize/network-mapper-sniffer:${{ github.ref_name }}
+          docker tag ${{ env.REGISTRY }}:sniffer-${{ github.sha }} otterize/network-mapper-sniffer:latest
+          docker push otterize/network-mapper:${{ github.ref_name }}
+          docker push otterize/network-mapper:${{ github.ref_name }}
+          docker push otterize/network-mapper-sniffer:latest
+          docker push otterize/network-mapper-sniffer:latest
