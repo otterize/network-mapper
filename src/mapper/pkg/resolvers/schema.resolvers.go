@@ -18,7 +18,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error) {
+func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
+	r.intentsHolder.Reset()
+	return true, nil
+}
+
+func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
 	for _, captureItem := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, captureItem.SrcIP)
 		if err != nil {
@@ -68,10 +73,10 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			)
 		}
 	}
-	return nil, nil
+	return true, nil
 }
 
-func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (*bool, error) {
+func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	for _, socketScanItem := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, socketScanItem.SrcIP)
 		if err != nil {
@@ -108,7 +113,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			)
 		}
 	}
-	return nil, nil
+	return true, nil
 }
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {

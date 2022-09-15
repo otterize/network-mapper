@@ -33,6 +33,7 @@ type Query {
 }
 
 type Mutation {
-    reportCaptureResults(results: CaptureResults!): Boolean
-    reportSocketScanResults(results: SocketScanResults!): Boolean
+    resetCapture: Boolean!
+    reportCaptureResults(results: CaptureResults!): Boolean!
+    reportSocketScanResults(results: SocketScanResults!): Boolean!
 }

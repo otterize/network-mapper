@@ -46,6 +46,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		ReportCaptureResults    func(childComplexity int, results model.CaptureResults) int
 		ReportSocketScanResults func(childComplexity int, results model.SocketScanResults) int
+		ResetCapture            func(childComplexity int) int
 	}
 
 	OtterizeServiceIdentity struct {
@@ -64,8 +65,9 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (*bool, error)
-	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (*bool, error)
+	ResetCapture(ctx context.Context) (bool, error)
+	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error)
+	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error)
@@ -109,6 +111,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ReportSocketScanResults(childComplexity, args["results"].(model.SocketScanResults)), true
+
+	case "Mutation.resetCapture":
+		if e.complexity.Mutation.ResetCapture == nil {
+			break
+		}
+
+		return e.complexity.Mutation.ResetCapture(childComplexity), true
 
 	case "OtterizeServiceIdentity.name":
 		if e.complexity.OtterizeServiceIdentity.Name == nil {
@@ -249,8 +258,9 @@ type Query {
 }
 
 type Mutation {
-    reportCaptureResults(results: CaptureResults!): Boolean
-    reportSocketScanResults(results: SocketScanResults!): Boolean
+    resetCapture: Boolean!
+    reportCaptureResults(results: CaptureResults!): Boolean!
+    reportSocketScanResults(results: SocketScanResults!): Boolean!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -357,6 +367,41 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Mutation_resetCapture(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResetCapture(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -389,11 +434,14 @@ func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, 
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_reportSocketScanResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -428,11 +476,14 @@ func (ec *executionContext) _Mutation_reportSocketScanResults(ctx context.Contex
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*bool)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OtterizeServiceIdentity_name(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
@@ -2009,6 +2060,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "resetCapture":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resetCapture(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "reportCaptureResults":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reportCaptureResults(ctx, field)
@@ -2016,6 +2077,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "reportSocketScanResults":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reportSocketScanResults(ctx, field)
@@ -2023,6 +2087,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
