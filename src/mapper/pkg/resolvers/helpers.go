@@ -20,6 +20,13 @@ func NewIntentsHolder() *intentsHolder {
 	}
 }
 
+func (i *intentsHolder) Reset() {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	i.store = make(map[model.OtterizeServiceIdentity]map[string][]model.OtterizeServiceIdentity)
+}
+
 func (i *intentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
