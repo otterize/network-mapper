@@ -7,7 +7,7 @@
 ![go report](https://img.shields.io/static/v1?label=go%20report&message=A%2B&color=success)
 [![community](https://img.shields.io/badge/slack-Otterize_Slack-orange.svg?logo=slack)](https://join.slack.com/t/otterizeworkspace/shared_invite/zt-1fnbnl1lf-ub6wler4QrW6ZzIn2U9x1A)
 
-[About](#about) | [Quickstart](https://docs.otterize.com/documentation/quick-tutorials/network-mapper) | [How does the Network Mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/documentation/k8s-operators/operator) | [Contributing](#contributing) | [Slack](#slack)
+[About](#about) | [Quickstart](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [How does the Network Mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/documentation/k8s-operators/operator) | [Contributing](#contributing) | [Slack](#slack)
 
 ## About
 The Otterize Network Mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections, then resolving the IP addresses participating in connections to the Pods, and crawling up the ownership of the Pod until it reaches the root object. See [Service name resolution](#Service_name_resolution) to learn more.
