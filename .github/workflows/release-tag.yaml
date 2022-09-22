@@ -46,6 +46,6 @@ jobs:
           docker tag ${{ env.REGISTRY }}:sniffer-${{ github.sha }} otterize/network-mapper-sniffer:${{ github.ref_name }}
           docker tag ${{ env.REGISTRY }}:sniffer-${{ github.sha }} otterize/network-mapper-sniffer:latest
           docker push otterize/network-mapper:${{ github.ref_name }}
-          docker push otterize/network-mapper:${{ github.ref_name }}
-          docker push otterize/network-mapper-sniffer:latest
+          docker push otterize/network-mapper-sniffer:${{ github.ref_name }}
+          docker push otterize/network-mapper:latest
           docker push otterize/network-mapper-sniffer:latest
