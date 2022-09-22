@@ -7,14 +7,14 @@
 ![go report](https://img.shields.io/static/v1?label=go%20report&message=A%2B&color=success)
 [![community](https://img.shields.io/badge/slack-Otterize_Slack-purple.svg?logo=slack)](https://joinslack.otterize.com)
 
-[About](#about) | [Quickstart](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [How does the Network Mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/documentation/k8s-operators/operator) | [Contributing](#contributing) | [Slack](#slack)
+[About](#about) | [Quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [How does the network mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/documentation/k8s-operators/operator) | [Contributing](#contributing) | [Slack](#slack)
 
 ## About
-The Otterize Network Mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections, then resolving the IP addresses participating in connections to the Pods, and crawling up the ownership of the Pod until it reaches the root object. See [Service name resolution](#Service_name_resolution) to learn more.
+The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections, then resolving the IP addresses participating in connections to the pods, and crawling up the ownership of the pod until it reaches the root object. See [Service name resolution](#Service_name_resolution) to learn more.
 
-You can then use the CLI to list the traffic by client, or export it as JSON or ClientIntents Kubernetes resources (YAML). ClientIntents can be consumed by the [Intents Operator](https://github.com/otterize/intents-operator) to apply network policies or Kafka ACLs to your cluster, and achieve zero trust.
+You can then use the CLI to list the traffic by client, or export it as JSON or ClientIntents Kubernetes resources (YAML). ClientIntents can be consumed by the [intents operator](https://github.com/otterize/intents-operator) to apply network policies or Kafka ACLs to your cluster, and achieve zero trust.
 
-Example output from the Quickstart guide:
+Example output from the [quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper):
 ```
 checkoutservice calls:
   - orderservice
@@ -23,7 +23,7 @@ orderservice calls:
   - kafka
 ```
 
-## How does the Network Mapper work?
+## How does the network mapper work?
 
 ### Components
 - Sniffer - the sniffer is deployed to each node, and is responsible for capturing node-local DNS traffic and inspecting open connections.
