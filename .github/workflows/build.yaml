@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build
 concurrency:
   group: "${{ github.repository }}${{ github.ref }}"
   cancel-in-progress: true
