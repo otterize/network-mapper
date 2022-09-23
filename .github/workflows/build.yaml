@@ -64,7 +64,7 @@ jobs:
           go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
           source <(setup-envtest use -p env) 
           export PATH=$PATH:$KUBEBUILDER_ASSETS
-          apt install libpcap-dev
+          sudo apt install libpcap-dev
           cd src && go test ./${{ matrix.service }}/...
 
       - name: Build production image
