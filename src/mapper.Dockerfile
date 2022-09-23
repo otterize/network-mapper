@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as buildenv
+FROM golang:1.18-alpine as builder
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
 WORKDIR /src
@@ -15,15 +15,6 @@ RUN --mount=type=secret,id=github_token \
 COPY . .
 RUN go generate ./mapper/...
 
-FROM buildenv as test
-# install dependencies for "envtest" package
-RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \
-    source <(setup-envtest use -p env) && \
-    mkdir -p /usr/local/kubebuilder && \
-    ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
-RUN go test ./mapper/...
-
-FROM test as builder
 RUN CGO_ENABLED=0 go build -o /main ./mapper/cmd
 
 # Use distroless as minimal base image to package the manager binary
