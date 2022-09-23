@@ -64,7 +64,7 @@ jobs:
           go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
           source <(setup-envtest use -p env) 
           export PATH=$PATH:$KUBEBUILDER_ASSETS
-          go test ./${{ matrix.service }}/...
+          go test src/${{ matrix.service }}/...
 
       - name: Build production image
         uses: docker/build-push-action@v2
