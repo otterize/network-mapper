@@ -65,6 +65,7 @@ jobs:
           source <(setup-envtest use -p env) 
           export PATH=$PATH:$KUBEBUILDER_ASSETS
           sudo apt install libpcap-dev
+          git config --global url."https://${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
           cd src && go test ./${{ matrix.service }}/...
 
       - name: Build production image
