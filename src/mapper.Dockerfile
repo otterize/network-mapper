@@ -17,8 +17,8 @@ RUN go generate ./mapper/...
 
 FROM buildenv as test
 # install dependencies for "envtest" package
-RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \
-    source <(setup-envtest use -p env) && \
+RUN ARCH=`arch`; if [ "$ARCH" == "x86_64" ]; then ARCH="amd64"; fi; go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \
+    source <(setup-envtest use -p env --arch `arch`) && \
     mkdir -p /usr/local/kubebuilder && \
     ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
 RUN go test ./mapper/...
