@@ -63,8 +63,7 @@ jobs:
         run: |-
           go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
           source <(setup-envtest use -p env) 
-          mkdir -p /usr/local/kubebuilder
-          ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
+          export PATH=$PATH:$KUBEBUILDER_ASSETS
           go test ./${{ matrix.service }}/...
 
       - name: Build production image
