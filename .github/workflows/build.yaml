@@ -55,7 +55,19 @@ jobs:
           username: otterize
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Test & Build production image
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.18'
+
+      - name: Test
+        run: |-
+          go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+          source <(setup-envtest use -p env) 
+          mkdir -p /usr/local/kubebuilder
+          ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
+          go test ./${{ matrix.service }}/...
+
+      - name: Build production image
         uses: docker/build-push-action@v2
         with:
           context: src/
