@@ -55,20 +55,7 @@ jobs:
           username: otterize
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '>=1.18'
-
-      - name: Test
-        run: |-
-          go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-          source <(setup-envtest use -p env) 
-          export PATH=$PATH:$KUBEBUILDER_ASSETS
-          sudo apt install libpcap-dev
-          git config --global url."https://${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
-          cd src && go test ./${{ matrix.service }}/...
-
-      - name: Build production image
+      - name: Test & Build production image
         uses: docker/build-push-action@v2
         with:
           context: src/
