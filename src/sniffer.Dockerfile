@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as builder
+FROM --platform=linux/amd64 golang:1.18-alpine as buildenv
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
 WORKDIR /src
@@ -14,7 +14,14 @@ RUN --mount=type=secret,id=github_token \
 
 COPY . .
 RUN go generate ./sniffer/...
-RUN go build -o /main ./sniffer/cmd
+
+FROM buildenv as test
+RUN go test ./sniffer/...
+
+FROM test as builder
+ARG TARGETOS
+ARG TARGETARCH
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./sniffer/cmd
 
 FROM alpine as release
 RUN apk add --no-cache ca-certificates libpcap
