@@ -63,6 +63,7 @@ jobs:
           tags: ${{ env.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           secrets: |
