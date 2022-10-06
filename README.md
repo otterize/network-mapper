@@ -23,6 +23,32 @@ orderservice calls:
   - kafka
 ```
 
+## Installation instructions
+### Network mapper helm chart
+```bash
+helm repo add otterize https://helm.otterize.com
+helm repo update
+helm install network-mapper otterize/network-mapper -n otterize-system --create-namespace --wait
+```
+### Otterize CLI
+Mac
+```bash
+brew install otterize/otterize/otterize-cli
+```
+Linux 64-bit
+```bash
+wget https://get.otterize.com/otterize-cli/v0.1.5/otterize_Linux_x86_64.tar.gz
+tar xf otterize_Linux_x86_64.tar.gz
+sudo cp otterize /usr/local/bin
+```
+Windows
+```bash
+scoop bucket add otterize-cli https://github.com/otterize/scoop-otterize-cli
+scoop update
+scoop install otterize-cli
+```
+For all installation options check out the [guide](https://docs.otterize.com/k8s-installation/#install-the-otterize-cli).
+
 ## How does the network mapper work?
 
 ### Components
