@@ -7,7 +7,7 @@
 ![go report](https://img.shields.io/static/v1?label=go%20report&message=A%2B&color=success)
 [![community](https://img.shields.io/badge/slack-Otterize_Slack-purple.svg?logo=slack)](https://joinslack.otterize.com)
 
-[About](#about) | [Quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [How does the network mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/components/network-mapper/) | [Contributing](#contributing) | [Slack](#slack)
+[About](#about) | [Quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [Installation instructions](#installation-instructions) | [How does the network mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/components/network-mapper/) | [Contributing](#contributing) | [Slack](#slack)
 
 ## About
 The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections, then resolving the IP addresses participating in connections to the pods, and crawling up the ownership of the pod until it reaches the root object. See [Service name resolution](#Service_name_resolution) to learn more.
@@ -15,7 +15,8 @@ The Otterize network mapper creates a map of in-cluster traffic by capturing DNS
 You can then use the CLI to list the traffic by client, or export it as JSON or ClientIntents Kubernetes resources (YAML). ClientIntents can be consumed by the [intents operator](https://github.com/otterize/intents-operator) to apply network policies or Kafka ACLs to your cluster, and achieve zero trust.
 
 Example output from the [quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper):
-```
+```bash
+$ otterize mapper list
 checkoutservice calls:
   - orderservice
 
@@ -25,6 +26,42 @@ orderservice calls:
 
 ## Try the network mapper!
 Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper).
+
+## Installation instructions
+### Install the network mapper using Helm
+```bash
+helm repo add otterize https://helm.otterize.com
+helm repo update
+helm install network-mapper otterize/network-mapper -n otterize-system --create-namespace --wait
+```
+### Install Otterize CLI to query data from the network mapper
+Mac
+```bash
+brew install otterize/otterize/otterize-cli
+```
+Linux 64-bit
+```bash
+wget https://get.otterize.com/otterize-cli/v0.1.5/otterize_Linux_x86_64.tar.gz
+tar xf otterize_Linux_x86_64.tar.gz
+sudo cp otterize /usr/local/bin
+```
+Windows
+```bash
+scoop bucket add otterize-cli https://github.com/otterize/scoop-otterize-cli
+scoop update
+scoop install otterize-cli
+```
+For more platforms, see [the installation guide](https://docs.otterize.com/k8s-installation/#install-the-otterize-cli).
+
+Then display the network map:
+```bash
+$ otterize mapper list
+checkoutservice calls:
+  - orderservice
+
+orderservice calls:
+  - kafka
+```
 
 ## How does the network mapper work?
 
