@@ -24,7 +24,7 @@ orderservice calls:
 ```
 
 ## Try the network mapper!
-Try the [quickstart guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper).
+Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper).
 
 ## How does the network mapper work?
 
