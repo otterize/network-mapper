@@ -17,15 +17,15 @@ You can then use the [Otterize CLI](https://github.com/otterize/otterize-cli) to
 Example output from the [quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper):
 ```bash
 $ otterize mapper list
-checkoutservice calls:
+checkoutservice in namespace ecom-demo calls:
   - orderservice
 
-orderservice calls:
+orderservice in namespace ecom-demo calls:
   - kafka
 ```
 
 ## Try the network mapper!
-Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper).
+Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
 
 ## Installation instructions
 ### Install the network mapper using Helm
@@ -53,16 +53,6 @@ scoop install otterize-cli
 ```
 For more platforms, see [the installation guide](https://docs.otterize.com/k8s-installation/#install-the-otterize-cli).
 
-Then display the network map:
-```bash
-$ otterize mapper list
-checkoutservice calls:
-  - orderservice
-
-orderservice calls:
-  - kafka
-```
-
 ## How does the network mapper work?
 
 ### Components
@@ -75,6 +65,12 @@ Service name resolution is performed one of two ways:
 2. If not, a recursive look up is performed for the Kubernetes resource owner for a pod until the root is reached. For example, if you have a `Deployment` named `client`, which then creates and owns a `ReplicaSet`, which then creates and owns a `Pod`, then the service name for that pod is `client` - same as the name of the `Deployment`.
 
 The goal is to generate a mapping that speaks in the same language that dev teams use, whether or not a label has been set.
+
+## Learn more
+Explore our [documentation](https://docs.otterize.com/) site to learn how to:
+- [Map pod-to-pod communication](https://docs.otterize.com/guides/k8s-mapping-pod-to-pod-calls).
+- [Automate network policies](https://docs.otterize.com/quick-tutorials/k8s-network-policies).
+- And more ...
 
 ## Contributing
 1. Feel free to fork and open a pull request! Include tests and document your code in [Godoc style](https://go.dev/blog/godoc)
