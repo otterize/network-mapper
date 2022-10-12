@@ -23,6 +23,9 @@ orderservice calls:
   - kafka
 ```
 
+## Try the network mapper!
+Try the [quickstart guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper).
+
 ## How does the network mapper work?
 
 ### Components
