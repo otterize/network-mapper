@@ -10,7 +10,7 @@
 [About](#about) | [Quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [Installation instructions](#installation-instructions) | [How does the network mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/components/network-mapper/) | [Contributing](#contributing) | [Slack](#slack)
 
 ## About
-The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to the pods, and crawling up the ownership of the pod until it reaches the root object. See [Service name resolution](#Service_name_resolution) to learn more. The network mapper continues building the network map as long as it's deployed.
+The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to the pods, and crawling up the ownership of the pod until it reaches the root object. See [Service name resolution](#service-name-resolution) to learn more. The network mapper continues building the network map as long as it's deployed.
 
 You can then use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, reset the traffic the mapper remembers, or export it as JSON or YAML, which serves as ClientIntents Kubernetes resources). ClientIntents can be consumed by the [intents operator](https://github.com/otterize/intents-operator) to apply network policies or Kafka ACLs to your cluster, and achieve zero trust.
 
