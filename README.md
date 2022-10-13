@@ -14,14 +14,28 @@ The Otterize network mapper creates a map of in-cluster traffic by capturing DNS
 
 You can then use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, reset the traffic the mapper remembers, or export it as JSON or YAML, which serves as ClientIntents Kubernetes resources). ClientIntents can be consumed by the [intents operator](https://github.com/otterize/intents-operator) to apply network policies or Kafka ACLs to your cluster, and achieve zero trust.
 
-Example output from the [quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper):
+Example output from running the network mapper on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
 ```bash
 $ otterize mapper list
-checkoutservice in namespace ecom-demo calls:
-  - orderservice
-
-orderservice in namespace ecom-demo calls:
-  - kafka
+cartservice in namespace ecommerce calls:
+  - redis-cart
+checkoutservice in namespace ecommerce calls:
+  - kafka-secure
+frontend in namespace ecommerce calls:
+  - adservice
+  - cartservice
+  - checkoutservice
+  - currencyservice
+  - productcatalogservice
+  - recommendationservice
+  - shippingservice
+kafka-secure in namespace ecommerce calls:
+  - kafka-secure
+  - lab-zookeeper
+paymentservice in namespace ecommerce calls:
+  - kafka-secure
+recommendationservice in namespace ecommerce calls:
+  - productcatalogservice
 ```
 
 ## Try the network mapper!
