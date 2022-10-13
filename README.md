@@ -75,6 +75,7 @@ Explore our [documentation](https://docs.otterize.com/) site to learn how to:
 ## Contributing
 1. Feel free to fork and open a pull request! Include tests and document your code in [Godoc style](https://go.dev/blog/godoc)
 2. In your pull request, please refer to an existing issue or open a new one.
+3. See our [Contributor License Agreement](https://github.com/otterize/cla/).
 
 ## Slack
 [Join the Otterize Slack!](https://joinslack.otterize.com)
