@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/otterize/network-mapper/shared/kubeutils"
+	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/spf13/viper"
 	"strings"
 )
