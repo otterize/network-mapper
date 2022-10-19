@@ -4,8 +4,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
-	"github.com/otterize/network-mapper/mapper/pkg/graph/generated"
-	"github.com/otterize/network-mapper/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
+	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 )
 
 // This file will not be regenerated automatically.

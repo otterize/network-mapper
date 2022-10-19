@@ -1,4 +1,4 @@
-module github.com/otterize/network-mapper
+module github.com/otterize/network-mapper/src
 
 go 1.18
 

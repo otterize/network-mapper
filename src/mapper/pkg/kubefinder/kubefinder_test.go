@@ -3,7 +3,7 @@ package kubefinder
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/network-mapper/shared/testbase"
+	"github.com/otterize/network-mapper/src/shared/testbase"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	"testing"

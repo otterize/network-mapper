@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
-	"github.com/otterize/network-mapper/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/spf13/viper"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
