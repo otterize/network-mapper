@@ -8,7 +8,7 @@ require (
 	github.com/amit7itz/goset v1.1.0
 	github.com/golang/mock v1.6.0
 	github.com/google/gopacket v1.1.19
-	github.com/labstack/echo/v4 v4.7.2
+	github.com/labstack/echo/v4 v4.9.0
 	github.com/otterize/go-procnet v0.1.1
 	github.com/otterize/intents-operator/src v0.0.0-20220904184811-c44f32f5e813
 	github.com/samber/lo v1.26.0

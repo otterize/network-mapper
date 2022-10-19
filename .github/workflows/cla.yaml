@@ -1,0 +1,15 @@
+name: "CLA Assistant"
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened,closed,synchronize]
+
+jobs:
+  CLAssistant:
+    uses: otterize/cla-bot/.github/workflows/cla.yaml@otterize_cla
+    with:
+      comment-body: github.event.comment.body
+      event-name: github.event_name
+    secrets:
+      PERSONAL_ACCESS_TOKEN : ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
