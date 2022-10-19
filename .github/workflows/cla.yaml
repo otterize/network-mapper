@@ -12,4 +12,4 @@ jobs:
       comment-body: github.event.comment.body
       event-name: github.event_name
     secrets:
-      PERSONAL_ACCESS_TOKEN : ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      PERSONAL_ACCESS_TOKEN : ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
