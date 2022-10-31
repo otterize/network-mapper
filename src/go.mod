@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/99designs/gqlgen v0.17.10
 	github.com/Khan/genqlient v0.5.0
-	github.com/amit7itz/goset v1.1.0
+	github.com/amit7itz/goset v1.2.1
 	github.com/golang/mock v1.6.0
 	github.com/google/gopacket v1.1.19
 	github.com/labstack/echo/v4 v4.9.0
