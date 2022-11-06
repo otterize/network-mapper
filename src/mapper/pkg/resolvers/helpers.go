@@ -1,11 +1,24 @@
 package resolvers
 
 import (
+	"bytes"
+	"compress/gzip"
+	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/amit7itz/goset"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/samber/lo"
-	"os"
+	"github.com/spf13/viper"
+	"io"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sort"
 	"sync"
 )
@@ -31,14 +44,16 @@ func (s intentsHolderStore) UnmarshalJSON(b []byte) error {
 }
 
 type intentsHolder struct {
-	store intentsHolderStore
-	lock  sync.Mutex
+	store  intentsHolderStore
+	lock   sync.Mutex
+	client client.Client
 }
 
-func NewIntentsHolder() *intentsHolder {
+func NewIntentsHolder(client client.Client) *intentsHolder {
 	return &intentsHolder{
-		store: make(intentsHolderStore),
-		lock:  sync.Mutex{},
+		store:  make(intentsHolderStore),
+		lock:   sync.Mutex{},
+		client: client,
 	}
 }
 
@@ -97,22 +112,69 @@ func (i *intentsHolder) GetIntentsPerService(namespaces []string) map[model.Otte
 	return result
 }
 
-func (i *intentsHolder) WriteStore(path string) error {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	jsonBytes, err := json.MarshalIndent(i.store, "", "  ")
-	if err != nil {
-		return err
+func (i *intentsHolder) getConfigMapNamespace() (string, error) {
+	namespace := viper.GetString(config.NamespaceKey)
+	if namespace != "" {
+		return namespace, nil
 	}
-	return os.WriteFile(path, jsonBytes, 0600)
+	namespace, err := kubeutils.GetCurrentNamespace()
+	if err != nil {
+		return "", fmt.Errorf("could not deduce the store's configmap namespace: %w", err)
+	}
+	return namespace, nil
 }
 
-func (i *intentsHolder) LoadStore(path string) error {
+func (i *intentsHolder) WriteStore(ctx context.Context) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	jsonBytes, err := os.ReadFile(path)
+	jsonBytes, err := json.Marshal(i.store)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(jsonBytes, &i.store)
+	namespace, err := i.getConfigMapNamespace()
+	if err != nil {
+		return err
+	}
+	var compressedJson bytes.Buffer
+	writer := gzip.NewWriter(&compressedJson)
+	_, err = writer.Write(jsonBytes)
+	if err != nil {
+		return err
+	}
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
+	configmap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: viper.GetString(config.StoreConfigMapKey), Namespace: namespace}}
+	_, err = controllerutil.CreateOrUpdate(ctx, i.client, configmap, func() error {
+		configmap.Data = nil
+		configmap.BinaryData = map[string][]byte{"store": compressedJson.Bytes()}
+		return nil
+	})
+	return err
+}
+
+func (i *intentsHolder) LoadStore(ctx context.Context) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	configmap := &corev1.ConfigMap{}
+	namespace, err := i.getConfigMapNamespace()
+	if err != nil {
+		return err
+	}
+	err = i.client.Get(ctx, types.NamespacedName{Name: viper.GetString(config.StoreConfigMapKey), Namespace: namespace}, configmap)
+	if errors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	reader, err := gzip.NewReader(bytes.NewReader(configmap.BinaryData["store"]))
+	if err != nil {
+		return err
+	}
+	decompressedJson, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(decompressedJson, &i.store)
 }

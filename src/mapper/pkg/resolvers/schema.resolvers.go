@@ -73,7 +73,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			)
 		}
 	}
-	err := r.intentsHolder.WriteStore(viper.GetString(config.StoreFileKey))
+	err := r.intentsHolder.WriteStore(ctx)
 	if err != nil {
 		logrus.WithError(err).Warning("Failed to save state into the store file")
 	}
@@ -117,7 +117,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			)
 		}
 	}
-	err := r.intentsHolder.WriteStore(viper.GetString(config.StoreFileKey))
+	err := r.intentsHolder.WriteStore(ctx)
 	if err != nil {
 		logrus.WithError(err).Warning("Failed to save state into the store file")
 	}

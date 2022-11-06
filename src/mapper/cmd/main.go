@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
@@ -68,7 +69,11 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RemoveTrailingSlash())
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()))
+	mgr.GetCache().WaitForCacheSync(context.Background()) // needed to let the manager initialize before used in intentsHolder
+
+	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient())
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
+	resolver.LoadStore(context.Background()) // loads the store from the previous run
 	resolver.Register(e)
 
 	logrus.Info("Starting api server")
