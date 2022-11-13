@@ -56,6 +56,13 @@ func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	var err error
 	s.Mgr, err = manager.New(s.cfg, manager.Options{MetricsBindAddress: "0"})
 	s.Require().NoError(err)
+	testName := s.T().Name()[strings.LastIndex(s.T().Name(), "/")+1:]
+	s.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
+	testNamespaceObj := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: s.TestNamespace},
+	}
+	_, err = s.K8sDirectClient.CoreV1().Namespaces().Create(context.Background(), testNamespaceObj, metav1.CreateOptions{})
+	s.Require().NoError(err)
 }
 
 // BeforeTest happens AFTER the SetupTest()
@@ -65,13 +72,7 @@ func (s *ControllerManagerTestSuiteBase) BeforeTest(_, testName string) {
 		err := s.Mgr.Start(s.mgrCtx)
 		s.Require().NoError(err)
 	}()
-
-	s.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
-	testNamespaceObj := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: s.TestNamespace},
-	}
-	_, err := s.K8sDirectClient.CoreV1().Namespaces().Create(context.Background(), testNamespaceObj, metav1.CreateOptions{})
-	s.Require().NoError(err)
+	s.Mgr.GetCache().WaitForCacheSync(context.Background()) // waiting for manager to start
 }
 
 func (s *ControllerManagerTestSuiteBase) TearDownTest() {

@@ -10,7 +10,6 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
 	"github.com/otterize/network-mapper/src/shared/testbase"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 	"net/http/httptest"
 	"testing"
@@ -30,16 +29,11 @@ func (s *ResolverTestSuite) SetupTest() {
 	var err error
 	s.kubeFinder, err = kubefinder.NewKubeFinder(s.Mgr)
 	s.Require().NoError(err)
-	s.intentsHolder = NewIntentsHolder(s.Mgr.GetClient())
+	s.intentsHolder = NewIntentsHolder(s.Mgr.GetClient(), IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.TestNamespace})
 	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder)
 	resolver.Register(e)
 	s.server = httptest.NewServer(e)
 	s.client = graphql.NewClient(s.server.URL+"/query", s.server.Client())
-}
-
-func (s *ResolverTestSuite) BeforeTest(suiteName, testName string) {
-	s.ControllerManagerTestSuiteBase.BeforeTest(suiteName, testName)
-	viper.Set(config.NamespaceKey, s.TestNamespace)
 }
 
 func (s *ResolverTestSuite) TestReportCaptureResults() {
@@ -161,7 +155,7 @@ func (s *ResolverTestSuite) TestLoadStore() {
 	s.Require().Len(res.ServiceIntents, 2)
 
 	// create a new resolver and see LoadStore works
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), NewIntentsHolder(s.Mgr.GetClient()))
+	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), NewIntentsHolder(s.Mgr.GetClient(), IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.TestNamespace}))
 	intents, err := resolver.Query().ServiceIntents(context.Background(), nil)
 	s.Require().NoError(err)
 	s.Require().Len(intents, 0)
