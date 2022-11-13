@@ -49,7 +49,6 @@ type IntentsHolderConfig struct {
 }
 
 func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
-	viper.GetString(config.NamespaceKey)
 	namespace := viper.GetString(config.NamespaceKey)
 	if namespace != "" {
 		var err error
