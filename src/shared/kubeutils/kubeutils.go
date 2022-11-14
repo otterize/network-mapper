@@ -12,14 +12,20 @@ const (
 	resolvFile           = "/etc/resolv.conf"
 )
 
-func GetClusterDomain() (string, error) {
+func GetCurrentNamespace() (string, error) {
 	data, err := os.ReadFile(namespaceFile)
 	if err != nil {
 		return "", err
 	}
-	namespace := strings.TrimSpace(string(data))
+	return strings.TrimSpace(string(data)), nil
+}
 
-	data, err = os.ReadFile(resolvFile)
+func GetClusterDomain() (string, error) {
+	namespace, err := GetCurrentNamespace()
+	if err != nil {
+		return "", err
+	}
+	data, err := os.ReadFile(resolvFile)
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
@@ -15,6 +16,7 @@ import (
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"time"
 )
 
 func getClusterDomainOrDefault() string {
@@ -68,7 +70,18 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RemoveTrailingSlash())
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()))
+	initCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelFn()
+	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
+
+	intentHolderCfg, err := resolvers.IntentsHolderConfigFromViper()
+	if err != nil {
+		logrus.Error(intentHolderCfg)
+		os.Exit(1)
+	}
+	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient(), intentHolderCfg)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
+	resolver.LoadStore(initCtx) // loads the store from the previous run
 	resolver.Register(e)
 
 	logrus.Info("Starting api server")

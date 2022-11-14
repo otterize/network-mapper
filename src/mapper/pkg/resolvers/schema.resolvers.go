@@ -73,6 +73,10 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			)
 		}
 	}
+	err := r.intentsHolder.WriteStore(ctx)
+	if err != nil {
+		logrus.WithError(err).Warning("Failed to save state into the store file")
+	}
 	return true, nil
 }
 
@@ -112,6 +116,10 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
 			)
 		}
+	}
+	err := r.intentsHolder.WriteStore(ctx)
+	if err != nil {
+		logrus.WithError(err).Warning("Failed to save state into the store file")
 	}
 	return true, nil
 }

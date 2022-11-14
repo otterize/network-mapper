@@ -78,6 +78,10 @@ github.com/alexflint/go-scalar v1.0.0 h1:NGupf1XV/Xb04wXskDFzS0KWOLH632W/EO4fAFi
 github.com/alexflint/go-scalar v1.0.0/go.mod h1:GpHzbCOZXEKMEcygYQ5n/aa4Aq84zbxjy3MxYW0gjYw=
 github.com/amit7itz/goset v1.1.0 h1:hAP5zQhO9a08qrloYRZ5KYXELQmkQ1wt8En9juRvzYA=
 github.com/amit7itz/goset v1.1.0/go.mod h1:i8ni2YcxUMAwLBOkHWpy3glFviYdTcWqCvFgp91EMGI=
+github.com/amit7itz/goset v1.2.0 h1:b8U/9A3x4y3PUf2JeLMSoGma+jgHDI54WSBJvDIdLiU=
+github.com/amit7itz/goset v1.2.0/go.mod h1:i8ni2YcxUMAwLBOkHWpy3glFviYdTcWqCvFgp91EMGI=
+github.com/amit7itz/goset v1.2.1 h1:usFphDJfZgwnqfbKT8zI+2juuOgsZ6O8UA7NMRUVG7s=
+github.com/amit7itz/goset v1.2.1/go.mod h1:i8ni2YcxUMAwLBOkHWpy3glFviYdTcWqCvFgp91EMGI=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
