@@ -7,7 +7,18 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/otterize/network-mapper/src)](https://goreportcard.com/report/github.com/otterize/network-mapper/src)
 [![community](https://img.shields.io/badge/slack-Otterize_Slack-purple.svg?logo=slack)](https://joinslack.otterize.com)
 
-[About](#about) | [Quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) | [Installation instructions](#installation-instructions) | [How does the network mapper work?](#how-does-the-intents-operator-work) | [Docs](https://docs.otterize.com/components/network-mapper/) | [Contributing](#contributing) | [Slack](#slack)
+* [About](#about)
+* [Quick tutorial](https://docs.otterize.com/quick-tutorials/k8s-network-mapper)
+* [Installation instructions](#installation-instructions)
+* [How does the network mapper work?](#how-does-the-network-mapper-work)
+  * [Components](#components)
+  * [Service name resolution](#service-name-resolution)
+  * [Why should I use this over a service mesh?](#difference-from-a-service-mesh)
+* [Docs](https://docs.otterize.com/components/network-mapper/)
+* [Contributing](#contributing)
+* [Slack](#slack)
+
+https://user-images.githubusercontent.com/29180932/202178239-e93f305b-33aa-4caf-88f7-a78d666e071a.mp4
 
 ## About
 The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to the pods, and crawling up the ownership of the pod until it reaches the root object. See [Service name resolution](#service-name-resolution) to learn more. The network mapper continues building the network map as long as it's deployed.
@@ -37,11 +48,6 @@ paymentservice in namespace ecommerce calls:
 recommendationservice in namespace ecommerce calls:
   - productcatalogservice
 ```
-
-The YAML export of the network mapper outputs `ClientIntents` Kubernetes resource files. Client intents files can be consumed by the [Otterize intents operator](https://github.com/otterize/intents-operator) to configure pod-to-pod access with network policies, or Kafka client access with Kafka ACLs and mTLS. In this way, the network mapper can bootstrap [intent-based access control](https://otterize.com/ibac) for teams, and gradually roll out a zero-trust service-to-service architecture.
-
-## Try the network mapper!
-Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
 
 ## Installation instructions
 ### Install the network mapper using Helm
@@ -78,9 +84,15 @@ For more platforms, see [the installation guide](https://docs.otterize.com/k8s-i
 ### Service name resolution
 Service name resolution is performed one of two ways:
 1. If an `otterize/service-name` label is present, that name is used.
-2. If not, a recursive look up is performed for the Kubernetes resource owner for a pod until the root is reached. For example, if you have a `Deployment` named `client`, which then creates and owns a `ReplicaSet`, which then creates and owns a `Pod`, then the service name for that pod is `client` - same as the name of the `Deployment`.
+2. If not, a recursive look-up is performed for the Kubernetes resource owner for a pod until the root is reached.
+For example, if you have a `Deployment` named `client`, which then creates and owns a `ReplicaSet`, 
+which then creates and owns a `Pod`, then the service name for that pod is `client` - same as the name of the `Deployment`.
+The goal is to generate a mapping that speaks in the same language that dev teams use.
 
-The goal is to generate a mapping that speaks in the same language that dev teams use, whether or not a label has been set.
+### Difference from a service mesh
+the mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. It 
+does not try to replace service mesh in any way, but rather give you insights about traffic in your cluster without 
+a complete overhaul or the need to adapt to it.
 
 ## Learn more
 Explore our [documentation](https://docs.otterize.com/) site to learn how to:
@@ -94,4 +106,6 @@ Explore our [documentation](https://docs.otterize.com/) site to learn how to:
 3. See our [Contributor License Agreement](https://github.com/otterize/cla/).
 
 ## Slack
-[Join the Otterize Slack!](https://joinslack.otterize.com)
+To join the conversation, ask questions, and engage with other users, join the Otterize Slack!
+
+[![button](https://i.ibb.co/vwRP6xK/Group-3090-2.png)](https://joinslack.otterize.com)
