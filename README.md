@@ -105,4 +105,6 @@ Explore our [documentation](https://docs.otterize.com/) site to learn how to:
 3. See our [Contributor License Agreement](https://github.com/otterize/cla/).
 
 ## Slack
-[![button](https://i.ibb.co/n6FdXR2/Group-3090-1.png)](https://joinslack.otterize.com)
+To join the conversation, ask questions, and engage with other users, join the Otterize Slack!
+
+[![button](https://i.ibb.co/vwRP6xK/Group-3090-2.png)](https://joinslack.otterize.com)
