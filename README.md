@@ -83,9 +83,10 @@ For more platforms, see [the installation guide](https://docs.otterize.com/k8s-i
 
 ### Service name resolution
 Service name resolution is performed one of two ways:
-1. If an `otterize/service-name` label exists on the pod, its value is used.
-2. If no label is present, a recursive look-up is performed for the pod's owner until the root is reached. For example, if you have a `Deployment` named `client`, which then creates and owns a `ReplicaSet`, which then creates and owns a `Pod`, then the service name for that pod is `client` - same as the name of the `Deployment`.
-
+1. If an `otterize/service-name` label is present, that name is used.
+2. If not, a recursive look-up is performed for the Kubernetes resource owner for a pod until the root is reached.
+For example, if you have a `Deployment` named `client`, which then creates and owns a `ReplicaSet`, 
+which then creates and owns a `Pod`, then the service name for that pod is `client` - same as the name of the `Deployment`.
 The goal is to generate a mapping that speaks in the same language that dev teams use.
 
 ### Difference from a service mesh
