@@ -20,7 +20,7 @@ type ResolverTestSuite struct {
 	server        *httptest.Server
 	client        graphql.Client
 	kubeFinder    *kubefinder.KubeFinder
-	intentsHolder *intentsHolder
+	intentsHolder *IntentsHolder
 }
 
 func (s *ResolverTestSuite) SetupTest() {

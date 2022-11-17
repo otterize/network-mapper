@@ -63,15 +63,15 @@ func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
 	}, nil
 }
 
-type intentsHolder struct {
+type IntentsHolder struct {
 	store  intentsHolderStore
 	lock   sync.Mutex
 	client client.Client
 	config IntentsHolderConfig
 }
 
-func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *intentsHolder {
-	return &intentsHolder{
+func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *IntentsHolder {
+	return &IntentsHolder{
 		store:  make(intentsHolderStore),
 		lock:   sync.Mutex{},
 		client: client,
@@ -79,14 +79,14 @@ func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *intents
 	}
 }
 
-func (i *intentsHolder) Reset() {
+func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
 	i.store = make(intentsHolderStore)
 }
 
-func (i *intentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity) {
+func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	namespace := ""
@@ -102,7 +102,7 @@ func (i *intentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstS
 	intents.Add(model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: namespace})
 }
 
-func (i *intentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {
+func (i *IntentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	namespacesSet := goset.FromSlice(namespaces)
@@ -128,7 +128,7 @@ func (i *intentsHolder) GetIntentsPerService(namespaces []string) map[model.Otte
 	return result
 }
 
-func (i *intentsHolder) WriteStore(ctx context.Context) error {
+func (i *IntentsHolder) WriteStore(ctx context.Context) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	jsonBytes, err := json.Marshal(i.store)
@@ -154,7 +154,7 @@ func (i *intentsHolder) WriteStore(ctx context.Context) error {
 	return err
 }
 
-func (i *intentsHolder) LoadStore(ctx context.Context) error {
+func (i *IntentsHolder) LoadStore(ctx context.Context) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	configmap := &corev1.ConfigMap{}
