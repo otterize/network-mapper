@@ -17,10 +17,10 @@ import (
 type Resolver struct {
 	kubeFinder        *kubefinder.KubeFinder
 	serviceIdResolver *serviceidresolver.Resolver
-	intentsHolder     *intentsHolder
+	intentsHolder     *IntentsHolder
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsHolder) *Resolver {
+func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *IntentsHolder) *Resolver {
 	return &Resolver{
 		kubeFinder:        kubeFinder,
 		serviceIdResolver: serviceIdResolver,
