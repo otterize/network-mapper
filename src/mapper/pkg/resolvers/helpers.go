@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sort"
 	"sync"
+	"time"
 )
 
 type intentsHolderStore map[model.OtterizeServiceIdentity]*goset.Set[model.OtterizeServiceIdentity]
@@ -64,10 +65,11 @@ func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
 }
 
 type IntentsHolder struct {
-	store  intentsHolderStore
-	lock   sync.Mutex
-	client client.Client
-	config IntentsHolderConfig
+	store             intentsHolderStore
+	lock              sync.Mutex
+	client            client.Client
+	config            IntentsHolderConfig
+	lastIntentsUpdate time.Time
 }
 
 func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *IntentsHolder {
@@ -99,7 +101,17 @@ func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstS
 		intents = goset.NewSet[model.OtterizeServiceIdentity]()
 		i.store[srcService] = intents
 	}
-	intents.Add(model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: namespace})
+	intent := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: namespace}
+	if !intents.Contains(intent) {
+		i.lastIntentsUpdate = time.Now()
+		intents.Add(intent)
+	}
+}
+
+func (i *IntentsHolder) LastIntentsUpdate() time.Time {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.lastIntentsUpdate
 }
 
 func (i *IntentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {

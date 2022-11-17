@@ -1,0 +1,9 @@
+# genqlient config; for full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+schema:
+  - '../../../cloudgraphql/*.graphql'
+  - '../../../cloudgraphql/deprecated/*.graphql'
+  - '../../../cloudgraphql/federation/*.graphql'
+operations:
+  - genqlient.graphql
+generated: ./generated.go
