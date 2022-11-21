@@ -37,9 +37,12 @@ func (r *Resolver) Register(e *echo.Echo) {
 	})
 }
 
-func (r *Resolver) LoadStore(ctx context.Context) {
+func (r *Resolver) LoadStore(ctx context.Context) error {
 	err := r.intentsHolder.LoadStore(ctx)
 	if err != nil {
 		logrus.WithError(err).Warning("Failed to load state from previous runs")
+		return err
 	}
+
+	return nil
 }

@@ -81,7 +81,7 @@ func main() {
 	}
 	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient(), intentHolderCfg)
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
-	resolver.LoadStore(initCtx) // loads the store from the previous run
+	_ = resolver.LoadStore(initCtx) // loads the store from the previous run
 	resolver.Register(e)
 
 	logrus.Info("Starting api server")
