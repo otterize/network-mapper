@@ -160,7 +160,8 @@ func (s *ResolverTestSuite) TestLoadStore() {
 	s.Require().NoError(err)
 	s.Require().Len(intents, 0)
 
-	resolver.LoadStore(context.Background())
+	err = resolver.LoadStore(context.Background())
+	s.Require().NoError(err)
 	intents, err = resolver.Query().ServiceIntents(context.Background(), nil)
 	s.Require().NoError(err)
 	s.Require().Len(intents, 2)
