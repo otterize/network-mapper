@@ -1,0 +1,3 @@
+mutation ReportDiscoveredSourcedIntents($environment: ID!, $source: String!, $intents: [IntentInput!]!) {
+    reportDiscoveredSourcedIntents(environment: $environment, source: $source, intents: $intents)
+}
