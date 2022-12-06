@@ -13,16 +13,17 @@
 * [How does the network mapper work?](#how-does-the-network-mapper-work)
   * [Components](#components)
   * [Service name resolution](#service-name-resolution)
-  * [Why should I use this over a service mesh?](#difference-from-a-service-mesh)
-* [Using the network map](#using-the-network-map)
+* [Exporting a network map](#exporting-a-network-map)
 * [Learn more](#learn-more)
 * [Contributing](#contributing)
 * [Slack](#slack)
 
-https://user-images.githubusercontent.com/29180932/202178239-e93f305b-33aa-4caf-88f7-a78d666e071a.mp4
+
+https://user-images.githubusercontent.com/29180932/205920333-fde12d02-c7f0-4eee-a24a-8ae4fb68b9bc.mp4
+
 
 ## About
-The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to the pods, and crawling up the ownership of the pod until it reaches the root object. See [service name resolution](#service-name-resolution) to learn more. The network mapper continues building the network map as long as it's deployed.
+the Otterize network mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. Its goal is to give you insights about traffic in your cluster without a complete overhaul or the need to adapt anything to it.
 
 You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, reset the traffic the mapper remembers, or export it as JSON or YAML.
 
@@ -81,7 +82,7 @@ scoop install otterize-cli
 For more platforms, see [the installation guide](https://docs.otterize.com/k8s-installation/#install-the-otterize-cli).
 
 ## How does the network mapper work?
-
+the Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to their pods, and crawling up the ownership of the pod until it reaches the root object. The network mapper continues building the network map as long as it's deployed.
 ### Components
 - Sniffer: the sniffer is deployed to each node, and is responsible for capturing node-local DNS traffic and inspecting open connections.
 - Mapper: the mapper is deployed once, and resolves service names using the Kubernetes API with traffic information reported by the sniffers.
@@ -94,12 +95,7 @@ For example, if you have a `Deployment` named `client`, which then creates and o
 which then creates and owns a `Pod`, then the service name for that pod is `client` - same as the name of the `Deployment`.
 The goal is to generate a mapping that speaks in the same language that dev teams use.
 
-### Difference from a service mesh
-the mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. It 
-does not try to replace service mesh in any way, but rather give you insights about traffic in your cluster without 
-a complete overhaul or the need to adapt to it.
-
-## Using the network map
+## Exporting a network map
 The network mapper continuously builds a map of pod to pod communication in the cluster. The map can be exported at any time in either JSON or YAML formats with the Otterize CLI.
 
 The YAML export is formatted as `ClientIntents` Kubernetes resource files. Client intents files can be consumed by the [Otterize intents operator](https://github.com/otterize/intents-operator) to configure pod-to-pod access with network policies, or Kafka client access with Kafka ACLs and mTLS.
