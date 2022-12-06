@@ -113,5 +113,5 @@ Explore our [documentation](https://docs.otterize.com/) site to learn how to:
 
 ## Slack
 To join the conversation, ask questions, and engage with other users, join the Otterize Slack!
-
+ 
 [![button](https://i.ibb.co/vwRP6xK/Group-3090-2.png)](https://joinslack.otterize.com)
