@@ -17,10 +17,10 @@ import (
 type Resolver struct {
 	kubeFinder        *kubefinder.KubeFinder
 	serviceIdResolver *serviceidresolver.Resolver
-	intentsHolder     *intentsHolder
+	intentsHolder     *IntentsHolder
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsHolder) *Resolver {
+func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *IntentsHolder) *Resolver {
 	return &Resolver{
 		kubeFinder:        kubeFinder,
 		serviceIdResolver: serviceIdResolver,
@@ -37,9 +37,12 @@ func (r *Resolver) Register(e *echo.Echo) {
 	})
 }
 
-func (r *Resolver) LoadStore(ctx context.Context) {
+func (r *Resolver) LoadStore(ctx context.Context) error {
 	err := r.intentsHolder.LoadStore(ctx)
 	if err != nil {
 		logrus.WithError(err).Warning("Failed to load state from previous runs")
+		return err
 	}
+
+	return nil
 }
