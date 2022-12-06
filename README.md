@@ -19,7 +19,7 @@
 * [Slack](#slack)
 
 
-https://user-images.githubusercontent.com/29180932/205920333-fde12d02-c7f0-4eee-a24a-8ae4fb68b9bc.mp4
+https://user-images.githubusercontent.com/20886410/205926414-a5fb6755-b5fa-45f3-9b15-d4f867547836.mp4
 
 
 ## About
