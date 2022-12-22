@@ -109,16 +109,12 @@ func (v *ReportDiscoveredSourcedIntentsResponse) GetReportDiscoveredSourcedInten
 
 // __ReportDiscoveredSourcedIntentsInput is used internally by genqlient
 type __ReportDiscoveredSourcedIntentsInput struct {
-	Environment string        `json:"environment"`
-	Source      string        `json:"source"`
-	Intents     []IntentInput `json:"intents"`
+	Namespace string        `json:"namespace"`
+	Intents   []IntentInput `json:"intents"`
 }
 
-// GetEnvironment returns __ReportDiscoveredSourcedIntentsInput.Environment, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetEnvironment() string { return v.Environment }
-
-// GetSource returns __ReportDiscoveredSourcedIntentsInput.Source, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetSource() string { return v.Source }
+// GetNamespace returns __ReportDiscoveredSourcedIntentsInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportDiscoveredSourcedIntentsInput) GetNamespace() string { return v.Namespace }
 
 // GetIntents returns __ReportDiscoveredSourcedIntentsInput.Intents, and is useful for accessing the field via an interface.
 func (v *__ReportDiscoveredSourcedIntentsInput) GetIntents() []IntentInput { return v.Intents }
@@ -126,21 +122,19 @@ func (v *__ReportDiscoveredSourcedIntentsInput) GetIntents() []IntentInput { ret
 func ReportDiscoveredSourcedIntents(
 	ctx context.Context,
 	client graphql.Client,
-	environment string,
-	source string,
+	namespace string,
 	intents []IntentInput,
 ) (*ReportDiscoveredSourcedIntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportDiscoveredSourcedIntents",
 		Query: `
-mutation ReportDiscoveredSourcedIntents ($environment: ID!, $source: String!, $intents: [IntentInput!]!) {
-	reportDiscoveredSourcedIntents(environment: $environment, source: $source, intents: $intents)
+mutation ReportDiscoveredSourcedIntents ($namespace: String!, $intents: [IntentInput!]!) {
+	reportDiscoveredSourcedIntents(namespace: $namespace, intents: $intents)
 }
 `,
 		Variables: &__ReportDiscoveredSourcedIntentsInput{
-			Environment: environment,
-			Source:      source,
-			Intents:     intents,
+			Namespace: namespace,
+			Intents:   intents,
 		},
 	}
 	var err error

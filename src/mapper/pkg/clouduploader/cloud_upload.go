@@ -4,34 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	"time"
 )
-
-type Config struct {
-	ClientId       string
-	Secret         string
-	apiAddress     string
-	Environment    string
-	IntentSource   string
-	UploadInterval int
-}
-
-func ConfigFromViper() Config {
-	return Config{
-		Environment:    viper.GetString(config.CloudEnvironmentKey),
-		Secret:         viper.GetString(config.ClientSecretKey),
-		ClientId:       viper.GetString(config.ClientIDKey),
-		apiAddress:     viper.GetString(config.CloudApiAddrKey),
-		UploadInterval: viper.GetInt(config.UploadIntervalSecondsKey),
-		IntentSource:   viper.GetString(config.UploadSourceKey),
-	}
-}
 
 type CloudUploader struct {
 	intentsHolder       *resolvers.IntentsHolder
@@ -61,7 +39,7 @@ func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, clo
 }
 
 func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
-	logrus.Info("Search for intents")
+	logrus.Info("Search for intentsByNamespace")
 
 	client := c.cloudClientFactory(ctx, c.config.apiAddress, c.tokenSrc)
 
@@ -70,7 +48,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 		return
 	}
 
-	var intents []cloudclient.IntentInput
+	intentsByNamespace := make(map[string][]cloudclient.IntentInput)
 	for service, serviceIntents := range c.intentsHolder.GetIntentsPerService(nil) {
 		for _, serviceIntent := range serviceIntents {
 			var intent cloudclient.IntentInput
@@ -79,17 +57,23 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 			intent.Body = cloudclient.IntentBody{
 				Type: cloudclient.IntentTypeHttp,
 			}
-			intents = append(intents, intent)
+
+			if _, ok := intentsByNamespace[service.Namespace]; !ok {
+				intentsByNamespace[service.Namespace] = make([]cloudclient.IntentInput, 0)
+			}
+			intentsByNamespace[service.Namespace] = append(intentsByNamespace[service.Namespace], intent)
 		}
 	}
 
-	if len(intents) == 0 {
+	if len(intentsByNamespace) == 0 {
 		return
 	}
 
-	uploadSuccess := client.ReportDiscoveredSourcedIntents(c.config.Environment, c.config.IntentSource, intents)
-	if uploadSuccess {
-		c.lastUploadTimestamp = lastUpdate
+	for namespace, intents := range intentsByNamespace {
+		uploadSuccess := client.ReportDiscoveredSourcedIntents(namespace, intents)
+		if uploadSuccess {
+			c.lastUploadTimestamp = lastUpdate
+		}
 	}
 }
 

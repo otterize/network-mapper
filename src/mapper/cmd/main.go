@@ -91,8 +91,7 @@ func main() {
 	_ = resolver.LoadStore(initCtx) // loads the store from the previous run
 	resolver.Register(e)
 
-	// Temporary condition to disable cloud upload until K8s integration is ready
-	if cloudConfig.Environment != "" {
+	if cloudConfig.IsCloudUploadEnabled() {
 		go func() {
 			cloudClientCtx, cloudClientCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cloudClientCancel()

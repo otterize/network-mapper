@@ -26,9 +26,7 @@ func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
 	s.intentsHolder = resolvers.NewIntentsHolder(nil, resolvers.IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.testNamespace})
 	s.cloudConfig = Config{
-		ClientId:     "test-client-id",
-		Environment:  "test-environment",
-		IntentSource: "test-source",
+		ClientId: "test-client-id",
 	}
 }
 
@@ -62,7 +60,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 		{Client: "client1", Server: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
 		{Client: "client1", Server: "server2", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
 	}
-	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.cloudConfig.Environment, s.cloudConfig.IntentSource, gomock.Eq(intents1)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.testNamespace, gomock.InAnyOrder(intents1)).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 
@@ -74,12 +72,12 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 		{Client: "client2", Server: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.cloudConfig.Environment, s.cloudConfig.IntentSource, gomock.Eq(intents2)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.testNamespace, gomock.InAnyOrder(intents2)).Return(true).Times(1)
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
 func (s *CloudUploaderTestSuite) TestDontUploadWithoutIntents() {
-	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(gomock.Any(), gomock.Any()).Times(0)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
@@ -91,7 +89,7 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 		{Client: "client", Server: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.cloudConfig.Environment, s.cloudConfig.IntentSource, intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.testNamespace, intents).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.addIntent("client", "server")
@@ -106,11 +104,11 @@ func (s *CloudUploaderTestSuite) TestRetryOnFailed() {
 	}
 
 	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(
-		s.cloudConfig.Environment, s.cloudConfig.IntentSource, intents,
+		s.testNamespace, intents,
 	).Return(false).Times(1)
 
 	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(
-		s.cloudConfig.Environment, s.cloudConfig.IntentSource, intents,
+		s.testNamespace, intents,
 	).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
@@ -124,7 +122,7 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 		{Client: "client", Server: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.cloudConfig.Environment, s.cloudConfig.IntentSource, intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredSourcedIntents(s.testNamespace, intents).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
