@@ -1,3 +1,3 @@
-mutation ReportDiscoveredSourcedIntents($namespace: String!, $intents: [IntentInput!]!) {
-    reportDiscoveredSourcedIntents(namespace: $namespace, intents: $intents)
+mutation ReportDiscoveredIntents($namespace: String!, $intents: [IntentInput!]!) {
+    reportDiscoveredIntents(namespace: $namespace, intents: $intents)
 }

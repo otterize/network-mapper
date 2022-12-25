@@ -70,7 +70,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	}
 
 	for namespace, intents := range intentsByNamespace {
-		uploadSuccess := client.ReportDiscoveredSourcedIntents(namespace, intents)
+		uploadSuccess := client.ReportDiscoveredIntents(namespace, intents)
 		if uploadSuccess {
 			c.lastUploadTimestamp = lastUpdate
 		}

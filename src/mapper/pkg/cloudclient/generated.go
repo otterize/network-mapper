@@ -97,49 +97,49 @@ const (
 	KafkaOperationIdempotentwrite KafkaOperation = "IdempotentWrite"
 )
 
-// ReportDiscoveredSourcedIntentsResponse is returned by ReportDiscoveredSourcedIntents on success.
-type ReportDiscoveredSourcedIntentsResponse struct {
-	ReportDiscoveredSourcedIntents bool `json:"reportDiscoveredSourcedIntents"`
+// ReportDiscoveredIntentsResponse is returned by ReportDiscoveredIntents on success.
+type ReportDiscoveredIntentsResponse struct {
+	ReportDiscoveredIntents bool `json:"reportDiscoveredIntents"`
 }
 
-// GetReportDiscoveredSourcedIntents returns ReportDiscoveredSourcedIntentsResponse.ReportDiscoveredSourcedIntents, and is useful for accessing the field via an interface.
-func (v *ReportDiscoveredSourcedIntentsResponse) GetReportDiscoveredSourcedIntents() bool {
-	return v.ReportDiscoveredSourcedIntents
+// GetReportDiscoveredIntents returns ReportDiscoveredIntentsResponse.ReportDiscoveredIntents, and is useful for accessing the field via an interface.
+func (v *ReportDiscoveredIntentsResponse) GetReportDiscoveredIntents() bool {
+	return v.ReportDiscoveredIntents
 }
 
-// __ReportDiscoveredSourcedIntentsInput is used internally by genqlient
-type __ReportDiscoveredSourcedIntentsInput struct {
+// __ReportDiscoveredIntentsInput is used internally by genqlient
+type __ReportDiscoveredIntentsInput struct {
 	Namespace string        `json:"namespace"`
 	Intents   []IntentInput `json:"intents"`
 }
 
-// GetNamespace returns __ReportDiscoveredSourcedIntentsInput.Namespace, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetNamespace() string { return v.Namespace }
+// GetNamespace returns __ReportDiscoveredIntentsInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportDiscoveredIntentsInput) GetNamespace() string { return v.Namespace }
 
-// GetIntents returns __ReportDiscoveredSourcedIntentsInput.Intents, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetIntents() []IntentInput { return v.Intents }
+// GetIntents returns __ReportDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
+func (v *__ReportDiscoveredIntentsInput) GetIntents() []IntentInput { return v.Intents }
 
-func ReportDiscoveredSourcedIntents(
+func ReportDiscoveredIntents(
 	ctx context.Context,
 	client graphql.Client,
 	namespace string,
 	intents []IntentInput,
-) (*ReportDiscoveredSourcedIntentsResponse, error) {
+) (*ReportDiscoveredIntentsResponse, error) {
 	req := &graphql.Request{
-		OpName: "ReportDiscoveredSourcedIntents",
+		OpName: "ReportDiscoveredIntents",
 		Query: `
-mutation ReportDiscoveredSourcedIntents ($namespace: String!, $intents: [IntentInput!]!) {
-	reportDiscoveredSourcedIntents(namespace: $namespace, intents: $intents)
+mutation ReportDiscoveredIntents ($namespace: String!, $intents: [IntentInput!]!) {
+	reportDiscoveredIntents(namespace: $namespace, intents: $intents)
 }
 `,
-		Variables: &__ReportDiscoveredSourcedIntentsInput{
+		Variables: &__ReportDiscoveredIntentsInput{
 			Namespace: namespace,
 			Intents:   intents,
 		},
 	}
 	var err error
 
-	var data ReportDiscoveredSourcedIntentsResponse
+	var data ReportDiscoveredIntentsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
