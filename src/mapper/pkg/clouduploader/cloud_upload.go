@@ -55,9 +55,6 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 			intent.ClientName = service.Name
 			intent.Namespace = service.Namespace
 			intent.ServerName = serviceIntent.Name
-			intent.Body = cloudclient.IntentBody{
-				Type: cloudclient.IntentTypeHttp,
-			}
 
 			intents = append(intents, intent)
 		}
