@@ -39,7 +39,7 @@ func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, clo
 }
 
 func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
-	logrus.Info("Search for intentsByNamespace")
+	logrus.Info("Search for intents")
 
 	client := c.cloudClientFactory(ctx, c.config.apiAddress, c.tokenSrc)
 
@@ -48,32 +48,28 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 		return
 	}
 
-	intentsByNamespace := make(map[string][]cloudclient.IntentInput)
+	var intents []cloudclient.IntentInput
 	for service, serviceIntents := range c.intentsHolder.GetIntentsPerService(nil) {
 		for _, serviceIntent := range serviceIntents {
 			var intent cloudclient.IntentInput
-			intent.Client = service.Name
-			intent.Server = serviceIntent.Name
+			intent.ClientName = service.Name
+			intent.Namespace = service.Namespace
+			intent.ServerName = serviceIntent.Name
 			intent.Body = cloudclient.IntentBody{
 				Type: cloudclient.IntentTypeHttp,
 			}
 
-			if _, ok := intentsByNamespace[service.Namespace]; !ok {
-				intentsByNamespace[service.Namespace] = make([]cloudclient.IntentInput, 0)
-			}
-			intentsByNamespace[service.Namespace] = append(intentsByNamespace[service.Namespace], intent)
+			intents = append(intents, intent)
 		}
 	}
 
-	if len(intentsByNamespace) == 0 {
+	if len(intents) == 0 {
 		return
 	}
 
-	for namespace, intents := range intentsByNamespace {
-		uploadSuccess := client.ReportDiscoveredIntents(namespace, intents)
-		if uploadSuccess {
-			c.lastUploadTimestamp = lastUpdate
-		}
+	uploadSuccess := client.ReportDiscoveredIntents(intents)
+	if uploadSuccess {
+		c.lastUploadTimestamp = lastUpdate
 	}
 }
 

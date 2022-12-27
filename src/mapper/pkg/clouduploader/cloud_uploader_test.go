@@ -57,27 +57,27 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 	s.addIntent("client1", "server2")
 
 	intents1 := []cloudclient.IntentInput{
-		{Client: "client1", Server: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
-		{Client: "client1", Server: "server2", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
+		{ClientName: "client1", ServerName: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
+		{ClientName: "client1", ServerName: "server2", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
 	}
-	s.clientMock.EXPECT().ReportDiscoveredIntents(s.testNamespace, gomock.InAnyOrder(intents1)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.InAnyOrder(intents1)).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 
 	s.addIntent("client2", "server1")
 
 	intents2 := []cloudclient.IntentInput{
-		{Client: "client1", Server: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
-		{Client: "client1", Server: "server2", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
-		{Client: "client2", Server: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
+		{ClientName: "client1", ServerName: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
+		{ClientName: "client1", ServerName: "server2", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
+		{ClientName: "client2", ServerName: "server1", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(s.testNamespace, gomock.InAnyOrder(intents2)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.InAnyOrder(intents2)).Return(true).Times(1)
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
 func (s *CloudUploaderTestSuite) TestDontUploadWithoutIntents() {
-	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), gomock.Any()).Times(0)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any()).Times(0)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
@@ -86,10 +86,10 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 	s.addIntent("client", "server")
 
 	intents := []cloudclient.IntentInput{
-		{Client: "client", Server: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
+		{ClientName: "client", ServerName: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(s.testNamespace, intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.addIntent("client", "server")
@@ -100,16 +100,12 @@ func (s *CloudUploaderTestSuite) TestRetryOnFailed() {
 	s.addIntent("client", "server")
 
 	intents := []cloudclient.IntentInput{
-		{Client: "client", Server: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
+		{ClientName: "client", ServerName: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(
-		s.testNamespace, intents,
-	).Return(false).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(false).Times(1)
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(
-		s.testNamespace, intents,
-	).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
@@ -119,10 +115,10 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 	s.addIntent("client", "server")
 
 	intents := []cloudclient.IntentInput{
-		{Client: "client", Server: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}},
+		{ClientName: "client", ServerName: "server", Body: cloudclient.IntentBody{Type: cloudclient.IntentTypeHttp}, Namespace: s.testNamespace},
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(s.testNamespace, intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())

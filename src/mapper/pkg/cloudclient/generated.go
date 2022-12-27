@@ -48,16 +48,24 @@ func (v *IntentBody) GetTopics() []KafkaConfigInput { return v.Topics }
 func (v *IntentBody) GetResources() []HTTPConfigInput { return v.Resources }
 
 type IntentInput struct {
-	Client string     `json:"client"`
-	Server string     `json:"server"`
-	Body   IntentBody `json:"body"`
+	Namespace       string     `json:"namespace"`
+	ClientName      string     `json:"clientName"`
+	ServerName      string     `json:"serverName"`
+	ServerNamespace string     `json:"serverNamespace"`
+	Body            IntentBody `json:"body"`
 }
 
-// GetClient returns IntentInput.Client, and is useful for accessing the field via an interface.
-func (v *IntentInput) GetClient() string { return v.Client }
+// GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetNamespace() string { return v.Namespace }
 
-// GetServer returns IntentInput.Server, and is useful for accessing the field via an interface.
-func (v *IntentInput) GetServer() string { return v.Server }
+// GetClientName returns IntentInput.ClientName, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetClientName() string { return v.ClientName }
+
+// GetServerName returns IntentInput.ServerName, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerName() string { return v.ServerName }
+
+// GetServerNamespace returns IntentInput.ServerNamespace, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerNamespace() string { return v.ServerNamespace }
 
 // GetBody returns IntentInput.Body, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetBody() IntentBody { return v.Body }
@@ -65,22 +73,22 @@ func (v *IntentInput) GetBody() IntentBody { return v.Body }
 type IntentType string
 
 const (
-	IntentTypeHttp  IntentType = "HTTP"
-	IntentTypeKafka IntentType = "Kafka"
-	IntentTypeGrpc  IntentType = "gRPC"
-	IntentTypeRedis IntentType = "Redis"
+	IntentTypeHttp  IntentType = "http"
+	IntentTypeKafka IntentType = "kafka"
+	IntentTypeGrpc  IntentType = "grpc"
+	IntentTypeRedis IntentType = "redis"
 )
 
 type KafkaConfigInput struct {
-	Topic     string         `json:"topic"`
-	Operation KafkaOperation `json:"operation"`
+	Name       string           `json:"name"`
+	Operations []KafkaOperation `json:"operations"`
 }
 
-// GetTopic returns KafkaConfigInput.Topic, and is useful for accessing the field via an interface.
-func (v *KafkaConfigInput) GetTopic() string { return v.Topic }
+// GetName returns KafkaConfigInput.Name, and is useful for accessing the field via an interface.
+func (v *KafkaConfigInput) GetName() string { return v.Name }
 
-// GetOperation returns KafkaConfigInput.Operation, and is useful for accessing the field via an interface.
-func (v *KafkaConfigInput) GetOperation() KafkaOperation { return v.Operation }
+// GetOperations returns KafkaConfigInput.Operations, and is useful for accessing the field via an interface.
+func (v *KafkaConfigInput) GetOperations() []KafkaOperation { return v.Operations }
 
 type KafkaOperation string
 
@@ -109,12 +117,8 @@ func (v *ReportDiscoveredIntentsResponse) GetReportDiscoveredIntents() bool {
 
 // __ReportDiscoveredIntentsInput is used internally by genqlient
 type __ReportDiscoveredIntentsInput struct {
-	Namespace string        `json:"namespace"`
-	Intents   []IntentInput `json:"intents"`
+	Intents []IntentInput `json:"intents"`
 }
-
-// GetNamespace returns __ReportDiscoveredIntentsInput.Namespace, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredIntentsInput) GetNamespace() string { return v.Namespace }
 
 // GetIntents returns __ReportDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
 func (v *__ReportDiscoveredIntentsInput) GetIntents() []IntentInput { return v.Intents }
@@ -122,19 +126,17 @@ func (v *__ReportDiscoveredIntentsInput) GetIntents() []IntentInput { return v.I
 func ReportDiscoveredIntents(
 	ctx context.Context,
 	client graphql.Client,
-	namespace string,
 	intents []IntentInput,
 ) (*ReportDiscoveredIntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportDiscoveredIntents",
 		Query: `
-mutation ReportDiscoveredIntents ($namespace: String!, $intents: [IntentInput!]!) {
-	reportDiscoveredIntents(namespace: $namespace, intents: $intents)
+mutation ReportDiscoveredIntents ($intents: [IntentInput!]!) {
+	reportDiscoveredIntents(intents: $intents)
 }
 `,
 		Variables: &__ReportDiscoveredIntentsInput{
-			Namespace: namespace,
-			Intents:   intents,
+			Intents: intents,
 		},
 	}
 	var err error
