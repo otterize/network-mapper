@@ -73,10 +73,10 @@ func (v *IntentInput) GetBody() IntentBody { return v.Body }
 type IntentType string
 
 const (
-	IntentTypeHttp  IntentType = "http"
-	IntentTypeKafka IntentType = "kafka"
-	IntentTypeGrpc  IntentType = "grpc"
-	IntentTypeRedis IntentType = "redis"
+	IntentTypeHttp  IntentType = "HTTP"
+	IntentTypeKafka IntentType = "KAFKA"
+	IntentTypeGrpc  IntentType = "GRPC"
+	IntentTypeRedis IntentType = "REDIS"
 )
 
 type KafkaConfigInput struct {
@@ -93,16 +93,16 @@ func (v *KafkaConfigInput) GetOperations() []KafkaOperation { return v.Operation
 type KafkaOperation string
 
 const (
-	KafkaOperationConsume         KafkaOperation = "consume"
-	KafkaOperationProduce         KafkaOperation = "produce"
-	KafkaOperationCreate          KafkaOperation = "create"
-	KafkaOperationAlter           KafkaOperation = "alter"
-	KafkaOperationDelete          KafkaOperation = "delete"
-	KafkaOperationDescribe        KafkaOperation = "describe"
-	KafkaOperationClusteraction   KafkaOperation = "ClusterAction"
-	KafkaOperationDescribeconfigs KafkaOperation = "DescribeConfigs"
-	KafkaOperationAlterconfigs    KafkaOperation = "AlterConfigs"
-	KafkaOperationIdempotentwrite KafkaOperation = "IdempotentWrite"
+	KafkaOperationConsume         KafkaOperation = "CONSUME"
+	KafkaOperationProduce         KafkaOperation = "PRODUCE"
+	KafkaOperationCreate          KafkaOperation = "CREATE"
+	KafkaOperationAlter           KafkaOperation = "ALTER"
+	KafkaOperationDelete          KafkaOperation = "DELETE"
+	KafkaOperationDescribe        KafkaOperation = "DESCRIBE"
+	KafkaOperationClusterAction   KafkaOperation = "CLUSTER_ACTION"
+	KafkaOperationDescribeConfigs KafkaOperation = "DESCRIBE_CONFIGS"
+	KafkaOperationAlterConfigs    KafkaOperation = "ALTER_CONFIGS"
+	KafkaOperationIdempotentWrite KafkaOperation = "IDEMPOTENT_WRITE"
 )
 
 // ReportDiscoveredIntentsResponse is returned by ReportDiscoveredIntents on success.
