@@ -22,9 +22,6 @@ const (
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
 	ClientSecretKey              = "client-secret"
 	ClientIDKey                  = "client-id"
-	CloudEnvironmentKey          = "cloud-environment"
-	UploadSourceKey              = "upload-source"
-	UploadSourceDefault          = "mapper-periodic-upload"
 	UploadIntervalSecondsKey     = "upload-interval-seconds"
 	UploadIntervalSecondsDefault = 60
 )
@@ -35,7 +32,6 @@ func init() {
 	viper.SetDefault(StoreConfigMapKey, StoreConfigMapDefault)
 	viper.SetDefault(NamespaceKey, NamespaceDefault)
 	viper.SetDefault(CloudApiAddrKey, CloudApiAddrDefault)
-	viper.SetDefault(UploadSourceKey, UploadSourceDefault)
 	viper.SetDefault(UploadIntervalSecondsKey, UploadIntervalSecondsDefault)
 	viper.SetDefault(CloudGraphQLEndpointKey, CloudGraphQLEndpointDefault)
 	viper.SetEnvPrefix(EnvPrefix)

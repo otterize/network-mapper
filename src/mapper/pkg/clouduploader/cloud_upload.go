@@ -4,34 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	"time"
 )
-
-type Config struct {
-	ClientId       string
-	Secret         string
-	apiAddress     string
-	Environment    string
-	IntentSource   string
-	UploadInterval int
-}
-
-func ConfigFromViper() Config {
-	return Config{
-		Environment:    viper.GetString(config.CloudEnvironmentKey),
-		Secret:         viper.GetString(config.ClientSecretKey),
-		ClientId:       viper.GetString(config.ClientIDKey),
-		apiAddress:     viper.GetString(config.CloudApiAddrKey),
-		UploadInterval: viper.GetInt(config.UploadIntervalSecondsKey),
-		IntentSource:   viper.GetString(config.UploadSourceKey),
-	}
-}
 
 type CloudUploader struct {
 	intentsHolder       *resolvers.IntentsHolder
@@ -74,11 +52,10 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	for service, serviceIntents := range c.intentsHolder.GetIntentsPerService(nil) {
 		for _, serviceIntent := range serviceIntents {
 			var intent cloudclient.IntentInput
-			intent.Client = service.Name
-			intent.Server = serviceIntent.Name
-			intent.Body = cloudclient.IntentBody{
-				Type: cloudclient.IntentTypeHttp,
-			}
+			intent.ClientName = service.Name
+			intent.Namespace = service.Namespace
+			intent.ServerName = serviceIntent.Name
+
 			intents = append(intents, intent)
 		}
 	}
@@ -87,7 +64,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 		return
 	}
 
-	uploadSuccess := client.ReportDiscoveredSourcedIntents(c.config.Environment, c.config.IntentSource, intents)
+	uploadSuccess := client.ReportDiscoveredIntents(intents)
 	if uploadSuccess {
 		c.lastUploadTimestamp = lastUpdate
 	}

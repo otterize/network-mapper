@@ -2,7 +2,6 @@
 # https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
 schema:
   - '../../../cloudgraphql/*.graphql'
-  - '../../../cloudgraphql/deprecated/*.graphql'
   - '../../../cloudgraphql/federation/*.graphql'
 operations:
   - genqlient.graphql

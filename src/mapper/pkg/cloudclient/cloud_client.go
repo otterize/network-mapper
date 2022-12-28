@@ -13,7 +13,7 @@ import (
 type FactoryFunction func(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) CloudClient
 
 type CloudClient interface {
-	ReportDiscoveredSourcedIntents(environment string, source string, intents []IntentInput) bool
+	ReportDiscoveredIntents(intents []IntentInput) bool
 }
 
 type CloudClientImpl struct {
@@ -32,9 +32,9 @@ func NewClient(ctx context.Context, apiAddress string, tokenSource oauth2.TokenS
 	}
 }
 
-func (c *CloudClientImpl) ReportDiscoveredSourcedIntents(environment string, source string, intents []IntentInput) bool {
+func (c *CloudClientImpl) ReportDiscoveredIntents(intents []IntentInput) bool {
 	logrus.Info("Uploading intents to cloud, count: ", len(intents))
-	_, err := ReportDiscoveredSourcedIntents(c.ctx, c.client, environment, source, intents)
+	_, err := ReportDiscoveredIntents(c.ctx, c.client, intents)
 	if err != nil {
 		logrus.Error("Failed to upload intents to cloud ", err)
 		return false

@@ -34,16 +34,16 @@ func (m *MockCloudClient) EXPECT() *MockCloudClientMockRecorder {
 	return m.recorder
 }
 
-// ReportDiscoveredSourcedIntents mocks base method.
-func (m *MockCloudClient) ReportDiscoveredSourcedIntents(environment, source string, intents []cloudclient.IntentInput) bool {
+// ReportDiscoveredIntents mocks base method.
+func (m *MockCloudClient) ReportDiscoveredIntents(intents []cloudclient.IntentInput) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportDiscoveredSourcedIntents", environment, source, intents)
+	ret := m.ctrl.Call(m, "ReportDiscoveredIntents", intents)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// ReportDiscoveredSourcedIntents indicates an expected call of ReportDiscoveredSourcedIntents.
-func (mr *MockCloudClientMockRecorder) ReportDiscoveredSourcedIntents(environment, source, intents interface{}) *gomock.Call {
+// ReportDiscoveredIntents indicates an expected call of ReportDiscoveredIntents.
+func (mr *MockCloudClientMockRecorder) ReportDiscoveredIntents(intents interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportDiscoveredSourcedIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportDiscoveredSourcedIntents), environment, source, intents)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportDiscoveredIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportDiscoveredIntents), intents)
 }

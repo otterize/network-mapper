@@ -48,16 +48,24 @@ func (v *IntentBody) GetTopics() []KafkaConfigInput { return v.Topics }
 func (v *IntentBody) GetResources() []HTTPConfigInput { return v.Resources }
 
 type IntentInput struct {
-	Client string     `json:"client"`
-	Server string     `json:"server"`
-	Body   IntentBody `json:"body"`
+	Namespace       string     `json:"namespace"`
+	ClientName      string     `json:"clientName"`
+	ServerName      string     `json:"serverName"`
+	ServerNamespace string     `json:"serverNamespace"`
+	Body            IntentBody `json:"body"`
 }
 
-// GetClient returns IntentInput.Client, and is useful for accessing the field via an interface.
-func (v *IntentInput) GetClient() string { return v.Client }
+// GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetNamespace() string { return v.Namespace }
 
-// GetServer returns IntentInput.Server, and is useful for accessing the field via an interface.
-func (v *IntentInput) GetServer() string { return v.Server }
+// GetClientName returns IntentInput.ClientName, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetClientName() string { return v.ClientName }
+
+// GetServerName returns IntentInput.ServerName, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerName() string { return v.ServerName }
+
+// GetServerNamespace returns IntentInput.ServerNamespace, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerNamespace() string { return v.ServerNamespace }
 
 // GetBody returns IntentInput.Body, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetBody() IntentBody { return v.Body }
@@ -66,86 +74,74 @@ type IntentType string
 
 const (
 	IntentTypeHttp  IntentType = "HTTP"
-	IntentTypeKafka IntentType = "Kafka"
-	IntentTypeGrpc  IntentType = "gRPC"
-	IntentTypeRedis IntentType = "Redis"
+	IntentTypeKafka IntentType = "KAFKA"
+	IntentTypeGrpc  IntentType = "GRPC"
+	IntentTypeRedis IntentType = "REDIS"
 )
 
 type KafkaConfigInput struct {
-	Topic     string         `json:"topic"`
-	Operation KafkaOperation `json:"operation"`
+	Name       string           `json:"name"`
+	Operations []KafkaOperation `json:"operations"`
 }
 
-// GetTopic returns KafkaConfigInput.Topic, and is useful for accessing the field via an interface.
-func (v *KafkaConfigInput) GetTopic() string { return v.Topic }
+// GetName returns KafkaConfigInput.Name, and is useful for accessing the field via an interface.
+func (v *KafkaConfigInput) GetName() string { return v.Name }
 
-// GetOperation returns KafkaConfigInput.Operation, and is useful for accessing the field via an interface.
-func (v *KafkaConfigInput) GetOperation() KafkaOperation { return v.Operation }
+// GetOperations returns KafkaConfigInput.Operations, and is useful for accessing the field via an interface.
+func (v *KafkaConfigInput) GetOperations() []KafkaOperation { return v.Operations }
 
 type KafkaOperation string
 
 const (
-	KafkaOperationConsume         KafkaOperation = "consume"
-	KafkaOperationProduce         KafkaOperation = "produce"
-	KafkaOperationCreate          KafkaOperation = "create"
-	KafkaOperationAlter           KafkaOperation = "alter"
-	KafkaOperationDelete          KafkaOperation = "delete"
-	KafkaOperationDescribe        KafkaOperation = "describe"
-	KafkaOperationClusteraction   KafkaOperation = "ClusterAction"
-	KafkaOperationDescribeconfigs KafkaOperation = "DescribeConfigs"
-	KafkaOperationAlterconfigs    KafkaOperation = "AlterConfigs"
-	KafkaOperationIdempotentwrite KafkaOperation = "IdempotentWrite"
+	KafkaOperationConsume         KafkaOperation = "CONSUME"
+	KafkaOperationProduce         KafkaOperation = "PRODUCE"
+	KafkaOperationCreate          KafkaOperation = "CREATE"
+	KafkaOperationAlter           KafkaOperation = "ALTER"
+	KafkaOperationDelete          KafkaOperation = "DELETE"
+	KafkaOperationDescribe        KafkaOperation = "DESCRIBE"
+	KafkaOperationClusterAction   KafkaOperation = "CLUSTER_ACTION"
+	KafkaOperationDescribeConfigs KafkaOperation = "DESCRIBE_CONFIGS"
+	KafkaOperationAlterConfigs    KafkaOperation = "ALTER_CONFIGS"
+	KafkaOperationIdempotentWrite KafkaOperation = "IDEMPOTENT_WRITE"
 )
 
-// ReportDiscoveredSourcedIntentsResponse is returned by ReportDiscoveredSourcedIntents on success.
-type ReportDiscoveredSourcedIntentsResponse struct {
-	ReportDiscoveredSourcedIntents bool `json:"reportDiscoveredSourcedIntents"`
+// ReportDiscoveredIntentsResponse is returned by ReportDiscoveredIntents on success.
+type ReportDiscoveredIntentsResponse struct {
+	ReportDiscoveredIntents bool `json:"reportDiscoveredIntents"`
 }
 
-// GetReportDiscoveredSourcedIntents returns ReportDiscoveredSourcedIntentsResponse.ReportDiscoveredSourcedIntents, and is useful for accessing the field via an interface.
-func (v *ReportDiscoveredSourcedIntentsResponse) GetReportDiscoveredSourcedIntents() bool {
-	return v.ReportDiscoveredSourcedIntents
+// GetReportDiscoveredIntents returns ReportDiscoveredIntentsResponse.ReportDiscoveredIntents, and is useful for accessing the field via an interface.
+func (v *ReportDiscoveredIntentsResponse) GetReportDiscoveredIntents() bool {
+	return v.ReportDiscoveredIntents
 }
 
-// __ReportDiscoveredSourcedIntentsInput is used internally by genqlient
-type __ReportDiscoveredSourcedIntentsInput struct {
-	Environment string        `json:"environment"`
-	Source      string        `json:"source"`
-	Intents     []IntentInput `json:"intents"`
+// __ReportDiscoveredIntentsInput is used internally by genqlient
+type __ReportDiscoveredIntentsInput struct {
+	Intents []IntentInput `json:"intents"`
 }
 
-// GetEnvironment returns __ReportDiscoveredSourcedIntentsInput.Environment, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetEnvironment() string { return v.Environment }
+// GetIntents returns __ReportDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
+func (v *__ReportDiscoveredIntentsInput) GetIntents() []IntentInput { return v.Intents }
 
-// GetSource returns __ReportDiscoveredSourcedIntentsInput.Source, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetSource() string { return v.Source }
-
-// GetIntents returns __ReportDiscoveredSourcedIntentsInput.Intents, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredSourcedIntentsInput) GetIntents() []IntentInput { return v.Intents }
-
-func ReportDiscoveredSourcedIntents(
+func ReportDiscoveredIntents(
 	ctx context.Context,
 	client graphql.Client,
-	environment string,
-	source string,
 	intents []IntentInput,
-) (*ReportDiscoveredSourcedIntentsResponse, error) {
+) (*ReportDiscoveredIntentsResponse, error) {
 	req := &graphql.Request{
-		OpName: "ReportDiscoveredSourcedIntents",
+		OpName: "ReportDiscoveredIntents",
 		Query: `
-mutation ReportDiscoveredSourcedIntents ($environment: ID!, $source: String!, $intents: [IntentInput!]!) {
-	reportDiscoveredSourcedIntents(environment: $environment, source: $source, intents: $intents)
+mutation ReportDiscoveredIntents ($intents: [IntentInput!]!) {
+	reportDiscoveredIntents(intents: $intents)
 }
 `,
-		Variables: &__ReportDiscoveredSourcedIntentsInput{
-			Environment: environment,
-			Source:      source,
-			Intents:     intents,
+		Variables: &__ReportDiscoveredIntentsInput{
+			Intents: intents,
 		},
 	}
 	var err error
 
-	var data ReportDiscoveredSourcedIntentsResponse
+	var data ReportDiscoveredIntentsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
