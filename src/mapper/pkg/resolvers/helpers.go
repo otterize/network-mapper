@@ -91,17 +91,13 @@ func (i *IntentsHolder) Reset() {
 func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	namespace := ""
-	if srcService.Namespace != dstService.Namespace {
-		// namespace is only needed if it's a connection between different namespaces.
-		namespace = dstService.Namespace
-	}
+
 	intents, ok := i.store[srcService]
 	if !ok {
 		intents = goset.NewSet[model.OtterizeServiceIdentity]()
 		i.store[srcService] = intents
 	}
-	intent := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: namespace}
+	intent := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstService.Namespace}
 	if !intents.Contains(intent) {
 		i.lastIntentsUpdate = time.Now()
 		intents.Add(intent)
