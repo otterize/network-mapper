@@ -1,3 +1,4 @@
+# @genqlient(pointer: true)
 mutation ReportDiscoveredIntents($intents: [IntentInput!]!) {
     reportDiscoveredIntents(intents: $intents)
 }

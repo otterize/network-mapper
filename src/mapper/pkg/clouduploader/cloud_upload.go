@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -51,9 +52,10 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	for service, serviceIntents := range c.intentsHolder.GetIntentsPerService(nil) {
 		for _, serviceIntent := range serviceIntents {
 			var intent cloudclient.IntentInput
-			intent.ClientName = service.Name
-			intent.Namespace = service.Namespace
-			intent.ServerName = serviceIntent.Name
+			intent.ClientName = lo.ToPtr(service.Name)
+			intent.Namespace = lo.ToPtr(service.Namespace)
+			intent.ServerName = lo.ToPtr(serviceIntent.Name)
+			intent.ServerNamespace = lo.ToPtr(serviceIntent.Namespace)
 
 			intents = append(intents, intent)
 		}
