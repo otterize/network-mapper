@@ -8,7 +8,7 @@ import (
 	"github.com/otterize/network-mapper/src/sniffer/pkg/client"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/spf13/viper"
-	"io/ioutil"
+	"os"
 	"strconv"
 )
 
@@ -53,7 +53,7 @@ func (s *SocketScanner) scanTcpFile(path string) {
 
 func (s *SocketScanner) ScanProcDir() error {
 	hostProcDir := viper.GetString(config.HostProcDirKey)
-	files, err := ioutil.ReadDir(hostProcDir)
+	files, err := os.ReadDir(hostProcDir)
 	if err != nil {
 		return err
 	}
