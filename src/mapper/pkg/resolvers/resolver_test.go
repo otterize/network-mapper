@@ -60,6 +60,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	s.Require().NoError(err)
 
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
 		{
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{

@@ -16,7 +16,6 @@ type CloudUploader struct {
 	intentsHolder       *resolvers.IntentsHolder
 	config              Config
 	tokenSrc            oauth2.TokenSource
-	cloudAPI            cloudclient.CloudClient
 	lastUploadTimestamp time.Time
 	cloudClientFactory  cloudclient.FactoryFunction
 }
