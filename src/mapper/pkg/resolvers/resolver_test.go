@@ -67,7 +67,10 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{Name: "service2"},
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
 			},
 		},
 		{
@@ -76,8 +79,14 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{Name: "service1"},
-				{Name: "service2"},
+				{
+					Name:      "service1",
+					Namespace: s.TestNamespace,
+				},
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
 			},
 		},
 	})
@@ -112,7 +121,10 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{Name: "service2"},
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
 			},
 		},
 		{
@@ -121,8 +133,14 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{Name: "service1"},
-				{Name: "service2"},
+				{
+					Name:      "service1",
+					Namespace: s.TestNamespace,
+				},
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
 			},
 		},
 	})

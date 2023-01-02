@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
 	"testing"
@@ -45,34 +46,53 @@ func (s *CloudUploaderTestSuite) GetCloudClientFactoryMock(controller *gomock.Co
 	return factory
 }
 
-func (s *CloudUploaderTestSuite) addIntent(source string, destination string) {
+func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, destination string, dstNamespace string) {
 	s.intentsHolder.AddIntent(
-		model.OtterizeServiceIdentity{Name: source, Namespace: s.testNamespace},
-		model.OtterizeServiceIdentity{Name: destination, Namespace: s.testNamespace},
+		model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
+		model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 	)
 }
 
+func intentInput(clientName string, namespace string, serverName string, serverNamespace string, bodyPtr *cloudclient.IntentBody) cloudclient.IntentInput {
+	nilIfEmpty := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return lo.ToPtr(s)
+	}
+
+	return cloudclient.IntentInput{
+		ClientName:      nilIfEmpty(clientName),
+		ServerName:      nilIfEmpty(serverName),
+		Namespace:       nilIfEmpty(namespace),
+		ServerNamespace: nilIfEmpty(serverNamespace),
+		Body:            bodyPtr,
+	}
+}
+
 func (s *CloudUploaderTestSuite) TestUploadIntents() {
-	s.addIntent("client1", "server1")
-	s.addIntent("client1", "server2")
+	s.addIntent("client1", s.testNamespace, "server1", s.testNamespace)
+	s.addIntent("client1", s.testNamespace, "server2", "external-namespace")
 
 	intents1 := []cloudclient.IntentInput{
-		{ClientName: "client1", ServerName: "server1", Namespace: s.testNamespace},
-		{ClientName: "client1", ServerName: "server2", Namespace: s.testNamespace},
+		intentInput("client1", s.testNamespace, "server1", s.testNamespace, nil),
+		intentInput("client1", s.testNamespace, "server2", "external-namespace", nil),
 	}
-	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.InAnyOrder(intents1)).Return(true).Times(1)
+
+	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents1)).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 
-	s.addIntent("client2", "server1")
+	s.addIntent("client2", s.testNamespace, "server1", s.testNamespace)
 
 	intents2 := []cloudclient.IntentInput{
-		{ClientName: "client1", ServerName: "server1", Namespace: s.testNamespace},
-		{ClientName: "client1", ServerName: "server2", Namespace: s.testNamespace},
-		{ClientName: "client2", ServerName: "server1", Namespace: s.testNamespace},
+		intentInput("client2", s.testNamespace, "server1", s.testNamespace, nil),
+		intentInput("client1", s.testNamespace, "server1", s.testNamespace, nil),
+		intentInput("client1", s.testNamespace, "server2", "external-namespace", nil),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.InAnyOrder(intents2)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents2)).Return(true).Times(1)
+
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
@@ -83,24 +103,24 @@ func (s *CloudUploaderTestSuite) TestDontUploadWithoutIntents() {
 }
 
 func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
-	s.addIntent("client", "server")
+	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 
 	intents := []cloudclient.IntentInput{
-		{ClientName: "client", ServerName: "server", Namespace: s.testNamespace},
+		intentInput("client", s.testNamespace, "server", s.testNamespace, nil),
 	}
 
 	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
-	s.addIntent("client", "server")
+	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
 func (s *CloudUploaderTestSuite) TestRetryOnFailed() {
-	s.addIntent("client", "server")
+	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 
 	intents := []cloudclient.IntentInput{
-		{ClientName: "client", ServerName: "server", Namespace: s.testNamespace},
+		intentInput("client", s.testNamespace, "server", s.testNamespace, nil),
 	}
 
 	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(false).Times(1)
@@ -112,10 +132,10 @@ func (s *CloudUploaderTestSuite) TestRetryOnFailed() {
 }
 
 func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
-	s.addIntent("client", "server")
+	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 
 	intents := []cloudclient.IntentInput{
-		{ClientName: "client", ServerName: "server", Namespace: s.testNamespace},
+		intentInput("client", s.testNamespace, "server", s.testNamespace, nil),
 	}
 
 	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)

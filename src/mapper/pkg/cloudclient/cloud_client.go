@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -34,7 +35,12 @@ func NewClient(ctx context.Context, apiAddress string, tokenSource oauth2.TokenS
 
 func (c *CloudClientImpl) ReportDiscoveredIntents(intents []IntentInput) bool {
 	logrus.Info("Uploading intents to cloud, count: ", len(intents))
-	_, err := ReportDiscoveredIntents(c.ctx, c.client, intents)
+
+	intentsPtr := lo.Map(intents, func(intent IntentInput, _ int) *IntentInput {
+		return &intent
+	})
+
+	_, err := ReportDiscoveredIntents(c.ctx, c.client, intentsPtr)
 	if err != nil {
 		logrus.Error("Failed to upload intents to cloud ", err)
 		return false
