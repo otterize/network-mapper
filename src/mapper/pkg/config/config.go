@@ -16,9 +16,7 @@ const (
 	StoreConfigMapDefault        = "otterize-network-mapper-store"
 	NamespaceKey                 = "namespace" // what namespace the mapper is running at. needed for development
 	NamespaceDefault             = ""
-	CloudGraphQLEndpointKey      = "cloud-graphql-endpoint"
-	CloudGraphQLEndpointDefault  = "intents/query"
-	CloudApiAddrKey              = "cloud-api-address"
+	CloudApiAddrKey              = "api-address"
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
 	ClientSecretKey              = "client-secret"
 	ClientIDKey                  = "client-id"
@@ -33,7 +31,6 @@ func init() {
 	viper.SetDefault(NamespaceKey, NamespaceDefault)
 	viper.SetDefault(CloudApiAddrKey, CloudApiAddrDefault)
 	viper.SetDefault(UploadIntervalSecondsKey, UploadIntervalSecondsDefault)
-	viper.SetDefault(CloudGraphQLEndpointKey, CloudGraphQLEndpointDefault)
 	viper.SetEnvPrefix(EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()

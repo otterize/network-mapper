@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
@@ -23,8 +21,7 @@ type CloudClientImpl struct {
 }
 
 func NewClient(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) CloudClient {
-	uri := viper.GetString(config.CloudGraphQLEndpointKey)
-	url := fmt.Sprintf("%s/%s", apiAddress, uri)
+	url := fmt.Sprintf("%s/graphql/v1", apiAddress)
 	client := graphql.NewClient(url, oauth2.NewClient(ctx, tokenSource))
 
 	return &CloudClientImpl{
