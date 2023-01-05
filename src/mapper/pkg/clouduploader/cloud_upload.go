@@ -71,6 +71,12 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	}
 }
 
+func (c *CloudUploader) reportStatus(ctx context.Context) {
+	client := c.cloudClientFactory(ctx, c.config.apiAddress, c.tokenSrc)
+
+	client.ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper)
+}
+
 func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {
 	cloudUploadTicker := time.NewTicker(time.Second * time.Duration(c.config.UploadInterval))
 
@@ -79,6 +85,7 @@ func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {
 		select {
 		case <-cloudUploadTicker.C:
 			c.uploadDiscoveredIntents(ctx)
+			c.reportStatus(ctx)
 
 		case <-ctx.Done():
 			logrus.Info("Periodic upload exit")
