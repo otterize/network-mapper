@@ -145,7 +145,7 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 }
 
 func (s *CloudUploaderTestSuite) TestReportMapperComonent() {
-	s.clientMock.EXPECT().ReportComponent(cloudclient.ComponentTypeNetworkMapper).Times(1)
+	s.clientMock.EXPECT().ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper).Times(1)
 
 	s.cloudUploader.reportStatus(context.Background())
 }

@@ -34,16 +34,16 @@ func (m *MockCloudClient) EXPECT() *MockCloudClientMockRecorder {
 	return m.recorder
 }
 
-// ReportComponent mocks base method.
-func (m *MockCloudClient) ReportComponent(component cloudclient.ComponentType) {
+// ReportComponentStatus mocks base method.
+func (m *MockCloudClient) ReportComponentStatus(component cloudclient.ComponentType) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ReportComponent", component)
+	m.ctrl.Call(m, "ReportComponentStatus", component)
 }
 
-// ReportComponent indicates an expected call of ReportComponent.
-func (mr *MockCloudClientMockRecorder) ReportComponent(component interface{}) *gomock.Call {
+// ReportComponentStatus indicates an expected call of ReportComponentStatus.
+func (mr *MockCloudClientMockRecorder) ReportComponentStatus(component interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportComponent", reflect.TypeOf((*MockCloudClient)(nil).ReportComponent), component)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportComponentStatus", reflect.TypeOf((*MockCloudClient)(nil).ReportComponentStatus), component)
 }
 
 // ReportDiscoveredIntents mocks base method.

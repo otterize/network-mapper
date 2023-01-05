@@ -74,7 +74,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 func (c *CloudUploader) reportStatus(ctx context.Context) {
 	client := c.cloudClientFactory(ctx, c.config.apiAddress, c.tokenSrc)
 
-	client.ReportComponent(cloudclient.ComponentTypeNetworkMapper)
+	client.ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper)
 }
 
 func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {

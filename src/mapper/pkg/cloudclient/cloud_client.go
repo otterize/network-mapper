@@ -13,7 +13,7 @@ type FactoryFunction func(ctx context.Context, apiAddress string, tokenSource oa
 
 type CloudClient interface {
 	ReportDiscoveredIntents(intents []IntentInput) bool
-	ReportComponent(component ComponentType)
+	ReportComponentStatus(component ComponentType)
 }
 
 type CloudClientImpl struct {
@@ -47,7 +47,7 @@ func (c *CloudClientImpl) ReportDiscoveredIntents(intents []IntentInput) bool {
 	return true
 }
 
-func (c *CloudClientImpl) ReportComponent(component ComponentType) {
+func (c *CloudClientImpl) ReportComponentStatus(component ComponentType) {
 	logrus.Info("Uploading component to cloud")
 
 	_, err := ReportComponentStatus(c.ctx, c.client, component)
