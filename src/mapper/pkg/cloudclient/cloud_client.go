@@ -13,6 +13,7 @@ type FactoryFunction func(ctx context.Context, apiAddress string, tokenSource oa
 
 type CloudClient interface {
 	ReportDiscoveredIntents(intents []IntentInput) bool
+	ReportComponent(component ComponentType)
 }
 
 type CloudClientImpl struct {
@@ -44,4 +45,13 @@ func (c *CloudClientImpl) ReportDiscoveredIntents(intents []IntentInput) bool {
 	}
 
 	return true
+}
+
+func (c *CloudClientImpl) ReportComponent(component ComponentType) {
+	logrus.Info("Uploading component to cloud")
+
+	_, err := ReportComponentStatus(c.ctx, c.client, component)
+	if err != nil {
+		logrus.Error("Failed to upload component to cloud ", err)
+	}
 }

@@ -144,6 +144,12 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
+func (s *CloudUploaderTestSuite) TestReportMapperComonent() {
+	s.clientMock.EXPECT().ReportComponent(cloudclient.ComponentTypeNetworkMapper).Times(1)
+
+	s.cloudUploader.reportStatus(context.Background())
+}
+
 func TestRunSuite(t *testing.T) {
 	suite.Run(t, new(CloudUploaderTestSuite))
 }
