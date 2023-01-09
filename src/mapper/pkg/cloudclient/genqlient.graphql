@@ -1,5 +1,5 @@
 # @genqlient(pointer: true)
-mutation ReportDiscoveredIntents($intents: [IntentInput!]!) {
+mutation ReportDiscoveredIntents($intents: [DiscoveredIntentInput!]!) {
     reportDiscoveredIntents(intents: $intents)
 }
 

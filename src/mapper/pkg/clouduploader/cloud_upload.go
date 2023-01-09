@@ -65,7 +65,17 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 		return
 	}
 
-	uploadSuccess := client.ReportDiscoveredIntents(intents)
+	var discoveredIntents []*cloudclient.DiscoveredIntentInput
+	for _, intent := range intents {
+		input := cloudclient.DiscoveredIntentInput{
+			Intent:       lo.ToPtr(intent),
+			DiscoveredAt: lo.ToPtr(time.Now()),
+		}
+
+		discoveredIntents = append(discoveredIntents, lo.ToPtr(input))
+	}
+
+	uploadSuccess := client.ReportDiscoveredIntents(discoveredIntents)
 	if uploadSuccess {
 		c.lastUploadTimestamp = lastUpdate
 	}

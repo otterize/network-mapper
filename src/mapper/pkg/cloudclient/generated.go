@@ -4,6 +4,7 @@ package cloudclient
 
 import (
 	"context"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -15,6 +16,17 @@ const (
 	ComponentTypeCredentialsOperator ComponentType = "CREDENTIALS_OPERATOR"
 	ComponentTypeNetworkMapper       ComponentType = "NETWORK_MAPPER"
 )
+
+type DiscoveredIntentInput struct {
+	DiscoveredAt *time.Time   `json:"discoveredAt"`
+	Intent       *IntentInput `json:"intent"`
+}
+
+// GetDiscoveredAt returns DiscoveredIntentInput.DiscoveredAt, and is useful for accessing the field via an interface.
+func (v *DiscoveredIntentInput) GetDiscoveredAt() *time.Time { return v.DiscoveredAt }
+
+// GetIntent returns DiscoveredIntentInput.Intent, and is useful for accessing the field via an interface.
+func (v *DiscoveredIntentInput) GetIntent() *IntentInput { return v.Intent }
 
 type HTTPConfigInput struct {
 	Path   *string     `json:"path"`
@@ -134,11 +146,11 @@ func (v *__ReportComponentStatusInput) GetComponent() ComponentType { return v.C
 
 // __ReportDiscoveredIntentsInput is used internally by genqlient
 type __ReportDiscoveredIntentsInput struct {
-	Intents []*IntentInput `json:"intents"`
+	Intents []*DiscoveredIntentInput `json:"intents"`
 }
 
 // GetIntents returns __ReportDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
-func (v *__ReportDiscoveredIntentsInput) GetIntents() []*IntentInput { return v.Intents }
+func (v *__ReportDiscoveredIntentsInput) GetIntents() []*DiscoveredIntentInput { return v.Intents }
 
 func ReportComponentStatus(
 	ctx context.Context,
@@ -173,12 +185,12 @@ mutation ReportComponentStatus ($component: ComponentType!) {
 func ReportDiscoveredIntents(
 	ctx context.Context,
 	client graphql.Client,
-	intents []*IntentInput,
+	intents []*DiscoveredIntentInput,
 ) (*ReportDiscoveredIntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportDiscoveredIntents",
 		Query: `
-mutation ReportDiscoveredIntents ($intents: [IntentInput!]!) {
+mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
 	reportDiscoveredIntents(intents: $intents)
 }
 `,

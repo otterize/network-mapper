@@ -47,7 +47,7 @@ func (mr *MockCloudClientMockRecorder) ReportComponentStatus(component interface
 }
 
 // ReportDiscoveredIntents mocks base method.
-func (m *MockCloudClient) ReportDiscoveredIntents(intents []cloudclient.IntentInput) bool {
+func (m *MockCloudClient) ReportDiscoveredIntents(intents []*cloudclient.DiscoveredIntentInput) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportDiscoveredIntents", intents)
 	ret0, _ := ret[0].(bool)
