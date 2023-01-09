@@ -40,27 +40,14 @@ const (
 	HTTPMethodConnect HTTPMethod = "CONNECT"
 )
 
-type IntentBody struct {
-	Type      *IntentType         `json:"type"`
-	Topics    []*KafkaConfigInput `json:"topics"`
-	Resources []*HTTPConfigInput  `json:"resources"`
-}
-
-// GetType returns IntentBody.Type, and is useful for accessing the field via an interface.
-func (v *IntentBody) GetType() *IntentType { return v.Type }
-
-// GetTopics returns IntentBody.Topics, and is useful for accessing the field via an interface.
-func (v *IntentBody) GetTopics() []*KafkaConfigInput { return v.Topics }
-
-// GetResources returns IntentBody.Resources, and is useful for accessing the field via an interface.
-func (v *IntentBody) GetResources() []*HTTPConfigInput { return v.Resources }
-
 type IntentInput struct {
-	Namespace       *string     `json:"namespace"`
-	ClientName      *string     `json:"clientName"`
-	ServerName      *string     `json:"serverName"`
-	ServerNamespace *string     `json:"serverNamespace"`
-	Body            *IntentBody `json:"body"`
+	Namespace       *string             `json:"namespace"`
+	ClientName      *string             `json:"clientName"`
+	ServerName      *string             `json:"serverName"`
+	ServerNamespace *string             `json:"serverNamespace"`
+	Type            *IntentType         `json:"type"`
+	Topics          []*KafkaConfigInput `json:"topics"`
+	Resources       []*HTTPConfigInput  `json:"resources"`
 }
 
 // GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -75,16 +62,20 @@ func (v *IntentInput) GetServerName() *string { return v.ServerName }
 // GetServerNamespace returns IntentInput.ServerNamespace, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetServerNamespace() *string { return v.ServerNamespace }
 
-// GetBody returns IntentInput.Body, and is useful for accessing the field via an interface.
-func (v *IntentInput) GetBody() *IntentBody { return v.Body }
+// GetType returns IntentInput.Type, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetType() *IntentType { return v.Type }
+
+// GetTopics returns IntentInput.Topics, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetTopics() []*KafkaConfigInput { return v.Topics }
+
+// GetResources returns IntentInput.Resources, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetResources() []*HTTPConfigInput { return v.Resources }
 
 type IntentType string
 
 const (
 	IntentTypeHttp  IntentType = "HTTP"
 	IntentTypeKafka IntentType = "KAFKA"
-	IntentTypeGrpc  IntentType = "GRPC"
-	IntentTypeRedis IntentType = "REDIS"
 )
 
 type KafkaConfigInput struct {
