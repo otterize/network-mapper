@@ -223,9 +223,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../mappergraphql/schema.graphql", Input: `
-
-input CaptureResultForSrcIp {
+	{Name: "../mappergraphql/schema.graphql", Input: `input CaptureResultForSrcIp {
     srcIp: String!
     destinations: [String!]!
 }
