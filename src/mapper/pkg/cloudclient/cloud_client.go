@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
@@ -12,7 +11,7 @@ import (
 type FactoryFunction func(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) CloudClient
 
 type CloudClient interface {
-	ReportDiscoveredIntents(intents []IntentInput) bool
+	ReportDiscoveredIntents(intents []*DiscoveredIntentInput) bool
 	ReportComponentStatus(component ComponentType)
 }
 
@@ -31,14 +30,10 @@ func NewClient(ctx context.Context, apiAddress string, tokenSource oauth2.TokenS
 	}
 }
 
-func (c *CloudClientImpl) ReportDiscoveredIntents(intents []IntentInput) bool {
+func (c *CloudClientImpl) ReportDiscoveredIntents(intents []*DiscoveredIntentInput) bool {
 	logrus.Info("Uploading intents to cloud, count: ", len(intents))
 
-	intentsPtr := lo.Map(intents, func(intent IntentInput, _ int) *IntentInput {
-		return &intent
-	})
-
-	_, err := ReportDiscoveredIntents(c.ctx, c.client, intentsPtr)
+	_, err := ReportDiscoveredIntents(c.ctx, c.client, intents)
 	if err != nil {
 		logrus.Error("Failed to upload intents to cloud ", err)
 		return false

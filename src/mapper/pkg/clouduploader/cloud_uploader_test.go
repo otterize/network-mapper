@@ -108,7 +108,7 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 		intentInput("client", s.testNamespace, "server", s.testNamespace),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
@@ -122,9 +122,9 @@ func (s *CloudUploaderTestSuite) TestRetryOnFailed() {
 		intentInput("client", s.testNamespace, "server", s.testNamespace),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(false).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(false).Times(1)
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
@@ -137,7 +137,7 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 		intentInput("client", s.testNamespace, "server", s.testNamespace),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(intents).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(true).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())

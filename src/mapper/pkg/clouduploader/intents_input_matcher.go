@@ -25,11 +25,13 @@ func (m IntentsMatcher) Matches(x interface{}) bool {
 	if x == nil {
 		return false
 	}
-	actualIntents, ok := x.([]cloudclient.IntentInput)
+	actualDiscoveredIntents, ok := x.([]*cloudclient.DiscoveredIntentInput)
 	if !ok {
 		return false
 	}
 	expectedIntents := m.expected
+	actualIntents := discoveredIntentsPtrToIntents(actualDiscoveredIntents)
+
 	if len(actualIntents) != len(expectedIntents) {
 		return false
 	}
@@ -47,6 +49,15 @@ func (m IntentsMatcher) Matches(x interface{}) bool {
 		}
 	}
 	return true
+}
+
+func discoveredIntentsPtrToIntents(actualDiscoveredIntents []*cloudclient.DiscoveredIntentInput) []cloudclient.IntentInput {
+	actualIntents := make([]cloudclient.IntentInput, 0)
+	for _, intent := range actualDiscoveredIntents {
+		intentObject := *intent.Intent
+		actualIntents = append(actualIntents, intentObject)
+	}
+	return actualIntents
 }
 
 func (m IntentsMatcher) String() string {
@@ -78,12 +89,12 @@ func prettyPrint(m IntentsMatcher) string {
 }
 
 func (m IntentsMatcher) Got(got interface{}) string {
-	actual, ok := got.([]cloudclient.IntentInput)
+	actual, ok := got.([]*cloudclient.DiscoveredIntentInput)
 	if !ok {
-		return fmt.Sprintf("Not an []cloudclient.IntentInput, Got: %v", got)
+		return fmt.Sprintf("Not an []*cloudclient.DiscoveredIntentInput, Got: %v", got)
 	}
 
-	return prettyPrint(IntentsMatcher{actual})
+	return prettyPrint(IntentsMatcher{discoveredIntentsPtrToIntents(actual)})
 }
 
 func GetMatcher(expected []cloudclient.IntentInput) IntentsMatcher {
