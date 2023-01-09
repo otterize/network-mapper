@@ -1,5 +1,3 @@
-
-
 input CaptureResultForSrcIp {
     srcIp: String!
     destinations: [String!]!
