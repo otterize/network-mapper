@@ -10,7 +10,6 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
-	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	"io"
 	corev1 "k8s.io/api/core/v1"
@@ -19,30 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sort"
 	"sync"
 	"time"
 )
-
-type intentsHolderStore map[model.OtterizeServiceIdentity]*goset.Set[model.OtterizeServiceIdentity]
-
-func (s intentsHolderStore) MarshalJSON() ([]byte, error) {
-	// OtterizeServiceIdentity cannot be serialized as map key in JSON, because it is represented as a map itself
-	// therefore, we serialize the store as a slice of [Key, Value] "tuples"
-	return json.Marshal(lo.ToPairs(s))
-}
-
-func (s intentsHolderStore) UnmarshalJSON(b []byte) error {
-	var pairs []lo.Entry[model.OtterizeServiceIdentity, *goset.Set[model.OtterizeServiceIdentity]]
-	err := json.Unmarshal(b, &pairs)
-	if err != nil {
-		return err
-	}
-	for _, pair := range pairs {
-		s[pair.Key] = pair.Value
-	}
-	return nil
-}
 
 type IntentsHolderConfig struct {
 	StoreConfigMap string
@@ -74,7 +52,7 @@ type IntentsHolder struct {
 
 func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *IntentsHolder {
 	return &IntentsHolder{
-		store:  make(intentsHolderStore),
+		store:  NewIntentsHolderStore(),
 		lock:   sync.Mutex{},
 		client: client,
 		config: config,
@@ -85,22 +63,16 @@ func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	i.store = make(intentsHolderStore)
+	i.store.Reset()
 }
 
-func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity) {
+func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity, discoveryTime time.Time) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents, ok := i.store[srcService]
-	if !ok {
-		intents = goset.NewSet[model.OtterizeServiceIdentity]()
-		i.store[srcService] = intents
-	}
-	intent := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstService.Namespace}
-	if !intents.Contains(intent) {
+	storeUpdated := i.store.Update(srcService, dstService, discoveryTime)
+	if storeUpdated {
 		i.lastIntentsUpdate = time.Now()
-		intents.Add(intent)
 	}
 }
 
@@ -110,30 +82,15 @@ func (i *IntentsHolder) LastIntentsUpdate() time.Time {
 	return i.lastIntentsUpdate
 }
 
-func (i *IntentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {
+func (i *IntentsHolder) GetIntentsPerNamespace(namespaces []string) map[model.OtterizeServiceIdentity]map[model.OtterizeServiceIdentity]time.Time {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	namespacesSet := goset.FromSlice(namespaces)
-	result := make(map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity)
-	for service, intents := range i.store {
-		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(service.Namespace) {
-			continue
-		}
-		intentsSlice := intents.Items()
-		// sorting the intents so results will be consistent
-		sort.Slice(intentsSlice, func(i, j int) bool {
-			// Primary sort by name
-			if intentsSlice[i].Name != intentsSlice[j].Name {
-				return intentsSlice[i].Name < intentsSlice[j].Name
-			}
-			// Secondary sort by namespace
-			return intentsSlice[i].Namespace < intentsSlice[j].Namespace
-		})
-		if len(intentsSlice) != 0 {
-			result[service] = intentsSlice
-		}
+	if len(namespaces) == 0 {
+		return i.store.GetAllIntents()
 	}
-	return result
+
+	uniqueNamespaces := goset.FromSlice(namespaces).Items()
+	return i.store.GetIntentsByNamespace(uniqueNamespaces)
 }
 
 func (i *IntentsHolder) WriteStore(ctx context.Context) error {

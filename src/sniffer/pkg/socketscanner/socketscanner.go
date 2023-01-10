@@ -3,23 +3,25 @@ package socketscanner
 import (
 	"context"
 	"fmt"
-	"github.com/amit7itz/goset"
 	"github.com/otterize/go-procnet/procnet"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/client"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/spf13/viper"
 	"os"
 	"strconv"
+	"time"
 )
 
+type scanResultMap map[string]map[string]time.Time
+
 type SocketScanner struct {
-	scanResults  map[string]*goset.Set[string]
+	scanResults  scanResultMap
 	mapperClient client.MapperClient
 }
 
 func NewSocketScanner(mapperClient client.MapperClient) *SocketScanner {
 	return &SocketScanner{
-		scanResults:  make(map[string]*goset.Set[string]),
+		scanResults:  make(scanResultMap),
 		mapperClient: mapperClient,
 	}
 }
@@ -43,10 +45,9 @@ func (s *SocketScanner) scanTcpFile(path string) {
 		}
 		if _, ok := listenPorts[sock.LocalAddr.Port]; ok {
 			if _, ok := s.scanResults[sock.RemoteAddr.IP.String()]; !ok {
-				s.scanResults[sock.RemoteAddr.IP.String()] = goset.NewSet(sock.LocalAddr.IP.String())
-			} else {
-				s.scanResults[sock.RemoteAddr.IP.String()].Add(sock.LocalAddr.IP.String())
+				s.scanResults[sock.RemoteAddr.IP.String()] = make(map[string]time.Time)
 			}
+			s.scanResults[sock.RemoteAddr.IP.String()][sock.LocalAddr.IP.String()] = time.Now()
 		}
 	}
 }
@@ -70,14 +71,26 @@ func (s *SocketScanner) ScanProcDir() error {
 }
 
 func (s *SocketScanner) ReportSocketScanResults(ctx context.Context) error {
-	results := client.SocketScanResults{}
-	for srcIp, destIps := range s.scanResults {
-		results.Results = append(results.Results, client.SocketScanResultForSrcIp{SrcIp: srcIp, DestIps: destIps.Items()})
-	}
+	results := getModelResults(s.scanResults)
 	err := s.mapperClient.ReportSocketScanResults(ctx, results)
 	if err != nil {
 		return err
 	}
-	s.scanResults = make(map[string]*goset.Set[string])
+	s.scanResults = make(scanResultMap)
 	return nil
+}
+
+func getModelResults(scanResults scanResultMap) client.SocketScanResults {
+	results := client.SocketScanResults{}
+	for srcIp, destinationsMap := range scanResults {
+		destinations := make([]client.Destination, 0)
+		for destIP, lastSeen := range destinationsMap {
+			destinations = append(destinations, client.Destination{Destination: destIP, LastSeen: lastSeen})
+		}
+		results.Results = append(results.Results, client.SocketScanResultForSrcIp{
+			SrcIp:   srcIp,
+			DestIps: destinations,
+		})
+	}
+	return results
 }

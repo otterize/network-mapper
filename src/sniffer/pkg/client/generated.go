@@ -4,20 +4,21 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
 
 type CaptureResultForSrcIp struct {
-	SrcIp        string   `json:"srcIp"`
-	Destinations []string `json:"destinations"`
+	SrcIp        string        `json:"srcIp"`
+	Destinations []Destination `json:"destinations"`
 }
 
 // GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
 func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
 
 // GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetDestinations() []string { return v.Destinations }
+func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
 
 type CaptureResults struct {
 	Results []CaptureResultForSrcIp `json:"results"`
@@ -26,16 +27,27 @@ type CaptureResults struct {
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
 func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
 
+type Destination struct {
+	Destination string    `json:"destination"`
+	LastSeen    time.Time `json:"lastSeen"`
+}
+
+// GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
+func (v *Destination) GetDestination() string { return v.Destination }
+
+// GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
+func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
+
 type SocketScanResultForSrcIp struct {
-	SrcIp   string   `json:"srcIp"`
-	DestIps []string `json:"destIps"`
+	SrcIp   string        `json:"srcIp"`
+	DestIps []Destination `json:"destIps"`
 }
 
 // GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
 func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
 
 // GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestIps() []string { return v.DestIps }
+func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
 
 type SocketScanResults struct {
 	Results []SocketScanResultForSrcIp `json:"results"`

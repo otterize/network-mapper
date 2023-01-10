@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"github.com/samber/lo"
 	"sort"
 	"strings"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -40,11 +40,12 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
-			if !strings.HasSuffix(dest, viper.GetString(config.ClusterDomainKey)) {
+			destAddress := dest.Destination
+			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
 				continue
 			}
-			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, dest)
+			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 			if err != nil {
 				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
 				continue
@@ -70,6 +71,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			r.intentsHolder.AddIntent(
 				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
 				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				dest.LastSeen,
 			)
 		}
 	}
@@ -97,7 +99,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			continue
 		}
 		for _, destIp := range socketScanItem.DestIps {
-			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp)
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
 			if err != nil {
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
@@ -114,6 +116,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			r.intentsHolder.AddIntent(
 				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
 				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				destIp.LastSeen,
 			)
 		}
 	}
@@ -126,8 +129,14 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {
 	result := make([]model.ServiceIntents, 0)
-	for service, intents := range r.intentsHolder.GetIntentsPerService(namespaces) {
-		result = append(result, model.ServiceIntents{Client: lo.ToPtr(service), Intents: intents})
+	for service, intents := range r.intentsHolder.GetIntentsPerNamespace(namespaces) {
+		input := model.ServiceIntents{
+			Client: lo.ToPtr(service),
+		}
+		for intent := range intents {
+			input.Intents = append(input.Intents, intent)
+		}
+		result = append(result, input)
 	}
 	// sorting by service name so results are more consistent
 	sort.Slice(result, func(i, j int) bool {
