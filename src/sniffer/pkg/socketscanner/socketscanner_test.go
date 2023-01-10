@@ -24,10 +24,6 @@ func (s *SocketScannerTestSuite) SetupSuite() {
 	s.mockMapperClient = mock_client.NewMockMapperClient(s.mockController)
 }
 
-type matchOne[T any] struct {
-	validResults []T
-}
-
 type SocketScanResultForSrcIpMatcher []client.SocketScanResultForSrcIp
 
 func (m SocketScanResultForSrcIpMatcher) Matches(x interface{}) bool {
@@ -84,7 +80,7 @@ func (m SocketScanResultForSrcIpMatcher) String() string {
 }
 
 func GetMatcher(expected []client.SocketScanResultForSrcIp) SocketScanResultForSrcIpMatcher {
-	return SocketScanResultForSrcIpMatcher(expected)
+	return expected
 }
 
 func (s *SocketScannerTestSuite) TestScanProcDir() {
