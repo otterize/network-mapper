@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
+	"sort"
 	"time"
 )
 
-type serviceToDestToTimestamp map[model.OtterizeServiceIdentity]map[model.OtterizeServiceIdentity]time.Time
+type ServiceToDestToTimestamp map[model.OtterizeServiceIdentity]map[model.OtterizeServiceIdentity]time.Time
 
 type DiscoveredIntent struct {
 	Source      model.OtterizeServiceIdentity
@@ -15,21 +16,21 @@ type DiscoveredIntent struct {
 	Timestamp   time.Time
 }
 
-type intentsHolderStore struct {
-	serviceMap serviceToDestToTimestamp
+type IntentsHolderStore struct {
+	serviceMap ServiceToDestToTimestamp
 }
 
-func NewIntentsHolderStore() intentsHolderStore {
-	return intentsHolderStore{
-		serviceMap: make(serviceToDestToTimestamp),
+func NewIntentsHolderStore() IntentsHolderStore {
+	return IntentsHolderStore{
+		serviceMap: make(ServiceToDestToTimestamp),
 	}
 }
 
-func (s intentsHolderStore) MarshalJSON() ([]byte, error) {
+func (serviceMap ServiceToDestToTimestamp) MarshalJSON() ([]byte, error) {
 	// OtterizeServiceIdentity cannot be serialized as map key in JSON, because it is represented as a map itself
 	// therefore, we serialize the store as a slice of [Key, Value] "tuples"
 	sourceToIntents := make(map[model.OtterizeServiceIdentity][]DiscoveredIntent)
-	for source, destinations := range s.serviceMap {
+	for source, destinations := range serviceMap {
 		var intents []DiscoveredIntent
 		for destination, timestamp := range destinations {
 			intents = append(intents, DiscoveredIntent{
@@ -43,7 +44,7 @@ func (s intentsHolderStore) MarshalJSON() ([]byte, error) {
 	return json.Marshal(lo.ToPairs(sourceToIntents))
 }
 
-func (s intentsHolderStore) UnmarshalJSON(b []byte) error {
+func (serviceMap ServiceToDestToTimestamp) UnmarshalJSON(b []byte) error {
 	var pairs []lo.Entry[model.OtterizeServiceIdentity, []DiscoveredIntent]
 	err := json.Unmarshal(b, &pairs)
 	if err != nil {
@@ -51,15 +52,23 @@ func (s intentsHolderStore) UnmarshalJSON(b []byte) error {
 	}
 	for _, pair := range pairs {
 		src := pair.Key
-		s.serviceMap[src] = make(map[model.OtterizeServiceIdentity]time.Time)
+		serviceMap[src] = make(map[model.OtterizeServiceIdentity]time.Time)
 		for _, intent := range pair.Value {
-			s.serviceMap[src][intent.Destination] = intent.Timestamp
+			serviceMap[src][intent.Destination] = intent.Timestamp
 		}
 	}
 	return nil
 }
 
-func (s *intentsHolderStore) Update(src model.OtterizeServiceIdentity, dest model.OtterizeServiceIdentity, newTimestamp time.Time) bool {
+func (s *IntentsHolderStore) MarshalJSON() ([]byte, error) {
+	return s.serviceMap.MarshalJSON()
+}
+
+func (s *IntentsHolderStore) UnmarshalJSON(b []byte) error {
+	return json.Unmarshal(b, &s.serviceMap)
+}
+
+func (s *IntentsHolderStore) Update(src model.OtterizeServiceIdentity, dest model.OtterizeServiceIdentity, newTimestamp time.Time) bool {
 	updated := false
 	if _, ok := s.serviceMap[src]; !ok {
 		s.serviceMap[src] = make(map[model.OtterizeServiceIdentity]time.Time)
@@ -80,33 +89,42 @@ func (s *intentsHolderStore) Update(src model.OtterizeServiceIdentity, dest mode
 	return updated
 }
 
-func (s *intentsHolderStore) GetIntentsByNamespace(namespaces []string) serviceToDestToTimestamp {
-	result := make(serviceToDestToTimestamp)
+func (s *IntentsHolderStore) GetIntents(namespaces []string) ServiceToDestToTimestamp {
+	result := make(ServiceToDestToTimestamp)
 	for service := range s.serviceMap {
-		if !lo.Contains(namespaces, service.Namespace) {
+		if !shouldGetIntentsForService(namespaces, service) {
 			continue
 		}
 
 		result[service] = make(map[model.OtterizeServiceIdentity]time.Time)
-		for dest, timestamp := range s.serviceMap[service] {
-			result[service][dest] = timestamp
-		}
-	}
-	return result
+		pairs := lo.ToPairs(s.serviceMap[service])
+		sort.Slice(pairs, func(i, j int) bool {
+			return compareOrderedServiceNames(pairs[i].Key, pairs[j].Key)
+		})
 
-}
-
-func (s *intentsHolderStore) GetAllIntents() serviceToDestToTimestamp {
-	result := make(serviceToDestToTimestamp)
-	for service := range s.serviceMap {
-		result[service] = make(map[model.OtterizeServiceIdentity]time.Time)
-		for dest, timestamp := range s.serviceMap[service] {
+		for _, pair := range pairs {
+			dest := pair.Key
+			timestamp := pair.Value
 			result[service][dest] = timestamp
 		}
 	}
 	return result
 }
 
-func (s *intentsHolderStore) Reset() {
-	s.serviceMap = make(serviceToDestToTimestamp)
+func shouldGetIntentsForService(namespaces []string, service model.OtterizeServiceIdentity) bool {
+	return len(namespaces) == 0 || lo.Contains(namespaces, service.Namespace)
+}
+
+func compareOrderedServiceNames(a model.OtterizeServiceIdentity, b model.OtterizeServiceIdentity) bool {
+	// Primary sort by name
+	if a.Name != b.Name {
+		return a.Name < b.Name
+	}
+
+	// Secondary sort by namespace
+	return a.Namespace < b.Namespace
+}
+
+func (s *IntentsHolderStore) Reset() {
+	s.serviceMap = make(ServiceToDestToTimestamp)
 }

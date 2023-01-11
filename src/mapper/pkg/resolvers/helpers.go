@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -43,7 +42,7 @@ func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
 }
 
 type IntentsHolder struct {
-	store             intentsHolderStore
+	store             IntentsHolderStore
 	lock              sync.Mutex
 	client            client.Client
 	config            IntentsHolderConfig
@@ -82,24 +81,22 @@ func (i *IntentsHolder) LastIntentsUpdate() time.Time {
 	return i.lastIntentsUpdate
 }
 
-func (i *IntentsHolder) GetIntentsPerNamespace(namespaces []string) map[model.OtterizeServiceIdentity]map[model.OtterizeServiceIdentity]time.Time {
+func (i *IntentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity]map[model.OtterizeServiceIdentity]time.Time {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	if len(namespaces) == 0 {
-		return i.store.GetAllIntents()
-	}
 
 	uniqueNamespaces := goset.FromSlice(namespaces).Items()
-	return i.store.GetIntentsByNamespace(uniqueNamespaces)
+	return i.store.GetIntents(uniqueNamespaces)
 }
 
 func (i *IntentsHolder) WriteStore(ctx context.Context) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	jsonBytes, err := json.Marshal(i.store)
+	jsonBytes, err := i.store.MarshalJSON()
 	if err != nil {
 		return err
 	}
+
 	var compressedJson bytes.Buffer
 	writer := gzip.NewWriter(&compressedJson)
 	_, err = writer.Write(jsonBytes)
@@ -137,5 +134,5 @@ func (i *IntentsHolder) LoadStore(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(decompressedJson, &i.store)
+	return i.store.UnmarshalJSON(decompressedJson)
 }

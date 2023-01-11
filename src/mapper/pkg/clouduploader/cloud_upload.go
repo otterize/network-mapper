@@ -49,7 +49,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	}
 
 	var discoveredIntents []*cloudclient.DiscoveredIntentInput
-	for service, serviceIntents := range c.intentsHolder.GetIntentsPerNamespace(nil) {
+	for service, serviceIntents := range c.intentsHolder.GetIntentsPerService(nil) {
 		for server, timestamp := range serviceIntents {
 			var intent cloudclient.IntentInput
 			intent.ClientName = lo.ToPtr(service.Name)

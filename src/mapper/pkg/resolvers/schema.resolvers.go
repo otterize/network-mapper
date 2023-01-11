@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"github.com/samber/lo"
 	"sort"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -129,7 +129,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {
 	result := make([]model.ServiceIntents, 0)
-	for service, intents := range r.intentsHolder.GetIntentsPerNamespace(namespaces) {
+	for service, intents := range r.intentsHolder.GetIntentsPerService(namespaces) {
 		input := model.ServiceIntents{
 			Client: lo.ToPtr(service),
 		}
