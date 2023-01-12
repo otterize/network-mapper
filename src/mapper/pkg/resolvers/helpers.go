@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
+	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	"io"
 	corev1 "k8s.io/api/core/v1"
@@ -17,9 +19,30 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sort"
 	"sync"
 	"time"
 )
+
+type intentsHolderStore map[model.OtterizeServiceIdentity]*goset.Set[model.OtterizeServiceIdentity]
+
+func (s intentsHolderStore) MarshalJSON() ([]byte, error) {
+	// OtterizeServiceIdentity cannot be serialized as map key in JSON, because it is represented as a map itself
+	// therefore, we serialize the store as a slice of [Key, Value] "tuples"
+	return json.Marshal(lo.ToPairs(s))
+}
+
+func (s intentsHolderStore) UnmarshalJSON(b []byte) error {
+	var pairs []lo.Entry[model.OtterizeServiceIdentity, *goset.Set[model.OtterizeServiceIdentity]]
+	err := json.Unmarshal(b, &pairs)
+	if err != nil {
+		return err
+	}
+	for _, pair := range pairs {
+		s[pair.Key] = pair.Value
+	}
+	return nil
+}
 
 type IntentsHolderConfig struct {
 	StoreConfigMap string
@@ -42,7 +65,7 @@ func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
 }
 
 type IntentsHolder struct {
-	store             IntentsHolderStore
+	store             intentsHolderStore
 	lock              sync.Mutex
 	client            client.Client
 	config            IntentsHolderConfig
@@ -51,7 +74,7 @@ type IntentsHolder struct {
 
 func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *IntentsHolder {
 	return &IntentsHolder{
-		store:  NewIntentsHolderStore(),
+		store:  make(intentsHolderStore),
 		lock:   sync.Mutex{},
 		client: client,
 		config: config,
@@ -62,16 +85,22 @@ func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	i.store.Reset()
+	i.store = make(intentsHolderStore)
 }
 
-func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity, discoveryTime time.Time) {
+func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	storeUpdated := i.store.Update(srcService, dstService, discoveryTime)
-	if storeUpdated {
+	intents, ok := i.store[srcService]
+	if !ok {
+		intents = goset.NewSet[model.OtterizeServiceIdentity]()
+		i.store[srcService] = intents
+	}
+	intent := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstService.Namespace}
+	if !intents.Contains(intent) {
 		i.lastIntentsUpdate = time.Now()
+		intents.Add(intent)
 	}
 }
 
@@ -81,22 +110,39 @@ func (i *IntentsHolder) LastIntentsUpdate() time.Time {
 	return i.lastIntentsUpdate
 }
 
-func (i *IntentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity]map[model.OtterizeServiceIdentity]time.Time {
+func (i *IntentsHolder) GetIntentsPerService(namespaces []string) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-
-	uniqueNamespaces := goset.FromSlice(namespaces).Items()
-	return i.store.GetIntents(uniqueNamespaces)
+	namespacesSet := goset.FromSlice(namespaces)
+	result := make(map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity)
+	for service, intents := range i.store {
+		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(service.Namespace) {
+			continue
+		}
+		intentsSlice := intents.Items()
+		// sorting the intents so results will be consistent
+		sort.Slice(intentsSlice, func(i, j int) bool {
+			// Primary sort by name
+			if intentsSlice[i].Name != intentsSlice[j].Name {
+				return intentsSlice[i].Name < intentsSlice[j].Name
+			}
+			// Secondary sort by namespace
+			return intentsSlice[i].Namespace < intentsSlice[j].Namespace
+		})
+		if len(intentsSlice) != 0 {
+			result[service] = intentsSlice
+		}
+	}
+	return result
 }
 
 func (i *IntentsHolder) WriteStore(ctx context.Context) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
-	jsonBytes, err := i.store.MarshalJSON()
+	jsonBytes, err := json.Marshal(i.store)
 	if err != nil {
 		return err
 	}
-
 	var compressedJson bytes.Buffer
 	writer := gzip.NewWriter(&compressedJson)
 	_, err = writer.Write(jsonBytes)
@@ -134,5 +180,5 @@ func (i *IntentsHolder) LoadStore(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return i.store.UnmarshalJSON(decompressedJson)
+	return json.Unmarshal(decompressedJson, &i.store)
 }
