@@ -49,16 +49,16 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	}
 
 	var discoveredIntents []*cloudclient.DiscoveredIntentInput
-	for _, discoveredIntent := range c.intentsHolder.GetIntents(nil) {
-		var intent cloudclient.IntentInput
-		intent.ClientName = lo.ToPtr(discoveredIntent.Source.Name)
-		intent.Namespace = lo.ToPtr(discoveredIntent.Source.Namespace)
-		intent.ServerName = lo.ToPtr(discoveredIntent.Destination.Name)
-		intent.ServerNamespace = lo.ToPtr(discoveredIntent.Destination.Namespace)
+	for _, intent := range c.intentsHolder.GetIntents(nil) {
+		var discoveredIntent cloudclient.IntentInput
+		discoveredIntent.ClientName = lo.ToPtr(intent.Source.Name)
+		discoveredIntent.Namespace = lo.ToPtr(intent.Source.Namespace)
+		discoveredIntent.ServerName = lo.ToPtr(intent.Destination.Name)
+		discoveredIntent.ServerNamespace = lo.ToPtr(intent.Destination.Namespace)
 
 		input := &cloudclient.DiscoveredIntentInput{
-			DiscoveredAt: lo.ToPtr(discoveredIntent.Timestamp),
-			Intent:       &intent,
+			DiscoveredAt: lo.ToPtr(intent.Timestamp),
+			Intent:       &discoveredIntent,
 		}
 
 		discoveredIntents = append(discoveredIntents, input)
