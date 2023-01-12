@@ -128,16 +128,24 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 }
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {
+	discoveredIntents := r.intentsHolder.GetIntents(namespaces)
+	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
+
 	result := make([]model.ServiceIntents, 0)
-	for service, intents := range r.intentsHolder.GetIntentsPerService(namespaces) {
-		input := model.ServiceIntents{
-			Client: lo.ToPtr(service),
-		}
-		for intent := range intents {
-			input.Intents = append(input.Intents, intent)
-		}
-		result = append(result, input)
+	for service, destinations := range serviceToDestinations {
+		sort.Slice(destinations, func(i, j int) bool {
+			if destinations[i].Name != destinations[j].Name {
+				return destinations[i].Name < destinations[j].Name
+			}
+			return destinations[i].Namespace < destinations[j].Namespace
+		})
+
+		result = append(result, model.ServiceIntents{
+			Client:  lo.ToPtr(service),
+			Intents: destinations,
+		})
 	}
+
 	// sorting by service name so results are more consistent
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Client.Name < result[j].Client.Name
