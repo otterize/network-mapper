@@ -4,5 +4,5 @@ mutation ReportDiscoveredIntents($intents: [DiscoveredIntentInput!]!) {
 }
 
 mutation ReportComponentStatus($component: ComponentType!) {
-    reportComponentStatus(component: $component)
+    reportIntegrationComponentStatus(component: $component)
 }
