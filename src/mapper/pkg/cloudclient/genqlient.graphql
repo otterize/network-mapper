@@ -1,0 +1,8 @@
+# @genqlient(pointer: true)
+mutation ReportDiscoveredIntents($intents: [DiscoveredIntentInput!]!) {
+    reportDiscoveredIntents(intents: $intents)
+}
+
+mutation ReportComponentStatus($component: ComponentType!) {
+    reportIntegrationComponentStatus(component: $component)
+}
