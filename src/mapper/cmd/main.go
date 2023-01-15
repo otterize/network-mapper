@@ -5,8 +5,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
-	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/network-mapper/src/mapper/pkg/clouduploader"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
@@ -15,11 +13,9 @@ import (
 	"github.com/spf13/viper"
 	"net/http"
 	"os"
-	"os/signal"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
-	"syscall"
 	"time"
 )
 
@@ -83,21 +79,10 @@ func main() {
 		logrus.Error(intentHolderCfg)
 		os.Exit(1)
 	}
-
-	cloudConfig := clouduploader.ConfigFromViper()
 	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient(), intentHolderCfg)
-	cloudClient := clouduploader.NewCloudUploader(intentsHolder, cloudConfig, cloudclient.NewClient)
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
 	_ = resolver.LoadStore(initCtx) // loads the store from the previous run
 	resolver.Register(e)
-
-	if cloudConfig.IsCloudUploadEnabled() {
-		go func() {
-			cloudClientCtx, cloudClientCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			defer cloudClientCancel()
-			cloudClient.PeriodicIntentsUpload(cloudClientCtx)
-		}()
-	}
 
 	logrus.Info("Starting api server")
 	err = e.Start("0.0.0.0:9090")

@@ -45,22 +45,14 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
 		Results: []test_gql_client.CaptureResultForSrcIp{
 			{
-				SrcIp: "1.1.1.1",
-				Destinations: []test_gql_client.Destination{
-					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
-					},
-				},
+				SrcIp:        "1.1.1.1",
+				Destinations: []string{fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace)},
 			},
 			{
 				SrcIp: "1.1.1.3",
-				Destinations: []test_gql_client.Destination{
-					{
-						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
-					},
-					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
-					},
+				Destinations: []string{
+					fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+					fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
 				},
 			},
 		},
@@ -68,7 +60,6 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	s.Require().NoError(err)
 
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
-	s.Require().NoError(err)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
 		{
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
@@ -76,10 +67,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
-				},
+				{Name: "service2"},
 			},
 		},
 		{
@@ -88,14 +76,8 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{
-					Name:      "service1",
-					Namespace: s.TestNamespace,
-				},
-				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
-				},
+				{Name: "service1"},
+				{Name: "service2"},
 			},
 		},
 	})
@@ -110,23 +92,12 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 	_, err := test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
 		Results: []test_gql_client.SocketScanResultForSrcIp{
 			{
-				SrcIp: "1.1.2.1",
-				DestIps: []test_gql_client.Destination{
-					{
-						Destination: "1.1.2.2",
-					},
-				},
+				SrcIp:   "1.1.2.1",
+				DestIps: []string{"1.1.2.2"},
 			},
 			{
-				SrcIp: "1.1.2.3",
-				DestIps: []test_gql_client.Destination{
-					{
-						Destination: "1.1.2.1",
-					},
-					{
-						Destination: "1.1.2.2",
-					},
-				},
+				SrcIp:   "1.1.2.3",
+				DestIps: []string{"1.1.2.1", "1.1.2.2"},
 			},
 		},
 	})
@@ -141,10 +112,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
-				},
+				{Name: "service2"},
 			},
 		},
 		{
@@ -153,14 +121,8 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 				Namespace: s.TestNamespace,
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
-				{
-					Name:      "service1",
-					Namespace: s.TestNamespace,
-				},
-				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
-				},
+				{Name: "service1"},
+				{Name: "service2"},
 			},
 		},
 	})
@@ -178,23 +140,12 @@ func (s *ResolverTestSuite) TestLoadStore() {
 	_, err = test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
 		Results: []test_gql_client.SocketScanResultForSrcIp{
 			{
-				SrcIp: "1.1.3.1",
-				DestIps: []test_gql_client.Destination{
-					{
-						Destination: "1.1.3.2",
-					},
-				},
+				SrcIp:   "1.1.3.1",
+				DestIps: []string{"1.1.3.2"},
 			},
 			{
-				SrcIp: "1.1.3.3",
-				DestIps: []test_gql_client.Destination{
-					{
-						Destination: "1.1.3.2",
-					},
-					{
-						Destination: "1.1.3.2",
-					},
-				},
+				SrcIp:   "1.1.3.3",
+				DestIps: []string{"1.1.3.1", "1.1.3.2"},
 			},
 		},
 	})

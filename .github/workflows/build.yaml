@@ -10,7 +10,6 @@ on:
   push:
     branches:
       - main
-      - develop
 
 env:
   REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
@@ -32,7 +31,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
-          token: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }} # required for checking out submodules
 
       - name: Set up Docker Buildx
         id: buildx

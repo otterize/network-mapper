@@ -10,7 +10,6 @@ import (
 	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/client/mockclient"
 	"github.com/stretchr/testify/suite"
 	"testing"
-	"time"
 )
 
 type SnifferTestSuite struct {
@@ -31,20 +30,13 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 		s.Require().NoError(err)
 	}
 	packet := gopacket.NewPacket(rawDnsResponse, layers.LayerTypeEthernet, gopacket.Default)
-	timestamp := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-	packet.Metadata().CaptureInfo.Timestamp = timestamp
 	sniffer.HandlePacket(packet)
 
 	s.mockMapperClient.EXPECT().ReportCaptureResults(gomock.Any(), client.CaptureResults{
 		Results: []client.CaptureResultForSrcIp{
 			{
-				SrcIp: "10.101.81.13",
-				Destinations: []client.Destination{
-					{
-						Destination: "sts.us-east-1.amazonaws.com",
-						LastSeen:    timestamp,
-					},
-				},
+				SrcIp:        "10.101.81.13",
+				Destinations: []string{"sts.us-east-1.amazonaws.com"},
 			},
 		},
 	})

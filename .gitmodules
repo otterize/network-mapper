@@ -1,3 +1,0 @@
-[submodule "src/cloudgraphql"]
-	path = src/cloudgraphql
-	url = https://github.com/otterize/graphql

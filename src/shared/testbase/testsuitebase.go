@@ -117,7 +117,7 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 
 	if podIp != "" {
 		pod.Status.PodIP = podIp
-		pod.Status.PodIPs = []corev1.PodIP{{IP: podIp}}
+		pod.Status.PodIPs = []corev1.PodIP{{podIp}}
 		pod, err = s.K8sDirectClient.CoreV1().Pods(s.TestNamespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
 		s.Require().NoError(err)
 	}

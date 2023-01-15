@@ -1,13 +1,8 @@
-scalar Time # Equivalent of Go's time.Time provided by gqlgen
+
 
 input CaptureResultForSrcIp {
     srcIp: String!
-    destinations: [Destination!]!
-}
-
-input Destination {
-    destination: String!
-    lastSeen: Time!
+    destinations: [String!]!
 }
 
 input CaptureResults {
@@ -16,7 +11,7 @@ input CaptureResults {
 
 input SocketScanResultForSrcIp {
     srcIp: String!
-    destIps: [Destination!]!
+    destIps: [String!]!
 }
 
 input SocketScanResults {

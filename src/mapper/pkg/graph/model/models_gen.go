@@ -2,22 +2,13 @@
 
 package model
 
-import (
-	"time"
-)
-
 type CaptureResultForSrcIP struct {
-	SrcIP        string        `json:"srcIp"`
-	Destinations []Destination `json:"destinations"`
+	SrcIP        string   `json:"srcIp"`
+	Destinations []string `json:"destinations"`
 }
 
 type CaptureResults struct {
 	Results []CaptureResultForSrcIP `json:"results"`
-}
-
-type Destination struct {
-	Destination string    `json:"destination"`
-	LastSeen    time.Time `json:"lastSeen"`
 }
 
 type OtterizeServiceIdentity struct {
@@ -31,8 +22,8 @@ type ServiceIntents struct {
 }
 
 type SocketScanResultForSrcIP struct {
-	SrcIP   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
+	SrcIP   string   `json:"srcIp"`
+	DestIps []string `json:"destIps"`
 }
 
 type SocketScanResults struct {
