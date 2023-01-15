@@ -2,7 +2,6 @@ package sniffer
 
 import (
 	"context"
-	"github.com/amit7itz/goset"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
@@ -14,8 +13,11 @@ import (
 	"time"
 )
 
+// capturesMap is a map of source IP to a map of destination DNS to the last time it was seen
+type capturesMap map[string]map[string]time.Time
+
 type Sniffer struct {
-	capturedRequests map[string]*goset.Set[string]
+	capturedRequests capturesMap
 	socketScanner    *socketscanner.SocketScanner
 	lastReportTime   time.Time
 	mapperClient     client.MapperClient
@@ -23,7 +25,7 @@ type Sniffer struct {
 
 func NewSniffer(mapperClient client.MapperClient) *Sniffer {
 	return &Sniffer{
-		capturedRequests: make(map[string]*goset.Set[string]),
+		capturedRequests: make(capturesMap),
 		socketScanner:    socketscanner.NewSocketScanner(mapperClient),
 		lastReportTime:   time.Now(),
 		mapperClient:     mapperClient,
@@ -31,6 +33,7 @@ func NewSniffer(mapperClient client.MapperClient) *Sniffer {
 }
 
 func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
+	captureTime := detectCaptureTime(packet)
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS)
 	if dnsLayer != nil && ipLayer != nil {
@@ -42,18 +45,25 @@ func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
 				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
 					continue
 				}
-				s.addCapturedRequest(ip.DstIP.String(), string(answer.Name))
+				s.addCapturedRequest(ip.DstIP.String(), string(answer.Name), captureTime)
 			}
 		}
 	}
 }
 
-func (s *Sniffer) addCapturedRequest(srcIp string, destDns string) {
-	if _, ok := s.capturedRequests[srcIp]; !ok {
-		s.capturedRequests[srcIp] = goset.NewSet[string](destDns)
-	} else {
-		s.capturedRequests[srcIp].Add(destDns)
+func detectCaptureTime(packet gopacket.Packet) time.Time {
+	captureTime := packet.Metadata().CaptureInfo.Timestamp
+	if captureTime.IsZero() {
+		return time.Now()
 	}
+	return captureTime
+}
+
+func (s *Sniffer) addCapturedRequest(srcIp string, destDns string, seenAt time.Time) {
+	if _, ok := s.capturedRequests[srcIp]; !ok {
+		s.capturedRequests[srcIp] = make(map[string]time.Time)
+	}
+	s.capturedRequests[srcIp][destDns] = seenAt
 }
 
 func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
@@ -63,10 +73,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 		return nil
 	}
 	s.PrintCapturedRequests()
-	results := make([]client.CaptureResultForSrcIp, 0, len(s.capturedRequests))
-	for srcIp, destinations := range s.capturedRequests {
-		results = append(results, client.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations.Items()})
-	}
+	results := getCaptureResults(s.capturedRequests)
 	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
 	defer cancelFunc()
 
@@ -77,16 +84,28 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	}
 
 	// delete the reported captured requests
-	s.capturedRequests = make(map[string]*goset.Set[string])
+	s.capturedRequests = make(capturesMap)
 	return nil
 }
 
+func getCaptureResults(capturedRequests capturesMap) []client.CaptureResultForSrcIp {
+	results := make([]client.CaptureResultForSrcIp, 0, len(capturedRequests))
+	for srcIp, destDNSToTime := range capturedRequests {
+		destinations := make([]client.Destination, 0)
+		for destDNS, lastSeen := range destDNSToTime {
+			destinations = append(destinations, client.Destination{Destination: destDNS, LastSeen: lastSeen})
+		}
+		results = append(results, client.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations})
+	}
+	return results
+}
+
 func (s *Sniffer) PrintCapturedRequests() {
-	for ip, dests := range s.capturedRequests {
+	for ip, destinations := range s.capturedRequests {
 		logrus.Debugf("%s:\n", ip)
-		dests.For(func(dest string) {
-			logrus.Debugf("\t%s\n", dest)
-		})
+		for destDNS, lastSeen := range destinations {
+			logrus.Debugf("\t%s, %s\n", destDNS, lastSeen)
+		}
 	}
 }
 

@@ -5,3 +5,7 @@ schema:
 operations:
   - genqlient.graphql
 generated: generated.go
+
+bindings:
+  Time:
+    type: time.Time

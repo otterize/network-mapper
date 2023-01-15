@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
 	"testing"
+	"time"
+)
+
+var (
+	testTimestamp = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 )
 
 type CloudUploaderTestSuite struct {
@@ -50,6 +55,7 @@ func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, d
 	s.intentsHolder.AddIntent(
 		model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
 		model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
+		testTimestamp,
 	)
 }
 

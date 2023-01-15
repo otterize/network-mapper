@@ -40,11 +40,12 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
-			if !strings.HasSuffix(dest, viper.GetString(config.ClusterDomainKey)) {
+			destAddress := dest.Destination
+			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
 				continue
 			}
-			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, dest)
+			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 			if err != nil {
 				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
 				continue
@@ -70,6 +71,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			r.intentsHolder.AddIntent(
 				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
 				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				dest.LastSeen,
 			)
 		}
 	}
@@ -97,7 +99,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			continue
 		}
 		for _, destIp := range socketScanItem.DestIps {
-			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp)
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
 			if err != nil {
 				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
@@ -114,6 +116,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			r.intentsHolder.AddIntent(
 				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
 				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				destIp.LastSeen,
 			)
 		}
 	}
@@ -125,10 +128,24 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 }
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {
+	discoveredIntents := r.intentsHolder.GetIntents(namespaces)
+	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
+
 	result := make([]model.ServiceIntents, 0)
-	for service, intents := range r.intentsHolder.GetIntentsPerService(namespaces) {
-		result = append(result, model.ServiceIntents{Client: lo.ToPtr(service), Intents: intents})
+	for service, destinations := range serviceToDestinations {
+		sort.Slice(destinations, func(i, j int) bool {
+			if destinations[i].Name != destinations[j].Name {
+				return destinations[i].Name < destinations[j].Name
+			}
+			return destinations[i].Namespace < destinations[j].Namespace
+		})
+
+		result = append(result, model.ServiceIntents{
+			Client:  lo.ToPtr(service),
+			Intents: destinations,
+		})
 	}
+
 	// sorting by service name so results are more consistent
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Client.Name < result[j].Client.Name
