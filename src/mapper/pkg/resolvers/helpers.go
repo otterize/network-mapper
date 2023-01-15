@@ -22,8 +22,6 @@ import (
 	"time"
 )
 
-type intentsHolderStore map[SourceDestPair]time.Time
-
 type SourceDestPair struct {
 	Source      model.OtterizeServiceIdentity
 	Destination model.OtterizeServiceIdentity
@@ -56,7 +54,7 @@ func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
 }
 
 type IntentsHolder struct {
-	store             intentsHolderStore
+	store             map[SourceDestPair]time.Time
 	lock              sync.Mutex
 	client            client.Client
 	config            IntentsHolderConfig
@@ -72,12 +70,12 @@ func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *Intents
 	}
 }
 
-func newIntentsStore(intents []DiscoveredIntent) intentsHolderStore {
+func newIntentsStore(intents []DiscoveredIntent) map[SourceDestPair]time.Time {
 	if intents == nil {
-		return make(intentsHolderStore)
+		return make(map[SourceDestPair]time.Time)
 	}
 
-	result := make(intentsHolderStore)
+	result := make(map[SourceDestPair]time.Time)
 	for _, intent := range intents {
 		result[SourceDestPair{Source: intent.Source, Destination: intent.Destination}] = intent.Timestamp
 	}
@@ -88,7 +86,7 @@ func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	i.store = make(intentsHolderStore)
+	i.store = make(map[SourceDestPair]time.Time)
 }
 
 func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity, newTimestamp time.Time) {
