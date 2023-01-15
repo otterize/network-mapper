@@ -84,6 +84,8 @@ func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {
 	cloudUploadTicker := time.NewTicker(time.Second * time.Duration(c.config.UploadInterval))
 
 	logrus.Info("Starting cloud ticker")
+	c.reportStatus(ctx)
+
 	for {
 		select {
 		case <-cloudUploadTicker.C:
