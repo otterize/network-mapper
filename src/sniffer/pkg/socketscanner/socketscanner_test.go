@@ -24,28 +24,63 @@ func (s *SocketScannerTestSuite) SetupSuite() {
 	s.mockMapperClient = mock_client.NewMockMapperClient(s.mockController)
 }
 
-type matchOne[T any] struct {
-	validResults []T
-}
+type SocketScanResultForSrcIpMatcher []client.SocketScanResultForSrcIp
 
-func (m matchOne[T]) Matches(x interface{}) bool {
-	for _, option := range m.validResults {
-		if gomock.Eq(option).Matches(x) {
-			return true
+func (m SocketScanResultForSrcIpMatcher) Matches(x interface{}) bool {
+	results, ok := x.(client.SocketScanResults)
+	if !ok {
+		return false
+	}
+
+	actualValues := results.Results
+	if len(actualValues) != len(m) {
+		return false
+	}
+
+	// Match in any order
+	for _, expected := range m {
+		found := false
+		for _, actual := range actualValues {
+			if matchSocketScanResult(expected, actual) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
-func (m matchOne[T]) String() string {
-	return fmt.Sprintf("One of the following: %v", m.validResults)
-}
-
-// MatchOne makes sure that object matches one of the validResults
-func MatchOne[T any](validResults []T) gomock.Matcher {
-	return matchOne[T]{
-		validResults: validResults,
+func matchSocketScanResult(expected, actual client.SocketScanResultForSrcIp) bool {
+	if expected.SrcIp != actual.SrcIp {
+		return false
 	}
+
+	if len(expected.DestIps) != len(actual.DestIps) {
+		return false
+	}
+
+	for i := range expected.DestIps {
+		if expected.DestIps[i].Destination != actual.DestIps[i].Destination {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (m SocketScanResultForSrcIpMatcher) String() string {
+	var result string
+	for _, value := range m {
+		result += fmt.Sprintf("{Src: %v, Dest: %v}", value.SrcIp, value.DestIps)
+	}
+	return result
+}
+
+func GetMatcher(expected []client.SocketScanResultForSrcIp) SocketScanResultForSrcIpMatcher {
+	return expected
 }
 
 func (s *SocketScannerTestSuite) TestScanProcDir() {
@@ -65,21 +100,24 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	// all other sockets should be ignored (because parsing the server sides on all pods is enough)
 	expectedResult := []client.SocketScanResultForSrcIp{
 		{
-			SrcIp:   "192.168.35.14",
-			DestIps: []string{"192.168.38.211"},
+			SrcIp: "192.168.35.14",
+			DestIps: []client.Destination{
+				{
+					Destination: "192.168.38.211",
+				},
+			},
 		},
 		{
-			SrcIp:   "176.168.35.14",
-			DestIps: []string{"192.168.38.211"},
+			SrcIp: "176.168.35.14",
+			DestIps: []client.Destination{
+				{
+					Destination: "192.168.38.211",
+				},
+			},
 		},
 	}
-	// order is random in the response, so we mark both orders as valid
-	validResults := []client.SocketScanResults{
-		{Results: expectedResult},
-		{Results: []client.SocketScanResultForSrcIp{expectedResult[1], expectedResult[0]}},
-	}
 
-	s.mockMapperClient.EXPECT().ReportSocketScanResults(gomock.Any(), MatchOne(validResults))
+	s.mockMapperClient.EXPECT().ReportSocketScanResults(gomock.Any(), GetMatcher(expectedResult))
 	err = sniffer.ReportSocketScanResults(context.Background())
 	s.Require().NoError(err)
 }
