@@ -21,7 +21,7 @@ type CloudClientImpl struct {
 }
 
 func NewClient(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) CloudClient {
-	url := fmt.Sprintf("%s/graphql/v1", apiAddress)
+	url := fmt.Sprintf("%s/graphql/v1beta", apiAddress)
 	client := graphql.NewClient(url, oauth2.NewClient(ctx, tokenSource))
 
 	return &CloudClientImpl{
