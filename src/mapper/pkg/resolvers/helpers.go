@@ -38,14 +38,21 @@ type IntentsHolderConfig struct {
 	Namespace      string
 }
 
+func namespaceFromConfig() (string, error) {
+	if viper.IsSet(config.NamespaceKey) {
+		return viper.GetString(config.NamespaceKey), nil
+	}
+	namespace, err := kubeutils.GetCurrentNamespace()
+	if err != nil {
+		return "", fmt.Errorf("could not deduce the store's configmap namespace: %w", err)
+	}
+	return namespace, nil
+}
+
 func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
-	namespace := viper.GetString(config.NamespaceKey)
-	if namespace != "" {
-		var err error
-		namespace, err = kubeutils.GetCurrentNamespace()
-		if err != nil {
-			return IntentsHolderConfig{}, fmt.Errorf("could not deduce the store's configmap namespace: %w", err)
-		}
+	namespace, err := namespaceFromConfig()
+	if err != nil {
+		return IntentsHolderConfig{}, err
 	}
 	return IntentsHolderConfig{
 		StoreConfigMap: viper.GetString(config.StoreConfigMapKey),
