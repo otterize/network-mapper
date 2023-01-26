@@ -27,7 +27,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	for _, captureItem := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, captureItem.SrcIP)
 		if err != nil {
-			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", captureItem.SrcIP)
 			} else {
 				logrus.WithError(err).Debugf("Could not resolve %s to pod", captureItem.SrcIP)
@@ -56,7 +56,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, ips[0])
 			if err != nil {
-				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
 				} else {
 					logrus.WithError(err).Debugf("Could not resolve %s to pod", ips[0])
@@ -86,7 +86,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	for _, socketScanItem := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, socketScanItem.SrcIP)
 		if err != nil {
-			if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", socketScanItem.SrcIP)
 			} else {
 				logrus.WithError(err).Debugf("Could not resolve %s to pod", socketScanItem.SrcIP)
@@ -101,7 +101,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 		for _, destIp := range socketScanItem.DestIps {
 			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
 			if err != nil {
-				if errors.Is(err, kubefinder.FoundMoreThanOnePodError) {
+				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
 				} else {
 					logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp)

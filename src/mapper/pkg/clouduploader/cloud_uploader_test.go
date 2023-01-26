@@ -10,7 +10,6 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/oauth2"
 	"testing"
 	"time"
 )
@@ -24,31 +23,18 @@ type CloudUploaderTestSuite struct {
 	testNamespace string
 	intentsHolder *resolvers.IntentsHolder
 	cloudUploader *CloudUploader
-	cloudConfig   Config
 	clientMock    *cloudclientmocks.MockCloudClient
 }
 
 func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
 	s.intentsHolder = resolvers.NewIntentsHolder(nil, resolvers.IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.testNamespace})
-	s.cloudConfig = Config{
-		ClientId: "test-client-id",
-	}
 }
 
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
 	controller := gomock.NewController(s.T())
-	factory := s.GetCloudClientFactoryMock(controller)
-	s.cloudUploader = NewCloudUploader(s.intentsHolder, s.cloudConfig, factory)
-}
-
-func (s *CloudUploaderTestSuite) GetCloudClientFactoryMock(controller *gomock.Controller) cloudclient.FactoryFunction {
 	s.clientMock = cloudclientmocks.NewMockCloudClient(controller)
-
-	factory := func(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) cloudclient.CloudClient {
-		return s.clientMock
-	}
-	return factory
+	s.cloudUploader = NewCloudUploader(s.intentsHolder, Config{}, s.clientMock)
 }
 
 func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, destination string, dstNamespace string) {
@@ -149,7 +135,7 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
-func (s *CloudUploaderTestSuite) TestReportMapperComonent() {
+func (s *CloudUploaderTestSuite) TestReportMapperComponent() {
 	s.clientMock.EXPECT().ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper).Times(1)
 
 	s.cloudUploader.reportStatus(context.Background())

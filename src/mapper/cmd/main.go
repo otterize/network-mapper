@@ -84,18 +84,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	cloudConfig := clouduploader.ConfigFromViper()
 	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient(), intentHolderCfg)
-	cloudClient := clouduploader.NewCloudUploader(intentsHolder, cloudConfig, cloudclient.NewClient)
+
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
 	_ = resolver.LoadStore(initCtx) // loads the store from the previous run
 	resolver.Register(e)
 
-	if cloudConfig.IsCloudUploadEnabled() {
+	cloudClientCtx, cloudClientCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cloudClientCancel()
+	cloudClient, cloudEnabled, err := cloudclient.NewClient(cloudClientCtx)
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to initialize cloud client")
+	}
+	if cloudEnabled {
+		cloudUploaderConfig := clouduploader.ConfigFromViper()
+		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
 		go func() {
-			cloudClientCtx, cloudClientCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			defer cloudClientCancel()
-			cloudClient.PeriodicIntentsUpload(cloudClientCtx)
+			cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
 		}()
 	}
 
