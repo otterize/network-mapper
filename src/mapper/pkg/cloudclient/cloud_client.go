@@ -2,13 +2,10 @@ package cloudclient
 
 import (
 	"context"
-	"fmt"
 	"github.com/Khan/genqlient/graphql"
+	"github.com/otterize/intents-operator/src/shared/otterizecloud/otterizecloudclient"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 )
-
-type FactoryFunction func(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) CloudClient
 
 type CloudClient interface {
 	ReportDiscoveredIntents(intents []*DiscoveredIntentInput) bool
@@ -20,14 +17,15 @@ type CloudClientImpl struct {
 	client graphql.Client
 }
 
-func NewClient(ctx context.Context, apiAddress string, tokenSource oauth2.TokenSource) CloudClient {
-	url := fmt.Sprintf("%s/graphql/v1beta", apiAddress)
-	client := graphql.NewClient(url, oauth2.NewClient(ctx, tokenSource))
-
-	return &CloudClientImpl{
-		client: client,
-		ctx:    ctx,
+func NewClient(ctx context.Context) (CloudClient, bool, error) {
+	client, ok, err := otterizecloudclient.NewClient(ctx)
+	if !ok {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, true, err
 	}
+
+	return &CloudClientImpl{client: client}, true, nil
 }
 
 func (c *CloudClientImpl) ReportDiscoveredIntents(intents []*DiscoveredIntentInput) bool {

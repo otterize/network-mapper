@@ -23,7 +23,7 @@ type KubeFinder struct {
 	serviceIdResolver *serviceidresolver.Resolver
 }
 
-var FoundMoreThanOnePodError = fmt.Errorf("ip belongs to more than one pod")
+var ErrFoundMoreThanOnePod = fmt.Errorf("ip belongs to more than one pod")
 
 func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
 	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
@@ -58,7 +58,7 @@ func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 	if len(pods.Items) == 0 {
 		return nil, fmt.Errorf("pod with ip %s was not found", ip)
 	} else if len(pods.Items) > 1 {
-		return nil, FoundMoreThanOnePodError
+		return nil, ErrFoundMoreThanOnePod
 	}
 	return &pods.Items[0], nil
 }

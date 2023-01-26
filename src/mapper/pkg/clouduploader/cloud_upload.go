@@ -2,46 +2,30 @@ package clouduploader
 
 import (
 	"context"
-	"fmt"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"time"
 )
 
 type CloudUploader struct {
 	intentsHolder       *resolvers.IntentsHolder
 	config              Config
-	tokenSrc            oauth2.TokenSource
 	lastUploadTimestamp time.Time
-	cloudClientFactory  cloudclient.FactoryFunction
+	client              cloudclient.CloudClient
 }
 
-func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, cloudClientFactory cloudclient.FactoryFunction) *CloudUploader {
-	cfg := clientcredentials.Config{
-		ClientID:     config.ClientId,
-		ClientSecret: config.Secret,
-		TokenURL:     fmt.Sprintf("%s/auth/tokens/token", config.apiAddress),
-		AuthStyle:    oauth2.AuthStyleInParams,
-	}
-
-	tokenSrc := cfg.TokenSource(context.Background())
-
+func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, client cloudclient.CloudClient) *CloudUploader {
 	return &CloudUploader{
-		intentsHolder:      intentsHolder,
-		config:             config,
-		tokenSrc:           tokenSrc,
-		cloudClientFactory: cloudClientFactory,
+		intentsHolder: intentsHolder,
+		config:        config,
+		client:        client,
 	}
 }
 
 func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	logrus.Info("Search for intents")
-
-	client := c.cloudClientFactory(ctx, c.config.apiAddress, c.tokenSrc)
 
 	lastUpdate := c.intentsHolder.LastIntentsUpdate()
 	if !c.lastUploadTimestamp.Before(lastUpdate) {
@@ -68,16 +52,14 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 		return
 	}
 
-	uploadSuccess := client.ReportDiscoveredIntents(discoveredIntents)
+	uploadSuccess := c.client.ReportDiscoveredIntents(discoveredIntents)
 	if uploadSuccess {
 		c.lastUploadTimestamp = lastUpdate
 	}
 }
 
 func (c *CloudUploader) reportStatus(ctx context.Context) {
-	client := c.cloudClientFactory(ctx, c.config.apiAddress, c.tokenSrc)
-
-	client.ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper)
+	c.client.ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper)
 }
 
 func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {
