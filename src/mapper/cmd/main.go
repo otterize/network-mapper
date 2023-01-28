@@ -87,7 +87,6 @@ func main() {
 	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient(), intentHolderCfg)
 
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
-	_ = resolver.LoadStore(initCtx) // loads the store from the previous run
 	resolver.Register(e)
 
 	cloudClientCtx, cloudClientCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -99,9 +98,8 @@ func main() {
 	if cloudEnabled {
 		cloudUploaderConfig := clouduploader.ConfigFromViper()
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
-		go func() {
-			cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
-		}()
+		go cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
+		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
 	logrus.Info("Starting api server")

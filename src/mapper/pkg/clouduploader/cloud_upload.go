@@ -2,6 +2,7 @@ package clouduploader
 
 import (
 	"context"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	"github.com/samber/lo"
@@ -10,10 +11,9 @@ import (
 )
 
 type CloudUploader struct {
-	intentsHolder       *resolvers.IntentsHolder
-	config              Config
-	lastUploadTimestamp time.Time
-	client              cloudclient.CloudClient
+	intentsHolder *resolvers.IntentsHolder
+	config        Config
+	client        cloudclient.CloudClient
 }
 
 func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, client cloudclient.CloudClient) *CloudUploader {
@@ -27,13 +27,8 @@ func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, cli
 func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	logrus.Info("Search for intents")
 
-	lastUpdate := c.intentsHolder.LastIntentsUpdate()
-	if !c.lastUploadTimestamp.Before(lastUpdate) {
-		return
-	}
-
 	var discoveredIntents []*cloudclient.DiscoveredIntentInput
-	for _, intent := range c.intentsHolder.GetIntents(nil) {
+	for _, intent := range c.intentsHolder.GetNewIntentsSinceLastGet() {
 		var discoveredIntent cloudclient.IntentInput
 		discoveredIntent.ClientName = lo.ToPtr(intent.Source.Name)
 		discoveredIntent.Namespace = lo.ToPtr(intent.Source.Namespace)
@@ -52,30 +47,51 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 		return
 	}
 
-	uploadSuccess := c.client.ReportDiscoveredIntents(discoveredIntents)
-	if uploadSuccess {
-		c.lastUploadTimestamp = lastUpdate
+	exponentialBackoff := backoff.NewExponentialBackOff()
+
+	err := backoff.Retry(func() error {
+		err := c.client.ReportDiscoveredIntents(ctx, discoveredIntents)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to report discovered intents to cloud, retrying")
+		}
+		return err
+	}, exponentialBackoff)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
 	}
 }
 
 func (c *CloudUploader) reportStatus(ctx context.Context) {
-	c.client.ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper)
+	err := c.client.ReportComponentStatus(ctx, cloudclient.ComponentTypeNetworkMapper)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report component status to cloud")
+	}
 }
 
 func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {
-	cloudUploadTicker := time.NewTicker(time.Second * time.Duration(c.config.UploadInterval))
+	logrus.Info("Starting periodic intents upload")
 
-	logrus.Info("Starting cloud ticker")
+	for {
+		select {
+		case <-time.After(c.config.UploadInterval):
+			c.uploadDiscoveredIntents(ctx)
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (c *CloudUploader) PeriodicStatusReport(ctx context.Context) {
+	logrus.Info("Starting status reporting")
 	c.reportStatus(ctx)
 
 	for {
 		select {
-		case <-cloudUploadTicker.C:
-			c.uploadDiscoveredIntents(ctx)
+		case <-time.After(c.config.UploadInterval):
 			c.reportStatus(ctx)
 
 		case <-ctx.Done():
-			logrus.Info("Periodic upload exit")
 			return
 		}
 	}

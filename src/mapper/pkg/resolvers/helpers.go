@@ -1,23 +1,13 @@
 package resolvers
 
 import (
-	"bytes"
-	"compress/gzip"
-	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/spf13/viper"
-	"io"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sync"
 	"time"
 )
@@ -61,39 +51,28 @@ func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
 }
 
 type IntentsHolder struct {
-	store             map[SourceDestPair]time.Time
+	accumulatingStore map[SourceDestPair]time.Time
+	sinceLastGetStore map[SourceDestPair]time.Time
 	lock              sync.Mutex
 	client            client.Client
 	config            IntentsHolderConfig
-	lastIntentsUpdate time.Time
 }
 
 func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *IntentsHolder {
 	return &IntentsHolder{
-		store:  newIntentsStore(nil),
-		lock:   sync.Mutex{},
-		client: client,
-		config: config,
+		accumulatingStore: make(map[SourceDestPair]time.Time),
+		sinceLastGetStore: make(map[SourceDestPair]time.Time),
+		lock:              sync.Mutex{},
+		client:            client,
+		config:            config,
 	}
-}
-
-func newIntentsStore(intents []DiscoveredIntent) map[SourceDestPair]time.Time {
-	if intents == nil {
-		return make(map[SourceDestPair]time.Time)
-	}
-
-	result := make(map[SourceDestPair]time.Time)
-	for _, intent := range intents {
-		result[SourceDestPair{Source: intent.Source, Destination: intent.Destination}] = intent.Timestamp
-	}
-	return result
 }
 
 func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	i.store = make(map[SourceDestPair]time.Time)
+	i.accumulatingStore = make(map[SourceDestPair]time.Time)
 }
 
 func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity, newTimestamp time.Time) {
@@ -101,30 +80,34 @@ func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstS
 	defer i.lock.Unlock()
 
 	pair := SourceDestPair{Source: srcService, Destination: dstService}
-	currentTimestamp, alreadyExists := i.store[pair]
+	currentTimestamp, alreadyExists := i.accumulatingStore[pair]
 	if !alreadyExists || newTimestamp.After(currentTimestamp) {
-		i.store[pair] = newTimestamp
-		i.lastIntentsUpdate = time.Now()
+		i.accumulatingStore[pair] = newTimestamp
+		i.sinceLastGetStore[pair] = newTimestamp
 	}
-}
 
-func (i *IntentsHolder) LastIntentsUpdate() time.Time {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	return i.lastIntentsUpdate
 }
 
 func (i *IntentsHolder) GetIntents(namespaces []string) []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntents(namespaces)
+	return i.getIntentsFromStore(i.accumulatingStore, namespaces...)
 }
 
-func (i *IntentsHolder) getIntents(namespaces []string) []DiscoveredIntent {
+func (i *IntentsHolder) GetNewIntentsSinceLastGet() []DiscoveredIntent {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	intents := i.getIntentsFromStore(i.sinceLastGetStore)
+	i.sinceLastGetStore = make(map[SourceDestPair]time.Time)
+	return intents
+}
+
+func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]time.Time, namespaces ...string) []DiscoveredIntent {
 	namespacesSet := goset.FromSlice(namespaces)
 	result := make([]DiscoveredIntent, 0)
-	for pair, timestamp := range i.store {
+	for pair, timestamp := range store {
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
 			continue
 		}
@@ -136,62 +119,6 @@ func (i *IntentsHolder) getIntents(namespaces []string) []DiscoveredIntent {
 		})
 	}
 	return result
-}
-
-func (i *IntentsHolder) WriteStore(ctx context.Context) error {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	intents := i.getIntents(nil)
-	jsonBytes, err := json.Marshal(intents)
-	if err != nil {
-		return err
-	}
-	var compressedJson bytes.Buffer
-	writer := gzip.NewWriter(&compressedJson)
-	_, err = writer.Write(jsonBytes)
-	if err != nil {
-		return err
-	}
-	err = writer.Close()
-	if err != nil {
-		return err
-	}
-	configmap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: i.config.StoreConfigMap, Namespace: i.config.Namespace}}
-	_, err = controllerutil.CreateOrUpdate(ctx, i.client, configmap, func() error {
-		configmap.Data = nil
-		configmap.BinaryData = map[string][]byte{"store": compressedJson.Bytes()}
-		return nil
-	})
-	return err
-}
-
-func (i *IntentsHolder) LoadStore(ctx context.Context) error {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	configmap := &corev1.ConfigMap{}
-	err := i.client.Get(ctx, types.NamespacedName{Name: i.config.StoreConfigMap, Namespace: i.config.Namespace}, configmap)
-	if errors.IsNotFound(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	reader, err := gzip.NewReader(bytes.NewReader(configmap.BinaryData["store"]))
-	if err != nil {
-		return err
-	}
-	decompressedJson, err := io.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-
-	var intents []DiscoveredIntent
-	err = json.Unmarshal(decompressedJson, &intents)
-	if err != nil {
-		return err
-	}
-
-	i.store = newIntentsStore(intents)
-	return nil
 }
 
 func groupDestinationsBySource(discoveredIntents []DiscoveredIntent) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {
