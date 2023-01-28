@@ -55,7 +55,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 			logrus.WithError(err).Error("Failed to report discovered intents to cloud, retrying")
 		}
 		return err
-	}, backoff.WithMaxRetries(exponentialBackoff, 10))
+	}, exponentialBackoff)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
 	}
