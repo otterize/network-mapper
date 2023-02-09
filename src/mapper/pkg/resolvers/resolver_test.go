@@ -6,7 +6,6 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
 	"github.com/otterize/network-mapper/src/shared/testbase"
@@ -29,7 +28,7 @@ func (s *ResolverTestSuite) SetupTest() {
 	var err error
 	s.kubeFinder, err = kubefinder.NewKubeFinder(s.Mgr)
 	s.Require().NoError(err)
-	s.intentsHolder = NewIntentsHolder(s.Mgr.GetClient(), IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.TestNamespace})
+	s.intentsHolder = NewIntentsHolder(s.Mgr.GetClient())
 	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder)
 	resolver.Register(e)
 	s.server = httptest.NewServer(e)
@@ -164,56 +163,6 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			},
 		},
 	})
-}
-
-func (s *ResolverTestSuite) TestLoadStore() {
-	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
-	s.Require().NoError(err)
-	s.Require().Len(res.ServiceIntents, 0)
-
-	s.AddDeploymentWithService("service1", []string{"1.1.3.1"}, map[string]string{"app": "service1"})
-	s.AddDeploymentWithService("service2", []string{"1.1.3.2"}, map[string]string{"app": "service2"})
-	s.AddDeploymentWithService("service3", []string{"1.1.3.3"}, map[string]string{"app": "service3"})
-	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
-	_, err = test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
-		Results: []test_gql_client.SocketScanResultForSrcIp{
-			{
-				SrcIp: "1.1.3.1",
-				DestIps: []test_gql_client.Destination{
-					{
-						Destination: "1.1.3.2",
-					},
-				},
-			},
-			{
-				SrcIp: "1.1.3.3",
-				DestIps: []test_gql_client.Destination{
-					{
-						Destination: "1.1.3.2",
-					},
-					{
-						Destination: "1.1.3.2",
-					},
-				},
-			},
-		},
-	})
-	s.Require().NoError(err)
-	res, err = test_gql_client.ServiceIntents(context.Background(), s.client, nil)
-	s.Require().NoError(err)
-	s.Require().Len(res.ServiceIntents, 2)
-
-	// create a new resolver and see LoadStore works
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), NewIntentsHolder(s.Mgr.GetClient(), IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.TestNamespace}))
-	intents, err := resolver.Query().ServiceIntents(context.Background(), nil)
-	s.Require().NoError(err)
-	s.Require().Len(intents, 0)
-
-	err = resolver.LoadStore(context.Background())
-	s.Require().NoError(err)
-	intents, err = resolver.Query().ServiceIntents(context.Background(), nil)
-	s.Require().NoError(err)
-	s.Require().Len(intents, 2)
 }
 
 func TestRunSuite(t *testing.T) {

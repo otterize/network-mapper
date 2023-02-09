@@ -23,9 +23,15 @@ input SocketScanResults {
     results: [SocketScanResultForSrcIp!]!
 }
 
+type PodLabel {
+    key: String!
+    value: String!
+}
+
 type OtterizeServiceIdentity {
     name: String!
     namespace: String!
+    labels: [PodLabel!]
 }
 
 type ServiceIntents {
@@ -33,8 +39,9 @@ type ServiceIntents {
     intents: [OtterizeServiceIdentity!]!
 }
 
+
 type Query {
-    serviceIntents(namespaces: [String!]): [ServiceIntents!]!
+    serviceIntents(namespaces: [String!], labels: [String!]): [ServiceIntents!]!
 }
 
 type Mutation {

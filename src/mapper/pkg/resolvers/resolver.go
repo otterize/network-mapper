@@ -1,13 +1,11 @@
 package resolvers
 
 import (
-	"context"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
-	"github.com/sirupsen/logrus"
 )
 
 // This file will not be regenerated automatically.
@@ -35,14 +33,4 @@ func (r *Resolver) Register(e *echo.Echo) {
 		srv.ServeHTTP(c.Response(), c.Request())
 		return nil
 	})
-}
-
-func (r *Resolver) LoadStore(ctx context.Context) error {
-	err := r.intentsHolder.LoadStore(ctx)
-	if err != nil {
-		logrus.WithError(err).Warning("Failed to load state from previous runs")
-		return err
-	}
-
-	return nil
 }
