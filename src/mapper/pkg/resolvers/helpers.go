@@ -1,11 +1,10 @@
 package resolvers
 
 import (
-	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/otterize/network-mapper/src/shared/kubeutils"
-	"github.com/spf13/viper"
+	"github.com/samber/lo"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 	"time"
@@ -46,7 +45,7 @@ type DiscoveredIntent struct {
 }
 
 type IntentsHolder struct {
-	accumulatingStore             map[SourceDestPair]FullInfoIntentWithTime
+	accumulatingStore map[SourceDestPair]FullInfoIntentWithTime
 	sinceLastGetStore map[SourceDestPair]FullInfoIntentWithTime
 	lock              sync.Mutex
 	client            client.Client
@@ -55,10 +54,10 @@ type IntentsHolder struct {
 
 func NewIntentsHolder(client client.Client) *IntentsHolder {
 	return &IntentsHolder{
-		accumulatingStore:  make(map[SourceDestPair]FullInfoIntentWithTime),
+		accumulatingStore: make(map[SourceDestPair]FullInfoIntentWithTime),
 		sinceLastGetStore: make(map[SourceDestPair]FullInfoIntentWithTime),
-		lock:   sync.Mutex{},
-		client: client,
+		lock:              sync.Mutex{},
+		client:            client,
 	}
 }
 
