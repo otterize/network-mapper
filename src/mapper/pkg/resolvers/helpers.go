@@ -1,10 +1,11 @@
 package resolvers
 
 import (
+	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/samber/lo"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/otterize/network-mapper/src/shared/kubeutils"
+	"github.com/spf13/viper"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 	"time"
@@ -45,7 +46,8 @@ type DiscoveredIntent struct {
 }
 
 type IntentsHolder struct {
-	store             map[SourceDestPair]FullInfoIntentWithTime
+	accumulatingStore             map[SourceDestPair]FullInfoIntentWithTime
+	sinceLastGetStore map[SourceDestPair]FullInfoIntentWithTime
 	lock              sync.Mutex
 	client            client.Client
 	lastIntentsUpdate time.Time
@@ -53,7 +55,8 @@ type IntentsHolder struct {
 
 func NewIntentsHolder(client client.Client) *IntentsHolder {
 	return &IntentsHolder{
-		store:  make(map[SourceDestPair]FullInfoIntentWithTime),
+		accumulatingStore:  make(map[SourceDestPair]FullInfoIntentWithTime),
+		sinceLastGetStore: make(map[SourceDestPair]FullInfoIntentWithTime),
 		lock:   sync.Mutex{},
 		client: client,
 	}
@@ -63,7 +66,7 @@ func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	i.store = make(map[SourceDestPair]FullInfoIntentWithTime)
+	i.accumulatingStore = make(map[SourceDestPair]FullInfoIntentWithTime)
 }
 
 func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity, newTimestamp time.Time) {
@@ -71,31 +74,36 @@ func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstS
 	defer i.lock.Unlock()
 
 	pair := SourceDestPair{Source: serviceIdentityToNameNamespacePair(srcService), Destination: serviceIdentityToNameNamespacePair(dstService)}
-	timestampedPair, alreadyExists := i.store[pair]
+	timestampedPair, alreadyExists := i.accumulatingStore[pair]
 	if !alreadyExists || newTimestamp.After(timestampedPair.Timestamp) {
-		i.store[pair] = FullInfoIntentWithTime{SourceFullInfo: srcService, DestinationFullInfo: dstService, Timestamp: newTimestamp}
+		i.accumulatingStore[pair] = FullInfoIntentWithTime{SourceFullInfo: srcService, DestinationFullInfo: dstService, Timestamp: newTimestamp}
+		i.sinceLastGetStore[pair] = FullInfoIntentWithTime{SourceFullInfo: srcService, DestinationFullInfo: dstService, Timestamp: newTimestamp}
 		i.lastIntentsUpdate = time.Now()
 	}
-}
 
-func (i *IntentsHolder) LastIntentsUpdate() time.Time {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	return i.lastIntentsUpdate
 }
 
 func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string) []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntents(namespaces, includeLabels)
+	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels)
 }
 
-func (i *IntentsHolder) getIntents(namespaces []string, includeLabels []string) []DiscoveredIntent {
+func (i *IntentsHolder) GetNewIntentsSinceLastGet() []DiscoveredIntent {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil)
+	i.sinceLastGetStore = make(map[SourceDestPair]FullInfoIntentWithTime)
+	return intents
+}
+
+func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]FullInfoIntentWithTime, namespaces []string, includeLabels []string) []DiscoveredIntent {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]DiscoveredIntent, 0)
-	for pair, timestampedInfo := range i.store {
+	for pair, timestampedInfo := range store {
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
 			continue
 		}

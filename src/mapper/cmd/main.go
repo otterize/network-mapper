@@ -92,9 +92,8 @@ func main() {
 	if cloudEnabled {
 		cloudUploaderConfig := clouduploader.ConfigFromViper()
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
-		go func() {
-			cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
-		}()
+		go cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
+		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
 	logrus.Info("Starting api server")

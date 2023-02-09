@@ -5,6 +5,7 @@
 package cloudclientmocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,27 +36,29 @@ func (m *MockCloudClient) EXPECT() *MockCloudClientMockRecorder {
 }
 
 // ReportComponentStatus mocks base method.
-func (m *MockCloudClient) ReportComponentStatus(component cloudclient.ComponentType) {
+func (m *MockCloudClient) ReportComponentStatus(ctx context.Context, component cloudclient.ComponentType) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ReportComponentStatus", component)
+	ret := m.ctrl.Call(m, "ReportComponentStatus", ctx, component)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // ReportComponentStatus indicates an expected call of ReportComponentStatus.
-func (mr *MockCloudClientMockRecorder) ReportComponentStatus(component interface{}) *gomock.Call {
+func (mr *MockCloudClientMockRecorder) ReportComponentStatus(ctx, component interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportComponentStatus", reflect.TypeOf((*MockCloudClient)(nil).ReportComponentStatus), component)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportComponentStatus", reflect.TypeOf((*MockCloudClient)(nil).ReportComponentStatus), ctx, component)
 }
 
 // ReportDiscoveredIntents mocks base method.
-func (m *MockCloudClient) ReportDiscoveredIntents(intents []*cloudclient.DiscoveredIntentInput) bool {
+func (m *MockCloudClient) ReportDiscoveredIntents(ctx context.Context, intents []*cloudclient.DiscoveredIntentInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportDiscoveredIntents", intents)
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "ReportDiscoveredIntents", ctx, intents)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ReportDiscoveredIntents indicates an expected call of ReportDiscoveredIntents.
-func (mr *MockCloudClientMockRecorder) ReportDiscoveredIntents(intents interface{}) *gomock.Call {
+func (mr *MockCloudClientMockRecorder) ReportDiscoveredIntents(ctx, intents interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportDiscoveredIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportDiscoveredIntents), intents)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportDiscoveredIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportDiscoveredIntents), ctx, intents)
 }

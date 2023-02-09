@@ -19,6 +19,7 @@ import (
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
+	logrus.Info("Resetting stored intents")
 	r.intentsHolder.Reset()
 	return true, nil
 }

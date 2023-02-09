@@ -2,6 +2,7 @@ package clouduploader
 
 import (
 	"context"
+	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
@@ -69,7 +70,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 		intentInput("client1", s.testNamespace, "server2", "external-namespace"),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents1)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents1)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 
@@ -77,17 +78,15 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 
 	intents2 := []cloudclient.IntentInput{
 		intentInput("client2", s.testNamespace, "server1", s.testNamespace),
-		intentInput("client1", s.testNamespace, "server1", s.testNamespace),
-		intentInput("client1", s.testNamespace, "server2", "external-namespace"),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents2)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents2)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
 func (s *CloudUploaderTestSuite) TestDontUploadWithoutIntents() {
-	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any()).Times(0)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), gomock.Any()).Times(0)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
@@ -99,7 +98,7 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 		intentInput("client", s.testNamespace, "server", s.testNamespace),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
@@ -113,11 +112,10 @@ func (s *CloudUploaderTestSuite) TestRetryOnFailed() {
 		intentInput("client", s.testNamespace, "server", s.testNamespace),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(false).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(errors.New("fail")).Times(1)
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 
-	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
@@ -128,14 +126,14 @@ func (s *CloudUploaderTestSuite) TestDontUploadWhenNothingNew() {
 		intentInput("client", s.testNamespace, "server", s.testNamespace),
 	}
 
-	s.clientMock.EXPECT().ReportDiscoveredIntents(GetMatcher(intents)).Return(true).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
 
 func (s *CloudUploaderTestSuite) TestReportMapperComponent() {
-	s.clientMock.EXPECT().ReportComponentStatus(cloudclient.ComponentTypeNetworkMapper).Times(1)
+	s.clientMock.EXPECT().ReportComponentStatus(gomock.Any(), cloudclient.ComponentTypeNetworkMapper).Times(1)
 
 	s.cloudUploader.reportStatus(context.Background())
 }
