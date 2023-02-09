@@ -41,7 +41,7 @@ type ServiceIntents {
 
 
 type Query {
-    serviceIntents(namespaces: [String!], labels: [String!]): [ServiceIntents!]!
+    serviceIntents(namespaces: [String!], includeLabels: [String!]): [ServiceIntents!]!
 }
 
 type Mutation {

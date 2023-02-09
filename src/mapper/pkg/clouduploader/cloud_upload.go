@@ -33,7 +33,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	}
 
 	var discoveredIntents []*cloudclient.DiscoveredIntentInput
-	for _, intent := range c.intentsHolder.GetIntents(nil) {
+	for _, intent := range c.intentsHolder.GetIntents(nil, nil) {
 		var discoveredIntent cloudclient.IntentInput
 		discoveredIntent.ClientName = lo.ToPtr(intent.Source.Name)
 		discoveredIntent.Namespace = lo.ToPtr(intent.Source.Namespace)

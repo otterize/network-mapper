@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"errors"
-	corev1 "k8s.io/api/core/v1"
 	"sort"
 	"strings"
 
@@ -80,18 +79,6 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	return true, nil
 }
 
-func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
-	labels := make([]model.PodLabel, 0, len(pod.Labels))
-	for key, value := range pod.Labels {
-		labels = append(labels, model.PodLabel{
-			Key:   key,
-			Value: value,
-		})
-	}
-
-	return labels
-}
-
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	for _, socketScanItem := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, socketScanItem.SrcIP)
@@ -133,8 +120,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	return true, nil
 }
 
-func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, labels []string) ([]model.ServiceIntents, error) {
-	discoveredIntents := r.intentsHolder.GetIntents(namespaces)
+func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string) ([]model.ServiceIntents, error) {
+	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels)
 	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
 
 	result := make([]model.ServiceIntents, 0)

@@ -4,6 +4,7 @@ import (
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 	"time"
@@ -83,25 +84,34 @@ func (i *IntentsHolder) LastIntentsUpdate() time.Time {
 	return i.lastIntentsUpdate
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string) []DiscoveredIntent {
+func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string) []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntents(namespaces)
+	return i.getIntents(namespaces, includeLabels)
 }
 
-func (i *IntentsHolder) getIntents(namespaces []string) []DiscoveredIntent {
+func (i *IntentsHolder) getIntents(namespaces []string, includeLabels []string) []DiscoveredIntent {
 	namespacesSet := goset.FromSlice(namespaces)
+	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]DiscoveredIntent, 0)
 	for pair, timestampedInfo := range i.store {
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
 			continue
 		}
+		timestampedInfoCopy := timestampedInfo
+
+		timestampedInfoCopy.SourceFullInfo.Labels = lo.Filter(timestampedInfoCopy.SourceFullInfo.Labels, func(label model.PodLabel, _ int) bool {
+			return includeLabelsSet.Contains(label.Key)
+		})
+		timestampedInfoCopy.DestinationFullInfo.Labels = lo.Filter(timestampedInfoCopy.DestinationFullInfo.Labels, func(label model.PodLabel, _ int) bool {
+			return includeLabelsSet.Contains(label.Key)
+		})
 
 		result = append(result, DiscoveredIntent{
-			Source:      timestampedInfo.SourceFullInfo,
-			Destination: timestampedInfo.DestinationFullInfo,
-			Timestamp:   timestampedInfo.Timestamp,
+			Source:      timestampedInfoCopy.SourceFullInfo,
+			Destination: timestampedInfoCopy.DestinationFullInfo,
+			Timestamp:   timestampedInfoCopy.Timestamp,
 		})
 	}
 	return result
@@ -124,4 +134,16 @@ func groupDestinationsBySource(discoveredIntents []DiscoveredIntent) []clientWit
 	return lo.MapToSlice(serviceMap, func(_ nameNamespaceIdentity, client *clientWithDestinations) clientWithDestinations {
 		return *client
 	})
+}
+
+func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
+	labels := make([]model.PodLabel, 0, len(pod.Labels))
+	for key, value := range pod.Labels {
+		labels = append(labels, model.PodLabel{
+			Key:   key,
+			Value: value,
+		})
+	}
+
+	return labels
 }

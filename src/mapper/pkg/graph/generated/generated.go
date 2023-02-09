@@ -62,7 +62,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		ServiceIntents func(childComplexity int, namespaces []string, labels []string) int
+		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string) int
 	}
 
 	ServiceIntents struct {
@@ -77,7 +77,7 @@ type MutationResolver interface {
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 }
 type QueryResolver interface {
-	ServiceIntents(ctx context.Context, namespaces []string, labels []string) ([]model.ServiceIntents, error)
+	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string) ([]model.ServiceIntents, error)
 }
 
 type executableSchema struct {
@@ -171,7 +171,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string), args["labels"].([]string)), true
+		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string)), true
 
 	case "ServiceIntents.client":
 		if e.complexity.ServiceIntents.Client == nil {
@@ -294,7 +294,7 @@ type ServiceIntents {
 
 
 type Query {
-    serviceIntents(namespaces: [String!], labels: [String!]): [ServiceIntents!]!
+    serviceIntents(namespaces: [String!], includeLabels: [String!]): [ServiceIntents!]!
 }
 
 type Mutation {
@@ -367,14 +367,14 @@ func (ec *executionContext) field_Query_serviceIntents_args(ctx context.Context,
 	}
 	args["namespaces"] = arg0
 	var arg1 []string
-	if tmp, ok := rawArgs["labels"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("labels"))
+	if tmp, ok := rawArgs["includeLabels"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeLabels"))
 		arg1, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["labels"] = arg1
+	args["includeLabels"] = arg1
 	return args, nil
 }
 
@@ -732,7 +732,7 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string), args["labels"].([]string))
+		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
