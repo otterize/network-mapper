@@ -6,7 +6,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	"github.com/samber/lo"
@@ -29,7 +28,7 @@ type CloudUploaderTestSuite struct {
 
 func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
-	s.intentsHolder = resolvers.NewIntentsHolder(nil, resolvers.IntentsHolderConfig{StoreConfigMap: config.StoreConfigMapDefault, Namespace: s.testNamespace})
+	s.intentsHolder = resolvers.NewIntentsHolder(nil)
 }
 
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {

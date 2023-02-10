@@ -78,13 +78,7 @@ func main() {
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
-	intentHolderCfg, err := resolvers.IntentsHolderConfigFromViper()
-	if err != nil {
-		logrus.Error(intentHolderCfg)
-		os.Exit(1)
-	}
-
-	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient(), intentHolderCfg)
+	intentsHolder := resolvers.NewIntentsHolder(mgr.GetClient())
 
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
 	resolver.Register(e)

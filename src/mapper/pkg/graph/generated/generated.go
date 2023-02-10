@@ -51,12 +51,18 @@ type ComplexityRoot struct {
 	}
 
 	OtterizeServiceIdentity struct {
+		Labels    func(childComplexity int) int
 		Name      func(childComplexity int) int
 		Namespace func(childComplexity int) int
 	}
 
+	PodLabel struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
 	Query struct {
-		ServiceIntents func(childComplexity int, namespaces []string) int
+		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string) int
 	}
 
 	ServiceIntents struct {
@@ -71,7 +77,7 @@ type MutationResolver interface {
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 }
 type QueryResolver interface {
-	ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error)
+	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string) ([]model.ServiceIntents, error)
 }
 
 type executableSchema struct {
@@ -120,6 +126,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ResetCapture(childComplexity), true
 
+	case "OtterizeServiceIdentity.labels":
+		if e.complexity.OtterizeServiceIdentity.Labels == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.Labels(childComplexity), true
+
 	case "OtterizeServiceIdentity.name":
 		if e.complexity.OtterizeServiceIdentity.Name == nil {
 			break
@@ -134,6 +147,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.OtterizeServiceIdentity.Namespace(childComplexity), true
 
+	case "PodLabel.key":
+		if e.complexity.PodLabel.Key == nil {
+			break
+		}
+
+		return e.complexity.PodLabel.Key(childComplexity), true
+
+	case "PodLabel.value":
+		if e.complexity.PodLabel.Value == nil {
+			break
+		}
+
+		return e.complexity.PodLabel.Value(childComplexity), true
+
 	case "Query.serviceIntents":
 		if e.complexity.Query.ServiceIntents == nil {
 			break
@@ -144,7 +171,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string)), true
+		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string)), true
 
 	case "ServiceIntents.client":
 		if e.complexity.ServiceIntents.Client == nil {
@@ -249,9 +276,15 @@ input SocketScanResults {
     results: [SocketScanResultForSrcIp!]!
 }
 
+type PodLabel {
+    key: String!
+    value: String!
+}
+
 type OtterizeServiceIdentity {
     name: String!
     namespace: String!
+    labels: [PodLabel!]
 }
 
 type ServiceIntents {
@@ -259,8 +292,9 @@ type ServiceIntents {
     intents: [OtterizeServiceIdentity!]!
 }
 
+
 type Query {
-    serviceIntents(namespaces: [String!]): [ServiceIntents!]!
+    serviceIntents(namespaces: [String!], includeLabels: [String!]): [ServiceIntents!]!
 }
 
 type Mutation {
@@ -332,6 +366,15 @@ func (ec *executionContext) field_Query_serviceIntents_args(ctx context.Context,
 		}
 	}
 	args["namespaces"] = arg0
+	var arg1 []string
+	if tmp, ok := rawArgs["includeLabels"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeLabels"))
+		arg1, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeLabels"] = arg1
 	return args, nil
 }
 
@@ -562,6 +605,108 @@ func (ec *executionContext) _OtterizeServiceIdentity_namespace(ctx context.Conte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _OtterizeServiceIdentity_labels(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Labels, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]model.PodLabel)
+	fc.Result = res
+	return ec.marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabelᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PodLabel_key(ctx context.Context, field graphql.CollectedField, obj *model.PodLabel) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PodLabel",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PodLabel_value(ctx context.Context, field graphql.CollectedField, obj *model.PodLabel) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PodLabel",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -587,7 +732,7 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string))
+		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2168,6 +2313,54 @@ func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel as
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "labels":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._OtterizeServiceIdentity_labels(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var podLabelImplementors = []string{"PodLabel"}
+
+func (ec *executionContext) _PodLabel(ctx context.Context, sel ast.SelectionSet, obj *model.PodLabel) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, podLabelImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PodLabel")
+		case "key":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._PodLabel_key(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "value":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._PodLabel_value(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2832,6 +3025,10 @@ func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋot
 	return ec._OtterizeServiceIdentity(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPodLabel2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabel(ctx context.Context, sel ast.SelectionSet, v model.PodLabel) graphql.Marshaler {
+	return ec._PodLabel(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNServiceIntents2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx context.Context, sel ast.SelectionSet, v model.ServiceIntents) graphql.Marshaler {
 	return ec._ServiceIntents(ctx, sel, &v)
 }
@@ -3214,6 +3411,53 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabelᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PodLabel) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPodLabel2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabel(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

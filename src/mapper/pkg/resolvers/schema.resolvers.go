@@ -69,9 +69,10 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
 				continue
 			}
+
 			r.intentsHolder.AddIntent(
-				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
-				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
+				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
 				dest.LastSeen,
 			)
 		}
@@ -111,8 +112,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				continue
 			}
 			r.intentsHolder.AddIntent(
-				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
-				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
+				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
 				destIp.LastSeen,
 			)
 		}
@@ -120,22 +121,24 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	return true, nil
 }
 
-func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string) ([]model.ServiceIntents, error) {
-	discoveredIntents := r.intentsHolder.GetIntents(namespaces)
+func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string) ([]model.ServiceIntents, error) {
+	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels)
 	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
 
 	result := make([]model.ServiceIntents, 0)
-	for service, destinations := range serviceToDestinations {
+	for _, clientAndDestinations := range serviceToDestinations {
+		destinations := clientAndDestinations.Destinations
 		sort.Slice(destinations, func(i, j int) bool {
 			if destinations[i].Name != destinations[j].Name {
 				return destinations[i].Name < destinations[j].Name
 			}
 			return destinations[i].Namespace < destinations[j].Namespace
 		})
+		clientAndDestinations.Destinations = destinations
 
 		result = append(result, model.ServiceIntents{
-			Client:  lo.ToPtr(service),
-			Intents: destinations,
+			Client:  lo.ToPtr(clientAndDestinations.Client),
+			Intents: clientAndDestinations.Destinations,
 		})
 	}
 

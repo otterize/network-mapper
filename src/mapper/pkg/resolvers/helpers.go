@@ -1,20 +1,41 @@
 package resolvers
 
 import (
-	"fmt"
 	"github.com/amit7itz/goset"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/otterize/network-mapper/src/shared/kubeutils"
-	"github.com/spf13/viper"
+	"github.com/samber/lo"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 	"time"
 )
 
+type NamespacedName struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+type clientWithDestinations struct {
+	Client       model.OtterizeServiceIdentity
+	Destinations []model.OtterizeServiceIdentity
+}
+
+type FullInfoIntentWithTime struct {
+	SourceFullInfo      model.OtterizeServiceIdentity
+	DestinationFullInfo model.OtterizeServiceIdentity
+	Timestamp           time.Time
+}
+
 type SourceDestPair struct {
-	Source      model.OtterizeServiceIdentity
-	Destination model.OtterizeServiceIdentity
+	Source      NamespacedName
+	Destination NamespacedName
+}
+
+func serviceIdentityToNameNamespacePair(identity model.OtterizeServiceIdentity) NamespacedName {
+	return NamespacedName{
+		Name:      identity.Name,
+		Namespace: identity.Namespace,
+	}
 }
 
 type DiscoveredIntent struct {
@@ -23,48 +44,20 @@ type DiscoveredIntent struct {
 	Timestamp   time.Time                     `json:"timestamp"`
 }
 
-type IntentsHolderConfig struct {
-	StoreConfigMap string
-	Namespace      string
-}
-
-func namespaceFromConfig() (string, error) {
-	if viper.IsSet(config.NamespaceKey) {
-		return viper.GetString(config.NamespaceKey), nil
-	}
-	namespace, err := kubeutils.GetCurrentNamespace()
-	if err != nil {
-		return "", fmt.Errorf("could not deduce the store's configmap namespace: %w", err)
-	}
-	return namespace, nil
-}
-
-func IntentsHolderConfigFromViper() (IntentsHolderConfig, error) {
-	namespace, err := namespaceFromConfig()
-	if err != nil {
-		return IntentsHolderConfig{}, err
-	}
-	return IntentsHolderConfig{
-		StoreConfigMap: viper.GetString(config.StoreConfigMapKey),
-		Namespace:      namespace,
-	}, nil
-}
-
 type IntentsHolder struct {
-	accumulatingStore map[SourceDestPair]time.Time
-	sinceLastGetStore map[SourceDestPair]time.Time
+	accumulatingStore map[SourceDestPair]FullInfoIntentWithTime
+	sinceLastGetStore map[SourceDestPair]FullInfoIntentWithTime
 	lock              sync.Mutex
 	client            client.Client
-	config            IntentsHolderConfig
+	lastIntentsUpdate time.Time
 }
 
-func NewIntentsHolder(client client.Client, config IntentsHolderConfig) *IntentsHolder {
+func NewIntentsHolder(client client.Client) *IntentsHolder {
 	return &IntentsHolder{
-		accumulatingStore: make(map[SourceDestPair]time.Time),
-		sinceLastGetStore: make(map[SourceDestPair]time.Time),
+		accumulatingStore: make(map[SourceDestPair]FullInfoIntentWithTime),
+		sinceLastGetStore: make(map[SourceDestPair]FullInfoIntentWithTime),
 		lock:              sync.Mutex{},
 		client:            client,
-		config:            config,
 	}
 }
 
@@ -72,63 +65,92 @@ func (i *IntentsHolder) Reset() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	i.accumulatingStore = make(map[SourceDestPair]time.Time)
+	i.accumulatingStore = make(map[SourceDestPair]FullInfoIntentWithTime)
 }
 
 func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstService model.OtterizeServiceIdentity, newTimestamp time.Time) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	pair := SourceDestPair{Source: srcService, Destination: dstService}
-	currentTimestamp, alreadyExists := i.accumulatingStore[pair]
-	if !alreadyExists || newTimestamp.After(currentTimestamp) {
-		i.accumulatingStore[pair] = newTimestamp
-		i.sinceLastGetStore[pair] = newTimestamp
+	pair := SourceDestPair{Source: serviceIdentityToNameNamespacePair(srcService), Destination: serviceIdentityToNameNamespacePair(dstService)}
+	timestampedPair, alreadyExists := i.accumulatingStore[pair]
+	if !alreadyExists || newTimestamp.After(timestampedPair.Timestamp) {
+		i.accumulatingStore[pair] = FullInfoIntentWithTime{SourceFullInfo: srcService, DestinationFullInfo: dstService, Timestamp: newTimestamp}
+		i.sinceLastGetStore[pair] = FullInfoIntentWithTime{SourceFullInfo: srcService, DestinationFullInfo: dstService, Timestamp: newTimestamp}
+		i.lastIntentsUpdate = time.Now()
 	}
 
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string) []DiscoveredIntent {
+func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string) []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntentsFromStore(i.accumulatingStore, namespaces...)
+	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels)
 }
 
 func (i *IntentsHolder) GetNewIntentsSinceLastGet() []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents := i.getIntentsFromStore(i.sinceLastGetStore)
-	i.sinceLastGetStore = make(map[SourceDestPair]time.Time)
+	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil)
+	i.sinceLastGetStore = make(map[SourceDestPair]FullInfoIntentWithTime)
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]time.Time, namespaces ...string) []DiscoveredIntent {
+func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]FullInfoIntentWithTime, namespaces []string, includeLabels []string) []DiscoveredIntent {
 	namespacesSet := goset.FromSlice(namespaces)
+	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]DiscoveredIntent, 0)
-	for pair, timestamp := range store {
+	for pair, timestampedInfo := range store {
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
 			continue
 		}
+		timestampedInfoCopy := timestampedInfo
+
+		timestampedInfoCopy.SourceFullInfo.Labels = lo.Filter(timestampedInfoCopy.SourceFullInfo.Labels, func(label model.PodLabel, _ int) bool {
+			return includeLabelsSet.Contains(label.Key)
+		})
+		timestampedInfoCopy.DestinationFullInfo.Labels = lo.Filter(timestampedInfoCopy.DestinationFullInfo.Labels, func(label model.PodLabel, _ int) bool {
+			return includeLabelsSet.Contains(label.Key)
+		})
 
 		result = append(result, DiscoveredIntent{
-			Source:      pair.Source,
-			Destination: pair.Destination,
-			Timestamp:   timestamp,
+			Source:      timestampedInfoCopy.SourceFullInfo,
+			Destination: timestampedInfoCopy.DestinationFullInfo,
+			Timestamp:   timestampedInfoCopy.Timestamp,
 		})
 	}
 	return result
 }
 
-func groupDestinationsBySource(discoveredIntents []DiscoveredIntent) map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity {
-	serviceMap := make(map[model.OtterizeServiceIdentity][]model.OtterizeServiceIdentity, 0)
+func groupDestinationsBySource(discoveredIntents []DiscoveredIntent) []clientWithDestinations {
+	serviceMap := make(map[NamespacedName]*clientWithDestinations, 0)
 	for _, intents := range discoveredIntents {
-		if _, ok := serviceMap[intents.Source]; !ok {
-			serviceMap[intents.Source] = make([]model.OtterizeServiceIdentity, 0)
+		srcIdentity := serviceIdentityToNameNamespacePair(intents.Source)
+		if _, ok := serviceMap[srcIdentity]; !ok {
+			serviceMap[srcIdentity] = &clientWithDestinations{
+				Client:       intents.Source,
+				Destinations: make([]model.OtterizeServiceIdentity, 0),
+			}
 		}
 
-		serviceMap[intents.Source] = append(serviceMap[intents.Source], intents.Destination)
+		destinations := append(serviceMap[srcIdentity].Destinations, intents.Destination)
+		serviceMap[srcIdentity].Destinations = destinations
 	}
-	return serviceMap
+	return lo.MapToSlice(serviceMap, func(_ NamespacedName, client *clientWithDestinations) clientWithDestinations {
+		return *client
+	})
+}
+
+func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
+	labels := make([]model.PodLabel, 0, len(pod.Labels))
+	for key, value := range pod.Labels {
+		labels = append(labels, model.PodLabel{
+			Key:   key,
+			Value: value,
+		})
+	}
+
+	return labels
 }

@@ -21,8 +21,14 @@ type Destination struct {
 }
 
 type OtterizeServiceIdentity struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
+	Name      string     `json:"name"`
+	Namespace string     `json:"namespace"`
+	Labels    []PodLabel `json:"labels"`
+}
+
+type PodLabel struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type ServiceIntents struct {

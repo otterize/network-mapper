@@ -12,8 +12,6 @@ const (
 	ClusterDomainDefault         = kubeutils.DefaultClusterDomain
 	DebugKey                     = "debug"
 	DebugDefault                 = false
-	StoreConfigMapKey            = "store-config-map"
-	StoreConfigMapDefault        = "otterize-network-mapper-store"
 	NamespaceKey                 = "namespace"
 	CloudApiAddrKey              = "api-address"
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
@@ -26,7 +24,6 @@ const (
 func init() {
 	viper.SetDefault(DebugKey, DebugDefault)
 	viper.SetDefault(ClusterDomainKey, ClusterDomainDefault) // If not set by the user, the main.go of mapper will try to find the cluster domain and set it itself.
-	viper.SetDefault(StoreConfigMapKey, StoreConfigMapDefault)
 	viper.SetDefault(CloudApiAddrKey, CloudApiAddrDefault)
 	viper.SetDefault(UploadIntervalSecondsKey, UploadIntervalSecondsDefault)
 	viper.SetEnvPrefix(EnvPrefix)
