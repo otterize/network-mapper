@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type nameNamespaceIdentity struct {
+type NamespacedName struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
@@ -27,12 +27,12 @@ type FullInfoIntentWithTime struct {
 }
 
 type SourceDestPair struct {
-	Source      nameNamespaceIdentity
-	Destination nameNamespaceIdentity
+	Source      NamespacedName
+	Destination NamespacedName
 }
 
-func serviceIdentityToNameNamespacePair(identity model.OtterizeServiceIdentity) nameNamespaceIdentity {
-	return nameNamespaceIdentity{
+func serviceIdentityToNameNamespacePair(identity model.OtterizeServiceIdentity) NamespacedName {
+	return NamespacedName{
 		Name:      identity.Name,
 		Namespace: identity.Namespace,
 	}
@@ -125,7 +125,7 @@ func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]FullInfoInt
 }
 
 func groupDestinationsBySource(discoveredIntents []DiscoveredIntent) []clientWithDestinations {
-	serviceMap := make(map[nameNamespaceIdentity]*clientWithDestinations, 0)
+	serviceMap := make(map[NamespacedName]*clientWithDestinations, 0)
 	for _, intents := range discoveredIntents {
 		srcIdentity := serviceIdentityToNameNamespacePair(intents.Source)
 		if _, ok := serviceMap[srcIdentity]; !ok {
@@ -138,7 +138,7 @@ func groupDestinationsBySource(discoveredIntents []DiscoveredIntent) []clientWit
 		destinations := append(serviceMap[srcIdentity].Destinations, intents.Destination)
 		serviceMap[srcIdentity].Destinations = destinations
 	}
-	return lo.MapToSlice(serviceMap, func(_ nameNamespaceIdentity, client *clientWithDestinations) clientWithDestinations {
+	return lo.MapToSlice(serviceMap, func(_ NamespacedName, client *clientWithDestinations) clientWithDestinations {
 		return *client
 	})
 }
