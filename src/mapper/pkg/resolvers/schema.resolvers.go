@@ -112,8 +112,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				continue
 			}
 			r.intentsHolder.AddIntent(
-				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace},
-				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace},
+				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
+				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
 				destIp.LastSeen,
 			)
 		}
