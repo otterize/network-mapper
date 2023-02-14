@@ -104,6 +104,7 @@ func (v *KafkaConfigInput) GetOperations() []*KafkaOperation { return v.Operatio
 type KafkaOperation string
 
 const (
+	KafkaOperationAll             KafkaOperation = "ALL"
 	KafkaOperationConsume         KafkaOperation = "CONSUME"
 	KafkaOperationProduce         KafkaOperation = "PRODUCE"
 	KafkaOperationCreate          KafkaOperation = "CREATE"
@@ -118,6 +119,7 @@ const (
 
 // ReportComponentStatusResponse is returned by ReportComponentStatus on success.
 type ReportComponentStatusResponse struct {
+	// Report integration components status
 	ReportIntegrationComponentStatus bool `json:"reportIntegrationComponentStatus"`
 }
 
