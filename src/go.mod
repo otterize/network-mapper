@@ -11,7 +11,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20230215211946-456e3b9da8c6
+	github.com/otterize/intents-operator/src v0.0.0-20230215230336-e3dd8e2c5ccf
 	github.com/samber/lo v1.33.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.12.0
