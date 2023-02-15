@@ -20,10 +20,18 @@ type Destination struct {
 	LastSeen    time.Time `json:"lastSeen"`
 }
 
+type GroupVersionKind struct {
+	Group   *string `json:"group"`
+	Version string  `json:"version"`
+	Kind    string  `json:"kind"`
+}
+
 type OtterizeServiceIdentity struct {
 	Name      string     `json:"name"`
 	Namespace string     `json:"namespace"`
 	Labels    []PodLabel `json:"labels"`
+	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
+	PodOwnerKind *GroupVersionKind `json:"podOwnerKind"`
 }
 
 type PodLabel struct {

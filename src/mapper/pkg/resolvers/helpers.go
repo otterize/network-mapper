@@ -82,23 +82,23 @@ func (i *IntentsHolder) AddIntent(srcService model.OtterizeServiceIdentity, dstS
 
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string) []DiscoveredIntent {
+func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, includeAllLabels bool) []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels)
+	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, includeAllLabels)
 }
 
 func (i *IntentsHolder) GetNewIntentsSinceLastGet() []DiscoveredIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil)
+	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, false)
 	i.sinceLastGetStore = make(map[SourceDestPair]FullInfoIntentWithTime)
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]FullInfoIntentWithTime, namespaces []string, includeLabels []string) []DiscoveredIntent {
+func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]FullInfoIntentWithTime, namespaces []string, includeLabels []string, includeAllLabels bool) []DiscoveredIntent {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]DiscoveredIntent, 0)
@@ -108,12 +108,14 @@ func (i *IntentsHolder) getIntentsFromStore(store map[SourceDestPair]FullInfoInt
 		}
 		timestampedInfoCopy := timestampedInfo
 
-		timestampedInfoCopy.SourceFullInfo.Labels = lo.Filter(timestampedInfoCopy.SourceFullInfo.Labels, func(label model.PodLabel, _ int) bool {
-			return includeLabelsSet.Contains(label.Key)
-		})
-		timestampedInfoCopy.DestinationFullInfo.Labels = lo.Filter(timestampedInfoCopy.DestinationFullInfo.Labels, func(label model.PodLabel, _ int) bool {
-			return includeLabelsSet.Contains(label.Key)
-		})
+		if !includeAllLabels {
+			timestampedInfoCopy.SourceFullInfo.Labels = lo.Filter(timestampedInfoCopy.SourceFullInfo.Labels, func(label model.PodLabel, _ int) bool {
+				return includeLabelsSet.Contains(label.Key)
+			})
+			timestampedInfoCopy.DestinationFullInfo.Labels = lo.Filter(timestampedInfoCopy.DestinationFullInfo.Labels, func(label model.PodLabel, _ int) bool {
+				return includeLabelsSet.Contains(label.Key)
+			})
+		}
 
 		result = append(result, DiscoveredIntent{
 			Source:      timestampedInfoCopy.SourceFullInfo,

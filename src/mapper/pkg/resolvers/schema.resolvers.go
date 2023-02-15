@@ -70,9 +70,19 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				continue
 			}
 
+			srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+			dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+			if srcService.OwnerObject != nil {
+				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			if dstService.OwnerObject != nil {
+				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
 			r.intentsHolder.AddIntent(
-				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
-				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
+				srcSvcIdentity,
+				dstSvcIdentity,
 				dest.LastSeen,
 			)
 		}
@@ -112,8 +122,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				continue
 			}
 			r.intentsHolder.AddIntent(
-				model.OtterizeServiceIdentity{Name: srcService, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
-				model.OtterizeServiceIdentity{Name: dstService, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
+				model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
+				model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
 				destIp.LastSeen,
 			)
 		}
@@ -121,8 +131,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	return true, nil
 }
 
-func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string) ([]model.ServiceIntents, error) {
-	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels)
+func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
+	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, includeAllLabels != nil && *includeAllLabels == true)
 	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
 
 	result := make([]model.ServiceIntents, 0)

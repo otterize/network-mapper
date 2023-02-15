@@ -28,10 +28,20 @@ type PodLabel {
     value: String!
 }
 
+type GroupVersionKind {
+    group: String
+    version: String!
+    kind: String!
+}
+
 type OtterizeServiceIdentity {
     name: String!
     namespace: String!
     labels: [PodLabel!]
+    """
+    If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
+    """
+    podOwnerKind: GroupVersionKind
 }
 
 type ServiceIntents {
@@ -41,7 +51,12 @@ type ServiceIntents {
 
 
 type Query {
-    serviceIntents(namespaces: [String!], includeLabels: [String!]): [ServiceIntents!]!
+    """
+    namespaces: Namespaces filter.
+    includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
+    includeAllLabels: Return all labels for the pod in the response.
+    """
+    serviceIntents(namespaces: [String!], includeLabels: [String!], includeAllLabels: Boolean): [ServiceIntents!]!
 }
 
 type Mutation {
