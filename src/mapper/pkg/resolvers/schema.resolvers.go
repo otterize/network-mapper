@@ -132,7 +132,11 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 }
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
-	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, includeAllLabels != nil && *includeAllLabels)
+	shouldIncludeAllLabels := false
+	if includeAllLabels != nil && *includeAllLabels {
+		shouldIncludeAllLabels = true
+	}
+	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, shouldIncludeAllLabels)
 	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
 
 	result := make([]model.ServiceIntents, 0)
