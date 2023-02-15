@@ -44,6 +44,12 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	GroupVersionKind struct {
+		Group   func(childComplexity int) int
+		Kind    func(childComplexity int) int
+		Version func(childComplexity int) int
+	}
+
 	Mutation struct {
 		ReportCaptureResults    func(childComplexity int, results model.CaptureResults) int
 		ReportSocketScanResults func(childComplexity int, results model.SocketScanResults) int
@@ -51,9 +57,10 @@ type ComplexityRoot struct {
 	}
 
 	OtterizeServiceIdentity struct {
-		Labels    func(childComplexity int) int
-		Name      func(childComplexity int) int
-		Namespace func(childComplexity int) int
+		Labels       func(childComplexity int) int
+		Name         func(childComplexity int) int
+		Namespace    func(childComplexity int) int
+		PodOwnerKind func(childComplexity int) int
 	}
 
 	PodLabel struct {
@@ -62,7 +69,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string) int
+		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string, includeAllLabels *bool) int
 	}
 
 	ServiceIntents struct {
@@ -77,7 +84,7 @@ type MutationResolver interface {
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 }
 type QueryResolver interface {
-	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string) ([]model.ServiceIntents, error)
+	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
 }
 
 type executableSchema struct {
@@ -94,6 +101,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "GroupVersionKind.group":
+		if e.complexity.GroupVersionKind.Group == nil {
+			break
+		}
+
+		return e.complexity.GroupVersionKind.Group(childComplexity), true
+
+	case "GroupVersionKind.kind":
+		if e.complexity.GroupVersionKind.Kind == nil {
+			break
+		}
+
+		return e.complexity.GroupVersionKind.Kind(childComplexity), true
+
+	case "GroupVersionKind.version":
+		if e.complexity.GroupVersionKind.Version == nil {
+			break
+		}
+
+		return e.complexity.GroupVersionKind.Version(childComplexity), true
 
 	case "Mutation.reportCaptureResults":
 		if e.complexity.Mutation.ReportCaptureResults == nil {
@@ -147,6 +175,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.OtterizeServiceIdentity.Namespace(childComplexity), true
 
+	case "OtterizeServiceIdentity.podOwnerKind":
+		if e.complexity.OtterizeServiceIdentity.PodOwnerKind == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.PodOwnerKind(childComplexity), true
+
 	case "PodLabel.key":
 		if e.complexity.PodLabel.Key == nil {
 			break
@@ -171,7 +206,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string)), true
+		return e.complexity.Query.ServiceIntents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["includeAllLabels"].(*bool)), true
 
 	case "ServiceIntents.client":
 		if e.complexity.ServiceIntents.Client == nil {
@@ -281,10 +316,20 @@ type PodLabel {
     value: String!
 }
 
+type GroupVersionKind {
+    group: String
+    version: String!
+    kind: String!
+}
+
 type OtterizeServiceIdentity {
     name: String!
     namespace: String!
     labels: [PodLabel!]
+    """
+    If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
+    """
+    podOwnerKind: GroupVersionKind
 }
 
 type ServiceIntents {
@@ -294,7 +339,12 @@ type ServiceIntents {
 
 
 type Query {
-    serviceIntents(namespaces: [String!], includeLabels: [String!]): [ServiceIntents!]!
+    """
+    namespaces: Namespaces filter.
+    includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
+    includeAllLabels: Return all labels for the pod in the response.
+    """
+    serviceIntents(namespaces: [String!], includeLabels: [String!], includeAllLabels: Boolean): [ServiceIntents!]!
 }
 
 type Mutation {
@@ -375,6 +425,15 @@ func (ec *executionContext) field_Query_serviceIntents_args(ctx context.Context,
 		}
 	}
 	args["includeLabels"] = arg1
+	var arg2 *bool
+	if tmp, ok := rawArgs["includeAllLabels"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeAllLabels"))
+		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeAllLabels"] = arg2
 	return args, nil
 }
 
@@ -415,6 +474,108 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _GroupVersionKind_group(ctx context.Context, field graphql.CollectedField, obj *model.GroupVersionKind) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GroupVersionKind",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Group, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GroupVersionKind_version(ctx context.Context, field graphql.CollectedField, obj *model.GroupVersionKind) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GroupVersionKind",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Version, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GroupVersionKind_kind(ctx context.Context, field graphql.CollectedField, obj *model.GroupVersionKind) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GroupVersionKind",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Mutation_resetCapture(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
@@ -637,6 +798,38 @@ func (ec *executionContext) _OtterizeServiceIdentity_labels(ctx context.Context,
 	return ec.marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabelᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _OtterizeServiceIdentity_podOwnerKind(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PodOwnerKind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.GroupVersionKind)
+	fc.Result = res
+	return ec.marshalOGroupVersionKind2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐGroupVersionKind(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PodLabel_key(ctx context.Context, field graphql.CollectedField, obj *model.PodLabel) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -732,7 +925,7 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string))
+		return ec.resolvers.Query().ServiceIntents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["includeAllLabels"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2223,6 +2416,54 @@ func (ec *executionContext) unmarshalInputSocketScanResults(ctx context.Context,
 
 // region    **************************** object.gotpl ****************************
 
+var groupVersionKindImplementors = []string{"GroupVersionKind"}
+
+func (ec *executionContext) _GroupVersionKind(ctx context.Context, sel ast.SelectionSet, obj *model.GroupVersionKind) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupVersionKindImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GroupVersionKind")
+		case "group":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._GroupVersionKind_group(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		case "version":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._GroupVersionKind_version(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "kind":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._GroupVersionKind_kind(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2316,6 +2557,13 @@ func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel as
 		case "labels":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._OtterizeServiceIdentity_labels(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		case "podOwnerKind":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._OtterizeServiceIdentity_podOwnerKind(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -3411,6 +3659,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOGroupVersionKind2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐGroupVersionKind(ctx context.Context, sel ast.SelectionSet, v *model.GroupVersionKind) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._GroupVersionKind(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabelᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PodLabel) graphql.Marshaler {
