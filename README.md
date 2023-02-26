@@ -30,7 +30,7 @@ You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list
 Example output after running `otterize network-mapper visualize` on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
 ![graph](visualize-example.png)
 
-The microservices demo in the [Otterize Cloud](https://otterize.com/cloud-beta) access graph, as it appears when you optionally connect the network mapper to Otterize Cloud:
+The same microservices demo in the [Otterize Cloud](https://otterize.com/cloud-beta) access graph, as it appears when you choose to connect the network mapper to Otterize Cloud:
 ![image](cloud-example.png)
 
 
