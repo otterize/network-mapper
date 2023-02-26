@@ -28,10 +28,10 @@ The Otterize network mapper is a zero-config tool that aims to be lightweight an
 You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, reset the traffic the mapper remembers, or export it as JSON or YAML.
 
 Example output after running `otterize network-mapper visualize` on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
-![graph](https://user-images.githubusercontent.com/29180932/221424089-82efcd69-7ed3-4bbf-bc44-f8a29dff222b.png)
+![graph](visualize-example.png)
 
 The microservices demo in the [Otterize Cloud](https://otterize.com/cloud-beta) access graph, as it appears when you optionally connect the network mapper to Otterize Cloud:
-![image](https://user-images.githubusercontent.com/29180932/221424216-f436c4b3-9c91-4ec5-8c04-3c39e9978e75.png)
+![image](cloud-example.png)
 
 
 Example output after running `otterize network-mapper list` on the Google Cloud microservices demo:
