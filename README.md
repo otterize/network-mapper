@@ -30,8 +30,9 @@ You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list
 Example output after running `otterize network-mapper visualize` on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
 ![graph](https://user-images.githubusercontent.com/29180932/221424089-82efcd69-7ed3-4bbf-bc44-f8a29dff222b.png)
 
-The microservices demo in the Otterize Cloud access graph, as it appears when you optionally connect the network mapper to Otterize Cloud:
+The microservices demo in the [Otterize Cloud](https://otterize.com/cloud-beta) access graph, as it appears when you optionally connect the network mapper to Otterize Cloud:
 ![image](https://user-images.githubusercontent.com/29180932/221424216-f436c4b3-9c91-4ec5-8c04-3c39e9978e75.png)
+
 
 Example output after running `otterize network-mapper list` on the Google Cloud microservices demo:
 ```bash
@@ -57,12 +58,7 @@ loadgenerator in namespace otterize-ecom-demo calls:
 recommendationservice in namespace otterize-ecom-demo calls:
   - productcatalogservice
 ```
-
-
-
-Signup for Otterize cloud [here](https://otterize.com/cloud-beta).  
-
-Example output from running the network mapper 
+ 
 ## Try the network mapper
 
 Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
