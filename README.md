@@ -25,11 +25,17 @@ https://user-images.githubusercontent.com/20886410/205926414-a5fb6755-b5fa-45f3-
 ## About
 The Otterize network mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. Its goal is to give you insights about traffic in your cluster without a complete overhaul or the need to adapt anything to it.
 
-You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, reset the traffic the mapper remembers, or export it as JSON or YAML.
+You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, visualize the traffic, export the results as JSON or YAML, or reset the traffic the mapper remembers.
 
-Example output from running the network mapper on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
+Example output after running `otterize network-mapper visualize` on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
+![graph](visualize-example.png)
+
+The same microservices demo in the [Otterize Cloud](https://otterize.com/cloud-beta) access graph, as it appears when you choose to connect the network mapper to Otterize Cloud:
+![image](cloud-example.png)
+
+
+Example output after running `otterize network-mapper list` on the Google Cloud microservices demo:
 ```bash
-$ otterize mapper list
 cartservice in namespace otterize-ecom-demo calls:
   - redis-cart
 checkoutservice in namespace otterize-ecom-demo calls:
@@ -52,7 +58,9 @@ loadgenerator in namespace otterize-ecom-demo calls:
 recommendationservice in namespace otterize-ecom-demo calls:
   - productcatalogservice
 ```
+ 
 ## Try the network mapper
+
 Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
 
 ## Installation instructions
