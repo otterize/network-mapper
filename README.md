@@ -27,9 +27,8 @@ The Otterize network mapper is a zero-config tool that aims to be lightweight an
 
 You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, reset the traffic the mapper remembers, or export it as JSON or YAML.
 
-Example output from running the network mapper on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
+Example output after running `otterize network-mapper list` on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
 ```bash
-$ otterize mapper list
 cartservice in namespace otterize-ecom-demo calls:
   - redis-cart
 checkoutservice in namespace otterize-ecom-demo calls:
@@ -52,7 +51,18 @@ loadgenerator in namespace otterize-ecom-demo calls:
 recommendationservice in namespace otterize-ecom-demo calls:
   - productcatalogservice
 ```
+
+The same microservices demo environemnt, now visualized using the `otterize network-mapper visualize` command:
+![graph](https://user-images.githubusercontent.com/29180932/221424089-82efcd69-7ed3-4bbf-bc44-f8a29dff222b.png)
+
+This is how the microservices demo environemnt looks like when visualized in Otterize cloud:
+![image](https://user-images.githubusercontent.com/29180932/221424216-f436c4b3-9c91-4ec5-8c04-3c39e9978e75.png)
+
+Signup for Otterize cloud [here](https://otterize.com/cloud-beta).  
+
+Example output from running the network mapper 
 ## Try the network mapper
+
 Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
 
 ## Installation instructions
