@@ -25,7 +25,7 @@ https://user-images.githubusercontent.com/20886410/205926414-a5fb6755-b5fa-45f3-
 ## About
 The Otterize network mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. Its goal is to give you insights about traffic in your cluster without a complete overhaul or the need to adapt anything to it.
 
-You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, visualize the traffic, reset the traffic the mapper remembers, or export it as JSON or YAML.
+You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, visualize the traffic, export the results as JSON or YAML, or reset the traffic the mapper remembers.
 
 Example output after running `otterize network-mapper visualize` on the [Google Cloud microservices demo](https://github.com/GoogleCloudPlatform/microservices-demo):
 ![graph](visualize-example.png)
