@@ -77,7 +77,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 
 			if dstService.OwnerObject != nil {
-				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
 			r.intentsHolder.AddIntent(
