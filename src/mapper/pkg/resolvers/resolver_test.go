@@ -38,7 +38,8 @@ func (s *ResolverTestSuite) SetupTest() {
 func (s *ResolverTestSuite) TestReportCaptureResults() {
 	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"})
 	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"})
-	s.AddDeploymentWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"})
+	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"})
+	s.AddPod("pod4", "1.1.1.4", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
@@ -62,6 +63,14 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 					},
 				},
 			},
+			{
+				SrcIp: "1.1.1.4",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+					},
+				},
+			},
 		},
 	})
 	s.Require().NoError(err)
@@ -92,7 +101,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
-					Kind:    "Deployment",
+					Kind:    "DaemonSet",
 					Version: "v1",
 				},
 			},
@@ -107,13 +116,31 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				},
 			},
 		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "pod4",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "",
+					Kind:    "Pod",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
+			},
+		},
 	})
 }
 
 func (s *ResolverTestSuite) TestSocketScanResults() {
-	s.AddDeploymentWithService("service1", []string{"1.1.2.1"}, map[string]string{"app": "service1"})
+	s.AddDaemonSetWithService("service1", []string{"1.1.2.1"}, map[string]string{"app": "service1"})
 	s.AddDeploymentWithService("service2", []string{"1.1.2.2"}, map[string]string{"app": "service2"})
 	s.AddDeploymentWithService("service3", []string{"1.1.2.3"}, map[string]string{"app": "service3"})
+	s.AddPod("pod4", "1.1.2.4", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	_, err := test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
@@ -137,6 +164,14 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 					},
 				},
 			},
+			{
+				SrcIp: "1.1.2.4",
+				DestIps: []test_gql_client.Destination{
+					{
+						Destination: "1.1.2.2",
+					},
+				},
+			},
 		},
 	})
 	s.Require().NoError(err)
@@ -150,7 +185,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
-					Kind:    "Deployment",
+					Kind:    "DaemonSet",
 					Version: "v1",
 				},
 			},
@@ -176,6 +211,23 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 					Name:      "service1",
 					Namespace: s.TestNamespace,
 				},
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "pod4",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "",
+					Kind:    "Pod",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:      "service2",
 					Namespace: s.TestNamespace,
