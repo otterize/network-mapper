@@ -58,6 +58,9 @@ func (v *ReportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 
 // ServiceIntentsResponse is returned by ServiceIntents on success.
 type ServiceIntentsResponse struct {
+	// namespaces: Namespaces filter.
+	// includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
+	// includeAllLabels: Return all labels for the pod in the response.
 	ServiceIntents []ServiceIntentsServiceIntents `json:"serviceIntents"`
 }
 
@@ -86,6 +89,8 @@ func (v *ServiceIntentsServiceIntents) GetIntents() []ServiceIntentsServiceInten
 type ServiceIntentsServiceIntentsClientOtterizeServiceIdentity struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
+	PodOwnerKind ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind `json:"podOwnerKind"`
 }
 
 // GetName returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
@@ -94,6 +99,33 @@ func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentity) GetName() st
 // GetNamespace returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
 func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentity) GetNamespace() string {
 	return v.Namespace
+}
+
+// GetPodOwnerKind returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentity.PodOwnerKind, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentity) GetPodOwnerKind() ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind {
+	return v.PodOwnerKind
+}
+
+// ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind includes the requested fields of the GraphQL type GroupVersionKind.
+type ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind struct {
+	Group   string `json:"group"`
+	Kind    string `json:"kind"`
+	Version string `json:"version"`
+}
+
+// GetGroup returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Group, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetGroup() string {
+	return v.Group
+}
+
+// GetKind returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Kind, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetKind() string {
+	return v.Kind
+}
+
+// GetVersion returns ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Version, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetVersion() string {
+	return v.Version
 }
 
 // ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity includes the requested fields of the GraphQL type OtterizeServiceIdentity.
@@ -225,6 +257,11 @@ query ServiceIntents ($namespaces: [String!]) {
 		client {
 			name
 			namespace
+			podOwnerKind {
+				group
+				kind
+				version
+			}
 		}
 		intents {
 			name

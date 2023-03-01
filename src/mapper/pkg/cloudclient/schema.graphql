@@ -86,15 +86,20 @@ type CertificateInformation {
 	ttl: Int
 }
 
+type Client {
+	id: ID!
+	secret: String!
+}
+
 type Cluster {
 	id: ID!
-	integration: Integration
-	defaultEnvironment: Environment
 	name: String!
-	components: IntegrationComponents!
 	configuration: ClusterConfiguration
 	namespaces: [Namespace!]!
 	serviceCount: Int!
+	integration: Integration
+	defaultEnvironment: Environment
+	components: IntegrationComponents!
 }
 
 type ClusterConfiguration {
@@ -170,11 +175,11 @@ enum EdgeAccessStatusVerdict {
 
 type Environment {
 	id: ID!
-	appliedIntentsCount: Int!
 	name: String!
 	labels: [Label!]
 	namespaces: [Namespace!]!
 	serviceCount: Int!
+	appliedIntentsCount: Int!
 }
 
 type HTTPConfig {
@@ -218,7 +223,6 @@ type Integration {
 }
 
 type IntegrationComponents {
-	clusterId: ID!
 	intentsOperator: IntentsOperatorComponent!
 	credentialsOperator: CredentialsOperatorComponent!
 	networkMapper: NetworkMapperComponent!
@@ -385,6 +389,26 @@ type MeMutation {
 type Mutation {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
+"""Create client"""
+	createClient: Client!
+"""Delete client"""
+	deleteClient(
+		id: ID!
+	): ID!
+"""Create user invite"""
+	createInvite(
+		email: String!
+	): Invite!
+"""Delete user invite"""
+	deleteInvite(
+		id: ID!
+	): ID!
+"""Accept user invite"""
+	acceptInvite(
+		id: ID!
+	): Invite!
+"""Operate on the current logged-in user"""
+	me: MeMutation!
 """Create a new organization"""
 	createOrganization: Organization!
 """Update organization"""
@@ -398,23 +422,57 @@ type Mutation {
 		id: ID!
 		userId: ID!
 	): ID!
-"""Operate on the current logged-in user"""
-	me: MeMutation!
-"""Create user invite"""
-	createInvite(
-		email: String!
-	): Invite!
-"""Delete user invite"""
-	deleteInvite(
+	initializeOrganizationCAs(
+		organizationId: ID!
+	): Boolean!
+"""Register certificate-request details for kubernetes pod owner, returns the service associated with this pod owner"""
+	registerKubernetesPodOwnerCertificateRequest(
+		podOwner: NamespacedPodOwner!
+		certificateCustomization: CertificateCustomization
+	): Service!
+"""Report active pod owners to the cloud, as a result the cloud removes certificate requests of inactive pod owners """
+	reportActiveCertificateRequesters(
+		activePodOwners: [NamespacedPodOwner!]!
+	): Boolean!
+"""Create cluster"""
+	createCluster(
+		name: String!
+	): Cluster!
+"""Delete cluster"""
+	deleteCluster(
 		id: ID!
 	): ID!
-"""Accept user invite"""
-	acceptInvite(
+"""Update cluster"""
+	updateCluster(
 		id: ID!
-	): Invite!
-	reportIntentsOperatorConfiguration(
-		configuration: IntentsOperatorConfigurationInput!
-	): Boolean!
+		name: String
+		configuration: ClusterConfigurationInput
+	): Cluster!
+"""Create a new environment"""
+	createEnvironment(
+		name: String!
+		labels: [LabelInput!]
+	): Environment!
+"""Update environment"""
+	updateEnvironment(
+		id: ID!
+		name: String
+		labels: [LabelInput!]
+	): Environment!
+"""Delete environment"""
+	deleteEnvironment(
+		id: ID!
+	): ID!
+"""Add label to environment"""
+	addEnvironmentLabel(
+		id: ID!
+		label: LabelInput!
+	): Environment!
+"""Remove label from environment"""
+	deleteEnvironmentLabel(
+		id: ID!
+		key: String!
+	): Environment!
 """Create a new generic integration"""
 	createGenericIntegration(
 		name: String!
@@ -442,8 +500,8 @@ type Mutation {
 	reportIntegrationComponentStatus(
 		component: ComponentType!
 	): Boolean!
-	initializeOrganizationCAs(
-		organizationId: ID!
+	reportIntentsOperatorConfiguration(
+		configuration: IntentsOperatorConfigurationInput!
 	): Boolean!
 	reportDiscoveredIntents(
 		intents: [DiscoveredIntentInput!]!
@@ -456,58 +514,11 @@ type Mutation {
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
 	): Boolean!
-"""Register certificate-request details for kubernetes pod owner, returns the service associated with this pod owner"""
-	registerKubernetesPodOwnerCertificateRequest(
-		podOwner: NamespacedPodOwner!
-		certificateCustomization: CertificateCustomization
-	): Service!
-"""Report active pod owners to the cloud, as a result the cloud removes certificate requests of inactive pod owners """
-	reportActiveCertificateRequesters(
-		activePodOwners: [NamespacedPodOwner!]!
-	): Boolean!
-"""Create a new environment"""
-	createEnvironment(
-		name: String!
-		labels: [LabelInput!]
-	): Environment!
-"""Update environment"""
-	updateEnvironment(
-		id: ID!
-		name: String
-		labels: [LabelInput!]
-	): Environment!
-"""Delete environment"""
-	deleteEnvironment(
-		id: ID!
-	): ID!
-"""Add label to environment"""
-	addEnvironmentLabel(
-		id: ID!
-		label: LabelInput!
-	): Environment!
-"""Remove label from environment"""
-	deleteEnvironmentLabel(
-		id: ID!
-		key: String!
-	): Environment!
 """Associate namespace to environment"""
 	associateNamespaceToEnv(
 		id: ID!
 		environmentId: ID
 	): Namespace!
-"""Create cluster"""
-	createCluster(
-		name: String!
-	): Cluster!
-"""Delete cluster"""
-	deleteCluster(
-		id: ID!
-	): ID!
-"""Update cluster"""
-	updateCluster(
-		id: ID!
-		configuration: ClusterConfigurationInput
-	): Cluster!
 }
 
 type Namespace {
@@ -538,20 +549,10 @@ type Organization {
 type Query {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
-"""List organizations"""
-	organizations: [Organization!]!
-"""Get organization"""
-	organization(
+"""Get client"""
+	client(
 		id: ID!
-	): Organization!
-"""List users"""
-	users: [User!]!
-"""Get user"""
-	user(
-		id: ID!
-	): User!
-"""Get information regarding the current logged-in user"""
-	me: Me!
+	): Client!
 """List user invites"""
 	invites(
 		email: String
@@ -566,6 +567,49 @@ type Query {
 		email: String
 		status: InviteStatus
 	): Invite!
+"""Get information regarding the current logged-in user"""
+	me: Me!
+"""List organizations"""
+	organizations: [Organization!]!
+"""Get organization"""
+	organization(
+		id: ID!
+	): Organization!
+"""List users"""
+	users: [User!]!
+"""Get user"""
+	user(
+		id: ID!
+	): User!
+"""Get access graph"""
+	accessGraph(
+		filter: InputAccessGraphFilter
+	): AccessGraph!
+"""Get cluster"""
+	cluster(
+		id: ID!
+	): Cluster!
+"""List clusters"""
+	clusters(
+		name: String
+	): [Cluster!]!
+"""Get cluster by filters"""
+	oneCluster(
+		name: String!
+	): Cluster
+"""Get environment"""
+	environment(
+		id: ID!
+	): Environment!
+"""List environments"""
+	environments(
+		name: String
+		labels: [LabelInput!]
+	): [Environment!]!
+"""Get environment by filters"""
+	oneEnvironment(
+		name: String!
+	): Environment!
 """List integrations"""
 	integrations(
 		name: String
@@ -594,39 +638,6 @@ type Query {
 		clientId: ID
 		serverId: ID
 	): [Intent!]!
-"""Get service"""
-	service(
-		id: ID!
-	): Service!
-"""List services"""
-	services(
-		environmentId: ID
-		namespaceId: ID
-		name: String
-	): [Service!]!
-"""Get service by filters"""
-	oneService(
-		environmentId: ID
-		namespaceId: ID
-		name: String
-	): Service
-"""Get access graph"""
-	accessGraph(
-		filter: InputAccessGraphFilter
-	): AccessGraph!
-"""Get environment"""
-	environment(
-		id: ID!
-	): Environment!
-"""List environments"""
-	environments(
-		name: String
-		labels: [LabelInput!]
-	): [Environment!]!
-"""Get environment by filters"""
-	oneEnvironment(
-		name: String!
-	): Environment!
 """Get namespace"""
 	namespace(
 		id: ID!
@@ -643,18 +654,22 @@ type Query {
 		clusterId: ID
 		name: String
 	): Namespace!
-"""Get cluster"""
-	cluster(
+"""Get service"""
+	service(
 		id: ID!
-	): Cluster!
-"""List clusters"""
-	clusters(
+	): Service!
+"""List services"""
+	services(
+		environmentId: ID
+		namespaceId: ID
 		name: String
-	): [Cluster!]!
-"""Get cluster by filters"""
-	oneCluster(
-		name: String!
-	): Cluster
+	): [Service!]!
+"""Get service by filters"""
+	oneService(
+		environmentId: ID
+		namespaceId: ID
+		name: String
+	): Service
 }
 
 type ServerBlockingStatus {
@@ -699,13 +714,13 @@ enum ServerProtectionStatusVerdict {
 
 type Service {
 	id: ID!
+	certificateInformation: CertificateInformation
 	tlsKeyPair: KeyPair!
 	name: String!
 	namespace: Namespace
 	environment: Environment!
 """If service is Kafka, its KafkaServerConfig."""
 	kafkaServerConfig: KafkaServerConfig
-	certificateInformation: CertificateInformation
 }
 
 type ServiceAccessGraph {

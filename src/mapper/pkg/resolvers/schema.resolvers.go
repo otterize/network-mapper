@@ -121,9 +121,20 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
 				continue
 			}
+
+			srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+			dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+			if srcService.OwnerObject != nil {
+				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			if dstService.OwnerObject != nil {
+				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
 			r.intentsHolder.AddIntent(
-				model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)},
-				model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)},
+				srcSvcIdentity,
+				dstSvcIdentity,
 				destIp.LastSeen,
 			)
 		}

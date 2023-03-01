@@ -73,6 +73,11 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "service1",
 				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
@@ -85,6 +90,11 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "service3",
 				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
@@ -138,6 +148,11 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "service1",
 				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
@@ -150,6 +165,11 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "service3",
 				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{

@@ -3,6 +3,11 @@ query ServiceIntents($namespaces: [String!]) {
         client {
             name
             namespace
+            podOwnerKind {
+                group
+                kind
+                version
+            }
         }
         intents {
             name
