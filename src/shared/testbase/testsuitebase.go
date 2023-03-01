@@ -245,3 +245,48 @@ func (s *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, p
 	service := s.AddService(name, podIps, podLabels)
 	return deployment, service
 }
+
+func (s *ControllerManagerTestSuiteBase) AddDaemonSet(name string, podIps []string, podLabels map[string]string) *appsv1.DaemonSet {
+	daemonSet := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: podLabels},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace, Labels: podLabels},
+				Spec: corev1.PodSpec{Containers: []corev1.Container{
+					{
+						Name:            name,
+						Image:           "nginx",
+						ImagePullPolicy: "Always",
+					},
+				},
+				},
+			},
+		},
+	}
+	err := s.Mgr.GetClient().Create(context.Background(), daemonSet)
+	s.Require().NoError(err)
+
+	s.waitForObjectToBeCreated(daemonSet)
+
+	for i, ip := range podIps {
+		s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels, []metav1.OwnerReference{
+			{
+				APIVersion:         "apps/v1",
+				Kind:               "DaemonSet",
+				BlockOwnerDeletion: lo.ToPtr(true),
+				Controller:         lo.ToPtr(true),
+				Name:               daemonSet.Name,
+				UID:                daemonSet.UID,
+			},
+		})
+	}
+
+	return daemonSet
+}
+
+func (s *ControllerManagerTestSuiteBase) AddDaemonSetWithService(name string, podIps []string, podLabels map[string]string) (*appsv1.DaemonSet, *corev1.Service) {
+	daemonSet := s.AddDaemonSet(name, podIps, podLabels)
+	service := s.AddService(name, podIps, podLabels)
+	return daemonSet, service
+}
