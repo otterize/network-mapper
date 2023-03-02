@@ -68,7 +68,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
-  
 
   tag-latest:
     name: Tag latest
@@ -100,3 +99,15 @@ jobs:
           retag_image_as_latest() { MANIFEST=$(aws ecr batch-get-image --repository-name ${{ env.REPOSITORY_NAME }} --image-ids imageTag="$1-${{ github.sha }}" --query "images[].imageManifest" --output text); if [ -z "$MANIFEST" ]; then echo Manifest not found; exit 1; fi; OUTPUT=$(aws ecr put-image --repository-name ${{ env.REPOSITORY_NAME }} --image-tag "$1-latest" --image-manifest "$MANIFEST" 2>&1 || true); if echo $OUTPUT | grep 'An error occurred' >/dev/null && ! echo $OUTPUT | grep ImageAlreadyExistsException >/dev/null; then echo $OUTPUT; exit 1; fi; }
           retag_image_as_latest mapper
           retag_image_as_latest sniffer
+
+  trigger-e2e-tests:
+    uses: ./.github/workflows/e2e-tests.yaml
+    name: Trigger e2e tests
+    with:
+      registry: ${{ env.REGISTRY }}
+      mapper-image: ${{ env.REPOSITORY_NAME }}
+      sniffer-image: ${{ env.REPOSITORY_NAME }}
+      mapper-tag: mapper-${{ github.sha }}
+      sniffer-tag: sniffer-${{ github.sha }}
+    needs:
+      - build
