@@ -101,17 +101,19 @@ jobs:
           retag_image_as_latest sniffer
 
   trigger-e2e-tests:
-    uses: ./.github/workflows/e2e-tests.yaml
-    name: Trigger e2e tests
-    env:
-      REGISTRY_INPUT: ${{ env.REGISTRY }}
-      MAPPER_IMAGE_INPUT: ${{ env.REPOSITORY_NAME }}
-      SNIFFER_IMAGE_INPUT: ${{ env.REPOSITORY_NAME }}
-    with:
-      registry: ${{ env.REGISTRY_INPUT }}
-      mapper-image: ${{ env.MAPPER_IMAGE_INPUT }}
-      sniffer-image: ${{ env.SNIFFER_IMAGE_INPUT }}
-      mapper-tag: mapper-${{ github.sha }}
-      sniffer-tag: sniffer-${{ github.sha }}
     needs:
       - build
+    steps:
+      - uses: ./.github/workflows/e2e-tests.yaml
+        name: Trigger e2e tests
+        env:
+          REGISTRY_INPUT: ${{ env.REGISTRY }}
+          MAPPER_IMAGE_INPUT: ${{ env.REPOSITORY_NAME }}
+          SNIFFER_IMAGE_INPUT: ${{ env.REPOSITORY_NAME }}
+        with:
+          registry: ${{ env.REGISTRY_INPUT }}
+          mapper-image: ${{ env.MAPPER_IMAGE_INPUT }}
+          sniffer-image: ${{ env.SNIFFER_IMAGE_INPUT }}
+          mapper-tag: mapper-${{ github.sha }}
+          sniffer-tag: sniffer-${{ github.sha }}
+
