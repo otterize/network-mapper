@@ -110,7 +110,7 @@ The YAML export is formatted as `ClientIntents` Kubernetes resource files. Clien
 
 ## Learn more
 Explore our [documentation](https://docs.otterize.com/) site to learn how to:
-- [Map pod-to-pod communication](https://docs.otterize.com/guides/k8s-mapping-pod-to-pod-calls).
+- [Map pod-to-pod communication](https://docs.otterize.com/quick-tutorials/k8s-network-mapper).
 - [Automate network policies](https://docs.otterize.com/quick-tutorials/k8s-network-policies).
 - And more...
 
