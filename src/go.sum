@@ -301,6 +301,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRW
 github.com/onsi/ginkgo v1.16.5 h1:8xi0RTUf59SOSfEtZMvwTvXYMzG4gV23XVHOZiXNtnE=
 github.com/onsi/ginkgo/v2 v2.6.0 h1:9t9b9vRUbFq3C4qKFCGkVuq/fIHji802N1nrtkh1mNc=
 github.com/onsi/gomega v1.24.1 h1:KORJXNNTzJXzu4ScJWssJfJMnJ+2QJqhoQSRwNlze9E=
+github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263 h1:Qd1Ml+uEhpesT8Og0ysEhu5+DGhbhW+qxjapH8t1Kvs=
+github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263/go.mod h1:odkMeLkWS8G6+WP2z3Pn2vkzhPSvBtFhAUYTKXAtZMQ=
 github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4og8Kk=
 github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
 github.com/otterize/intents-operator/src v0.0.0-20230222153246-cc3058d73a96 h1:luxq7iqpW9RZVmJvMrMNT+70iPuD0sRQqLvAo0UwUA4=
