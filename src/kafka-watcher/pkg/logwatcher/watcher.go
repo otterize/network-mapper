@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/amit7itz/goset"
 	"github.com/oriser/regroup"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -42,13 +43,14 @@ type pod struct {
 }
 
 type Watcher struct {
-	clientset *kubernetes.Clientset
-	mu        sync.Mutex
-	seen      *goset.Set[AuthorizerRecord]
-	pod       pod
+	clientset    *kubernetes.Clientset
+	mu           sync.Mutex
+	seen         *goset.Set[AuthorizerRecord]
+	pod          pod
+	mapperClient client.MapperClient
 }
 
-func NewWatcher(name string, namespace string) (*Watcher, error) {
+func NewWatcher(mapperClient client.MapperClient, name string, namespace string) (*Watcher, error) {
 	// TODO: client from service account
 	conf, err := clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 	if err != nil {
@@ -61,10 +63,11 @@ func NewWatcher(name string, namespace string) (*Watcher, error) {
 	}
 
 	w := &Watcher{
-		clientset: cs,
-		mu:        sync.Mutex{},
-		seen:      goset.NewSet[AuthorizerRecord](),
-		pod:       pod{name: name, namespace: namespace},
+		clientset:    cs,
+		mu:           sync.Mutex{},
+		seen:         goset.NewSet[AuthorizerRecord](),
+		pod:          pod{name: name, namespace: namespace},
+		mapperClient: mapperClient,
 	}
 
 	return w, nil
@@ -123,14 +126,35 @@ func (w *Watcher) Flush() []AuthorizerRecord {
 	return r
 }
 
+func (w *Watcher) ReportResults(ctx context.Context) error {
+	records := w.Flush()
+	logrus.Infof("Reporting %d records", len(records))
+
+	results := lo.Map(records, func(r AuthorizerRecord, _ int) client.KafkaMapperResult {
+		return client.KafkaMapperResult{
+			SrcIp:             r.Host,
+			ClientServiceName: r.ServiceName,
+			ClientNamespace:   r.Namespace,
+			ServerPodName:     w.pod.name,
+			ServerNamespace:   w.pod.namespace,
+			Topic:             r.Topic,
+			Operation:         r.Operation,
+			LastSeen:          time.Now(), // TODO: should parse time from log.
+		}
+	})
+
+	return w.mapperClient.ReportKafkaMapperResults(ctx, client.KafkaMapperResults{Results: results})
+}
+
 func (w *Watcher) RunForever(ctx context.Context) error {
 	go w.WatchForever(ctx)
 
 	for {
 		select {
 		case <-time.After(viper.GetDuration(config.ReportIntervalKey)):
-			records := w.Flush()
-			logrus.Infof("Reporting %d records", len(records))
+			if err := w.ReportResults(ctx); err != nil {
+				logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
+			}
 		}
 	}
 }

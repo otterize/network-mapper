@@ -9,136 +9,85 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-type CaptureResultForSrcIp struct {
-	SrcIp        string        `json:"srcIp"`
-	Destinations []Destination `json:"destinations"`
+type KafkaMapperResult struct {
+	SrcIp             string    `json:"srcIp"`
+	ClientServiceName string    `json:"clientServiceName"`
+	ClientNamespace   string    `json:"clientNamespace"`
+	ServerPodName     string    `json:"serverPodName"`
+	ServerNamespace   string    `json:"serverNamespace"`
+	Topic             string    `json:"topic"`
+	Operation         string    `json:"operation"`
+	LastSeen          time.Time `json:"lastSeen"`
 }
 
-// GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
+// GetSrcIp returns KafkaMapperResult.SrcIp, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetSrcIp() string { return v.SrcIp }
 
-// GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
+// GetClientServiceName returns KafkaMapperResult.ClientServiceName, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetClientServiceName() string { return v.ClientServiceName }
 
-type CaptureResults struct {
-	Results []CaptureResultForSrcIp `json:"results"`
+// GetClientNamespace returns KafkaMapperResult.ClientNamespace, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetClientNamespace() string { return v.ClientNamespace }
+
+// GetServerPodName returns KafkaMapperResult.ServerPodName, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetServerPodName() string { return v.ServerPodName }
+
+// GetServerNamespace returns KafkaMapperResult.ServerNamespace, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetServerNamespace() string { return v.ServerNamespace }
+
+// GetTopic returns KafkaMapperResult.Topic, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetTopic() string { return v.Topic }
+
+// GetOperation returns KafkaMapperResult.Operation, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetOperation() string { return v.Operation }
+
+// GetLastSeen returns KafkaMapperResult.LastSeen, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetLastSeen() time.Time { return v.LastSeen }
+
+type KafkaMapperResults struct {
+	Results []KafkaMapperResult `json:"results"`
 }
 
-// GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
-func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
+// GetResults returns KafkaMapperResults.Results, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResults) GetResults() []KafkaMapperResult { return v.Results }
 
-type Destination struct {
-	Destination string    `json:"destination"`
-	LastSeen    time.Time `json:"lastSeen"`
+// __reportKafkaMapperResultsInput is used internally by genqlient
+type __reportKafkaMapperResultsInput struct {
+	Results KafkaMapperResults `json:"results"`
 }
 
-// GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
-func (v *Destination) GetDestination() string { return v.Destination }
+// GetResults returns __reportKafkaMapperResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportKafkaMapperResultsInput) GetResults() KafkaMapperResults { return v.Results }
 
-// GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
-func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
-
-type SocketScanResultForSrcIp struct {
-	SrcIp   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
+// reportKafkaMapperResultsResponse is returned by reportKafkaMapperResults on success.
+type reportKafkaMapperResultsResponse struct {
+	ReportKafkaMapperResults bool `json:"reportKafkaMapperResults"`
 }
 
-// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
-
-// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
-
-type SocketScanResults struct {
-	Results []SocketScanResultForSrcIp `json:"results"`
+// GetReportKafkaMapperResults returns reportKafkaMapperResultsResponse.ReportKafkaMapperResults, and is useful for accessing the field via an interface.
+func (v *reportKafkaMapperResultsResponse) GetReportKafkaMapperResults() bool {
+	return v.ReportKafkaMapperResults
 }
 
-// GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
-func (v *SocketScanResults) GetResults() []SocketScanResultForSrcIp { return v.Results }
-
-// __reportCaptureResultsInput is used internally by genqlient
-type __reportCaptureResultsInput struct {
-	Results CaptureResults `json:"results"`
-}
-
-// GetResults returns __reportCaptureResultsInput.Results, and is useful for accessing the field via an interface.
-func (v *__reportCaptureResultsInput) GetResults() CaptureResults { return v.Results }
-
-// __reportSocketScanResultsInput is used internally by genqlient
-type __reportSocketScanResultsInput struct {
-	Results SocketScanResults `json:"results"`
-}
-
-// GetResults returns __reportSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
-func (v *__reportSocketScanResultsInput) GetResults() SocketScanResults { return v.Results }
-
-// reportCaptureResultsResponse is returned by reportCaptureResults on success.
-type reportCaptureResultsResponse struct {
-	ReportCaptureResults bool `json:"reportCaptureResults"`
-}
-
-// GetReportCaptureResults returns reportCaptureResultsResponse.ReportCaptureResults, and is useful for accessing the field via an interface.
-func (v *reportCaptureResultsResponse) GetReportCaptureResults() bool { return v.ReportCaptureResults }
-
-// reportSocketScanResultsResponse is returned by reportSocketScanResults on success.
-type reportSocketScanResultsResponse struct {
-	ReportSocketScanResults bool `json:"reportSocketScanResults"`
-}
-
-// GetReportSocketScanResults returns reportSocketScanResultsResponse.ReportSocketScanResults, and is useful for accessing the field via an interface.
-func (v *reportSocketScanResultsResponse) GetReportSocketScanResults() bool {
-	return v.ReportSocketScanResults
-}
-
-func reportCaptureResults(
+func reportKafkaMapperResults(
 	ctx context.Context,
 	client graphql.Client,
-	results CaptureResults,
-) (*reportCaptureResultsResponse, error) {
+	results KafkaMapperResults,
+) (*reportKafkaMapperResultsResponse, error) {
 	req := &graphql.Request{
-		OpName: "reportCaptureResults",
+		OpName: "reportKafkaMapperResults",
 		Query: `
-mutation reportCaptureResults ($results: CaptureResults!) {
-	reportCaptureResults(results: $results)
+mutation reportKafkaMapperResults ($results: KafkaMapperResults!) {
+	reportKafkaMapperResults(results: $results)
 }
 `,
-		Variables: &__reportCaptureResultsInput{
+		Variables: &__reportKafkaMapperResultsInput{
 			Results: results,
 		},
 	}
 	var err error
 
-	var data reportCaptureResultsResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
-func reportSocketScanResults(
-	ctx context.Context,
-	client graphql.Client,
-	results SocketScanResults,
-) (*reportSocketScanResultsResponse, error) {
-	req := &graphql.Request{
-		OpName: "reportSocketScanResults",
-		Query: `
-mutation reportSocketScanResults ($results: SocketScanResults!) {
-	reportSocketScanResults(results: $results)
-}
-`,
-		Variables: &__reportSocketScanResultsInput{
-			Results: results,
-		},
-	}
-	var err error
-
-	var data reportSocketScanResultsResponse
+	var data reportKafkaMapperResultsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

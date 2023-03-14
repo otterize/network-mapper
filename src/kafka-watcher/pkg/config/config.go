@@ -19,6 +19,7 @@ const (
 	DebugKey                = "debug"
 	DebugDefault            = false
 
+	// TODO: support multiple kafka servers
 	KafkaNameKey      = "kafka-name"
 	KafkaNamespaceKey = "kafka-namespace"
 )

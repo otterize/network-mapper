@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
 
@@ -17,7 +18,12 @@ func main() {
 		logrus.Panic("Kafka pod name and namespace must be specified")
 	}
 
-	w, err := logwatcher.NewWatcher(viper.GetString(config.KafkaNameKey), viper.GetString(config.KafkaNamespaceKey))
+	mapperClient := client.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
+	w, err := logwatcher.NewWatcher(
+		mapperClient,
+		viper.GetString(config.KafkaNameKey),
+		viper.GetString(config.KafkaNamespaceKey),
+	)
 	if err != nil {
 		panic(err)
 	}

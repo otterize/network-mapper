@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	client "github.com/otterize/network-mapper/src/sniffer/pkg/client"
+	client "github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 )
 
 // MockMapperClient is a mock of MapperClient interface.
@@ -35,30 +35,16 @@ func (m *MockMapperClient) EXPECT() *MockMapperClientMockRecorder {
 	return m.recorder
 }
 
-// ReportCaptureResults mocks base method.
-func (m *MockMapperClient) ReportCaptureResults(ctx context.Context, results client.CaptureResults) error {
+// ReportKafkaMapperResults mocks base method.
+func (m *MockMapperClient) ReportKafkaMapperResults(ctx context.Context, results client.KafkaMapperResults) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportCaptureResults", ctx, results)
+	ret := m.ctrl.Call(m, "ReportKafkaMapperResults", ctx, results)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ReportCaptureResults indicates an expected call of ReportCaptureResults.
-func (mr *MockMapperClientMockRecorder) ReportCaptureResults(ctx, results interface{}) *gomock.Call {
+// ReportKafkaMapperResults indicates an expected call of ReportKafkaMapperResults.
+func (mr *MockMapperClientMockRecorder) ReportKafkaMapperResults(ctx, results interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportCaptureResults", reflect.TypeOf((*MockMapperClient)(nil).ReportCaptureResults), ctx, results)
-}
-
-// ReportSocketScanResults mocks base method.
-func (m *MockMapperClient) ReportSocketScanResults(ctx context.Context, results client.SocketScanResults) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportSocketScanResults", ctx, results)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ReportSocketScanResults indicates an expected call of ReportSocketScanResults.
-func (mr *MockMapperClientMockRecorder) ReportSocketScanResults(ctx, results interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportSocketScanResults", reflect.TypeOf((*MockMapperClient)(nil).ReportSocketScanResults), ctx, results)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportKafkaMapperResults", reflect.TypeOf((*MockMapperClient)(nil).ReportKafkaMapperResults), ctx, results)
 }
