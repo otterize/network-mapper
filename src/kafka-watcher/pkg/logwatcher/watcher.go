@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -29,28 +30,24 @@ var AclAuthorizerRegex = regroup.MustCompile(
 )
 
 type AuthorizerRecord struct {
-	ServiceName string `regroup:"serviceName"`
-	Namespace   string `regroup:"namespace"`
-	Access      string `regroup:"access"`
-	Operation   string `regroup:"operation"`
-	Host        string `regroup:"host"`
-	Topic       string `regroup:"topic"`
-}
-
-type pod struct {
-	name      string
-	namespace string
+	Server            types.NamespacedName
+	ClientServiceName string `regroup:"serviceName"`
+	ClientNamespace   string `regroup:"namespace"`
+	Access            string `regroup:"access"`
+	Operation         string `regroup:"operation"`
+	Host              string `regroup:"host"`
+	Topic             string `regroup:"topic"`
 }
 
 type Watcher struct {
 	clientset    *kubernetes.Clientset
 	mu           sync.Mutex
 	seen         *goset.Set[AuthorizerRecord]
-	pod          pod
 	mapperClient client.MapperClient
+	kafkaServers []types.NamespacedName
 }
 
-func NewWatcher(mapperClient client.MapperClient, name string, namespace string) (*Watcher, error) {
+func NewWatcher(mapperClient client.MapperClient, kafkaServers []types.NamespacedName) (*Watcher, error) {
 	// TODO: client from service account
 	conf, err := clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 	if err != nil {
@@ -66,20 +63,35 @@ func NewWatcher(mapperClient client.MapperClient, name string, namespace string)
 		clientset:    cs,
 		mu:           sync.Mutex{},
 		seen:         goset.NewSet[AuthorizerRecord](),
-		pod:          pod{name: name, namespace: namespace},
 		mapperClient: mapperClient,
+		kafkaServers: kafkaServers,
 	}
 
 	return w, nil
 }
 
-func (w *Watcher) WatchOnce(ctx context.Context) error {
-	logrus.Infof("Watching logs on pod %s.%s", w.pod.name, w.pod.namespace)
+func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record string) {
+	r := AuthorizerRecord{
+		Server: kafkaServer,
+	}
+	if err := AclAuthorizerRegex.MatchToTarget(record, &r); errors.Is(err, &regroup.NoMatchFoundError{}) {
+		return
+	} else if err != nil {
+		logrus.Errorf("Error matching authorizer regex: %s", err)
+		return
+	}
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.seen.Add(r)
+}
+
+func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedName) error {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:       true,
 		SinceSeconds: lo.ToPtr(int64(math.Ceil(viper.GetDuration(config.CooldownIntervalKey).Seconds()))),
 	}
-	req := w.clientset.CoreV1().Pods(w.pod.namespace).GetLogs(w.pod.name, &podLogOpts)
+	req := w.clientset.CoreV1().Pods(kafkaServer.Namespace).GetLogs(kafkaServer.Name, &podLogOpts)
 	reader, err := req.Stream(ctx)
 	if err != nil {
 		return err
@@ -90,30 +102,22 @@ func (w *Watcher) WatchOnce(ctx context.Context) error {
 	s := bufio.NewScanner(reader)
 	s.Split(bufio.ScanLines)
 	for s.Scan() {
-		r := AuthorizerRecord{}
-		if err := AclAuthorizerRegex.MatchToTarget(s.Text(), &r); errors.Is(err, &regroup.NoMatchFoundError{}) {
-			continue
-		} else if err != nil {
-			logrus.Errorf("Error matching authorizer regex: %s", err)
-			continue
-		}
-
-		w.mu.Lock()
-		w.seen.Add(r)
-		w.mu.Unlock()
+		w.processLogRecord(kafkaServer, s.Text())
 	}
 
 	return nil
 }
 
-func (w *Watcher) WatchForever(ctx context.Context) {
+func (w *Watcher) WatchForever(ctx context.Context, kafkaServer types.NamespacedName) {
+	log := logrus.WithField("pod", kafkaServer)
 	cooldownPeriod := viper.GetDuration(config.CooldownIntervalKey)
 	for {
-		err := w.WatchOnce(ctx)
+		log.Info("Watching logs")
+		err := w.WatchOnce(ctx, kafkaServer)
 		if err != nil {
-			logrus.Errorf("Error watching pod logs: %s", err)
+			log.WithError(err).Error("Error watching logs")
 		}
-		logrus.Infof("Watcher stopped, will retry after cooldown period (%s)...", cooldownPeriod)
+		log.Infof("Watcher stopped, will retry after cooldown period (%s)...", cooldownPeriod)
 		time.Sleep(cooldownPeriod)
 	}
 }
@@ -133,10 +137,10 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 	results := lo.Map(records, func(r AuthorizerRecord, _ int) client.KafkaMapperResult {
 		return client.KafkaMapperResult{
 			SrcIp:             r.Host,
-			ClientServiceName: r.ServiceName,
-			ClientNamespace:   r.Namespace,
-			ServerPodName:     w.pod.name,
-			ServerNamespace:   w.pod.namespace,
+			ClientServiceName: r.ClientServiceName,
+			ClientNamespace:   r.ClientNamespace,
+			ServerPodName:     r.Server.Name,
+			ServerNamespace:   r.Server.Namespace,
 			Topic:             r.Topic,
 			Operation:         r.Operation,
 			LastSeen:          time.Now(), // TODO: should parse time from log.
@@ -147,14 +151,14 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 }
 
 func (w *Watcher) RunForever(ctx context.Context) error {
-	go w.WatchForever(ctx)
+	for _, kafkaServer := range w.kafkaServers {
+		go w.WatchForever(ctx, kafkaServer)
+	}
 
 	for {
-		select {
-		case <-time.After(viper.GetDuration(config.ReportIntervalKey)):
-			if err := w.ReportResults(ctx); err != nil {
-				logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
-			}
+		time.Sleep(viper.GetDuration(config.ReportIntervalKey))
+		if err := w.ReportResults(ctx); err != nil {
+			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
 		}
 	}
 }

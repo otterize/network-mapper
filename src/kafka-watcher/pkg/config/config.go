@@ -19,9 +19,7 @@ const (
 	DebugKey                = "debug"
 	DebugDefault            = false
 
-	// TODO: support multiple kafka servers
-	KafkaNameKey      = "kafka-name"
-	KafkaNamespaceKey = "kafka-namespace"
+	KafkaServersKey = "kafka-servers"
 )
 
 func init() {
@@ -30,8 +28,7 @@ func init() {
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
 	viper.SetDefault(CooldownIntervalKey, CooldownIntervalDefault)
 	viper.SetDefault(DebugKey, DebugDefault)
-	viper.SetDefault(KafkaNameKey, "")
-	viper.SetDefault(KafkaNamespaceKey, "")
+	viper.SetDefault(KafkaServersKey, []string{})
 	viper.SetEnvPrefix(EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()

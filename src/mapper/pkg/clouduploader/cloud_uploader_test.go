@@ -42,6 +42,12 @@ func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, d
 		model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
 		model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 		testTimestamp,
+		cloudclient.IntentInput{
+			ClientName:      &source,
+			Namespace:       &srcNamespace,
+			ServerName:      &destination,
+			ServerNamespace: &dstNamespace,
+		},
 	)
 }
 

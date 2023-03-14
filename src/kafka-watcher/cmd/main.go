@@ -2,27 +2,45 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
+	"k8s.io/apimachinery/pkg/types"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
+func parseKafkaServers(serverNames []string) ([]types.NamespacedName, error) {
+	var servers []types.NamespacedName
+	for _, serverName := range serverNames {
+		nameParts := strings.Split(serverName, ".")
+		if len(nameParts) != 2 {
+			return nil, fmt.Errorf("error parsing server pod name %s - should be formatted as 'name.namespace'", serverName)
+		}
+		servers = append(servers, types.NamespacedName{
+			Name:      nameParts[0],
+			Namespace: nameParts[1],
+		})
+	}
+	return servers, nil
+}
+
 func main() {
 	if viper.GetBool(config.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	if !viper.IsSet(config.KafkaNameKey) || !viper.IsSet(config.KafkaNamespaceKey) {
-		logrus.Panic("Kafka pod name and namespace must be specified")
-	}
 
+	kafkaServers, err := parseKafkaServers(viper.GetStringSlice(config.KafkaServersKey))
+	if err != nil {
+		panic(err)
+	}
 	mapperClient := client.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
 	w, err := logwatcher.NewWatcher(
 		mapperClient,
-		viper.GetString(config.KafkaNameKey),
-		viper.GetString(config.KafkaNamespaceKey),
+		kafkaServers,
 	)
 	if err != nil {
 		panic(err)
