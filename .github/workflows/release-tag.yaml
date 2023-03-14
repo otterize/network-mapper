@@ -68,3 +68,15 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args:
             SOURCE_IMAGE=${{ env.REGISTRY }}:sniffer-${{ github.sha }}
+
+      - name: Push to Docker Hub - Kafka Watcher
+        uses: docker/build-push-action@v2
+        with:
+          context: .github/workflows
+          file: .github/workflows/release.Dockerfile
+          tags: otterize/network-mapper-kafka-watcher:latest,otterize/network-mapper-kafka-watcher:${{ github.ref_name }}
+          push: true
+          network: host
+          platforms: linux/amd64,linux/arm64
+          build-args:
+            SOURCE_IMAGE=${{ env.REGISTRY }}:kafka-watcher-${{ github.sha }}
