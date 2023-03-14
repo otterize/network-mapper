@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
+	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 )
 
@@ -15,10 +16,10 @@ import (
 type Resolver struct {
 	kubeFinder        *kubefinder.KubeFinder
 	serviceIdResolver *serviceidresolver.Resolver
-	intentsHolder     *IntentsHolder
+	intentsHolder     *intentsstore.IntentsHolder
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *IntentsHolder) *Resolver {
+func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder) *Resolver {
 	return &Resolver{
 		kubeFinder:        kubeFinder,
 		serviceIdResolver: serviceIdResolver,

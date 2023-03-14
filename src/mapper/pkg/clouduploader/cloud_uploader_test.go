@@ -7,7 +7,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -21,14 +21,14 @@ var (
 type CloudUploaderTestSuite struct {
 	suite.Suite
 	testNamespace string
-	intentsHolder *resolvers.IntentsHolder
+	intentsHolder *intentsstore.IntentsHolder
 	cloudUploader *CloudUploader
 	clientMock    *cloudclientmocks.MockCloudClient
 }
 
 func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
-	s.intentsHolder = resolvers.NewIntentsHolder(nil)
+	s.intentsHolder = intentsstore.NewIntentsHolder()
 }
 
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {

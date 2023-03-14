@@ -49,6 +49,21 @@ type ServiceIntents {
     intents: [OtterizeServiceIdentity!]!
 }
 
+input KafkaMapperResult {
+    srcIp: String!
+    clientServiceName: String
+    clientNamespace: String
+    serverPodName: String!
+    serverNamespace: String!
+    topic: String!
+    operation: String!
+    lastSeen: Time!
+}
+
+input KafkaMapperResults {
+    results: [KafkaMapperResult!]!
+}
+
 
 type Query {
     """
@@ -63,4 +78,5 @@ type Mutation {
     resetCapture: Boolean!
     reportCaptureResults(results: CaptureResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
+    reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
 }

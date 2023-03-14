@@ -49,6 +49,16 @@ func (k *KubeFinder) initIndexes() error {
 	return nil
 }
 
+func (k *KubeFinder) ResolvePodByName(ctx context.Context, name string, namespace string) (*coreV1.Pod, error) {
+	var pod coreV1.Pod
+	err := k.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &pod)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pod, nil
+}
+
 func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error) {
 	var pods coreV1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIpIndexField: ip})

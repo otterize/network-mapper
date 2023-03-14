@@ -117,9 +117,9 @@ func (w *Watcher) WatchForever(ctx context.Context) {
 
 func (w *Watcher) Flush() []AuthorizerRecord {
 	w.mu.Lock()
+	defer w.mu.Unlock()
 	r := w.seen.Items()
 	w.seen = goset.NewSet[AuthorizerRecord]()
-	w.mu.Unlock()
 	return r
 }
 

@@ -9,9 +9,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -80,10 +82,18 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
+			intent := cloudclient.IntentInput{
+				ClientName:      &srcSvcIdentity.Name,
+				Namespace:       &srcSvcIdentity.Namespace,
+				ServerName:      &dstSvcIdentity.Name,
+				ServerNamespace: &dstSvcIdentity.Namespace,
+			}
+
 			r.intentsHolder.AddIntent(
 				srcSvcIdentity,
 				dstSvcIdentity,
 				dest.LastSeen,
+				intent,
 			)
 		}
 	}
@@ -132,13 +142,83 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
+			intent := cloudclient.IntentInput{
+				ClientName:      &srcSvcIdentity.Name,
+				Namespace:       &srcSvcIdentity.Namespace,
+				ServerName:      &dstSvcIdentity.Name,
+				ServerNamespace: &dstSvcIdentity.Namespace,
+			}
+
 			r.intentsHolder.AddIntent(
 				srcSvcIdentity,
 				dstSvcIdentity,
 				destIp.LastSeen,
+				intent,
 			)
 		}
 	}
+	return true, nil
+}
+
+func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error) {
+	for _, result := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, result.SrcIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", result.SrcIP)
+			} else {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", result.SrcIP)
+			}
+			continue
+		}
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+
+		dstPod, err := r.kubeFinder.ResolvePodByName(ctx, result.ServerPodName, result.ServerNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", result.ServerPodName)
+			continue
+		}
+		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
+			continue
+		}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+
+		operation, err := cloudclient.KafkaOpFromText(result.Operation)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve kafka operation %s", result.Operation)
+			continue
+		}
+
+		intent := cloudclient.IntentInput{
+			ClientName:      &srcSvcIdentity.Name,
+			Namespace:       &srcSvcIdentity.Namespace,
+			ServerName:      &dstSvcIdentity.Name,
+			ServerNamespace: &dstSvcIdentity.Namespace,
+			Type:            lo.ToPtr(cloudclient.IntentTypeKafka),
+			Topics: []*cloudclient.KafkaConfigInput{
+				{
+					Name:       &result.Topic,
+					Operations: []*cloudclient.KafkaOperation{&operation},
+				},
+			},
+		}
+
+		r.intentsHolder.AddIntent(
+			srcSvcIdentity,
+			dstSvcIdentity,
+			result.LastSeen,
+			intent,
+		)
+	}
+
 	return true, nil
 }
 
@@ -148,7 +228,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 		shouldIncludeAllLabels = true
 	}
 	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, shouldIncludeAllLabels)
-	serviceToDestinations := groupDestinationsBySource(discoveredIntents)
+	serviceToDestinations := intentsstore.GroupDestinationsBySource(discoveredIntents)
 
 	result := make([]model.ServiceIntents, 0)
 	for _, clientAndDestinations := range serviceToDestinations {
@@ -162,7 +242,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 		clientAndDestinations.Destinations = destinations
 
 		result = append(result, model.ServiceIntents{
-			Client:  lo.ToPtr(clientAndDestinations.Client),
+			Client:  lo.ToPtr(clientAndDestinations.Source),
 			Intents: clientAndDestinations.Destinations,
 		})
 	}
