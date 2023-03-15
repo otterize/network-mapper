@@ -24,17 +24,15 @@ import (
 // Sample log record for reference:
 // [2023-03-12 13:51:55,904] INFO Principal = User:2.5.4.45=#13206331373734376636373865323137613636346130653335393130326638303662,CN=myclient.otterize-tutorial-kafka-mtls,O=SPIRE,C=US is Denied Operation = Describe from host = 10.244.0.27 on resource = Topic:LITERAL:mytopic for request = Metadata with resourceRefCount = 1 (kafka.authorizer.logger)
 var AclAuthorizerRegex = regroup.MustCompile(
-	`^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+\] [A-Z]+ Principal = User:\S+CN=(?P<serviceName>[a-z0-9-.]+)\.(?P<namespace>[a-z0-9-.]+),\S+ is (?P<access>\S+) Operation = (?P<operation>\S+) from host = (?P<host>\S+) on resource = Topic:LITERAL:(?P<topic>.+) for request = \S+ with resourceRefCount = \d+ \(kafka\.authorizer\.logger\)$`,
+	`^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+\] [A-Z]+ Principal = \S+ is (?P<access>\S+) Operation = (?P<operation>\S+) from host = (?P<host>\S+) on resource = Topic:LITERAL:(?P<topic>.+) for request = \S+ with resourceRefCount = \d+ \(kafka\.authorizer\.logger\)$`,
 )
 
 type AuthorizerRecord struct {
-	Server            types.NamespacedName
-	ClientServiceName string `regroup:"serviceName"`
-	ClientNamespace   string `regroup:"namespace"`
-	Access            string `regroup:"access"`
-	Operation         string `regroup:"operation"`
-	Host              string `regroup:"host"`
-	Topic             string `regroup:"topic"`
+	Server    types.NamespacedName
+	Access    string `regroup:"access"`
+	Operation string `regroup:"operation"`
+	Host      string `regroup:"host"`
+	Topic     string `regroup:"topic"`
 }
 
 type Watcher struct {
@@ -133,14 +131,12 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 
 	results := lo.Map(records, func(r AuthorizerRecord, _ int) client.KafkaMapperResult {
 		return client.KafkaMapperResult{
-			SrcIp:             r.Host,
-			ClientServiceName: r.ClientServiceName,
-			ClientNamespace:   r.ClientNamespace,
-			ServerPodName:     r.Server.Name,
-			ServerNamespace:   r.Server.Namespace,
-			Topic:             r.Topic,
-			Operation:         r.Operation,
-			LastSeen:          time.Now(), // TODO: should parse time from log.
+			SrcIp:           r.Host,
+			ServerPodName:   r.Server.Name,
+			ServerNamespace: r.Server.Namespace,
+			Topic:           r.Topic,
+			Operation:       r.Operation,
+			LastSeen:        time.Now(), // TODO: should parse time from log.
 		}
 	})
 

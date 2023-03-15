@@ -27,14 +27,12 @@ type GroupVersionKind struct {
 }
 
 type KafkaMapperResult struct {
-	SrcIP             string    `json:"srcIp"`
-	ClientServiceName *string   `json:"clientServiceName"`
-	ClientNamespace   *string   `json:"clientNamespace"`
-	ServerPodName     string    `json:"serverPodName"`
-	ServerNamespace   string    `json:"serverNamespace"`
-	Topic             string    `json:"topic"`
-	Operation         string    `json:"operation"`
-	LastSeen          time.Time `json:"lastSeen"`
+	SrcIP           string    `json:"srcIp"`
+	ServerPodName   string    `json:"serverPodName"`
+	ServerNamespace string    `json:"serverNamespace"`
+	Topic           string    `json:"topic"`
+	Operation       string    `json:"operation"`
+	LastSeen        time.Time `json:"lastSeen"`
 }
 
 type KafkaMapperResults struct {

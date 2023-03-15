@@ -353,8 +353,6 @@ type ServiceIntents {
 
 input KafkaMapperResult {
     srcIp: String!
-    clientServiceName: String
-    clientNamespace: String
     serverPodName: String!
     serverNamespace: String!
     topic: String!
@@ -2455,22 +2453,6 @@ func (ec *executionContext) unmarshalInputKafkaMapperResult(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
 			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "clientServiceName":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientServiceName"))
-			it.ClientServiceName, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "clientNamespace":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientNamespace"))
-			it.ClientNamespace, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

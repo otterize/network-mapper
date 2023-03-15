@@ -51,8 +51,6 @@ type ServiceIntents {
 
 input KafkaMapperResult {
     srcIp: String!
-    clientServiceName: String
-    clientNamespace: String
     serverPodName: String!
     serverNamespace: String!
     topic: String!

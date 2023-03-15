@@ -10,24 +10,16 @@ import (
 )
 
 type KafkaMapperResult struct {
-	SrcIp             string    `json:"srcIp"`
-	ClientServiceName string    `json:"clientServiceName"`
-	ClientNamespace   string    `json:"clientNamespace"`
-	ServerPodName     string    `json:"serverPodName"`
-	ServerNamespace   string    `json:"serverNamespace"`
-	Topic             string    `json:"topic"`
-	Operation         string    `json:"operation"`
-	LastSeen          time.Time `json:"lastSeen"`
+	SrcIp           string    `json:"srcIp"`
+	ServerPodName   string    `json:"serverPodName"`
+	ServerNamespace string    `json:"serverNamespace"`
+	Topic           string    `json:"topic"`
+	Operation       string    `json:"operation"`
+	LastSeen        time.Time `json:"lastSeen"`
 }
 
 // GetSrcIp returns KafkaMapperResult.SrcIp, and is useful for accessing the field via an interface.
 func (v *KafkaMapperResult) GetSrcIp() string { return v.SrcIp }
-
-// GetClientServiceName returns KafkaMapperResult.ClientServiceName, and is useful for accessing the field via an interface.
-func (v *KafkaMapperResult) GetClientServiceName() string { return v.ClientServiceName }
-
-// GetClientNamespace returns KafkaMapperResult.ClientNamespace, and is useful for accessing the field via an interface.
-func (v *KafkaMapperResult) GetClientNamespace() string { return v.ClientNamespace }
 
 // GetServerPodName returns KafkaMapperResult.ServerPodName, and is useful for accessing the field via an interface.
 func (v *KafkaMapperResult) GetServerPodName() string { return v.ServerPodName }
