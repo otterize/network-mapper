@@ -4,13 +4,14 @@ import (
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
+	"k8s.io/apimachinery/pkg/types"
 	"sync"
 	"time"
 )
 
 type SourceDestPair struct {
-	Source      model.NamespacedName
-	Destination model.NamespacedName
+	Source      types.NamespacedName
+	Destination types.NamespacedName
 }
 
 type TimestampedIntent struct {
@@ -104,7 +105,7 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces []str
 }
 
 func GroupIntentsBySource(intents []TimestampedIntent) []model.ServiceIntents {
-	intentsBySource := make(map[model.NamespacedName]*model.ServiceIntents, 0)
+	intentsBySource := make(map[types.NamespacedName]*model.ServiceIntents, 0)
 	for _, intent := range intents {
 		srcIdentity := intent.Intent.Client.AsNamespacedName()
 		if _, ok := intentsBySource[srcIdentity]; !ok {

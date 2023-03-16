@@ -39,14 +39,10 @@ func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
 
 func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, destination string, dstNamespace string) {
 	s.intentsHolder.AddIntent(
-		model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
-		model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 		testTimestamp,
-		cloudclient.IntentInput{
-			ClientName:      &source,
-			Namespace:       &srcNamespace,
-			ServerName:      &destination,
-			ServerNamespace: &dstNamespace,
+		model.Intent{
+			Client: &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
+			Server: &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 		},
 	)
 }
