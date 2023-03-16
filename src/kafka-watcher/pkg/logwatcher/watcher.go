@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"github.com/amit7itz/goset"
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
@@ -35,10 +34,12 @@ type AuthorizerRecord struct {
 	Topic     string `regroup:"topic"`
 }
 
+type SeenRecordsStore map[AuthorizerRecord]time.Time
+
 type Watcher struct {
 	clientset    *kubernetes.Clientset
 	mu           sync.Mutex
-	seen         *goset.Set[AuthorizerRecord]
+	seen         SeenRecordsStore
 	mapperClient client.MapperClient
 	kafkaServers []types.NamespacedName
 }
@@ -57,7 +58,7 @@ func NewWatcher(mapperClient client.MapperClient, kafkaServers []types.Namespace
 	w := &Watcher{
 		clientset:    cs,
 		mu:           sync.Mutex{},
-		seen:         goset.NewSet[AuthorizerRecord](),
+		seen:         SeenRecordsStore{},
 		mapperClient: mapperClient,
 		kafkaServers: kafkaServers,
 	}
@@ -78,7 +79,7 @@ func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record stri
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.seen.Add(r)
+	w.seen[r] = time.Now()
 }
 
 func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedName) error {
@@ -117,11 +118,11 @@ func (w *Watcher) WatchForever(ctx context.Context, kafkaServer types.Namespaced
 	}
 }
 
-func (w *Watcher) Flush() []AuthorizerRecord {
+func (w *Watcher) Flush() SeenRecordsStore {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	r := w.seen.Items()
-	w.seen = goset.NewSet[AuthorizerRecord]()
+	r := w.seen
+	w.seen = SeenRecordsStore{}
 	return r
 }
 
@@ -129,14 +130,14 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 	records := w.Flush()
 	logrus.Infof("Reporting %d records", len(records))
 
-	results := lo.Map(records, func(r AuthorizerRecord, _ int) client.KafkaMapperResult {
+	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) client.KafkaMapperResult {
 		return client.KafkaMapperResult{
 			SrcIp:           r.Host,
 			ServerPodName:   r.Server.Name,
 			ServerNamespace: r.Server.Namespace,
 			Topic:           r.Topic,
 			Operation:       r.Operation,
-			LastSeen:        time.Now(), // TODO: should parse time from log.
+			LastSeen:        t,
 		}
 	})
 
