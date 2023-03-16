@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -27,10 +28,24 @@ func NewCloudUploader(intentsHolder *intentsstore.IntentsHolder, config Config, 
 func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	logrus.Info("Search for intents")
 
-	discoveredIntents := lo.Map(c.intentsHolder.GetNewIntentsSinceLastGet(), func(intent intentsstore.DiscoveredIntent, _ int) *cloudclient.DiscoveredIntentInput {
+	discoveredIntents := lo.Map(c.intentsHolder.GetNewIntentsSinceLastGet(), func(intent intentsstore.TimestampedIntent, _ int) *cloudclient.DiscoveredIntentInput {
 		return &cloudclient.DiscoveredIntentInput{
 			DiscoveredAt: lo.ToPtr(intent.Timestamp),
-			Intent:       &intent.Intent,
+			Intent: &cloudclient.IntentInput{
+				ClientName:      &intent.Intent.Client.Name,
+				Namespace:       &intent.Intent.Client.Namespace,
+				ServerName:      &intent.Intent.Server.Name,
+				ServerNamespace: &intent.Intent.Server.Namespace,
+				Type:            lo.ToPtr(cloudclient.IntentType(lo.FromPtr(intent.Intent.Type))),
+				Topics: lo.Map(intent.Intent.KafkaTopics, func(item model.KafkaConfig, _ int) *cloudclient.KafkaConfigInput {
+					return &cloudclient.KafkaConfigInput{
+						Name: &item.Name,
+						Operations: lo.Map(item.Operations, func(op model.KafkaOperation, _ int) *cloudclient.KafkaOperation {
+							return lo.ToPtr(cloudclient.KafkaOperation(op))
+						}),
+					}
+				}),
+			},
 		}
 	})
 

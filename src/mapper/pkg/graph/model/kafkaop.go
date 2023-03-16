@@ -1,4 +1,4 @@
-package cloudclient
+package model
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ var (
 		KafkaOperationClusterAction:   sarama.AclOperationClusterAction,
 		KafkaOperationDescribeConfigs: sarama.AclOperationDescribeConfigs,
 		KafkaOperationAlterConfigs:    sarama.AclOperationAlterConfigs,
-		KafkaOperationIdempotentWrite: sarama.AclOperationIdempotentWrite,
+		KafkaOperationIDEmpotentWrite: sarama.AclOperationIdempotentWrite,
 	}
 	KafkaOperationToAclOperationBMap = bimap.NewBiMapFromMap(kafkaOperationToAclOperation)
 )

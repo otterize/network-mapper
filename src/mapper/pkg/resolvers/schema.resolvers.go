@@ -6,10 +6,9 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"sort"
+	"golang.org/x/exp/slices"
 	"strings"
 
-	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -82,16 +81,12 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
-			intent := cloudclient.IntentInput{
-				ClientName:      &srcSvcIdentity.Name,
-				Namespace:       &srcSvcIdentity.Namespace,
-				ServerName:      &dstSvcIdentity.Name,
-				ServerNamespace: &dstSvcIdentity.Namespace,
+			intent := model.Intent{
+				Client: &srcSvcIdentity,
+				Server: &dstSvcIdentity,
 			}
 
 			r.intentsHolder.AddIntent(
-				srcSvcIdentity,
-				dstSvcIdentity,
 				dest.LastSeen,
 				intent,
 			)
@@ -142,16 +137,12 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
-			intent := cloudclient.IntentInput{
-				ClientName:      &srcSvcIdentity.Name,
-				Namespace:       &srcSvcIdentity.Namespace,
-				ServerName:      &dstSvcIdentity.Name,
-				ServerNamespace: &dstSvcIdentity.Namespace,
+			intent := model.Intent{
+				Client: &srcSvcIdentity,
+				Server: &dstSvcIdentity,
 			}
 
 			r.intentsHolder.AddIntent(
-				srcSvcIdentity,
-				dstSvcIdentity,
 				destIp.LastSeen,
 				intent,
 			)
@@ -191,29 +182,25 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 		}
 		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
 
-		operation, err := cloudclient.KafkaOpFromText(result.Operation)
+		operation, err := model.KafkaOpFromText(result.Operation)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve kafka operation %s", result.Operation)
 			continue
 		}
 
-		intent := cloudclient.IntentInput{
-			ClientName:      &srcSvcIdentity.Name,
-			Namespace:       &srcSvcIdentity.Namespace,
-			ServerName:      &dstSvcIdentity.Name,
-			ServerNamespace: &dstSvcIdentity.Namespace,
-			Type:            lo.ToPtr(cloudclient.IntentTypeKafka),
-			Topics: []*cloudclient.KafkaConfigInput{
+		intent := model.Intent{
+			Client: &srcSvcIdentity,
+			Server: &dstSvcIdentity,
+			Type:   lo.ToPtr(model.IntentTypeKafka),
+			KafkaTopics: []model.KafkaConfig{
 				{
-					Name:       &result.Topic,
-					Operations: []*cloudclient.KafkaOperation{&operation},
+					Name:       result.Topic,
+					Operations: []model.KafkaOperation{operation},
 				},
 			},
 		}
 
 		r.intentsHolder.AddIntent(
-			srcSvcIdentity,
-			dstSvcIdentity,
 			result.LastSeen,
 			intent,
 		)
@@ -228,30 +215,45 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 		shouldIncludeAllLabels = true
 	}
 	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, shouldIncludeAllLabels)
-	serviceToDestinations := intentsstore.GroupDestinationsBySource(discoveredIntents)
+	intentsBySource := intentsstore.GroupIntentsBySource(discoveredIntents)
 
-	result := make([]model.ServiceIntents, 0)
-	for _, clientAndDestinations := range serviceToDestinations {
-		destinations := clientAndDestinations.Destinations
-		sort.Slice(destinations, func(i, j int) bool {
-			if destinations[i].Name != destinations[j].Name {
-				return destinations[i].Name < destinations[j].Name
-			}
-			return destinations[i].Namespace < destinations[j].Namespace
-		})
-		clientAndDestinations.Destinations = destinations
+	// sorting by service name so results are more consistent
+	slices.SortFunc(intentsBySource, func(intentsa, intentsb model.ServiceIntents) bool {
+		return intentsa.Client.AsNamespacedName().String() < intentsb.Client.AsNamespacedName().String()
+	})
 
-		result = append(result, model.ServiceIntents{
-			Client:  lo.ToPtr(clientAndDestinations.Source),
-			Intents: clientAndDestinations.Destinations,
+	for _, intents := range intentsBySource {
+		slices.SortFunc(intents.Intents, func(desta, destb model.OtterizeServiceIdentity) bool {
+			return desta.AsNamespacedName().String() < destb.AsNamespacedName().String()
 		})
 	}
 
-	// sorting by service name so results are more consistent
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Client.Name < result[j].Client.Name
+	return intentsBySource, nil
+}
+
+func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.Intent, error) {
+	shouldIncludeAllLabels := false
+	if includeAllLabels != nil && *includeAllLabels {
+		shouldIncludeAllLabels = true
+	}
+	timestampedIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, shouldIncludeAllLabels)
+	intents := lo.Map(timestampedIntents, func(timestampedIntent intentsstore.TimestampedIntent, _ int) model.Intent {
+		return timestampedIntent.Intent
 	})
-	return result, nil
+
+	// sort by service names for consistent ordering
+	slices.SortFunc(intents, func(intenta, intentb model.Intent) bool {
+		clienta, clientb := intenta.Client.AsNamespacedName(), intentb.Client.AsNamespacedName()
+		servera, serverb := intenta.Server.AsNamespacedName(), intentb.Server.AsNamespacedName()
+
+		if clienta != clientb {
+			return clienta.String() < clientb.String()
+		}
+
+		return servera.String() < serverb.String()
+	})
+
+	return intents, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

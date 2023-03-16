@@ -50,6 +50,18 @@ type ComplexityRoot struct {
 		Version func(childComplexity int) int
 	}
 
+	Intent struct {
+		Client      func(childComplexity int) int
+		KafkaTopics func(childComplexity int) int
+		Server      func(childComplexity int) int
+		Type        func(childComplexity int) int
+	}
+
+	KafkaConfig struct {
+		Name       func(childComplexity int) int
+		Operations func(childComplexity int) int
+	}
+
 	Mutation struct {
 		ReportCaptureResults     func(childComplexity int, results model.CaptureResults) int
 		ReportKafkaMapperResults func(childComplexity int, results model.KafkaMapperResults) int
@@ -70,6 +82,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Intents        func(childComplexity int, namespaces []string, includeLabels []string, includeAllLabels *bool) int
 		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string, includeAllLabels *bool) int
 	}
 
@@ -87,6 +100,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
+	Intents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.Intent, error)
 }
 
 type executableSchema struct {
@@ -124,6 +138,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GroupVersionKind.Version(childComplexity), true
+
+	case "Intent.client":
+		if e.complexity.Intent.Client == nil {
+			break
+		}
+
+		return e.complexity.Intent.Client(childComplexity), true
+
+	case "Intent.kafkaTopics":
+		if e.complexity.Intent.KafkaTopics == nil {
+			break
+		}
+
+		return e.complexity.Intent.KafkaTopics(childComplexity), true
+
+	case "Intent.server":
+		if e.complexity.Intent.Server == nil {
+			break
+		}
+
+		return e.complexity.Intent.Server(childComplexity), true
+
+	case "Intent.type":
+		if e.complexity.Intent.Type == nil {
+			break
+		}
+
+		return e.complexity.Intent.Type(childComplexity), true
+
+	case "KafkaConfig.name":
+		if e.complexity.KafkaConfig.Name == nil {
+			break
+		}
+
+		return e.complexity.KafkaConfig.Name(childComplexity), true
+
+	case "KafkaConfig.operations":
+		if e.complexity.KafkaConfig.Operations == nil {
+			break
+		}
+
+		return e.complexity.KafkaConfig.Operations(childComplexity), true
 
 	case "Mutation.reportCaptureResults":
 		if e.complexity.Mutation.ReportCaptureResults == nil {
@@ -209,6 +265,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PodLabel.Value(childComplexity), true
+
+	case "Query.intents":
+		if e.complexity.Query.Intents == nil {
+			break
+		}
+
+		args, err := ec.field_Query_intents_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["includeAllLabels"].(*bool)), true
 
 	case "Query.serviceIntents":
 		if e.complexity.Query.ServiceIntents == nil {
@@ -346,6 +414,36 @@ type OtterizeServiceIdentity {
     podOwnerKind: GroupVersionKind
 }
 
+enum IntentType {
+    KAFKA
+}
+
+enum KafkaOperation {
+    ALL
+    CONSUME
+    PRODUCE
+    CREATE
+    ALTER
+    DELETE
+    DESCRIBE
+    CLUSTER_ACTION
+    DESCRIBE_CONFIGS
+    ALTER_CONFIGS
+    IDEMPOTENT_WRITE
+}
+
+type KafkaConfig {
+    name: String!
+    operations: [KafkaOperation!]
+}
+
+type Intent {
+    client: OtterizeServiceIdentity!
+    server: OtterizeServiceIdentity!
+    type: IntentType
+    kafkaTopics: [KafkaConfig!]
+}
+
 type ServiceIntents {
     client: OtterizeServiceIdentity!
     intents: [OtterizeServiceIdentity!]!
@@ -367,11 +465,20 @@ input KafkaMapperResults {
 
 type Query {
     """
+    Kept for backwards compatibility with CLI - query intents as (source+destinations) pairs,
+    without any additional intent info.
     namespaces: Namespaces filter.
     includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
     includeAllLabels: Return all labels for the pod in the response.
     """
     serviceIntents(namespaces: [String!], includeLabels: [String!], includeAllLabels: Boolean): [ServiceIntents!]!
+
+    """
+    namespaces: Namespaces filter.
+    includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
+    includeAllLabels: Return all labels for the pod in the response.
+    """
+    intents(namespaces: [String!], includeLabels: [String!], includeAllLabels: Boolean): [Intent!]!
 }
 
 type Mutation {
@@ -444,6 +551,39 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_intents_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []string
+	if tmp, ok := rawArgs["namespaces"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaces"))
+		arg0, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["namespaces"] = arg0
+	var arg1 []string
+	if tmp, ok := rawArgs["includeLabels"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeLabels"))
+		arg1, err = ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeLabels"] = arg1
+	var arg2 *bool
+	if tmp, ok := rawArgs["includeAllLabels"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeAllLabels"))
+		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeAllLabels"] = arg2
 	return args, nil
 }
 
@@ -618,6 +758,207 @@ func (ec *executionContext) _GroupVersionKind_kind(ctx context.Context, field gr
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Intent_client(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Intent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Client, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OtterizeServiceIdentity)
+	fc.Result = res
+	return ec.marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Intent_server(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Intent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Server, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OtterizeServiceIdentity)
+	fc.Result = res
+	return ec.marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Intent_type(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Intent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IntentType)
+	fc.Result = res
+	return ec.marshalOIntentType2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Intent_kafkaTopics(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Intent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.KafkaTopics, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]model.KafkaConfig)
+	fc.Result = res
+	return ec.marshalOKafkaConfig2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaConfigᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _KafkaConfig_name(ctx context.Context, field graphql.CollectedField, obj *model.KafkaConfig) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "KafkaConfig",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _KafkaConfig_operations(ctx context.Context, field graphql.CollectedField, obj *model.KafkaConfig) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "KafkaConfig",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Operations, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]model.KafkaOperation)
+	fc.Result = res
+	return ec.marshalOKafkaOperation2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_resetCapture(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1025,6 +1366,48 @@ func (ec *executionContext) _Query_serviceIntents(ctx context.Context, field gra
 	res := resTmp.([]model.ServiceIntents)
 	fc.Result = res
 	return ec.marshalNServiceIntents2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntentsᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_intents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_intents_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["includeAllLabels"].(*bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Intent)
+	fc.Result = res
+	return ec.marshalNIntent2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2635,6 +3018,99 @@ func (ec *executionContext) _GroupVersionKind(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var intentImplementors = []string{"Intent"}
+
+func (ec *executionContext) _Intent(ctx context.Context, sel ast.SelectionSet, obj *model.Intent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, intentImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Intent")
+		case "client":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Intent_client(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "server":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Intent_server(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "type":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Intent_type(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		case "kafkaTopics":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Intent_kafkaTopics(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var kafkaConfigImplementors = []string{"KafkaConfig"}
+
+func (ec *executionContext) _KafkaConfig(ctx context.Context, sel ast.SelectionSet, obj *model.KafkaConfig) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, kafkaConfigImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("KafkaConfig")
+		case "name":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._KafkaConfig_name(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "operations":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._KafkaConfig_operations(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2830,6 +3306,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_serviceIntents(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "intents":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_intents(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3396,6 +3895,58 @@ func (ec *executionContext) unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋn
 	return res, nil
 }
 
+func (ec *executionContext) marshalNIntent2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntent(ctx context.Context, sel ast.SelectionSet, v model.Intent) graphql.Marshaler {
+	return ec._Intent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNIntent2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Intent) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNIntent2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntent(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNKafkaConfig2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaConfig(ctx context.Context, sel ast.SelectionSet, v model.KafkaConfig) graphql.Marshaler {
+	return ec._KafkaConfig(ctx, sel, &v)
+}
+
 func (ec *executionContext) unmarshalNKafkaMapperResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaMapperResult(ctx context.Context, v interface{}) (model.KafkaMapperResult, error) {
 	res, err := ec.unmarshalInputKafkaMapperResult(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3421,6 +3972,16 @@ func (ec *executionContext) unmarshalNKafkaMapperResult2ᚕgithubᚗcomᚋotteri
 func (ec *executionContext) unmarshalNKafkaMapperResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaMapperResults(ctx context.Context, v interface{}) (model.KafkaMapperResults, error) {
 	res, err := ec.unmarshalInputKafkaMapperResults(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNKafkaOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperation(ctx context.Context, v interface{}) (model.KafkaOperation, error) {
+	var res model.KafkaOperation
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNKafkaOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperation(ctx context.Context, sel ast.SelectionSet, v model.KafkaOperation) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNOtterizeServiceIdentity2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentity(ctx context.Context, sel ast.SelectionSet, v model.OtterizeServiceIdentity) graphql.Marshaler {
@@ -3874,6 +4435,136 @@ func (ec *executionContext) marshalOGroupVersionKind2ᚖgithubᚗcomᚋotterize�
 		return graphql.Null
 	}
 	return ec._GroupVersionKind(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOIntentType2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentType(ctx context.Context, v interface{}) (*model.IntentType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.IntentType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOIntentType2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentType(ctx context.Context, sel ast.SelectionSet, v *model.IntentType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalOKafkaConfig2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaConfigᚄ(ctx context.Context, sel ast.SelectionSet, v []model.KafkaConfig) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNKafkaConfig2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaConfig(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOKafkaOperation2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperationᚄ(ctx context.Context, v interface{}) ([]model.KafkaOperation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.KafkaOperation, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNKafkaOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperation(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOKafkaOperation2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperationᚄ(ctx context.Context, sel ast.SelectionSet, v []model.KafkaOperation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNKafkaOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaOperation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabelᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PodLabel) graphql.Marshaler {
