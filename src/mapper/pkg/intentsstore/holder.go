@@ -9,9 +9,10 @@ import (
 	"time"
 )
 
-type SourceDestPair struct {
+type IntentsStoreKey struct {
 	Source      types.NamespacedName
 	Destination types.NamespacedName
+	Type        *model.IntentType
 }
 
 type TimestampedIntent struct {
@@ -19,13 +20,12 @@ type TimestampedIntent struct {
 	Intent    model.Intent
 }
 
-type IntentsStore map[SourceDestPair]TimestampedIntent
+type IntentsStore map[IntentsStoreKey]TimestampedIntent
 
 type IntentsHolder struct {
 	accumulatingStore IntentsStore
 	sinceLastGetStore IntentsStore
 	lock              sync.Mutex
-	lastIntentsUpdate time.Time
 }
 
 func NewIntentsHolder() *IntentsHolder {
@@ -43,25 +43,54 @@ func (i *IntentsHolder) Reset() {
 	i.accumulatingStore = make(IntentsStore)
 }
 
+func mergeKafkaTopics(existingTopics []model.KafkaConfig, newTopics []model.KafkaConfig) []model.KafkaConfig {
+	mergedTopics := existingTopics
+	for _, newTopic := range newTopics {
+		newTopicFound := false
+		mergedTopics = lo.Map(mergedTopics, func(existingTopic model.KafkaConfig, _ int) model.KafkaConfig {
+			if existingTopic.Name != newTopic.Name {
+				return existingTopic
+			}
+			newTopicFound = true
+			existingTopic.Operations = lo.Uniq(append(existingTopic.Operations, newTopic.Operations...))
+			return existingTopic
+		})
+
+		if !newTopicFound {
+			mergedTopics = append(mergedTopics, newTopic)
+		}
+	}
+
+	return mergedTopics
+}
+
+func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.Time, intent model.Intent) {
+	key := IntentsStoreKey{
+		Source:      intent.Client.AsNamespacedName(),
+		Destination: intent.Server.AsNamespacedName(),
+		Type:        intent.Type,
+	}
+
+	existingIntent, ok := store[key]
+	if !ok {
+		store[key] = TimestampedIntent{
+			Timestamp: newTimestamp,
+			Intent:    intent,
+		}
+		return
+	}
+
+	// merge into existing intent
+	existingIntent.Intent.KafkaTopics = mergeKafkaTopics(existingIntent.Intent.KafkaTopics, intent.KafkaTopics)
+	store[key] = existingIntent
+}
+
 func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	pair := SourceDestPair{
-		Source:      intent.Client.AsNamespacedName(),
-		Destination: intent.Server.AsNamespacedName(),
-	}
-	existingIntent, ok := i.accumulatingStore[pair]
-	if !ok || newTimestamp.After(existingIntent.Timestamp) {
-		timestampedIntent := TimestampedIntent{
-			Timestamp: newTimestamp,
-			Intent:    intent,
-		}
-		i.accumulatingStore[pair] = timestampedIntent
-		i.sinceLastGetStore[pair] = timestampedIntent
-		i.lastIntentsUpdate = time.Now()
-	}
-
+	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
+	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 }
 
 func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, includeAllLabels bool) []TimestampedIntent {
