@@ -81,6 +81,9 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	}
 
 	// merge into existing intent
+	if newTimestamp.After(existingIntent.Timestamp) {
+		existingIntent.Timestamp = newTimestamp
+	}
 	existingIntent.Intent.KafkaTopics = mergeKafkaTopics(existingIntent.Intent.KafkaTopics, intent.KafkaTopics)
 	store[key] = existingIntent
 }

@@ -103,6 +103,8 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
+
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }
