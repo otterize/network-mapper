@@ -8,7 +8,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go generate ./mapper/...
 
 FROM buildenv as test
 # install dependencies for "envtest" package

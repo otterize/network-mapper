@@ -8,7 +8,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go generate ./kafka-watcher/...
 
 FROM buildenv as test
 RUN go test ./kafka-watcher/...

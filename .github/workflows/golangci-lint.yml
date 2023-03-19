@@ -21,6 +21,17 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt update && sudo apt install libpcap-dev # required for the linter to be able to lint github.com/google/gopacket
+      - name: go get
+        run: go get .
+        working-directory: src
+      - name: go generate
+        run: go generate ./...
+        working-directory: src
+      - name: go vet
+        run: go vet ./...
+        working-directory: src/
+      - name: check git diff
+        run: git diff --exit-code
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
