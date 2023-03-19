@@ -12,7 +12,7 @@ import (
 type IntentsStoreKey struct {
 	Source      types.NamespacedName
 	Destination types.NamespacedName
-	Type        *model.IntentType
+	Type        model.IntentType
 }
 
 type TimestampedIntent struct {
@@ -68,7 +68,7 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	key := IntentsStoreKey{
 		Source:      intent.Client.AsNamespacedName(),
 		Destination: intent.Server.AsNamespacedName(),
-		Type:        intent.Type,
+		Type:        lo.FromPtr(intent.Type),
 	}
 
 	existingIntent, ok := store[key]
