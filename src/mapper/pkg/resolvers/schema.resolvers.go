@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"golang.org/x/exp/slices"
 	"strings"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -17,6 +16,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {

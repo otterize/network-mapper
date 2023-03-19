@@ -21,6 +21,7 @@ require (
 	github.com/suessflorian/gqlfetch v0.6.0
 	github.com/vektah/gqlparser/v2 v2.5.1
 	github.com/vishalkuo/bimap v0.0.0-20220726225509-e0b4f20de28b
+	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
@@ -102,7 +103,6 @@ require (
 	github.com/vektah/gqlparser v1.3.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect

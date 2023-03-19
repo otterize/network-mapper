@@ -465,8 +465,8 @@ input KafkaMapperResults {
 
 type Query {
     """
-    Kept for backwards compatibility with CLI - query intents as (source+destinations) pairs,
-    without any additional intent info.
+    Kept for backwards compatibility with CLI -
+    query intents as (source+destinations) pairs, without any additional intent info.
     namespaces: Namespaces filter.
     includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
     includeAllLabels: Return all labels for the pod in the response.
@@ -474,6 +474,7 @@ type Query {
     serviceIntents(namespaces: [String!], includeLabels: [String!], includeAllLabels: Boolean): [ServiceIntents!]!
 
     """
+    Query intents list.
     namespaces: Namespaces filter.
     includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
     includeAllLabels: Return all labels for the pod in the response.
