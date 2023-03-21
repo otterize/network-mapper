@@ -44,24 +44,19 @@ func (i *IntentsHolder) Reset() {
 }
 
 func mergeKafkaTopics(existingTopics []model.KafkaConfig, newTopics []model.KafkaConfig) []model.KafkaConfig {
-	mergedTopics := existingTopics
+	existingTopicsByName := lo.SliceToMap(existingTopics, func(topic model.KafkaConfig) (string, model.KafkaConfig) {
+		return topic.Name, topic
+	})
 	for _, newTopic := range newTopics {
-		isExistingTopic := false
-		mergedTopics = lo.Map(mergedTopics, func(existingTopic model.KafkaConfig, _ int) model.KafkaConfig {
-			if existingTopic.Name != newTopic.Name {
-				return existingTopic
-			}
-			isExistingTopic = true
+		existingTopic, ok := existingTopicsByName[newTopic.Name]
+		if ok {
 			existingTopic.Operations = lo.Uniq(append(existingTopic.Operations, newTopic.Operations...))
-			return existingTopic
-		})
-
-		if !isExistingTopic {
-			mergedTopics = append(mergedTopics, newTopic)
+		} else {
+			existingTopicsByName[newTopic.Name] = newTopic
 		}
 	}
 
-	return mergedTopics
+	return lo.Values(existingTopicsByName)
 }
 
 func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.Time, intent model.Intent) {
