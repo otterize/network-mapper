@@ -46,17 +46,17 @@ func (i *IntentsHolder) Reset() {
 func mergeKafkaTopics(existingTopics []model.KafkaConfig, newTopics []model.KafkaConfig) []model.KafkaConfig {
 	mergedTopics := existingTopics
 	for _, newTopic := range newTopics {
-		newTopicFound := false
+		isExistingTopic := false
 		mergedTopics = lo.Map(mergedTopics, func(existingTopic model.KafkaConfig, _ int) model.KafkaConfig {
 			if existingTopic.Name != newTopic.Name {
 				return existingTopic
 			}
-			newTopicFound = true
+			isExistingTopic = true
 			existingTopic.Operations = lo.Uniq(append(existingTopic.Operations, newTopic.Operations...))
 			return existingTopic
 		})
 
-		if !newTopicFound {
+		if !isExistingTopic {
 			mergedTopics = append(mergedTopics, newTopic)
 		}
 	}
