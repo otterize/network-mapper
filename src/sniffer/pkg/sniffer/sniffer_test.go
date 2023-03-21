@@ -6,8 +6,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/client"
-	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/client/mockclient"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
+	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient/mockclient"
 	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
@@ -35,11 +35,11 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 	packet.Metadata().CaptureInfo.Timestamp = timestamp
 	sniffer.HandlePacket(packet)
 
-	s.mockMapperClient.EXPECT().ReportCaptureResults(gomock.Any(), client.CaptureResults{
-		Results: []client.CaptureResultForSrcIp{
+	s.mockMapperClient.EXPECT().ReportCaptureResults(gomock.Any(), mapperclient.CaptureResults{
+		Results: []mapperclient.CaptureResultForSrcIp{
 			{
 				SrcIp: "10.101.81.13",
-				Destinations: []client.Destination{
+				Destinations: []mapperclient.Destination{
 					{
 						Destination: "sts.us-east-1.amazonaws.com",
 						LastSeen:    timestamp,

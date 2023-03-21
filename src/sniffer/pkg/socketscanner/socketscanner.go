@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/go-procnet/procnet"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/client"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/spf13/viper"
 	"os"
 	"strconv"
@@ -16,10 +16,10 @@ type scanResultMap map[string]map[string]time.Time
 
 type SocketScanner struct {
 	scanResults  scanResultMap
-	mapperClient client.MapperClient
+	mapperClient mapperclient.MapperClient
 }
 
-func NewSocketScanner(mapperClient client.MapperClient) *SocketScanner {
+func NewSocketScanner(mapperClient mapperclient.MapperClient) *SocketScanner {
 	return &SocketScanner{
 		scanResults:  make(scanResultMap),
 		mapperClient: mapperClient,
@@ -80,14 +80,14 @@ func (s *SocketScanner) ReportSocketScanResults(ctx context.Context) error {
 	return nil
 }
 
-func getModelResults(scanResults scanResultMap) client.SocketScanResults {
-	results := client.SocketScanResults{}
+func getModelResults(scanResults scanResultMap) mapperclient.SocketScanResults {
+	results := mapperclient.SocketScanResults{}
 	for srcIp, destinationsMap := range scanResults {
-		destinations := make([]client.Destination, 0)
+		destinations := make([]mapperclient.Destination, 0)
 		for destIP, lastSeen := range destinationsMap {
-			destinations = append(destinations, client.Destination{Destination: destIP, LastSeen: lastSeen})
+			destinations = append(destinations, mapperclient.Destination{Destination: destIP, LastSeen: lastSeen})
 		}
-		results.Results = append(results.Results, client.SocketScanResultForSrcIp{
+		results.Results = append(results.Results, mapperclient.SocketScanResultForSrcIp{
 			SrcIp:   srcIp,
 			DestIps: destinations,
 		})
