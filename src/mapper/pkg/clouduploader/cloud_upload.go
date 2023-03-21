@@ -36,15 +36,12 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 				Namespace:       &intent.Intent.Client.Namespace,
 				ServerName:      &intent.Intent.Server.Name,
 				ServerNamespace: &intent.Intent.Server.Namespace,
-				Type:            lo.Ternary(intent.Intent.Type == nil, nil, lo.ToPtr(cloudclient.IntentType(lo.FromPtr(intent.Intent.Type)))),
-				Topics: lo.Map(intent.Intent.KafkaTopics, func(item model.KafkaConfig, _ int) *cloudclient.KafkaConfigInput {
-					return &cloudclient.KafkaConfigInput{
-						Name: &item.Name,
-						Operations: lo.Map(item.Operations, func(op model.KafkaOperation, _ int) *cloudclient.KafkaOperation {
-							return lo.ToPtr(cloudclient.KafkaOperation(op))
-						}),
-					}
-				}),
+				Type:            modelIntentTypeToAPI(intent.Intent.Type),
+				Topics: lo.Map(intent.Intent.KafkaTopics,
+					func(item model.KafkaConfig, _ int) *cloudclient.KafkaConfigInput {
+						return lo.ToPtr(modelKafkaConfToAPI(item))
+					},
+				),
 			},
 		}
 	})
