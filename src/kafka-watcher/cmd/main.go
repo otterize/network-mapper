@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
 
@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mapperClient := client.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
+	mapperClient := mapperclient.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
 	w, err := logwatcher.NewWatcher(
 		mapperClient,
 		kafkaServers,

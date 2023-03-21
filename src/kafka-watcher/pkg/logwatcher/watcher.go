@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 	"github.com/oriser/regroup"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/client"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -40,11 +40,11 @@ type Watcher struct {
 	clientset    *kubernetes.Clientset
 	mu           sync.Mutex
 	seen         SeenRecordsStore
-	mapperClient client.MapperClient
+	mapperClient mapperclient.MapperClient
 	kafkaServers []types.NamespacedName
 }
 
-func NewWatcher(mapperClient client.MapperClient, kafkaServers []types.NamespacedName) (*Watcher, error) {
+func NewWatcher(mapperClient mapperclient.MapperClient, kafkaServers []types.NamespacedName) (*Watcher, error) {
 	conf, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
@@ -130,8 +130,8 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 	records := w.Flush()
 	logrus.Infof("Reporting %d records", len(records))
 
-	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) client.KafkaMapperResult {
-		return client.KafkaMapperResult{
+	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) mapperclient.KafkaMapperResult {
+		return mapperclient.KafkaMapperResult{
 			SrcIp:           r.Host,
 			ServerPodName:   r.Server.Name,
 			ServerNamespace: r.Server.Namespace,
@@ -141,7 +141,7 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 		}
 	})
 
-	return w.mapperClient.ReportKafkaMapperResults(ctx, client.KafkaMapperResults{Results: results})
+	return w.mapperClient.ReportKafkaMapperResults(ctx, mapperclient.KafkaMapperResults{Results: results})
 }
 
 func (w *Watcher) RunForever(ctx context.Context) error {
