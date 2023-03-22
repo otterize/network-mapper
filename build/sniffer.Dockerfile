@@ -4,10 +4,10 @@ RUN apk add build-base libpcap-dev
 WORKDIR /src
 
 # restore dependencies
-COPY go.mod go.sum ./
+COPY ../src/go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY ../src .
 
 FROM buildenv as test
 RUN go test ./sniffer/... && echo dep > /dep
@@ -21,7 +21,7 @@ RUN apk add build-base libpcap-dev
 WORKDIR /src
 
 # restore dependencies
-COPY . .
+COPY ../src .
 RUN go mod download
 RUN go build -o /main ./sniffer/cmd
 
