@@ -6,10 +6,10 @@ package mock_mapperclient
 
 import (
 	context "context"
+	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	mapperclient "github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 )
 
 // MockMapperClient is a mock of MapperClient interface.

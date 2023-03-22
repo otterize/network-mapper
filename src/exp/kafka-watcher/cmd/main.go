@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
+	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/logwatcher"
+	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
 
