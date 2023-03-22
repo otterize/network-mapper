@@ -4,19 +4,20 @@ import (
 	"context"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"time"
 )
 
 type CloudUploader struct {
-	intentsHolder *resolvers.IntentsHolder
+	intentsHolder *intentsstore.IntentsHolder
 	config        Config
 	client        cloudclient.CloudClient
 }
 
-func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, client cloudclient.CloudClient) *CloudUploader {
+func NewCloudUploader(intentsHolder *intentsstore.IntentsHolder, config Config, client cloudclient.CloudClient) *CloudUploader {
 	return &CloudUploader{
 		intentsHolder: intentsHolder,
 		config:        config,
@@ -27,21 +28,23 @@ func NewCloudUploader(intentsHolder *resolvers.IntentsHolder, config Config, cli
 func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	logrus.Info("Search for intents")
 
-	var discoveredIntents []*cloudclient.DiscoveredIntentInput
-	for _, intent := range c.intentsHolder.GetNewIntentsSinceLastGet() {
-		var discoveredIntent cloudclient.IntentInput
-		discoveredIntent.ClientName = lo.ToPtr(intent.Source.Name)
-		discoveredIntent.Namespace = lo.ToPtr(intent.Source.Namespace)
-		discoveredIntent.ServerName = lo.ToPtr(intent.Destination.Name)
-		discoveredIntent.ServerNamespace = lo.ToPtr(intent.Destination.Namespace)
-
-		input := &cloudclient.DiscoveredIntentInput{
+	discoveredIntents := lo.Map(c.intentsHolder.GetNewIntentsSinceLastGet(), func(intent intentsstore.TimestampedIntent, _ int) *cloudclient.DiscoveredIntentInput {
+		return &cloudclient.DiscoveredIntentInput{
 			DiscoveredAt: lo.ToPtr(intent.Timestamp),
-			Intent:       &discoveredIntent,
+			Intent: &cloudclient.IntentInput{
+				ClientName:      &intent.Intent.Client.Name,
+				Namespace:       &intent.Intent.Client.Namespace,
+				ServerName:      &intent.Intent.Server.Name,
+				ServerNamespace: &intent.Intent.Server.Namespace,
+				Type:            modelIntentTypeToAPI(intent.Intent.Type),
+				Topics: lo.Map(intent.Intent.KafkaTopics,
+					func(item model.KafkaConfig, _ int) *cloudclient.KafkaConfigInput {
+						return lo.ToPtr(modelKafkaConfToAPI(item))
+					},
+				),
+			},
 		}
-
-		discoveredIntents = append(discoveredIntents, input)
-	}
+	})
 
 	if len(discoveredIntents) == 0 {
 		return

@@ -92,8 +92,9 @@ For more platforms, see [the installation guide](https://docs.otterize.com/k8s-i
 ## How does the network mapper work?
 The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to their pods, and crawling up the ownership of the pod until it reaches the root object. The network mapper continues building the network map as long as it's deployed.
 ### Components
-- Sniffer: the sniffer is deployed to each node, and is responsible for capturing node-local DNS traffic and inspecting open connections.
 - Mapper: the mapper is deployed once, and resolves service names using the Kubernetes API with traffic information reported by the sniffers.
+- Sniffer: the sniffer is deployed to each node, and is responsible for capturing node-local DNS traffic and inspecting open connections.
+- Kafka watcher (experimental): deployed once to your cluster, and is responsible for capturing kafka server logs and reporting them through the network mapper. 
 
 ### Service name resolution
 Service names are resolved in one of two ways:

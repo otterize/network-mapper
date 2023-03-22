@@ -8,7 +8,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go generate ./sniffer/...
 
 FROM buildenv as test
 RUN go test ./sniffer/... && echo dep > /dep

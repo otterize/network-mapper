@@ -7,7 +7,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	"testing"
@@ -21,14 +21,14 @@ var (
 type CloudUploaderTestSuite struct {
 	suite.Suite
 	testNamespace string
-	intentsHolder *resolvers.IntentsHolder
+	intentsHolder *intentsstore.IntentsHolder
 	cloudUploader *CloudUploader
 	clientMock    *cloudclientmocks.MockCloudClient
 }
 
 func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
-	s.intentsHolder = resolvers.NewIntentsHolder(nil)
+	s.intentsHolder = intentsstore.NewIntentsHolder()
 }
 
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
@@ -39,9 +39,11 @@ func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
 
 func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, destination string, dstNamespace string) {
 	s.intentsHolder.AddIntent(
-		model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
-		model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 		testTimestamp,
+		model.Intent{
+			Client: &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
+			Server: &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
+		},
 	)
 }
 
@@ -101,6 +103,8 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
+
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
 }

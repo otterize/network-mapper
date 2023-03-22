@@ -5,8 +5,8 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/client"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -20,10 +20,10 @@ type Sniffer struct {
 	capturedRequests capturesMap
 	socketScanner    *socketscanner.SocketScanner
 	lastReportTime   time.Time
-	mapperClient     client.MapperClient
+	mapperClient     mapperclient.MapperClient
 }
 
-func NewSniffer(mapperClient client.MapperClient) *Sniffer {
+func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
 	return &Sniffer{
 		capturedRequests: make(capturesMap),
 		socketScanner:    socketscanner.NewSocketScanner(mapperClient),
@@ -78,7 +78,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	defer cancelFunc()
 
 	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
-	err := s.mapperClient.ReportCaptureResults(timeoutCtx, client.CaptureResults{Results: results})
+	err := s.mapperClient.ReportCaptureResults(timeoutCtx, mapperclient.CaptureResults{Results: results})
 	if err != nil {
 		return err
 	}
@@ -88,14 +88,14 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	return nil
 }
 
-func getCaptureResults(capturedRequests capturesMap) []client.CaptureResultForSrcIp {
-	results := make([]client.CaptureResultForSrcIp, 0, len(capturedRequests))
+func getCaptureResults(capturedRequests capturesMap) []mapperclient.CaptureResultForSrcIp {
+	results := make([]mapperclient.CaptureResultForSrcIp, 0, len(capturedRequests))
 	for srcIp, destDNSToTime := range capturedRequests {
-		destinations := make([]client.Destination, 0)
+		destinations := make([]mapperclient.Destination, 0)
 		for destDNS, lastSeen := range destDNSToTime {
-			destinations = append(destinations, client.Destination{Destination: destDNS, LastSeen: lastSeen})
+			destinations = append(destinations, mapperclient.Destination{Destination: destDNS, LastSeen: lastSeen})
 		}
-		results = append(results, client.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations})
+		results = append(results, mapperclient.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations})
 	}
 	return results
 }

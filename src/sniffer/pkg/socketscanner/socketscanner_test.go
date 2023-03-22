@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/client"
-	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/client/mockclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
+	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient/mockclient"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 	"os"
@@ -24,10 +24,10 @@ func (s *SocketScannerTestSuite) SetupSuite() {
 	s.mockMapperClient = mock_client.NewMockMapperClient(s.mockController)
 }
 
-type SocketScanResultForSrcIpMatcher []client.SocketScanResultForSrcIp
+type SocketScanResultForSrcIpMatcher []mapperclient.SocketScanResultForSrcIp
 
 func (m SocketScanResultForSrcIpMatcher) Matches(x interface{}) bool {
-	results, ok := x.(client.SocketScanResults)
+	results, ok := x.(mapperclient.SocketScanResults)
 	if !ok {
 		return false
 	}
@@ -53,7 +53,7 @@ func (m SocketScanResultForSrcIpMatcher) Matches(x interface{}) bool {
 	return true
 }
 
-func matchSocketScanResult(expected, actual client.SocketScanResultForSrcIp) bool {
+func matchSocketScanResult(expected, actual mapperclient.SocketScanResultForSrcIp) bool {
 	if expected.SrcIp != actual.SrcIp {
 		return false
 	}
@@ -79,7 +79,7 @@ func (m SocketScanResultForSrcIpMatcher) String() string {
 	return result
 }
 
-func GetMatcher(expected []client.SocketScanResultForSrcIp) SocketScanResultForSrcIpMatcher {
+func GetMatcher(expected []mapperclient.SocketScanResultForSrcIp) SocketScanResultForSrcIpMatcher {
 	return expected
 }
 
@@ -98,10 +98,10 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 
 	// We should only see sockets that this pod serves to other clients.
 	// all other sockets should be ignored (because parsing the server sides on all pods is enough)
-	expectedResult := []client.SocketScanResultForSrcIp{
+	expectedResult := []mapperclient.SocketScanResultForSrcIp{
 		{
 			SrcIp: "192.168.35.14",
-			DestIps: []client.Destination{
+			DestIps: []mapperclient.Destination{
 				{
 					Destination: "192.168.38.211",
 				},
@@ -109,7 +109,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 		},
 		{
 			SrcIp: "176.168.35.14",
-			DestIps: []client.Destination{
+			DestIps: []mapperclient.Destination{
 				{
 					Destination: "192.168.38.211",
 				},

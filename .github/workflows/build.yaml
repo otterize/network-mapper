@@ -26,6 +26,7 @@ jobs:
         service:
           - mapper
           - sniffer
+          - kafka-watcher
 
     steps:
       - name: Checkout
@@ -61,7 +62,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: src/
-          file: src/${{ matrix.service }}.Dockerfile
+          file: build/${{ matrix.service }}.Dockerfile
           tags: ${{ env.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
@@ -100,3 +101,4 @@ jobs:
           retag_image_as_latest() { MANIFEST=$(aws ecr batch-get-image --repository-name ${{ env.REPOSITORY_NAME }} --image-ids imageTag="$1-${{ github.sha }}" --query "images[].imageManifest" --output text); if [ -z "$MANIFEST" ]; then echo Manifest not found; exit 1; fi; OUTPUT=$(aws ecr put-image --repository-name ${{ env.REPOSITORY_NAME }} --image-tag "$1-latest" --image-manifest "$MANIFEST" 2>&1 || true); if echo $OUTPUT | grep 'An error occurred' >/dev/null && ! echo $OUTPUT | grep ImageAlreadyExistsException >/dev/null; then echo $OUTPUT; exit 1; fi; }
           retag_image_as_latest mapper
           retag_image_as_latest sniffer
+          retag_image_as_latest kafka-watcher

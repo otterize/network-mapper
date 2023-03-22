@@ -58,6 +58,8 @@ func (v *ReportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 
 // ServiceIntentsResponse is returned by ServiceIntents on success.
 type ServiceIntentsResponse struct {
+	// Kept for backwards compatibility with CLI -
+	// query intents as (source+destinations) pairs, without any additional intent info.
 	// namespaces: Namespaces filter.
 	// includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
 	// includeAllLabels: Return all labels for the pod in the response.

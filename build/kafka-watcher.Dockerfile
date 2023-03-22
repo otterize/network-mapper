@@ -8,20 +8,14 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go generate ./mapper/...
 
 FROM buildenv as test
-# install dependencies for "envtest" package
-RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \
-    source <(setup-envtest use -p env) && \
-    mkdir -p /usr/local/kubebuilder && \
-    ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
-RUN go test ./mapper/...
+RUN go test ./exp/kafka-watcher/...
 
 FROM test as builder
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./mapper/cmd
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./exp/kafka-watcher/cmd
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -29,5 +23,4 @@ FROM gcr.io/distroless/static:nonroot
 COPY --from=builder /main /main
 USER 65532:65532
 
-EXPOSE 9090
 ENTRYPOINT ["/main"]

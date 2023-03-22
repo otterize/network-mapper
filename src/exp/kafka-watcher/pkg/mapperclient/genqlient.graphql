@@ -1,0 +1,4 @@
+
+mutation reportKafkaMapperResults($results: KafkaMapperResults!) {
+    reportKafkaMapperResults(results: $results)
+}

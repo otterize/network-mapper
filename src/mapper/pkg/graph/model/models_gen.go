@@ -3,6 +3,9 @@
 package model
 
 import (
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +27,31 @@ type GroupVersionKind struct {
 	Group   *string `json:"group"`
 	Version string  `json:"version"`
 	Kind    string  `json:"kind"`
+}
+
+type Intent struct {
+	Client      *OtterizeServiceIdentity `json:"client"`
+	Server      *OtterizeServiceIdentity `json:"server"`
+	Type        *IntentType              `json:"type"`
+	KafkaTopics []KafkaConfig            `json:"kafkaTopics"`
+}
+
+type KafkaConfig struct {
+	Name       string           `json:"name"`
+	Operations []KafkaOperation `json:"operations"`
+}
+
+type KafkaMapperResult struct {
+	SrcIP           string    `json:"srcIp"`
+	ServerPodName   string    `json:"serverPodName"`
+	ServerNamespace string    `json:"serverNamespace"`
+	Topic           string    `json:"topic"`
+	Operation       string    `json:"operation"`
+	LastSeen        time.Time `json:"lastSeen"`
+}
+
+type KafkaMapperResults struct {
+	Results []KafkaMapperResult `json:"results"`
 }
 
 type OtterizeServiceIdentity struct {
@@ -51,4 +79,102 @@ type SocketScanResultForSrcIP struct {
 
 type SocketScanResults struct {
 	Results []SocketScanResultForSrcIP `json:"results"`
+}
+
+type IntentType string
+
+const (
+	IntentTypeKafka IntentType = "KAFKA"
+)
+
+var AllIntentType = []IntentType{
+	IntentTypeKafka,
+}
+
+func (e IntentType) IsValid() bool {
+	switch e {
+	case IntentTypeKafka:
+		return true
+	}
+	return false
+}
+
+func (e IntentType) String() string {
+	return string(e)
+}
+
+func (e *IntentType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IntentType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IntentType", str)
+	}
+	return nil
+}
+
+func (e IntentType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type KafkaOperation string
+
+const (
+	KafkaOperationAll             KafkaOperation = "ALL"
+	KafkaOperationConsume         KafkaOperation = "CONSUME"
+	KafkaOperationProduce         KafkaOperation = "PRODUCE"
+	KafkaOperationCreate          KafkaOperation = "CREATE"
+	KafkaOperationAlter           KafkaOperation = "ALTER"
+	KafkaOperationDelete          KafkaOperation = "DELETE"
+	KafkaOperationDescribe        KafkaOperation = "DESCRIBE"
+	KafkaOperationClusterAction   KafkaOperation = "CLUSTER_ACTION"
+	KafkaOperationDescribeConfigs KafkaOperation = "DESCRIBE_CONFIGS"
+	KafkaOperationAlterConfigs    KafkaOperation = "ALTER_CONFIGS"
+	KafkaOperationIDEmpotentWrite KafkaOperation = "IDEMPOTENT_WRITE"
+)
+
+var AllKafkaOperation = []KafkaOperation{
+	KafkaOperationAll,
+	KafkaOperationConsume,
+	KafkaOperationProduce,
+	KafkaOperationCreate,
+	KafkaOperationAlter,
+	KafkaOperationDelete,
+	KafkaOperationDescribe,
+	KafkaOperationClusterAction,
+	KafkaOperationDescribeConfigs,
+	KafkaOperationAlterConfigs,
+	KafkaOperationIDEmpotentWrite,
+}
+
+func (e KafkaOperation) IsValid() bool {
+	switch e {
+	case KafkaOperationAll, KafkaOperationConsume, KafkaOperationProduce, KafkaOperationCreate, KafkaOperationAlter, KafkaOperationDelete, KafkaOperationDescribe, KafkaOperationClusterAction, KafkaOperationDescribeConfigs, KafkaOperationAlterConfigs, KafkaOperationIDEmpotentWrite:
+		return true
+	}
+	return false
+}
+
+func (e KafkaOperation) String() string {
+	return string(e)
+}
+
+func (e *KafkaOperation) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = KafkaOperation(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid KafkaOperation", str)
+	}
+	return nil
+}
+
+func (e KafkaOperation) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
