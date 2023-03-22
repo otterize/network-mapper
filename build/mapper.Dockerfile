@@ -4,10 +4,10 @@ RUN apk add build-base libpcap-dev
 WORKDIR /src
 
 # restore dependencies
-COPY ../src/go.mod go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY ../src .
+COPY . .
 
 FROM buildenv as test
 # install dependencies for "envtest" package

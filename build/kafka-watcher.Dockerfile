@@ -4,10 +4,10 @@ RUN apk add build-base libpcap-dev
 WORKDIR /src
 
 # restore dependencies
-COPY ../src/go.mod go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY .. .
+COPY . .
 
 FROM buildenv as test
 RUN go test ./exp/kafka-watcher/...
