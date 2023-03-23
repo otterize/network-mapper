@@ -131,6 +131,12 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces []str
 	return result
 }
 
+func dedupServiceIntentsDests(dests []model.OtterizeServiceIdentity) []model.OtterizeServiceIdentity {
+	return lo.UniqBy(dests, func(dest model.OtterizeServiceIdentity) types.NamespacedName {
+		return dest.AsNamespacedName()
+	})
+}
+
 func GroupIntentsBySource(intents []TimestampedIntent) []model.ServiceIntents {
 	intentsBySource := make(map[types.NamespacedName]*model.ServiceIntents, 0)
 	for _, intent := range intents {
@@ -144,7 +150,11 @@ func GroupIntentsBySource(intents []TimestampedIntent) []model.ServiceIntents {
 
 		intentsBySource[srcIdentity].Intents = append(intentsBySource[srcIdentity].Intents, *intent.Intent.Server)
 	}
+
 	return lo.Map(lo.Values(intentsBySource), func(serviceIntents *model.ServiceIntents, _ int) model.ServiceIntents {
-		return *serviceIntents
+		return model.ServiceIntents{
+			Client:  serviceIntents.Client,
+			Intents: dedupServiceIntentsDests(serviceIntents.Intents),
+		}
 	})
 }
