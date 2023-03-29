@@ -1,0 +1,4 @@
+
+mutation reportIstioConnections($results: IstioConnectionResults!) {
+    reportIstioConnectionResults(results: $results)
+}

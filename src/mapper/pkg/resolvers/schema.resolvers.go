@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -207,6 +208,10 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 	}
 
 	return true, nil
+}
+
+func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {

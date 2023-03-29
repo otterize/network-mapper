@@ -92,6 +92,18 @@ input KafkaMapperResults {
     results: [KafkaMapperResult!]!
 }
 
+input IstioConnection {
+    srcWorkload: String!
+    srcWorkloadNamespace: String!
+    dstWorkload: String!
+    dstWorkloadNamespace: String!
+    requestPaths: [String!]!
+}
+
+input IstioConnectionResults {
+    results: [IstioConnection!]!
+}
+
 
 type Query {
     """
@@ -117,4 +129,5 @@ type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
+    reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
 }

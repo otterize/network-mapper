@@ -36,6 +36,18 @@ type Intent struct {
 	KafkaTopics []KafkaConfig            `json:"kafkaTopics"`
 }
 
+type IstioConnection struct {
+	SrcWorkload          string   `json:"srcWorkload"`
+	SrcWorkloadNamespace string   `json:"srcWorkloadNamespace"`
+	DstWorkload          string   `json:"dstWorkload"`
+	DstWorkloadNamespace string   `json:"dstWorkloadNamespace"`
+	RequestPaths         []string `json:"requestPaths"`
+}
+
+type IstioConnectionResults struct {
+	Results []IstioConnection `json:"results"`
+}
+
 type KafkaConfig struct {
 	Name       string           `json:"name"`
 	Operations []KafkaOperation `json:"operations"`
