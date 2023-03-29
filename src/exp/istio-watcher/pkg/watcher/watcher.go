@@ -5,9 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/oriser/regroup"
-	"github.com/otterize/intents-operator/src/operator/api/v1alpha2"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
 	mapperclient2 "github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
 	"github.com/sirupsen/logrus"
@@ -90,31 +88,6 @@ func (p *ConnectionWithPath) omitMetricsFieldsFromConnection() {
 	p.SourceNamespace = strings.Split(p.SourceNamespace, ".")[1]
 	p.DestinationNamespace = strings.Split(p.DestinationNamespace, ".")[1]
 	p.RequestPath = strings.Split(p.RequestPath, ".")[1]
-}
-
-func (p *ConnectionWithPath) AsIntent() v1alpha2.ClientIntents {
-	return v1alpha2.ClientIntents{
-		TypeMeta: v1.TypeMeta{
-			Kind:       IntentsKind,
-			APIVersion: v1alpha2.GroupVersion.Version,
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      p.SourceWorkload,
-			Namespace: p.SourceNamespace,
-		},
-		Spec: &v1alpha2.IntentsSpec{
-			Service: v1alpha2.Service{
-				Name: fmt.Sprintf("%s.%s", p.SourceWorkload, p.SourceNamespace),
-			},
-			Calls: []v1alpha2.Intent{
-				{
-					Name:          fmt.Sprintf("%s.%s", p.DestinationWorkload, p.DestinationNamespace),
-					Type:          v1alpha2.IntentTypeHTTP,
-					HTTPResources: []v1alpha2.HTTPResource{{Path: p.RequestPath}},
-				},
-			},
-		},
-	}
 }
 
 type EnvoyMetrics struct {
