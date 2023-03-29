@@ -29,19 +29,26 @@ type GroupVersionKind struct {
 	Kind    string  `json:"kind"`
 }
 
+type HTTPResources struct {
+	Path    *string      `json:"path"`
+	Methods []HTTPMethod `json:"methods"`
+}
+
 type Intent struct {
-	Client      *OtterizeServiceIdentity `json:"client"`
-	Server      *OtterizeServiceIdentity `json:"server"`
-	Type        *IntentType              `json:"type"`
-	KafkaTopics []KafkaConfig            `json:"kafkaTopics"`
+	Client        *OtterizeServiceIdentity `json:"client"`
+	Server        *OtterizeServiceIdentity `json:"server"`
+	Type          *IntentType              `json:"type"`
+	KafkaTopics   []KafkaConfig            `json:"kafkaTopics"`
+	HTTPResources []HTTPResources          `json:"httpResources"`
 }
 
 type IstioConnection struct {
-	SrcWorkload          string   `json:"srcWorkload"`
-	SrcWorkloadNamespace string   `json:"srcWorkloadNamespace"`
-	DstWorkload          string   `json:"dstWorkload"`
-	DstWorkloadNamespace string   `json:"dstWorkloadNamespace"`
-	RequestPaths         []string `json:"requestPaths"`
+	SrcWorkload          string    `json:"srcWorkload"`
+	SrcWorkloadNamespace string    `json:"srcWorkloadNamespace"`
+	DstWorkload          string    `json:"dstWorkload"`
+	DstWorkloadNamespace string    `json:"dstWorkloadNamespace"`
+	RequestPaths         []string  `json:"requestPaths"`
+	LastSeen             time.Time `json:"lastSeen"`
 }
 
 type IstioConnectionResults struct {
@@ -93,19 +100,74 @@ type SocketScanResults struct {
 	Results []SocketScanResultForSrcIP `json:"results"`
 }
 
+type HTTPMethod string
+
+const (
+	HTTPMethodGet     HTTPMethod = "GET"
+	HTTPMethodPost    HTTPMethod = "POST"
+	HTTPMethodPut     HTTPMethod = "PUT"
+	HTTPMethodDelete  HTTPMethod = "DELETE"
+	HTTPMethodOptions HTTPMethod = "OPTIONS"
+	HTTPMethodTrace   HTTPMethod = "TRACE"
+	HTTPMethodPatch   HTTPMethod = "PATCH"
+	HTTPMethodConnect HTTPMethod = "CONNECT"
+)
+
+var AllHTTPMethod = []HTTPMethod{
+	HTTPMethodGet,
+	HTTPMethodPost,
+	HTTPMethodPut,
+	HTTPMethodDelete,
+	HTTPMethodOptions,
+	HTTPMethodTrace,
+	HTTPMethodPatch,
+	HTTPMethodConnect,
+}
+
+func (e HTTPMethod) IsValid() bool {
+	switch e {
+	case HTTPMethodGet, HTTPMethodPost, HTTPMethodPut, HTTPMethodDelete, HTTPMethodOptions, HTTPMethodTrace, HTTPMethodPatch, HTTPMethodConnect:
+		return true
+	}
+	return false
+}
+
+func (e HTTPMethod) String() string {
+	return string(e)
+}
+
+func (e *HTTPMethod) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = HTTPMethod(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid HttpMethod", str)
+	}
+	return nil
+}
+
+func (e HTTPMethod) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 type IntentType string
 
 const (
 	IntentTypeKafka IntentType = "KAFKA"
+	IntentTypeHTTP  IntentType = "HTTP"
 )
 
 var AllIntentType = []IntentType{
 	IntentTypeKafka,
+	IntentTypeHTTP,
 }
 
 func (e IntentType) IsValid() bool {
 	switch e {
-	case IntentTypeKafka:
+	case IntentTypeKafka, IntentTypeHTTP:
 		return true
 	}
 	return false

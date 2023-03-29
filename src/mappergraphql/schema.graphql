@@ -46,6 +46,7 @@ type OtterizeServiceIdentity {
 
 enum IntentType {
     KAFKA
+    HTTP
 }
 
 enum KafkaOperation {
@@ -67,11 +68,28 @@ type KafkaConfig {
     operations: [KafkaOperation!]
 }
 
+type HttpResources {
+    path: String
+    methods: [HttpMethod!]
+}
+
+enum HttpMethod {
+    GET
+    POST
+    PUT
+    DELETE
+    OPTIONS
+    TRACE
+    PATCH
+    CONNECT
+}
+
 type Intent {
     client: OtterizeServiceIdentity!
     server: OtterizeServiceIdentity!
     type: IntentType
     kafkaTopics: [KafkaConfig!]
+    httpResources: [HttpResources!]
 }
 
 type ServiceIntents {
@@ -98,6 +116,7 @@ input IstioConnection {
     dstWorkload: String!
     dstWorkloadNamespace: String!
     requestPaths: [String!]!
+    lastSeen: Time!
 }
 
 input IstioConnectionResults {

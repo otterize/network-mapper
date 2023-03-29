@@ -4,16 +4,18 @@ package mapperclient
 
 import (
 	"context"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
 
 type IstioConnection struct {
-	SrcWorkload          string   `json:"srcWorkload"`
-	SrcWorkloadNamespace string   `json:"srcWorkloadNamespace"`
-	DstWorkload          string   `json:"dstWorkload"`
-	DstWorkloadNamespace string   `json:"dstWorkloadNamespace"`
-	RequestPaths         []string `json:"requestPaths"`
+	SrcWorkload          string    `json:"srcWorkload"`
+	SrcWorkloadNamespace string    `json:"srcWorkloadNamespace"`
+	DstWorkload          string    `json:"dstWorkload"`
+	DstWorkloadNamespace string    `json:"dstWorkloadNamespace"`
+	RequestPaths         []string  `json:"requestPaths"`
+	LastSeen             time.Time `json:"lastSeen"`
 }
 
 // GetSrcWorkload returns IstioConnection.SrcWorkload, and is useful for accessing the field via an interface.
@@ -30,6 +32,9 @@ func (v *IstioConnection) GetDstWorkloadNamespace() string { return v.DstWorkloa
 
 // GetRequestPaths returns IstioConnection.RequestPaths, and is useful for accessing the field via an interface.
 func (v *IstioConnection) GetRequestPaths() []string { return v.RequestPaths }
+
+// GetLastSeen returns IstioConnection.LastSeen, and is useful for accessing the field via an interface.
+func (v *IstioConnection) GetLastSeen() time.Time { return v.LastSeen }
 
 type IstioConnectionResults struct {
 	Results []IstioConnection `json:"results"`

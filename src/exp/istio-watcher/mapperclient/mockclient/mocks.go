@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	istio_mapper "github.com/otterize/network-mapper/src/exp/istio-watcher/pkg/watcher"
+	mapperclient "github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
 )
 
 // MockMapperClient is a mock of MapperClient interface.
@@ -36,7 +36,7 @@ func (m *MockMapperClient) EXPECT() *MockMapperClientMockRecorder {
 }
 
 // ReportIstioConnections mocks base method.
-func (m *MockMapperClient) ReportIstioConnections(ctx context.Context, results []*istio_mapper.ConnectionWithPath) error {
+func (m *MockMapperClient) ReportIstioConnections(ctx context.Context, results mapperclient.IstioConnectionResults) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportIstioConnections", ctx, results)
 	ret0, _ := ret[0].(error)

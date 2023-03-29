@@ -10,10 +10,8 @@ import (
 	"github.com/otterize/intents-operator/src/operator/api/v1alpha2"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
 	mapperclient2 "github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +57,7 @@ type IstioWatcher struct {
 	clientset    *kubernetes.Clientset
 	config       *rest.Config
 	mapperClient mapperclient2.MapperClient
-	connections  []*ConnectionWithPath
+	connections  map[*ConnectionWithPath]time.Time
 }
 
 type ConnectionWithPath struct {
@@ -142,15 +140,15 @@ func NewWatcher(mapperClient mapperclient2.MapperClient) (*IstioWatcher, error) 
 		clientset:    clientset,
 		config:       conf,
 		mapperClient: mapperClient,
-		connections:  make([]*ConnectionWithPath, 0),
+		connections:  map[*ConnectionWithPath]time.Time{},
 	}
 
 	return m, nil
 }
 
-func (m *IstioWatcher) Flush() []*ConnectionWithPath {
+func (m *IstioWatcher) Flush() map[*ConnectionWithPath]time.Time {
 	r := m.connections
-	m.connections = make([]*ConnectionWithPath, 0)
+	m.connections = map[*ConnectionWithPath]time.Time{}
 	return r
 }
 
@@ -257,7 +255,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 				if err != nil {
 					return err
 				}
-				m.connections = append(m.connections, conn)
+				m.connections[conn] = time.Now()
 			}
 		case <-done:
 			logrus.Infof("Got done signal")
@@ -292,7 +290,7 @@ func (m *IstioWatcher) ReportResults(ctx context.Context) {
 		}
 
 		logrus.Infof("Reporting %d connections", len(connections))
-		results := toGraphQLIstioConnections(connections)
+		results := ToGraphQLIstioConnections(connections)
 		if err := m.mapperClient.ReportIstioConnections(ctx, mapperclient2.IstioConnectionResults{Results: results}); err != nil {
 			logrus.WithError(err).Errorf("Failed reporting Istio connection results to mapper")
 		}
@@ -305,35 +303,9 @@ func (m *IstioWatcher) RunForever(ctx context.Context) interface{} {
 	for {
 		logrus.Info("Retrieving 'istio_total_requests' metric from Istio sidecars")
 		if err := m.CollectIstioConnectionMetrics(ctx, viper.GetString(config.NamespaceKey)); err != nil {
-			logrus.WithError(err).Errorf("Failed getting connection metrics from Istio sidecars")
+			logrus.WithError(err).Debugf("Failed getting connection metrics from Istio sidecars")
 		}
 		logrus.Infof("Istio mapping stopped, will retry after cool down period (%s)...", cooldownPeriod)
 		time.Sleep(cooldownPeriod)
 	}
-}
-
-func toGraphQLIstioConnections(connections []*ConnectionWithPath) []mapperclient2.IstioConnection {
-	connectionPairToConn := map[string]mapperclient2.IstioConnection{}
-	for _, connWithPath := range connections {
-		connectionPair := fmt.Sprintf("%s.%s", connWithPath.SourceWorkload, connWithPath.DestinationWorkload)
-		istioConnection, ok := connectionPairToConn[connectionPair]
-		if !ok {
-			connectionPairToConn[connectionPair] = mapperclient2.IstioConnection{
-				SrcWorkload:          connWithPath.SourceWorkload,
-				SrcWorkloadNamespace: connWithPath.SourceNamespace,
-				DstWorkload:          connWithPath.DestinationWorkload,
-				DstWorkloadNamespace: connWithPath.DestinationNamespace,
-				RequestPaths:         []string{connWithPath.RequestPath},
-			}
-			continue
-		}
-		if slices.Contains(istioConnection.RequestPaths, connWithPath.RequestPath) {
-			continue
-		}
-		// Reassign connection to map with newly appended request path
-		istioConnection.RequestPaths = append(istioConnection.RequestPaths, connWithPath.RequestPath)
-		connectionPairToConn[connectionPair] = istioConnection
-	}
-
-	return lo.Values(connectionPairToConn)
 }
