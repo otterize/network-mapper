@@ -30,7 +30,7 @@ func ToGraphQLIstioConnections(connections map[*ConnectionWithPath]time.Time) []
 		// Reassign connection to map with newly appended request path
 		istioConnection.RequestPaths = append(istioConnection.RequestPaths, connWithPath.RequestPath)
 
-		if timestamp.After(istioConnection.LastSeen) { // WTF golang
+		if timestamp.After(istioConnection.LastSeen) {
 			istioConnection.LastSeen = timestamp
 		}
 		connectionPairToConn[connectionPair] = istioConnection
