@@ -189,7 +189,7 @@ type HTTPConfig {
 
 input HTTPConfigInput {
 	path: String
-	method: HTTPMethod
+	methods: [HTTPMethod!]
 }
 
 enum HTTPMethod {

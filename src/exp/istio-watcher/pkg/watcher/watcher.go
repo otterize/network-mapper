@@ -16,7 +16,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/client-go/util/homedir"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -99,7 +102,11 @@ type Metric struct {
 }
 
 func NewWatcher(mapperClient mapperclient2.MapperClient) (*IstioWatcher, error) {
-	conf, err := rest.InClusterConfig()
+	//conf, err := rest.InClusterConfig()
+	//if err != nil {
+	//	return nil, err
+	//}
+	conf, err := clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +238,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 				m.connections[conn] = time.Now()
 			}
 		case <-done:
-			logrus.Infof("Got done signal")
+			logrus.Debugf("Got done signal")
 			return nil
 		}
 	}
@@ -270,7 +277,7 @@ func (m *IstioWatcher) ReportResults(ctx context.Context) {
 	}
 }
 
-func (m *IstioWatcher) RunForever(ctx context.Context) interface{} {
+func (m *IstioWatcher) RunForever(ctx context.Context) {
 	go m.ReportResults(ctx)
 	cooldownPeriod := viper.GetDuration(config.CooldownIntervalKey)
 	for {

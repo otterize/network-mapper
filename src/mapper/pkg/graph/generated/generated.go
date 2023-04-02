@@ -50,7 +50,7 @@ type ComplexityRoot struct {
 		Version func(childComplexity int) int
 	}
 
-	HttpResources struct {
+	HttpResource struct {
 		Methods func(childComplexity int) int
 		Path    func(childComplexity int) int
 	}
@@ -147,19 +147,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.GroupVersionKind.Version(childComplexity), true
 
-	case "HttpResources.methods":
-		if e.complexity.HttpResources.Methods == nil {
+	case "HttpResource.methods":
+		if e.complexity.HttpResource.Methods == nil {
 			break
 		}
 
-		return e.complexity.HttpResources.Methods(childComplexity), true
+		return e.complexity.HttpResource.Methods(childComplexity), true
 
-	case "HttpResources.path":
-		if e.complexity.HttpResources.Path == nil {
+	case "HttpResource.path":
+		if e.complexity.HttpResource.Path == nil {
 			break
 		}
 
-		return e.complexity.HttpResources.Path(childComplexity), true
+		return e.complexity.HttpResource.Path(childComplexity), true
 
 	case "Intent.client":
 		if e.complexity.Intent.Client == nil {
@@ -479,7 +479,7 @@ type KafkaConfig {
     operations: [KafkaOperation!]
 }
 
-type HttpResources {
+type HttpResource {
     path: String
     methods: [HttpMethod!]
 }
@@ -500,7 +500,7 @@ type Intent {
     server: OtterizeServiceIdentity!
     type: IntentType
     kafkaTopics: [KafkaConfig!]
-    httpResources: [HttpResources!]
+    httpResources: [HttpResource!]
 }
 
 type ServiceIntents {
@@ -849,7 +849,7 @@ func (ec *executionContext) _GroupVersionKind_kind(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _HttpResources_path(ctx context.Context, field graphql.CollectedField, obj *model.HTTPResources) (ret graphql.Marshaler) {
+func (ec *executionContext) _HttpResource_path(ctx context.Context, field graphql.CollectedField, obj *model.HTTPResource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -857,7 +857,7 @@ func (ec *executionContext) _HttpResources_path(ctx context.Context, field graph
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "HttpResources",
+		Object:     "HttpResource",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -881,7 +881,7 @@ func (ec *executionContext) _HttpResources_path(ctx context.Context, field graph
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _HttpResources_methods(ctx context.Context, field graphql.CollectedField, obj *model.HTTPResources) (ret graphql.Marshaler) {
+func (ec *executionContext) _HttpResource_methods(ctx context.Context, field graphql.CollectedField, obj *model.HTTPResource) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -889,7 +889,7 @@ func (ec *executionContext) _HttpResources_methods(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "HttpResources",
+		Object:     "HttpResource",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -1074,9 +1074,9 @@ func (ec *executionContext) _Intent_httpResources(ctx context.Context, field gra
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]model.HTTPResources)
+	res := resTmp.([]model.HTTPResource)
 	fc.Result = res
-	return ec.marshalOHttpResources2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResourcesᚄ(ctx, field.Selections, res)
+	return ec.marshalOHttpResource2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResourceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _KafkaConfig_name(ctx context.Context, field graphql.CollectedField, obj *model.KafkaConfig) (ret graphql.Marshaler) {
@@ -3331,26 +3331,26 @@ func (ec *executionContext) _GroupVersionKind(ctx context.Context, sel ast.Selec
 	return out
 }
 
-var httpResourcesImplementors = []string{"HttpResources"}
+var httpResourceImplementors = []string{"HttpResource"}
 
-func (ec *executionContext) _HttpResources(ctx context.Context, sel ast.SelectionSet, obj *model.HTTPResources) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, httpResourcesImplementors)
+func (ec *executionContext) _HttpResource(ctx context.Context, sel ast.SelectionSet, obj *model.HTTPResource) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, httpResourceImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("HttpResources")
+			out.Values[i] = graphql.MarshalString("HttpResource")
 		case "path":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._HttpResources_path(ctx, field, obj)
+				return ec._HttpResource_path(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
 
 		case "methods":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._HttpResources_methods(ctx, field, obj)
+				return ec._HttpResource_methods(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -4270,8 +4270,8 @@ func (ec *executionContext) marshalNHttpMethod2githubᚗcomᚋotterizeᚋnetwork
 	return v
 }
 
-func (ec *executionContext) marshalNHttpResources2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResources(ctx context.Context, sel ast.SelectionSet, v model.HTTPResources) graphql.Marshaler {
-	return ec._HttpResources(ctx, sel, &v)
+func (ec *executionContext) marshalNHttpResource2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResource(ctx context.Context, sel ast.SelectionSet, v model.HTTPResource) graphql.Marshaler {
+	return ec._HttpResource(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNIntent2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntent(ctx context.Context, sel ast.SelectionSet, v model.Intent) graphql.Marshaler {
@@ -4942,7 +4942,7 @@ func (ec *executionContext) marshalOHttpMethod2ᚕgithubᚗcomᚋotterizeᚋnetw
 	return ret
 }
 
-func (ec *executionContext) marshalOHttpResources2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResourcesᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HTTPResources) graphql.Marshaler {
+func (ec *executionContext) marshalOHttpResource2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResourceᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HTTPResource) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -4969,7 +4969,7 @@ func (ec *executionContext) marshalOHttpResources2ᚕgithubᚗcomᚋotterizeᚋn
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNHttpResources2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResources(ctx, sel, v[i])
+			ret[i] = ec.marshalNHttpResource2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResource(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

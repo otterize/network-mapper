@@ -27,6 +27,7 @@ jobs:
           - mapper
           - sniffer
           - kafka-watcher
+          - istio-watcher
 
     steps:
       - name: Checkout
@@ -102,3 +103,4 @@ jobs:
           retag_image_as_latest mapper
           retag_image_as_latest sniffer
           retag_image_as_latest kafka-watcher
+          retag_image_as_latest istio-watcher

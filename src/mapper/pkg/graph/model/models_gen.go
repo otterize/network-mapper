@@ -29,7 +29,7 @@ type GroupVersionKind struct {
 	Kind    string  `json:"kind"`
 }
 
-type HTTPResources struct {
+type HTTPResource struct {
 	Path    *string      `json:"path"`
 	Methods []HTTPMethod `json:"methods"`
 }
@@ -39,7 +39,7 @@ type Intent struct {
 	Server        *OtterizeServiceIdentity `json:"server"`
 	Type          *IntentType              `json:"type"`
 	KafkaTopics   []KafkaConfig            `json:"kafkaTopics"`
-	HTTPResources []HTTPResources          `json:"httpResources"`
+	HTTPResources []HTTPResource           `json:"httpResources"`
 }
 
 type IstioConnection struct {

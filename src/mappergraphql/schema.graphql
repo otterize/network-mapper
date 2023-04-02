@@ -68,7 +68,7 @@ type KafkaConfig {
     operations: [KafkaOperation!]
 }
 
-type HttpResources {
+type HttpResource {
     path: String
     methods: [HttpMethod!]
 }
@@ -89,7 +89,7 @@ type Intent {
     server: OtterizeServiceIdentity!
     type: IntentType
     kafkaTopics: [KafkaConfig!]
-    httpResources: [HttpResources!]
+    httpResources: [HttpResource!]
 }
 
 type ServiceIntents {

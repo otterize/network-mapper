@@ -42,6 +42,12 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 						return lo.ToPtr(modelKafkaConfToAPI(item))
 					},
 				),
+				Resources: lo.Map(intent.Intent.HTTPResources,
+					func(item model.HTTPResource, _ int) *cloudclient.HTTPConfigInput {
+						return &*cloudclient.HTTPConfigInput{}
+						return lo.ToPtr(modelKafkaConfToAPI(item))
+					},
+				),
 			},
 		}
 	})
