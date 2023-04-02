@@ -42,7 +42,6 @@ const (
 	IstioProxyTotalRequestsCMD = "pilot-agent request GET stats?format=json&filter=istio_requests_total"
 	IstioSidecarContainerName  = "istio-proxy"
 	IstioPodsLabelSelector     = "security.istio.io/tlsMode"
-	IntentsKind                = "ClientIntents"
 	MetricsBufferedChannelSize = 100
 )
 
@@ -277,7 +276,7 @@ func (m *IstioWatcher) ReportResults(ctx context.Context) {
 	}
 }
 
-func (m *IstioWatcher) RunForever(ctx context.Context) {
+func (m *IstioWatcher) RunForever(ctx context.Context) error {
 	go m.ReportResults(ctx)
 	cooldownPeriod := viper.GetDuration(config.CooldownIntervalKey)
 	for {
@@ -288,4 +287,5 @@ func (m *IstioWatcher) RunForever(ctx context.Context) {
 		logrus.Infof("Istio mapping stopped, will retry after cool down period (%s)...", cooldownPeriod)
 		time.Sleep(cooldownPeriod)
 	}
+
 }
