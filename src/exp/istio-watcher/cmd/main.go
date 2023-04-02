@@ -21,6 +21,6 @@ func main() {
 	}
 
 	if err := istioWatcher.RunForever(context.Background()); err != nil {
-		panic(err)
+		logrus.WithError(err).Panic()
 	}
 }

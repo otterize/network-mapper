@@ -7,7 +7,7 @@ import (
 	"errors"
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
-	mapperclient2 "github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
+	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -50,13 +50,13 @@ var (
 )
 
 var (
-	ConnectionInfoInSufficient = errors.New("connection info partial or empty")
+	ConnectionInfoInsufficient = errors.New("connection info partial or empty")
 )
 
 type IstioWatcher struct {
 	clientset    *kubernetes.Clientset
 	config       *rest.Config
-	mapperClient mapperclient2.MapperClient
+	mapperClient mapperclient.MapperClient
 	connections  map[*ConnectionWithPath]time.Time
 }
 
@@ -100,7 +100,7 @@ type Metric struct {
 	Name string `json:"name"`
 }
 
-func NewWatcher(mapperClient mapperclient2.MapperClient) (*IstioWatcher, error) {
+func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
 	//conf, err := rest.InClusterConfig()
 	//if err != nil {
 	//	return nil, err
@@ -189,7 +189,6 @@ func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev
 			Container: IstioSidecarContainerName,
 		}, scheme.ParameterCodec)
 
-	// TODO: use error group context in exec
 	exec, err := remotecommand.NewSPDYExecutor(m.config, "POST", req.URL())
 	if err != nil {
 		return err
@@ -228,7 +227,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 		case metrics := <-metricsChan:
 			for _, metric := range metrics.Stats {
 				conn, err := m.buildConnectionFromMetric(metric)
-				if err != nil && errors.Is(err, ConnectionInfoInSufficient) {
+				if err != nil && errors.Is(err, ConnectionInfoInsufficient) {
 					continue
 				}
 				if err != nil {
@@ -247,13 +246,13 @@ func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (*ConnectionWith
 	conn := &ConnectionWithPath{}
 	err := EnvoyConnectionMetricRegex.MatchToTarget(metric.Name, conn)
 	if err != nil && errors.Is(err, &regroup.NoMatchFoundError{}) {
-		return nil, ConnectionInfoInSufficient
+		return nil, ConnectionInfoInsufficient
 	}
 	if err != nil {
 		return nil, err
 	}
 	if conn.hasMissingInfo() {
-		return nil, ConnectionInfoInSufficient
+		return nil, ConnectionInfoInsufficient
 	}
 
 	conn.omitMetricsFieldsFromConnection()
@@ -270,7 +269,7 @@ func (m *IstioWatcher) ReportResults(ctx context.Context) {
 
 		logrus.Infof("Reporting %d connections", len(connections))
 		results := ToGraphQLIstioConnections(connections)
-		if err := m.mapperClient.ReportIstioConnections(ctx, mapperclient2.IstioConnectionResults{Results: results}); err != nil {
+		if err := m.mapperClient.ReportIstioConnections(ctx, mapperclient.IstioConnectionResults{Results: results}); err != nil {
 			logrus.WithError(err).Errorf("Failed reporting Istio connection results to mapper")
 		}
 	}
