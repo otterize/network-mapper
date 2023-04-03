@@ -5,7 +5,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
 	"github.com/sirupsen/logrus"
@@ -74,7 +74,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	}
 	s.PrintCapturedRequests()
 	results := getCaptureResults(s.capturedRequests)
-	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
+	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(sharedconfig.CallsTimeoutKey))
 	defer cancelFunc()
 
 	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
@@ -126,9 +126,9 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 		select {
 		case packet := <-packetsChan:
 			s.HandlePacket(packet)
-		case <-time.After(viper.GetDuration(config.ReportIntervalKey)):
+		case <-time.After(viper.GetDuration(sharedconfig.ReportIntervalKey)):
 		}
-		if s.lastReportTime.Add(viper.GetDuration(config.ReportIntervalKey)).Before(time.Now()) {
+		if s.lastReportTime.Add(viper.GetDuration(sharedconfig.ReportIntervalKey)).Before(time.Now()) {
 			err := s.socketScanner.ScanProcDir()
 			if err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")

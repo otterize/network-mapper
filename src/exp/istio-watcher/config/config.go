@@ -1,33 +1,18 @@
 package config
 
 import (
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/spf13/viper"
 	"strings"
-	"time"
-)
-
-const (
-	EnvPrefix               = "OTTERIZE"
-	MapperApiUrlKey         = "mapper-api-url"
-	MapperApiUrlDefault     = "http://mapper:9090/query"
-	ReportIntervalKey       = "report-interval"
-	ReportIntervalDefault   = 10 * time.Second
-	CallsTimeoutKey         = "calls-timeout"
-	CallsTimeoutDefault     = 5 * time.Second
-	CooldownIntervalKey     = "cooldown-interval"
-	CooldownIntervalDefault = 10 * time.Second
-	DebugKey                = "debug"
-	DebugDefault            = false
-	NamespaceKey            = "namespace"
 )
 
 func init() {
-	viper.SetDefault(MapperApiUrlKey, MapperApiUrlDefault)
-	viper.SetDefault(ReportIntervalKey, ReportIntervalDefault)
-	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
-	viper.SetDefault(CooldownIntervalKey, CooldownIntervalDefault)
-	viper.SetDefault(DebugKey, DebugDefault)
-	viper.SetEnvPrefix(EnvPrefix)
+	viper.SetDefault(sharedconfig.MapperApiUrlKey, sharedconfig.MapperApiUrlDefault)
+	viper.SetDefault(sharedconfig.ReportIntervalKey, sharedconfig.ReportIntervalDefault)
+	viper.SetDefault(sharedconfig.CallsTimeoutKey, sharedconfig.CallsTimeoutDefault)
+	viper.SetDefault(sharedconfig.CooldownIntervalKey, sharedconfig.CooldownIntervalDefault)
+	viper.SetDefault(sharedconfig.DebugKey, sharedconfig.DebugDefault)
+	viper.SetEnvPrefix(sharedconfig.EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 }

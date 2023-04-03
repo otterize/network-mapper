@@ -236,7 +236,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 				m.connections[conn] = time.Now()
 			}
 		case <-done:
-			logrus.Debugf("Got done signal")
+			logrus.Infoln("Got done signal")
 			return nil
 		}
 	}
@@ -245,7 +245,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (*ConnectionWithPath, error) {
 	conn := &ConnectionWithPath{}
 	err := EnvoyConnectionMetricRegex.MatchToTarget(metric.Name, conn)
-	if err != nil && errors.Is(err, &regroup.NoMatchFoundError{}) {
+	if err != nil && errors.As(err, &regroup.NoMatchFoundError{}) {
 		return nil, ConnectionInfoInsufficient
 	}
 	if err != nil {
