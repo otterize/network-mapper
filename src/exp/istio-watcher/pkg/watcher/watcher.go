@@ -136,8 +136,6 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 	sendersErrGroup, sendersCtx := errgroup.WithContext(ctx)
 	receiversErrGroup, _ := errgroup.WithContext(ctx)
 	metricsChan := make(chan *EnvoyMetrics, MetricsBufferedChannelSize)
-	done := make(chan int)
-	defer close(done)
 
 	podList, err := m.clientset.CoreV1().Pods(namespace).List(ctx, v1.ListOptions{LabelSelector: IstioPodsLabelSelector})
 	if err != nil {
@@ -158,7 +156,7 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 	receiversErrGroup.Go(func() error {
 		// Function call below updates a map which isn't concurrent-safe.
 		// Needs to be taken into consideration if the code should ever change to use multiple goroutines
-		if err := m.convertMetricsToConnections(metricsChan, done); err != nil {
+		if err := m.convertMetricsToConnections(sendersCtx, metricsChan); err != nil {
 			return err
 		}
 		return nil
@@ -167,7 +165,7 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 	if err := sendersErrGroup.Wait(); err != nil {
 		return err
 	}
-	done <- 0
+	sendersCtx.Done()
 
 	if err := receiversErrGroup.Wait(); err != nil {
 		return err
@@ -222,7 +220,7 @@ func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev
 	return nil
 }
 
-func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetrics, done <-chan int) error {
+func (m *IstioWatcher) convertMetricsToConnections(sendersCtx context.Context, metricsChan <-chan *EnvoyMetrics) error {
 	for {
 		select {
 		case metrics := <-metricsChan:
@@ -236,8 +234,8 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 				}
 				m.connections[conn] = time.Now()
 			}
-		case <-done:
-			logrus.Infoln("Got done signal")
+		case <-sendersCtx.Done():
+			logrus.Debugln("Got done signal")
 			return nil
 		}
 	}
