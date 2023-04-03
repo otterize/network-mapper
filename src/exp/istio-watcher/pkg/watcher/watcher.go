@@ -8,6 +8,7 @@ import (
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -261,7 +262,7 @@ func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (*ConnectionWith
 
 func (m *IstioWatcher) ReportResults(ctx context.Context) {
 	for {
-		time.Sleep(viper.GetDuration(config.ReportIntervalKey))
+		time.Sleep(viper.GetDuration(sharedconfig.ReportIntervalKey))
 		connections := m.Flush()
 		if len(connections) == 0 {
 			continue
@@ -277,7 +278,7 @@ func (m *IstioWatcher) ReportResults(ctx context.Context) {
 
 func (m *IstioWatcher) RunForever(ctx context.Context) error {
 	go m.ReportResults(ctx)
-	cooldownPeriod := viper.GetDuration(config.CooldownIntervalKey)
+	cooldownPeriod := viper.GetDuration(sharedconfig.CooldownIntervalKey)
 	for {
 		logrus.Info("Retrieving 'istio_total_requests' metric from Istio sidecars")
 		if err := m.CollectIstioConnectionMetrics(ctx, viper.GetString(config.NamespaceKey)); err != nil {
