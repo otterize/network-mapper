@@ -22,7 +22,7 @@ func modelKafkaConfToAPI(kc model.KafkaConfig) cloudclient.KafkaConfigInput {
 func modelHTTPResourceToAPI(resource model.HTTPResource) cloudclient.HTTPConfigInput {
 	return cloudclient.HTTPConfigInput{
 		Path: resource.Path,
-		Method: lo.Map(resource.Methods, func(method model.HTTPMethod, _ int) *cloudclient.HTTPMethod {
+		Methods: lo.Map(resource.Methods, func(method model.HTTPMethod, _ int) *cloudclient.HTTPMethod {
 			return lo.ToPtr(cloudclient.HTTPMethod(method))
 		}),
 	}
