@@ -5,8 +5,8 @@ import (
 	"context"
 	"errors"
 	"github.com/oriser/regroup"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -85,7 +85,7 @@ func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record stri
 func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedName) error {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:       true,
-		SinceSeconds: lo.ToPtr(int64(math.Ceil(viper.GetDuration(config.CooldownIntervalKey).Seconds()))),
+		SinceSeconds: lo.ToPtr(int64(math.Ceil(viper.GetDuration(sharedconfig.CooldownIntervalKey).Seconds()))),
 	}
 	req := w.clientset.CoreV1().Pods(kafkaServer.Namespace).GetLogs(kafkaServer.Name, &podLogOpts)
 	reader, err := req.Stream(ctx)
@@ -106,7 +106,7 @@ func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedNam
 
 func (w *Watcher) WatchForever(ctx context.Context, kafkaServer types.NamespacedName) {
 	log := logrus.WithField("pod", kafkaServer)
-	cooldownPeriod := viper.GetDuration(config.CooldownIntervalKey)
+	cooldownPeriod := viper.GetDuration(sharedconfig.CooldownIntervalKey)
 	for {
 		log.Info("Watching logs")
 		err := w.WatchOnce(ctx, kafkaServer)
@@ -150,7 +150,7 @@ func (w *Watcher) RunForever(ctx context.Context) error {
 	}
 
 	for {
-		time.Sleep(viper.GetDuration(config.ReportIntervalKey))
+		time.Sleep(viper.GetDuration(sharedconfig.ReportIntervalKey))
 		if err := w.ReportResults(ctx); err != nil {
 			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
 		}
