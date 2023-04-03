@@ -75,11 +75,8 @@ func (p *ConnectionWithPath) hasMissingInfo() bool {
 			return true
 		}
 	}
-	if p.RequestPath == "" {
-		return true
-	}
 
-	return false
+	return p.RequestPath == ""
 }
 
 // omitMetricsFieldsFromConnection drops the metric name and uses the value alone in the connection

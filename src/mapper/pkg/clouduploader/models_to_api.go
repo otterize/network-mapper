@@ -19,15 +19,6 @@ func modelKafkaConfToAPI(kc model.KafkaConfig) cloudclient.KafkaConfigInput {
 	}
 }
 
-func modelHTTPResourceToAPI(resource model.HTTPResource) cloudclient.HTTPConfigInput {
-	return cloudclient.HTTPConfigInput{
-		Path: resource.Path,
-		Methods: lo.Map(resource.Methods, func(method model.HTTPMethod, _ int) *cloudclient.HTTPMethod {
-			return lo.ToPtr(cloudclient.HTTPMethod(method))
-		}),
-	}
-}
-
 func modelIntentTypeToAPI(it *model.IntentType) *cloudclient.IntentType {
 	if it == nil {
 		return nil
