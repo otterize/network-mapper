@@ -246,7 +246,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (*ConnectionWithPath, error) {
 	conn := &ConnectionWithPath{}
 	err := EnvoyConnectionMetricRegex.MatchToTarget(metric.Name, conn)
-	if err != nil && errors.As(err, &regroup.NoMatchFoundError{}) {
+	if err != nil && errors.Is(err, &regroup.NoMatchFoundError{}) {
 		return nil, ConnectionInfoInsufficient
 	}
 	if err != nil {
