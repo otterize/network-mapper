@@ -1,24 +1,20 @@
 package config
 
 import (
-	"github.com/otterize/network-mapper/src/shared/config"
 	"github.com/spf13/viper"
-	"strings"
+	"time"
 )
 
 const (
-	KafkaServersKey = "kafka-servers"
+	KafkaServersKey              = "kafka-servers"
+	KafkaReportIntervalKey       = "kafka-report-interval"
+	KafkaReportIntervalDefault   = 10 * time.Second
+	KafkaCooldownIntervalKey     = "kafka-cooldown-interval"
+	KafkaCooldownIntervalDefault = 10 * time.Second
 )
 
 func init() {
-	viper.SetDefault(config.MapperApiUrlKey, config.MapperApiUrlDefault)
-	viper.SetDefault(config.ReportIntervalKey, config.ReportIntervalDefault)
-	viper.SetDefault(config.CooldownIntervalKey, config.CooldownIntervalDefault)
-	viper.SetDefault(config.DebugKey, config.DebugDefault)
-	viper.SetEnvPrefix(config.EnvPrefix)
-
-	// Kafka watcher specific flags
+	viper.SetDefault(KafkaReportIntervalKey, KafkaReportIntervalDefault)
+	viper.SetDefault(KafkaCooldownIntervalKey, KafkaCooldownIntervalDefault)
 	viper.SetDefault(KafkaServersKey, []string{})
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.AutomaticEnv()
 }

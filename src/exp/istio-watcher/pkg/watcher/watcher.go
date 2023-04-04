@@ -8,7 +8,6 @@ import (
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
-	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -99,13 +98,18 @@ type Metric struct {
 }
 
 func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
-	//conf, err := rest.InClusterConfig()
-	//if err != nil {
-	//	return nil, err
-	//}
-	conf, err := clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
-	if err != nil {
+	conf, err := rest.InClusterConfig()
+
+	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
 		return nil, err
+	}
+
+	// We try building the REST Config from ./kube/config to support running the watcher locally
+	if conf == nil {
+		conf, err = clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	clientset, err := kubernetes.NewForConfig(conf)
@@ -257,9 +261,10 @@ func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (*ConnectionWith
 
 func (m *IstioWatcher) ReportResults(ctx context.Context) {
 	for {
-		time.Sleep(viper.GetDuration(sharedconfig.ReportIntervalKey))
+		time.Sleep(viper.GetDuration(config.IstioReportIntervalKey))
 		connections := m.Flush()
 		if len(connections) == 0 {
+			logrus.Debugln("No connections found in metrics - skipping report")
 			continue
 		}
 
@@ -273,7 +278,7 @@ func (m *IstioWatcher) ReportResults(ctx context.Context) {
 
 func (m *IstioWatcher) RunForever(ctx context.Context) error {
 	go m.ReportResults(ctx)
-	cooldownPeriod := viper.GetDuration(sharedconfig.CooldownIntervalKey)
+	cooldownPeriod := viper.GetDuration(config.IstioCooldownIntervalKey)
 	for {
 		logrus.Info("Retrieving 'istio_total_requests' metric from Istio sidecars")
 		if err := m.CollectIstioConnectionMetrics(ctx, viper.GetString(config.NamespaceKey)); err != nil {
@@ -282,5 +287,4 @@ func (m *IstioWatcher) RunForever(ctx context.Context) error {
 		logrus.Infof("Istio mapping stopped, will retry after cool down period (%s)...", cooldownPeriod)
 		time.Sleep(cooldownPeriod)
 	}
-
 }
