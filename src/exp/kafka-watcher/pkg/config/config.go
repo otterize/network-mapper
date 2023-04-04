@@ -13,7 +13,6 @@ const (
 func init() {
 	viper.SetDefault(config.MapperApiUrlKey, config.MapperApiUrlDefault)
 	viper.SetDefault(config.ReportIntervalKey, config.ReportIntervalDefault)
-	viper.SetDefault(config.CallsTimeoutKey, config.CallsTimeoutDefault)
 	viper.SetDefault(config.CooldownIntervalKey, config.CooldownIntervalDefault)
 	viper.SetDefault(config.DebugKey, config.DebugDefault)
 	viper.SetEnvPrefix(config.EnvPrefix)

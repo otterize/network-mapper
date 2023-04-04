@@ -13,8 +13,6 @@ const (
 	DebugDefault            = false
 	ReportIntervalKey       = "report-interval"
 	ReportIntervalDefault   = 10 * time.Second
-	CallsTimeoutKey         = "calls-timeout"
-	CallsTimeoutDefault     = 5 * time.Second
 	CooldownIntervalKey     = "cooldown-interval"
 	CooldownIntervalDefault = 10 * time.Second
 	EnvPrefix               = "OTTERIZE"

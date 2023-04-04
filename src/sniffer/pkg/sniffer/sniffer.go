@@ -6,6 +6,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
 	"github.com/sirupsen/logrus"
@@ -74,7 +75,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	}
 	s.PrintCapturedRequests()
 	results := getCaptureResults(s.capturedRequests)
-	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(sharedconfig.CallsTimeoutKey))
+	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
 	defer cancelFunc()
 
 	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(s.capturedRequests))
