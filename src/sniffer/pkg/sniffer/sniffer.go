@@ -5,7 +5,6 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
@@ -127,9 +126,9 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 		select {
 		case packet := <-packetsChan:
 			s.HandlePacket(packet)
-		case <-time.After(viper.GetDuration(sharedconfig.ReportIntervalKey)):
+		case <-time.After(viper.GetDuration(config.SnifferReportIntervalKey)):
 		}
-		if s.lastReportTime.Add(viper.GetDuration(sharedconfig.ReportIntervalKey)).Before(time.Now()) {
+		if s.lastReportTime.Add(viper.GetDuration(config.SnifferReportIntervalKey)).Before(time.Now()) {
 			err := s.socketScanner.ScanProcDir()
 			if err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")
