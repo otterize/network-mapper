@@ -4,6 +4,7 @@ import (
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
+	"golang.org/x/exp/slices"
 	"k8s.io/apimachinery/pkg/types"
 	"sync"
 	"time"
@@ -59,6 +60,36 @@ func mergeKafkaTopics(existingTopics []model.KafkaConfig, newTopics []model.Kafk
 	return lo.Values(existingTopicsByName)
 }
 
+func mergeHTTPResources(existingResources, newResources []model.HTTPResource) []model.HTTPResource {
+	existingResourcesMap := lo.SliceToMap(existingResources, func(resource model.HTTPResource) (string, []model.HTTPMethod) {
+		return resource.Path, resource.Methods
+	})
+	newResourcesMap := lo.SliceToMap(newResources, func(resource model.HTTPResource) (string, []model.HTTPMethod) {
+		return resource.Path, resource.Methods
+	})
+	// Merge methods for existing resources, add path:methods key-value for non-existing ones
+	for path, methods := range newResourcesMap {
+		currMethods, ok := existingResourcesMap[path]
+		if !ok {
+			existingResourcesMap[path] = methods
+		} else {
+			for _, method := range methods {
+				if !slices.Contains(currMethods, method) {
+					currMethods = append(currMethods, method)
+				}
+			}
+			existingResourcesMap[path] = currMethods
+		}
+	}
+
+	return lo.MapToSlice(existingResourcesMap, func(path string, methods []model.HTTPMethod) model.HTTPResource {
+		return model.HTTPResource{
+			Path:    path,
+			Methods: methods,
+		}
+	})
+}
+
 func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.Time, intent model.Intent) {
 	key := IntentsStoreKey{
 		Source:      intent.Client.AsNamespacedName(),
@@ -80,6 +111,8 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 		existingIntent.Timestamp = newTimestamp
 	}
 	existingIntent.Intent.KafkaTopics = mergeKafkaTopics(existingIntent.Intent.KafkaTopics, intent.KafkaTopics)
+	existingIntent.Intent.HTTPResources = mergeHTTPResources(existingIntent.Intent.HTTPResources, intent.HTTPResources)
+
 	store[key] = existingIntent
 }
 

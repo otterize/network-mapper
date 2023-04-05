@@ -222,7 +222,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 			},
 			Type: lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources: lo.Map(result.RequestPaths, func(path string, i int) model.HTTPResource {
-				return model.HTTPResource{Path: lo.ToPtr(path)}
+				return model.HTTPResource{Path: path}
 			}),
 		})
 	}

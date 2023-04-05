@@ -69,7 +69,7 @@ type KafkaConfig {
 }
 
 type HttpResource {
-    path: String
+    path: String!
     methods: [HttpMethod!]
 }
 
@@ -82,6 +82,7 @@ enum HttpMethod {
     TRACE
     PATCH
     CONNECT
+    ALL
 }
 
 type Intent {

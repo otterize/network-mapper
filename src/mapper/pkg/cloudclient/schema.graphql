@@ -183,12 +183,12 @@ type Environment {
 }
 
 type HTTPConfig {
-	path: String
+	path: String!
 	methods: [HTTPMethod!]
 }
 
 input HTTPConfigInput {
-	path: String
+	path: String!
 	methods: [HTTPMethod!]
 }
 
@@ -201,6 +201,7 @@ enum HTTPMethod {
 	TRACE
 	PATCH
 	CONNECT
+	ALL
 }
 
 input InputAccessGraphFilter {

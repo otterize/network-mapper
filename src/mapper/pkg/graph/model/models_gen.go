@@ -30,7 +30,7 @@ type GroupVersionKind struct {
 }
 
 type HTTPResource struct {
-	Path    *string      `json:"path"`
+	Path    string       `json:"path"`
 	Methods []HTTPMethod `json:"methods"`
 }
 
@@ -111,6 +111,7 @@ const (
 	HTTPMethodTrace   HTTPMethod = "TRACE"
 	HTTPMethodPatch   HTTPMethod = "PATCH"
 	HTTPMethodConnect HTTPMethod = "CONNECT"
+	HTTPMethodAll     HTTPMethod = "ALL"
 )
 
 var AllHTTPMethod = []HTTPMethod{
@@ -122,11 +123,12 @@ var AllHTTPMethod = []HTTPMethod{
 	HTTPMethodTrace,
 	HTTPMethodPatch,
 	HTTPMethodConnect,
+	HTTPMethodAll,
 }
 
 func (e HTTPMethod) IsValid() bool {
 	switch e {
-	case HTTPMethodGet, HTTPMethodPost, HTTPMethodPut, HTTPMethodDelete, HTTPMethodOptions, HTTPMethodTrace, HTTPMethodPatch, HTTPMethodConnect:
+	case HTTPMethodGet, HTTPMethodPost, HTTPMethodPut, HTTPMethodDelete, HTTPMethodOptions, HTTPMethodTrace, HTTPMethodPatch, HTTPMethodConnect, HTTPMethodAll:
 		return true
 	}
 	return false

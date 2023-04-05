@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func ToGraphQLIstioConnections(connections map[*ConnectionWithPath]time.Time) []mapperclient.IstioConnection {
+func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []mapperclient.IstioConnection {
 	connectionPairToConn := map[string]mapperclient.IstioConnection{}
 	for connWithPath, timestamp := range connections {
 		connectionPair := fmt.Sprintf("%s.%s", connWithPath.SourceWorkload, connWithPath.DestinationWorkload)

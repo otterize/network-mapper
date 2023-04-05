@@ -50,6 +50,7 @@ const (
 	HTTPMethodTrace   HTTPMethod = "TRACE"
 	HTTPMethodPatch   HTTPMethod = "PATCH"
 	HTTPMethodConnect HTTPMethod = "CONNECT"
+	HTTPMethodAll     HTTPMethod = "ALL"
 )
 
 type IntentInput struct {

@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/logwatcher"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -47,7 +47,7 @@ func main() {
 		logrus.WithError(err).Panic()
 	}
 
-	if err := w.RunForever(context.Background()); err != nil {
+	if err := w.RunForever(signals.SetupSignalHandler()); err != nil {
 		logrus.WithError(err).Panic()
 	}
 }

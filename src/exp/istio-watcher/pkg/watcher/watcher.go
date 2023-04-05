@@ -57,7 +57,7 @@ type IstioWatcher struct {
 	clientset    *kubernetes.Clientset
 	config       *rest.Config
 	mapperClient mapperclient.MapperClient
-	connections  map[*ConnectionWithPath]time.Time
+	connections  map[ConnectionWithPath]time.Time
 }
 
 type ConnectionWithPath struct {
@@ -121,21 +121,23 @@ func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
 		clientset:    clientset,
 		config:       conf,
 		mapperClient: mapperClient,
-		connections:  map[*ConnectionWithPath]time.Time{},
+		connections:  map[ConnectionWithPath]time.Time{},
 	}
 
 	return m, nil
 }
 
-func (m *IstioWatcher) Flush() map[*ConnectionWithPath]time.Time {
+func (m *IstioWatcher) Flush() map[ConnectionWithPath]time.Time {
 	r := m.connections
-	m.connections = map[*ConnectionWithPath]time.Time{}
+	m.connections = map[ConnectionWithPath]time.Time{}
 	return r
 }
 
 func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namespace string) error {
 	sendersErrGroup, sendersCtx := errgroup.WithContext(ctx)
-	receiversErrGroup, _ := errgroup.WithContext(ctx)
+	sendersErrGroup.SetLimit(10)
+
+	receiverErrGroup, _ := errgroup.WithContext(ctx)
 	metricsChan := make(chan *EnvoyMetrics, MetricsBufferedChannelSize)
 
 	podList, err := m.clientset.CoreV1().Pods(namespace).List(ctx, v1.ListOptions{LabelSelector: IstioPodsLabelSelector})
@@ -148,16 +150,16 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 		curr := pod
 		sendersErrGroup.Go(func() error {
 			if err := m.getEnvoyMetricsFromSidecar(sendersCtx, curr, metricsChan); err != nil {
-				logrus.Errorf("Failed fetching request metrics from pod %s", curr.Name)
-				return err
+				logrus.WithError(err).Errorf("Failed fetching request metrics from pod %s", curr.Name)
+				return nil // Intentionally logging error and returning nil to not cancel err group context
 			}
 			return nil
 		})
 	}
-	receiversErrGroup.Go(func() error {
+	receiverErrGroup.Go(func() error {
 		// Function call below updates a map which isn't concurrent-safe.
 		// Needs to be taken into consideration if the code should ever change to use multiple goroutines
-		if err := m.convertMetricsToConnections(sendersCtx, metricsChan); err != nil {
+		if err := m.convertMetricsToConnections(metricsChan); err != nil {
 			return err
 		}
 		return nil
@@ -166,13 +168,12 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 	if err := sendersErrGroup.Wait(); err != nil {
 		return err
 	}
-	sendersCtx.Done()
+	close(metricsChan)
 
-	if err := receiversErrGroup.Wait(); err != nil {
+	if err := receiverErrGroup.Wait(); err != nil {
 		return err
 	}
 
-	close(metricsChan)
 	return nil
 }
 
@@ -194,9 +195,12 @@ func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev
 		return err
 	}
 
+	timeoutCtx, cancel := context.WithTimeout(ctx, viper.GetDuration(config.MetricFetchTimeoutKey))
+	defer cancel()
+
 	var outBuf bytes.Buffer
 	streamOpts := remotecommand.StreamOptions{Stdout: &outBuf}
-	err = exec.StreamWithContext(ctx, streamOpts)
+	err = exec.StreamWithContext(timeoutCtx, streamOpts)
 	if err != nil {
 		return err
 	}
@@ -221,38 +225,37 @@ func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev
 	return nil
 }
 
-func (m *IstioWatcher) convertMetricsToConnections(sendersCtx context.Context, metricsChan <-chan *EnvoyMetrics) error {
+func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetrics) error {
 	for {
-		select {
-		case metrics := <-metricsChan:
-			for _, metric := range metrics.Stats {
-				conn, err := m.buildConnectionFromMetric(metric)
-				if err != nil && errors.Is(err, ConnectionInfoInsufficient) {
-					continue
-				}
-				if err != nil {
-					return err
-				}
-				m.connections[conn] = time.Now()
-			}
-		case <-sendersCtx.Done():
-			logrus.Debugln("Got done signal")
+		metrics, more := <-metricsChan
+		if !more {
 			return nil
+		}
+
+		for _, metric := range metrics.Stats {
+			conn, err := m.buildConnectionFromMetric(metric)
+			if err != nil && errors.Is(err, ConnectionInfoInsufficient) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			m.connections[conn] = time.Now()
 		}
 	}
 }
 
-func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (*ConnectionWithPath, error) {
-	conn := &ConnectionWithPath{}
-	err := EnvoyConnectionMetricRegex.MatchToTarget(metric.Name, conn)
+func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (ConnectionWithPath, error) {
+	conn := ConnectionWithPath{}
+	err := EnvoyConnectionMetricRegex.MatchToTarget(metric.Name, &conn)
 	if err != nil && errors.Is(err, &regroup.NoMatchFoundError{}) {
-		return nil, ConnectionInfoInsufficient
+		return ConnectionWithPath{}, ConnectionInfoInsufficient
 	}
 	if err != nil {
-		return nil, err
+		return ConnectionWithPath{}, err
 	}
 	if conn.hasMissingInfo() {
-		return nil, ConnectionInfoInsufficient
+		return ConnectionWithPath{}, ConnectionInfoInsufficient
 	}
 
 	conn.omitMetricsFieldsFromConnection()
