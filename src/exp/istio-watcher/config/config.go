@@ -8,9 +8,9 @@ import (
 const (
 	NamespaceKey                 = "namespace"
 	IstioReportIntervalKey       = "istio-report-interval"
-	IstioReportIntervalDefault   = 5 * time.Second
+	IstioReportIntervalDefault   = 30 * time.Second
 	IstioCooldownIntervalKey     = "istio-cooldown-interval"
-	IstioCooldownIntervalDefault = 5 * time.Second
+	IstioCooldownIntervalDefault = 15 * time.Second
 	MetricFetchTimeoutKey        = "metric-fetch-timeout"
 	MetricFetchTimeoutDefault    = 10 * time.Second
 )
