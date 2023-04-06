@@ -2,34 +2,19 @@ package config
 
 import (
 	"github.com/spf13/viper"
-	"strings"
 	"time"
 )
 
 const (
-	EnvPrefix               = "OTTERIZE"
-	MapperApiUrlKey         = "mapper-api-url"
-	MapperApiUrlDefault     = "http://mapper:9090/query"
-	ReportIntervalKey       = "report-interval"
-	ReportIntervalDefault   = 10 * time.Second
-	CallsTimeoutKey         = "calls-timeout"
-	CallsTimeoutDefault     = 5 * time.Second
-	CooldownIntervalKey     = "cooldown-interval"
-	CooldownIntervalDefault = 10 * time.Second
-	DebugKey                = "debug"
-	DebugDefault            = false
-
-	KafkaServersKey = "kafka-servers"
+	KafkaServersKey              = "kafka-servers"
+	KafkaReportIntervalKey       = "kafka-report-interval"
+	KafkaReportIntervalDefault   = 10 * time.Second
+	KafkaCooldownIntervalKey     = "kafka-cooldown-interval"
+	KafkaCooldownIntervalDefault = 10 * time.Second
 )
 
 func init() {
-	viper.SetDefault(MapperApiUrlKey, MapperApiUrlDefault)
-	viper.SetDefault(ReportIntervalKey, ReportIntervalDefault)
-	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
-	viper.SetDefault(CooldownIntervalKey, CooldownIntervalDefault)
-	viper.SetDefault(DebugKey, DebugDefault)
+	viper.SetDefault(KafkaReportIntervalKey, KafkaReportIntervalDefault)
+	viper.SetDefault(KafkaCooldownIntervalKey, KafkaCooldownIntervalDefault)
 	viper.SetDefault(KafkaServersKey, []string{})
-	viper.SetEnvPrefix(EnvPrefix)
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.AutomaticEnv()
 }

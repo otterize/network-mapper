@@ -209,6 +209,26 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 	return true, nil
 }
 
+func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error) {
+	for _, result := range results.Results {
+		r.intentsHolder.AddIntent(result.LastSeen, model.Intent{
+			Client: &model.OtterizeServiceIdentity{
+				Name:      result.SrcWorkload,
+				Namespace: result.SrcWorkloadNamespace,
+			},
+			Server: &model.OtterizeServiceIdentity{
+				Name:      result.DstWorkload,
+				Namespace: result.DstWorkloadNamespace,
+			},
+			Type: lo.ToPtr(model.IntentTypeHTTP),
+			HTTPResources: lo.Map(result.RequestPaths, func(path string, i int) model.HTTPResource {
+				return model.HTTPResource{Path: path}
+			}),
+		})
+	}
+	return true, nil
+}
+
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {

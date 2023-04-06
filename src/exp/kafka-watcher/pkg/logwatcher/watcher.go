@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
-	mapperclient2 "github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -14,7 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	"math"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -40,14 +43,23 @@ type Watcher struct {
 	clientset    *kubernetes.Clientset
 	mu           sync.Mutex
 	seen         SeenRecordsStore
-	mapperClient mapperclient2.MapperClient
+	mapperClient mapperclient.MapperClient
 	kafkaServers []types.NamespacedName
 }
 
-func NewWatcher(mapperClient mapperclient2.MapperClient, kafkaServers []types.NamespacedName) (*Watcher, error) {
+func NewWatcher(mapperClient mapperclient.MapperClient, kafkaServers []types.NamespacedName) (*Watcher, error) {
 	conf, err := rest.InClusterConfig()
-	if err != nil {
+
+	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
 		return nil, err
+	}
+
+	// We try building the REST Config from ./kube/config to support running the watcher locally
+	if conf == nil {
+		conf, err = clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cs, err := kubernetes.NewForConfig(conf)
@@ -85,7 +97,7 @@ func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record stri
 func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedName) error {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:       true,
-		SinceSeconds: lo.ToPtr(int64(math.Ceil(viper.GetDuration(config.CooldownIntervalKey).Seconds()))),
+		SinceSeconds: lo.ToPtr(int64(math.Ceil(viper.GetDuration(config.KafkaCooldownIntervalKey).Seconds()))),
 	}
 	req := w.clientset.CoreV1().Pods(kafkaServer.Namespace).GetLogs(kafkaServer.Name, &podLogOpts)
 	reader, err := req.Stream(ctx)
@@ -106,7 +118,7 @@ func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedNam
 
 func (w *Watcher) WatchForever(ctx context.Context, kafkaServer types.NamespacedName) {
 	log := logrus.WithField("pod", kafkaServer)
-	cooldownPeriod := viper.GetDuration(config.CooldownIntervalKey)
+	cooldownPeriod := viper.GetDuration(config.KafkaCooldownIntervalKey)
 	for {
 		log.Info("Watching logs")
 		err := w.WatchOnce(ctx, kafkaServer)
@@ -130,8 +142,8 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 	records := w.Flush()
 	logrus.Infof("Reporting %d records", len(records))
 
-	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) mapperclient2.KafkaMapperResult {
-		return mapperclient2.KafkaMapperResult{
+	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) mapperclient.KafkaMapperResult {
+		return mapperclient.KafkaMapperResult{
 			SrcIp:           r.Host,
 			ServerPodName:   r.Server.Name,
 			ServerNamespace: r.Server.Namespace,
@@ -141,7 +153,7 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 		}
 	})
 
-	return w.mapperClient.ReportKafkaMapperResults(ctx, mapperclient2.KafkaMapperResults{Results: results})
+	return w.mapperClient.ReportKafkaMapperResults(ctx, mapperclient.KafkaMapperResults{Results: results})
 }
 
 func (w *Watcher) RunForever(ctx context.Context) error {
@@ -150,7 +162,7 @@ func (w *Watcher) RunForever(ctx context.Context) error {
 	}
 
 	for {
-		time.Sleep(viper.GetDuration(config.ReportIntervalKey))
+		time.Sleep(viper.GetDuration(config.KafkaCooldownIntervalKey))
 		if err := w.ReportResults(ctx); err != nil {
 			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
 		}

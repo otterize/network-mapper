@@ -46,6 +46,7 @@ type OtterizeServiceIdentity {
 
 enum IntentType {
     KAFKA
+    HTTP
 }
 
 enum KafkaOperation {
@@ -67,11 +68,29 @@ type KafkaConfig {
     operations: [KafkaOperation!]
 }
 
+type HttpResource {
+    path: String!
+    methods: [HttpMethod!]
+}
+
+enum HttpMethod {
+    GET
+    POST
+    PUT
+    DELETE
+    OPTIONS
+    TRACE
+    PATCH
+    CONNECT
+    ALL
+}
+
 type Intent {
     client: OtterizeServiceIdentity!
     server: OtterizeServiceIdentity!
     type: IntentType
     kafkaTopics: [KafkaConfig!]
+    httpResources: [HttpResource!]
 }
 
 type ServiceIntents {
@@ -90,6 +109,19 @@ input KafkaMapperResult {
 
 input KafkaMapperResults {
     results: [KafkaMapperResult!]!
+}
+
+input IstioConnection {
+    srcWorkload: String!
+    srcWorkloadNamespace: String!
+    dstWorkload: String!
+    dstWorkloadNamespace: String!
+    requestPaths: [String!]!
+    lastSeen: Time!
+}
+
+input IstioConnectionResults {
+    results: [IstioConnection!]!
 }
 
 
@@ -117,4 +149,5 @@ type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
+    reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
 }

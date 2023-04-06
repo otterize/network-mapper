@@ -50,11 +50,17 @@ type ComplexityRoot struct {
 		Version func(childComplexity int) int
 	}
 
+	HttpResource struct {
+		Methods func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
 	Intent struct {
-		Client      func(childComplexity int) int
-		KafkaTopics func(childComplexity int) int
-		Server      func(childComplexity int) int
-		Type        func(childComplexity int) int
+		Client        func(childComplexity int) int
+		HTTPResources func(childComplexity int) int
+		KafkaTopics   func(childComplexity int) int
+		Server        func(childComplexity int) int
+		Type          func(childComplexity int) int
 	}
 
 	KafkaConfig struct {
@@ -63,10 +69,11 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ReportCaptureResults     func(childComplexity int, results model.CaptureResults) int
-		ReportKafkaMapperResults func(childComplexity int, results model.KafkaMapperResults) int
-		ReportSocketScanResults  func(childComplexity int, results model.SocketScanResults) int
-		ResetCapture             func(childComplexity int) int
+		ReportCaptureResults         func(childComplexity int, results model.CaptureResults) int
+		ReportIstioConnectionResults func(childComplexity int, results model.IstioConnectionResults) int
+		ReportKafkaMapperResults     func(childComplexity int, results model.KafkaMapperResults) int
+		ReportSocketScanResults      func(childComplexity int, results model.SocketScanResults) int
+		ResetCapture                 func(childComplexity int) int
 	}
 
 	OtterizeServiceIdentity struct {
@@ -97,6 +104,7 @@ type MutationResolver interface {
 	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error)
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 	ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error)
+	ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error)
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
@@ -139,12 +147,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.GroupVersionKind.Version(childComplexity), true
 
+	case "HttpResource.methods":
+		if e.complexity.HttpResource.Methods == nil {
+			break
+		}
+
+		return e.complexity.HttpResource.Methods(childComplexity), true
+
+	case "HttpResource.path":
+		if e.complexity.HttpResource.Path == nil {
+			break
+		}
+
+		return e.complexity.HttpResource.Path(childComplexity), true
+
 	case "Intent.client":
 		if e.complexity.Intent.Client == nil {
 			break
 		}
 
 		return e.complexity.Intent.Client(childComplexity), true
+
+	case "Intent.httpResources":
+		if e.complexity.Intent.HTTPResources == nil {
+			break
+		}
+
+		return e.complexity.Intent.HTTPResources(childComplexity), true
 
 	case "Intent.kafkaTopics":
 		if e.complexity.Intent.KafkaTopics == nil {
@@ -192,6 +221,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ReportCaptureResults(childComplexity, args["results"].(model.CaptureResults)), true
+
+	case "Mutation.reportIstioConnectionResults":
+		if e.complexity.Mutation.ReportIstioConnectionResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportIstioConnectionResults_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportIstioConnectionResults(childComplexity, args["results"].(model.IstioConnectionResults)), true
 
 	case "Mutation.reportKafkaMapperResults":
 		if e.complexity.Mutation.ReportKafkaMapperResults == nil {
@@ -416,6 +457,7 @@ type OtterizeServiceIdentity {
 
 enum IntentType {
     KAFKA
+    HTTP
 }
 
 enum KafkaOperation {
@@ -437,11 +479,29 @@ type KafkaConfig {
     operations: [KafkaOperation!]
 }
 
+type HttpResource {
+    path: String!
+    methods: [HttpMethod!]
+}
+
+enum HttpMethod {
+    GET
+    POST
+    PUT
+    DELETE
+    OPTIONS
+    TRACE
+    PATCH
+    CONNECT
+    ALL
+}
+
 type Intent {
     client: OtterizeServiceIdentity!
     server: OtterizeServiceIdentity!
     type: IntentType
     kafkaTopics: [KafkaConfig!]
+    httpResources: [HttpResource!]
 }
 
 type ServiceIntents {
@@ -460,6 +520,19 @@ input KafkaMapperResult {
 
 input KafkaMapperResults {
     results: [KafkaMapperResult!]!
+}
+
+input IstioConnection {
+    srcWorkload: String!
+    srcWorkloadNamespace: String!
+    dstWorkload: String!
+    dstWorkloadNamespace: String!
+    requestPaths: [String!]!
+    lastSeen: Time!
+}
+
+input IstioConnectionResults {
+    results: [IstioConnection!]!
 }
 
 
@@ -487,6 +560,7 @@ type Mutation {
     reportCaptureResults(results: CaptureResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
+    reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -502,6 +576,21 @@ func (ec *executionContext) field_Mutation_reportCaptureResults_args(ctx context
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
 		arg0, err = ec.unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["results"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportIstioConnectionResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.IstioConnectionResults
+	if tmp, ok := rawArgs["results"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+		arg0, err = ec.unmarshalNIstioConnectionResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIstioConnectionResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -761,6 +850,73 @@ func (ec *executionContext) _GroupVersionKind_kind(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _HttpResource_path(ctx context.Context, field graphql.CollectedField, obj *model.HTTPResource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HttpResource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _HttpResource_methods(ctx context.Context, field graphql.CollectedField, obj *model.HTTPResource) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "HttpResource",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Methods, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]model.HTTPMethod)
+	fc.Result = res
+	return ec.marshalOHttpMethod2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethodᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Intent_client(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -893,6 +1049,38 @@ func (ec *executionContext) _Intent_kafkaTopics(ctx context.Context, field graph
 	res := resTmp.([]model.KafkaConfig)
 	fc.Result = res
 	return ec.marshalOKafkaConfig2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaConfigᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Intent_httpResources(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Intent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HTTPResources, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]model.HTTPResource)
+	fc.Result = res
+	return ec.marshalOHttpResource2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResourceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _KafkaConfig_name(ctx context.Context, field graphql.CollectedField, obj *model.KafkaConfig) (ret graphql.Marshaler) {
@@ -1107,6 +1295,48 @@ func (ec *executionContext) _Mutation_reportKafkaMapperResults(ctx context.Conte
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().ReportKafkaMapperResults(rctx, args["results"].(model.KafkaMapperResults))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_reportIstioConnectionResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_reportIstioConnectionResults_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportIstioConnectionResults(rctx, args["results"].(model.IstioConnectionResults))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2823,6 +3053,92 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputIstioConnection(ctx context.Context, obj interface{}) (model.IstioConnection, error) {
+	var it model.IstioConnection
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "srcWorkload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcWorkload"))
+			it.SrcWorkload, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "srcWorkloadNamespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcWorkloadNamespace"))
+			it.SrcWorkloadNamespace, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "dstWorkload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dstWorkload"))
+			it.DstWorkload, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "dstWorkloadNamespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dstWorkloadNamespace"))
+			it.DstWorkloadNamespace, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "requestPaths":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestPaths"))
+			it.RequestPaths, err = ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "lastSeen":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastSeen"))
+			it.LastSeen, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIstioConnectionResults(ctx context.Context, obj interface{}) (model.IstioConnectionResults, error) {
+	var it model.IstioConnectionResults
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "results":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+			it.Results, err = ec.unmarshalNIstioConnection2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIstioConnectionᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputKafkaMapperResult(ctx context.Context, obj interface{}) (model.KafkaMapperResult, error) {
 	var it model.KafkaMapperResult
 	asMap := map[string]interface{}{}
@@ -3019,6 +3335,44 @@ func (ec *executionContext) _GroupVersionKind(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var httpResourceImplementors = []string{"HttpResource"}
+
+func (ec *executionContext) _HttpResource(ctx context.Context, sel ast.SelectionSet, obj *model.HTTPResource) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, httpResourceImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HttpResource")
+		case "path":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HttpResource_path(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "methods":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._HttpResource_methods(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var intentImplementors = []string{"Intent"}
 
 func (ec *executionContext) _Intent(ctx context.Context, sel ast.SelectionSet, obj *model.Intent) graphql.Marshaler {
@@ -3059,6 +3413,13 @@ func (ec *executionContext) _Intent(ctx context.Context, sel ast.SelectionSet, o
 		case "kafkaTopics":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Intent_kafkaTopics(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+		case "httpResources":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Intent_httpResources(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -3164,6 +3525,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "reportKafkaMapperResults":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reportKafkaMapperResults(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "reportIstioConnectionResults":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportIstioConnectionResults(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -3896,6 +4267,20 @@ func (ec *executionContext) unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋn
 	return res, nil
 }
 
+func (ec *executionContext) unmarshalNHttpMethod2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethod(ctx context.Context, v interface{}) (model.HTTPMethod, error) {
+	var res model.HTTPMethod
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNHttpMethod2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethod(ctx context.Context, sel ast.SelectionSet, v model.HTTPMethod) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNHttpResource2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResource(ctx context.Context, sel ast.SelectionSet, v model.HTTPResource) graphql.Marshaler {
+	return ec._HttpResource(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNIntent2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntent(ctx context.Context, sel ast.SelectionSet, v model.Intent) graphql.Marshaler {
 	return ec._Intent(ctx, sel, &v)
 }
@@ -3942,6 +4327,33 @@ func (ec *executionContext) marshalNIntent2ᚕgithubᚗcomᚋotterizeᚋnetwork�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNIstioConnection2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIstioConnection(ctx context.Context, v interface{}) (model.IstioConnection, error) {
+	res, err := ec.unmarshalInputIstioConnection(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNIstioConnection2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIstioConnectionᚄ(ctx context.Context, v interface{}) ([]model.IstioConnection, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.IstioConnection, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNIstioConnection2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIstioConnection(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNIstioConnectionResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIstioConnectionResults(ctx context.Context, v interface{}) (model.IstioConnectionResults, error) {
+	res, err := ec.unmarshalInputIstioConnectionResults(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNKafkaConfig2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaConfig(ctx context.Context, sel ast.SelectionSet, v model.KafkaConfig) graphql.Marshaler {
@@ -4135,6 +4547,38 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
@@ -4436,6 +4880,120 @@ func (ec *executionContext) marshalOGroupVersionKind2ᚖgithubᚗcomᚋotterize�
 		return graphql.Null
 	}
 	return ec._GroupVersionKind(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOHttpMethod2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethodᚄ(ctx context.Context, v interface{}) ([]model.HTTPMethod, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.HTTPMethod, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNHttpMethod2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethod(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOHttpMethod2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethodᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HTTPMethod) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHttpMethod2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPMethod(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOHttpResource2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResourceᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HTTPResource) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHttpResource2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐHTTPResource(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOIntentType2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentType(ctx context.Context, v interface{}) (*model.IntentType, error) {

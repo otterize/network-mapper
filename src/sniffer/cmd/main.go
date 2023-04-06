@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/sniffer"
 	"github.com/sirupsen/logrus"
@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	if viper.GetBool(config.DebugKey) {
+	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	mapperClient := mapperclient.NewMapperClient(viper.GetString(config.MapperApiUrlKey))
+	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	snifferInstance := sniffer.NewSniffer(mapperClient)
 	err := snifferInstance.RunForever(context.Background())
 	if err != nil {

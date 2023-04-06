@@ -29,15 +29,15 @@ func (v *DiscoveredIntentInput) GetDiscoveredAt() *time.Time { return v.Discover
 func (v *DiscoveredIntentInput) GetIntent() *IntentInput { return v.Intent }
 
 type HTTPConfigInput struct {
-	Path   *string     `json:"path"`
-	Method *HTTPMethod `json:"method"`
+	Path    *string       `json:"path"`
+	Methods []*HTTPMethod `json:"methods"`
 }
 
 // GetPath returns HTTPConfigInput.Path, and is useful for accessing the field via an interface.
 func (v *HTTPConfigInput) GetPath() *string { return v.Path }
 
-// GetMethod returns HTTPConfigInput.Method, and is useful for accessing the field via an interface.
-func (v *HTTPConfigInput) GetMethod() *HTTPMethod { return v.Method }
+// GetMethods returns HTTPConfigInput.Methods, and is useful for accessing the field via an interface.
+func (v *HTTPConfigInput) GetMethods() []*HTTPMethod { return v.Methods }
 
 type HTTPMethod string
 
@@ -50,6 +50,7 @@ const (
 	HTTPMethodTrace   HTTPMethod = "TRACE"
 	HTTPMethodPatch   HTTPMethod = "PATCH"
 	HTTPMethodConnect HTTPMethod = "CONNECT"
+	HTTPMethodAll     HTTPMethod = "ALL"
 )
 
 type IntentInput struct {

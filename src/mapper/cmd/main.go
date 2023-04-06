@@ -11,6 +11,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -36,7 +37,7 @@ func getClusterDomainOrDefault() string {
 }
 
 func main() {
-	if viper.GetBool(config.DebugKey) {
+	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 

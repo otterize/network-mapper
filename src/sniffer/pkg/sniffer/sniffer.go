@@ -126,9 +126,9 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 		select {
 		case packet := <-packetsChan:
 			s.HandlePacket(packet)
-		case <-time.After(viper.GetDuration(config.ReportIntervalKey)):
+		case <-time.After(viper.GetDuration(config.SnifferReportIntervalKey)):
 		}
-		if s.lastReportTime.Add(viper.GetDuration(config.ReportIntervalKey)).Before(time.Now()) {
+		if s.lastReportTime.Add(viper.GetDuration(config.SnifferReportIntervalKey)).Before(time.Now()) {
 			err := s.socketScanner.ScanProcDir()
 			if err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")
