@@ -98,9 +98,9 @@ jobs:
         run: |-
           # wait for 2 intents to be discovered with timeout of 30 seconds. 
           # sleeps 10 because this is the report interval from the watcher to the mapper
-          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; echo "wait for discovered intents"; sleep 10 ; fi
-          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; echo "wait for discovered intents"; sleep 10 ; fi
-          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; echo "wait for discovered intents"; sleep 10 ; fi
+          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
+          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
+          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
           
           echo "export intents and compare to expected file" 
           otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
