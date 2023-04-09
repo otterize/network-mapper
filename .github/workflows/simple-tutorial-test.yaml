@@ -4,15 +4,13 @@ on:
     # When triggering a workflow from another workflow the triggered workflow does not have access to any secrets,
     # and they must be passed from the caller
     secrets:
-      SLACKBOT_BASIC_AUTH_PASSWORD:
-        required: true
       OTTERIZEBOT_GITHUB_TOKEN:
-        required: true
-      SLACKBOT_TOKEN:
         required: true
       AWS_ACCESS_KEY_ID:
         required: true
       AWS_SECRET_ACCESS_KEY:
+        required: true
+      DOCKER_PASSWORD:
         required: true
 
     inputs:

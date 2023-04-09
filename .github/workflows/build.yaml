@@ -76,11 +76,10 @@ jobs:
     name: Trigger tutorial flows tests
     # Must pass the secrets as the called workflow does not have access to the same context
     secrets:
-      SLACKBOT_BASIC_AUTH_PASSWORD: ${{ secrets.SLACKBOT_BASIC_AUTH_PASSWORD }}
       OTTERIZEBOT_GITHUB_TOKEN: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
-      SLACKBOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKER_PASSWORD: ${{ .secrets.DOCKER_PASSWORD }}
     with:
       mapper-tag: mapper-${{ github.sha }}
       sniffer-tag: mapper-${{ github.sha }}
