@@ -87,7 +87,7 @@ jobs:
 
       - name: Install CLI
         run: |-
-          wget https://get-test.otterize.com/otterize-cli/v0.1.20/otterize_Linux_x86_64.tar.gz
+          wget https://get.otterize.com/otterize-cli/v0.1.20/otterize_Linux_x86_64.tar.gz
           tar xf otterize_Linux_x86_64.tar.gz
           sudo cp otterize /usr/local/bin
 
