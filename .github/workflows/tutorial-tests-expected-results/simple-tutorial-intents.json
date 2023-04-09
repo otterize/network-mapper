@@ -1,0 +1,42 @@
+[
+  {
+    "kind": "ClientIntents",
+    "apiVersion": "k8s.otterize.com/v1alpha2",
+    "metadata": {
+      "name": "client",
+      "namespace": "otterize-tutorial-mapper",
+      "creationTimestamp": null
+    },
+    "spec": {
+      "service": {
+        "name": "client"
+      },
+      "calls": [
+        {
+          "name": "server",
+          "resources": null
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ClientIntents",
+    "apiVersion": "k8s.otterize.com/v1alpha2",
+    "metadata": {
+      "name": "client2",
+      "namespace": "otterize-tutorial-mapper",
+      "creationTimestamp": null
+    },
+    "spec": {
+      "service": {
+        "name": "client2"
+      },
+      "calls": [
+        {
+          "name": "server",
+          "resources": null
+        }
+      ]
+    }
+  }
+]

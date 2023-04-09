@@ -13,7 +13,7 @@ on:
       - develop
 
 env:
-  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
+  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/
   REPOSITORY_NAME: otterize
 
 jobs:
@@ -64,12 +64,29 @@ jobs:
         with:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
-          tags: ${{ env.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
+          tags: ${{ env.REGISTRY }}${{ env.REPOSITORY_NAME }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  simple-tutorial-test:
+    uses: ./.github/workflows/simple-tutorial-test.yaml
+    name: Trigger tutorial flows tests
+    # Must pass the secrets as the called workflow does not have access to the same context
+    secrets:
+      SLACKBOT_BASIC_AUTH_PASSWORD: ${{ secrets.SLACKBOT_BASIC_AUTH_PASSWORD }}
+      OTTERIZEBOT_GITHUB_TOKEN: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
+      SLACKBOT_TOKEN: ${{ secrets.SLACKBOT_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    with:
+      mapper-tag: mapper-${{ github.sha }}
+      sniffer-tag: mapper-${{ github.sha }}
+
+    needs:
+      - build
   
 
   tag-latest:

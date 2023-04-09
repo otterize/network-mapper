@@ -1,0 +1,103 @@
+name: Simple Tutorial Test
+on:
+  workflow_call: # To support triggering from another workflow (build.yaml)
+    # When triggering a workflow from another workflow the triggered workflow does not have access to any secrets,
+    # and they must be passed from the caller
+    secrets:
+      SLACKBOT_BASIC_AUTH_PASSWORD:
+        required: true
+      OTTERIZEBOT_GITHUB_TOKEN:
+        required: true
+      SLACKBOT_TOKEN:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+    inputs:
+      mapper-tag:
+        required: true
+        type: string
+      sniffer-tag:
+        required: true
+        type: string
+
+
+env:
+  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com
+  REPOSITORY_NAME: otterize
+
+
+jobs:
+  tutorial-flows-test:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }} # required for checking out submodules
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: otterize
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+
+      - name: Start minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          start-args: "--network-plugin=cni"
+
+      - name: Setup Calico
+        run: |-
+          kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.1/manifests/calico.yaml
+      - name: Wait for Calico startup
+        run: |-
+          kubectl wait pods -n kube-system -l k8s-app=calico-kube-controllers --for condition=Ready --timeout=90s
+          kubectl wait pods -n kube-system -l k8s-app=calico-node --for condition=Ready --timeout=90s
+          kubectl wait pods -n kube-system -l k8s-app=calico-kube-controllers --for condition=Ready --timeout=90s
+
+      - name: Deploy Network Mapper
+        run: |-
+          MAPPER_FLAGS="--set-string networkMapper.mapper.repository=$${{ env.REGISTRY }} --set-string networkMapper.mapper.image=${{ env.REPOSITORY_NAME }} --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }}"
+          SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=$${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=${{ env.REPOSITORY_NAME }} --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }}"
+          helm install otterize ./src/helm-charts/otterize-kubernetes -n otterize-system --create-namespace $MAPPER_FLAGS $SNIFFER_FLAGS
+
+      - name: Install CLI
+        run: |-
+          wget https://get.otterize.com/otterize-cli/v0.1.20/otterize_Linux_x86_64.tar.gz
+          tar xf otterize_Linux_x86_64.tar.gz
+          sudo cp otterize /usr/local/bin
+
+      - name: Deploy Tutorial services
+        run: |-
+          kubectl apply -n otterize-tutorial-mapper -f https://docs.otterize.com/code-examples/network-mapper/all.yaml
+
+      - name: Test Policy Export
+        run: |-
+          otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)'
+          otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
+          diff .github/workflows/tutorial-tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
+          
+      
+      
+
+      
