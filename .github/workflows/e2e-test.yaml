@@ -1,4 +1,4 @@
-name: Simple Tutorial Test
+name: E2E Test # this test is based on this tutorial: https://docs.otterize.com/quick-tutorials/k8s-network-mapper
 on:
   workflow_call: # To support triggering from another workflow (build.yaml)
     # When triggering a workflow from another workflow the triggered workflow does not have access to any secrets,
@@ -103,7 +103,7 @@ jobs:
           sleep 10
           echo "export intents and compare to expected file" 
           otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
-          diff .github/workflows/tutorial-tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
+          diff .github/workflows/tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
           
       
       

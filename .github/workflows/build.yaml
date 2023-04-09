@@ -71,9 +71,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  simple-tutorial-test:
-    uses: ./.github/workflows/simple-tutorial-test.yaml
-    name: Trigger tutorial flows tests
+  e2e-test:
+    uses: ./.github/workflows/e2e-test.yaml
+    name: Trigger e2e tests
     # Must pass the secrets as the called workflow does not have access to the same context
     secrets:
       OTTERIZEBOT_GITHUB_TOKEN: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
