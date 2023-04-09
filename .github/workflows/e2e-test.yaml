@@ -26,7 +26,7 @@ env:
 
 
 jobs:
-  tutorial-flows-test:
+  e2e-test:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
