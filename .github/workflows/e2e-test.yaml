@@ -53,11 +53,8 @@ jobs:
       - name: Start minikube
         uses: medyagh/setup-minikube@master
         with:
-          start-args: "--network-plugin=cni"
+          start-args: "--network-plugin=cni --cni=calico"
 
-      - name: Setup Calico
-        run: |-
-          kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.1/manifests/calico.yaml
       - name: Wait for Calico startup
         run: |-
           kubectl wait pods -n kube-system -l k8s-app=calico-kube-controllers --for condition=Ready --timeout=90s
@@ -99,8 +96,12 @@ jobs:
 
       - name: Test Policy Export
         run: |-
-          # sleep 10 seconds which is the report interval from the sniffer to the mapper
-          sleep 10
+          # wait for 2 intents to be discovered with timeout of 30 seconds. 
+          # sleeps 10 because this is the report interval from the watcher to the mapper
+          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; echo "wait for discovered intents"; sleep 10 ; fi
+          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; echo "wait for discovered intents"; sleep 10 ; fi
+          if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; echo "wait for discovered intents"; sleep 10 ; fi
+          
           echo "export intents and compare to expected file" 
           otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
           diff .github/workflows/tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
