@@ -24,15 +24,14 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 			}
 			continue
 		}
-		if slices.Contains(istioConnection.RequestPaths, connWithPath.RequestPath) {
-			continue
-		}
-		// Reassign connection to map with newly appended request path
-		istioConnection.RequestPaths = append(istioConnection.RequestPaths, connWithPath.RequestPath)
-
 		if timestamp.After(istioConnection.LastSeen) {
 			istioConnection.LastSeen = timestamp
 		}
+		
+		if !slices.Contains(istioConnection.RequestPaths, connWithPath.RequestPath) {
+			istioConnection.RequestPaths = append(istioConnection.RequestPaths, connWithPath.RequestPath)
+		}
+
 		connectionPairToConn[connectionPair] = istioConnection
 	}
 
