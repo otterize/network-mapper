@@ -13,7 +13,7 @@ on:
       - develop
 
 env:
-  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/
+  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com
   REPOSITORY_NAME: otterize
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
         with:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
-          tags: ${{ env.REGISTRY }}${{ env.REPOSITORY_NAME }}:${{ matrix.service }}-${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
