@@ -13,7 +13,7 @@ on:
       - develop
 
 env:
-  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
+  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com
   REPOSITORY_NAME: otterize
 
 jobs:
@@ -64,12 +64,27 @@ jobs:
         with:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
-          tags: ${{ env.REGISTRY }}:${{ matrix.service }}-${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ matrix.service }}-${{ github.sha }}
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  e2e-test:
+    uses: ./.github/workflows/e2e-test.yaml
+    name: Trigger e2e tests
+    # Must pass the secrets as the called workflow does not have access to the same context
+    secrets:
+      OTTERIZEBOT_GITHUB_TOKEN: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    with:
+      mapper-tag: mapper-${{ github.sha }}
+      sniffer-tag: sniffer-${{ github.sha }}
+
+    needs:
+      - build
   
 
   tag-latest:
