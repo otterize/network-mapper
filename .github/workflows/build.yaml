@@ -82,7 +82,7 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     with:
       mapper-tag: mapper-${{ github.sha }}
-      sniffer-tag: mapper-${{ github.sha }}
+      sniffer-tag: sniffer-${{ github.sha }}
 
     needs:
       - build

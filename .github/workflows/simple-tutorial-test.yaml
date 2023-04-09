@@ -90,6 +90,17 @@ jobs:
         run: |-
           kubectl apply -n otterize-tutorial-mapper -f https://docs.otterize.com/code-examples/network-mapper/all.yaml
 
+      - name: Wait for Otterize
+        run: |-
+          kubectl wait pods -n otterize-system -l app=otterize-network-sniffer --for condition=Ready --timeout=90s
+          kubectl wait pods -n otterize-system -l app=otterize-network-mapper --for condition=Ready --timeout=90s
+
+      - name: Wait for Tutorial services
+        run: |-
+          kubectl wait pods -n otterize-tutorial-mapper -l app=client --for condition=Ready --timeout=90s
+          kubectl wait pods -n otterize-tutorial-mapper -l app=client2 --for condition=Ready --timeout=90s
+          kubectl wait pods -n otterize-tutorial-mapper -l app=server --for condition=Ready --timeout=90s
+
       - name: Test Policy Export
         run: |-
           otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)'
