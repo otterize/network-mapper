@@ -43,12 +43,13 @@ type Intent struct {
 }
 
 type IstioConnection struct {
-	SrcWorkload          string    `json:"srcWorkload"`
-	SrcWorkloadNamespace string    `json:"srcWorkloadNamespace"`
-	DstWorkload          string    `json:"dstWorkload"`
-	DstWorkloadNamespace string    `json:"dstWorkloadNamespace"`
-	RequestPaths         []string  `json:"requestPaths"`
-	LastSeen             time.Time `json:"lastSeen"`
+	SrcWorkload          string       `json:"srcWorkload"`
+	SrcWorkloadNamespace string       `json:"srcWorkloadNamespace"`
+	DstWorkload          string       `json:"dstWorkload"`
+	DstWorkloadNamespace string       `json:"dstWorkloadNamespace"`
+	Path                 string       `json:"path"`
+	Methods              []HTTPMethod `json:"methods"`
+	LastSeen             time.Time    `json:"lastSeen"`
 }
 
 type IstioConnectionResults struct {
