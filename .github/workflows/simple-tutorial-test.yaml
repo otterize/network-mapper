@@ -10,8 +10,6 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      DOCKER_PASSWORD:
-        required: true
 
     inputs:
       mapper-tag:
@@ -48,13 +46,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: otterize
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
@@ -110,7 +101,7 @@ jobs:
         run: |-
           # sleep 10 seconds which is the report interval from the sniffer to the mapper
           sleep 10
-          otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)'
+          echo "export intents and compare to expected file" 
           otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
           diff .github/workflows/tutorial-tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
           
