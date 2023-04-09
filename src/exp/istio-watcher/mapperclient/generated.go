@@ -9,13 +9,28 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+type HttpMethod string
+
+const (
+	HttpMethodGet     HttpMethod = "GET"
+	HttpMethodPost    HttpMethod = "POST"
+	HttpMethodPut     HttpMethod = "PUT"
+	HttpMethodDelete  HttpMethod = "DELETE"
+	HttpMethodOptions HttpMethod = "OPTIONS"
+	HttpMethodTrace   HttpMethod = "TRACE"
+	HttpMethodPatch   HttpMethod = "PATCH"
+	HttpMethodConnect HttpMethod = "CONNECT"
+	HttpMethodAll     HttpMethod = "ALL"
+)
+
 type IstioConnection struct {
-	SrcWorkload          string    `json:"srcWorkload"`
-	SrcWorkloadNamespace string    `json:"srcWorkloadNamespace"`
-	DstWorkload          string    `json:"dstWorkload"`
-	DstWorkloadNamespace string    `json:"dstWorkloadNamespace"`
-	RequestPaths         []string  `json:"requestPaths"`
-	LastSeen             time.Time `json:"lastSeen"`
+	SrcWorkload          string       `json:"srcWorkload"`
+	SrcWorkloadNamespace string       `json:"srcWorkloadNamespace"`
+	DstWorkload          string       `json:"dstWorkload"`
+	DstWorkloadNamespace string       `json:"dstWorkloadNamespace"`
+	Path                 string       `json:"path"`
+	Methods              []HttpMethod `json:"methods"`
+	LastSeen             time.Time    `json:"lastSeen"`
 }
 
 // GetSrcWorkload returns IstioConnection.SrcWorkload, and is useful for accessing the field via an interface.
@@ -30,8 +45,11 @@ func (v *IstioConnection) GetDstWorkload() string { return v.DstWorkload }
 // GetDstWorkloadNamespace returns IstioConnection.DstWorkloadNamespace, and is useful for accessing the field via an interface.
 func (v *IstioConnection) GetDstWorkloadNamespace() string { return v.DstWorkloadNamespace }
 
-// GetRequestPaths returns IstioConnection.RequestPaths, and is useful for accessing the field via an interface.
-func (v *IstioConnection) GetRequestPaths() []string { return v.RequestPaths }
+// GetPath returns IstioConnection.Path, and is useful for accessing the field via an interface.
+func (v *IstioConnection) GetPath() string { return v.Path }
+
+// GetMethods returns IstioConnection.Methods, and is useful for accessing the field via an interface.
+func (v *IstioConnection) GetMethods() []HttpMethod { return v.Methods }
 
 // GetLastSeen returns IstioConnection.LastSeen, and is useful for accessing the field via an interface.
 func (v *IstioConnection) GetLastSeen() time.Time { return v.LastSeen }

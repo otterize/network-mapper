@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
 	"github.com/samber/lo"
-	"golang.org/x/exp/slices"
 	"time"
 )
 
@@ -19,17 +18,14 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 				SrcWorkloadNamespace: connWithPath.SourceNamespace,
 				DstWorkload:          connWithPath.DestinationWorkload,
 				DstWorkloadNamespace: connWithPath.DestinationNamespace,
-				RequestPaths:         []string{connWithPath.RequestPath},
+				Path:                 connWithPath.RequestPath,
+				Methods:              []mapperclient.HttpMethod{mapperclient.HttpMethodAll},
 				LastSeen:             timestamp,
 			}
 			continue
 		}
 		if timestamp.After(istioConnection.LastSeen) {
 			istioConnection.LastSeen = timestamp
-		}
-		
-		if !slices.Contains(istioConnection.RequestPaths, connWithPath.RequestPath) {
-			istioConnection.RequestPaths = append(istioConnection.RequestPaths, connWithPath.RequestPath)
 		}
 
 		connectionPairToConn[connectionPair] = istioConnection

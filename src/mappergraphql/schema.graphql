@@ -116,14 +116,14 @@ input IstioConnection {
     srcWorkloadNamespace: String!
     dstWorkload: String!
     dstWorkloadNamespace: String!
-    requestPaths: [String!]!
+    path: String!
+    methods: [HttpMethod!]!
     lastSeen: Time!
 }
 
 input IstioConnectionResults {
     results: [IstioConnection!]!
 }
-
 
 type Query {
     """
