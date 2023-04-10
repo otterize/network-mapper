@@ -87,7 +87,7 @@ scoop bucket add otterize-cli https://github.com/otterize/scoop-otterize-cli
 scoop update
 scoop install otterize-cli
 ```
-For more platforms, see [the installation guide](https://docs.otterize.com/k8s-installation/#install-the-otterize-cli).
+For more platforms, see [the installation guide](https://docs.otterize.com/installation#install-the-otterize-cli).
 
 ## How does the network mapper work?
 The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to their pods, and crawling up the ownership of the pod until it reaches the root object. The network mapper continues building the network map as long as it's deployed.
