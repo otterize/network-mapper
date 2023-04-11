@@ -80,3 +80,32 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args:
             SOURCE_IMAGE=${{ env.REGISTRY }}:kafka-watcher-${{ github.sha }}
+
+  commit-latest-build-tag-to-helm-chart:
+    name: Commit Latest Build Tag
+    runs-on: ubuntu-latest
+    needs: push-dockerhub
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: "otterize/helm-charts"
+          token: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
+          ref: main
+
+      - name: Update appVersion in chart.yaml
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.appVersion = "${{ github.ref_name }}"' 'network-mapper/Chart.yaml'
+
+      - name: Setup git config
+        run: |
+          git config user.name "otterizebot"
+          git config user.email "otterizebot@users.noreply.github.com"
+
+      - name: Commit
+        run: |
+          git add --all
+          git commit -m "Setting latest tag in network-mapper helm chart repo to ${{ github.ref_name }}"
+          git push origin HEAD
+
