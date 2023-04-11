@@ -100,7 +100,7 @@ jobs:
       - name: update appVersion in chart.yaml
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.appVersion = "test-${{ github.ref_name }}"' 'network-mapper/chart.yaml'
+          cmd: yq -i '.appVersion = "test-${{ github.ref_name }}"' 'network-mapper/Chart.yaml'
 
       - name: setup git config
         run: |
