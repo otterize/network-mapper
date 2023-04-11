@@ -3,90 +3,92 @@ concurrency:
   group: "${{ github.repository }}${{ github.ref }}-release"
 
 on:
-  release:
+  pull_request:
     types:
-      - published
+      - opened
+      - synchronize
+#  release:
+#    types:
+#      - published
 
 env:
   REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
   REPOSITORY_NAME: otterize
 
 jobs:
-  push-dockerhub:
-    name: Push to Docker Hub
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@master
-        with:
-          driver-opts: network=host
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: otterize
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-
-      - name: Push to Docker Hub - Mapper
-        uses: docker/build-push-action@v2
-        with:
-          context: .github/workflows
-          file: .github/workflows/release.Dockerfile
-          tags: otterize/network-mapper:latest,otterize/network-mapper:${{ github.ref_name }}
-          push: true
-          network: host
-          platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:mapper-${{ github.sha }}
-
-      - name: Push to Docker Hub - Sniffer
-        uses: docker/build-push-action@v2
-        with:
-          context: .github/workflows
-          file: .github/workflows/release.Dockerfile
-          tags: otterize/network-mapper-sniffer:latest,otterize/network-mapper-sniffer:${{ github.ref_name }}
-          push: true
-          network: host
-          platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:sniffer-${{ github.sha }}
-
-      - name: Push to Docker Hub - Kafka Watcher
-        uses: docker/build-push-action@v2
-        with:
-          context: .github/workflows
-          file: .github/workflows/release.Dockerfile
-          tags: otterize/network-mapper-kafka-watcher:latest,otterize/network-mapper-kafka-watcher:${{ github.ref_name }}
-          push: true
-          network: host
-          platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:kafka-watcher-${{ github.sha }}
+#  push-dockerhub:
+#    name: Push to Docker Hub
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#
+#      - name: Set up Docker Buildx
+#        id: buildx
+#        uses: docker/setup-buildx-action@master
+#        with:
+#          driver-opts: network=host
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: us-east-1
+#
+#
+#      - name: Login to Amazon ECR
+#        id: login-ecr
+#        uses: aws-actions/amazon-ecr-login@v1
+#
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v1
+#        with:
+#          username: otterize
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#
+#
+#      - name: Push to Docker Hub - Mapper
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .github/workflows
+#          file: .github/workflows/release.Dockerfile
+#          tags: otterize/network-mapper:latest,otterize/network-mapper:${{ github.ref_name }}
+#          push: true
+#          network: host
+#          platforms: linux/amd64,linux/arm64
+#          build-args:
+#            SOURCE_IMAGE=${{ env.REGISTRY }}:mapper-${{ github.sha }}
+#
+#      - name: Push to Docker Hub - Sniffer
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .github/workflows
+#          file: .github/workflows/release.Dockerfile
+#          tags: otterize/network-mapper-sniffer:latest,otterize/network-mapper-sniffer:${{ github.ref_name }}
+#          push: true
+#          network: host
+#          platforms: linux/amd64,linux/arm64
+#          build-args:
+#            SOURCE_IMAGE=${{ env.REGISTRY }}:sniffer-${{ github.sha }}
+#
+#      - name: Push to Docker Hub - Kafka Watcher
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: .github/workflows
+#          file: .github/workflows/release.Dockerfile
+#          tags: otterize/network-mapper-kafka-watcher:latest,otterize/network-mapper-kafka-watcher:${{ github.ref_name }}
+#          push: true
+#          network: host
+#          platforms: linux/amd64,linux/arm64
+#          build-args:
+#            SOURCE_IMAGE=${{ env.REGISTRY }}:kafka-watcher-${{ github.sha }}
 
   commit-latest-build-tag-to-helm-chart:
     name: Commit Latest Build Tag
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs:
-      - e2e-tests
+#    needs: push-dockerhub
     steps:
       - name: Checkout
         uses: actions/checkout@v3
