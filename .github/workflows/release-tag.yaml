@@ -93,17 +93,17 @@ jobs:
           token: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
           ref: main
 
-      - name: update appVersion in chart.yaml
+      - name: Update appVersion in chart.yaml
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.appVersion = "${{ github.ref_name }}"' 'network-mapper/Chart.yaml'
 
-      - name: setup git config
+      - name: Setup git config
         run: |
           git config user.name "otterizebot"
           git config user.email "otterizebot@users.noreply.github.com"
 
-      - name: commit
+      - name: Commit
         run: |
           git add --all
           git commit -m "Setting latest tag in network-mapper helm chart repo to ${{ github.ref_name }}"
