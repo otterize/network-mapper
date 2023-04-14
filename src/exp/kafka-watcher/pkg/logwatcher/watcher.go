@@ -11,12 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"math"
 	"path/filepath"
 	"sync"
 	"time"
@@ -79,10 +79,10 @@ func NewWatcher(mapperClient mapperclient.MapperClient, kafkaServers []types.Nam
 }
 
 func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record string) {
-	r := AuthorizerRecord{
+	authorizerRecord := AuthorizerRecord{
 		Server: kafkaServer,
 	}
-	if err := AclAuthorizerRegex.MatchToTarget(record, &r); errors.Is(err, &regroup.NoMatchFoundError{}) {
+	if err := AclAuthorizerRegex.MatchToTarget(record, &authorizerRecord); errors.Is(err, &regroup.NoMatchFoundError{}) {
 		return
 	} else if err != nil {
 		logrus.Errorf("Error matching authorizer regex: %s", err)
@@ -91,16 +91,17 @@ func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record stri
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.seen[r] = time.Now()
+	w.seen[authorizerRecord] = time.Now()
 }
 
-func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedName) error {
+func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedName, startTime time.Time) error {
 	podLogOpts := corev1.PodLogOptions{
-		Follow:       true,
-		SinceSeconds: lo.ToPtr(int64(math.Ceil(viper.GetDuration(config.KafkaCooldownIntervalKey).Seconds()))),
+		SinceTime: &metav1.Time{Time: startTime},
 	}
+	ctxTimeout, cancel := context.WithTimeout(ctx, 1*time.Minute)
+	defer cancel()
 	req := w.clientset.CoreV1().Pods(kafkaServer.Namespace).GetLogs(kafkaServer.Name, &podLogOpts)
-	reader, err := req.Stream(ctx)
+	reader, err := req.Stream(ctxTimeout)
 	if err != nil {
 		return err
 	}
@@ -119,13 +120,15 @@ func (w *Watcher) WatchOnce(ctx context.Context, kafkaServer types.NamespacedNam
 func (w *Watcher) WatchForever(ctx context.Context, kafkaServer types.NamespacedName) {
 	log := logrus.WithField("pod", kafkaServer)
 	cooldownPeriod := viper.GetDuration(config.KafkaCooldownIntervalKey)
+	readFromTime := time.Now().Add(-(viper.GetDuration(config.KafkaCooldownIntervalKey)))
 	for {
 		log.Info("Watching logs")
-		err := w.WatchOnce(ctx, kafkaServer)
+		err := w.WatchOnce(ctx, kafkaServer, readFromTime)
 		if err != nil {
 			log.WithError(err).Error("Error watching logs")
 		}
-		log.Infof("Watcher stopped, will retry after cooldown period (%s)...", cooldownPeriod)
+		readFromTime = time.Now()
+		log.Infof("Waiting %s before watching logs again...", cooldownPeriod)
 		time.Sleep(cooldownPeriod)
 	}
 }
