@@ -125,6 +125,9 @@ func (w *Watcher) WatchForever(ctx context.Context, kafkaServer types.Namespaced
 		log.Info("Watching logs")
 		err := w.WatchOnce(ctx, kafkaServer, readFromTime)
 		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				continue
+			}
 			log.WithError(err).Error("Error watching logs")
 		}
 		readFromTime = time.Now()
