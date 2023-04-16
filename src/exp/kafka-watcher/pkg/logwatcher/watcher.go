@@ -10,6 +10,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -177,21 +178,28 @@ func (w *Watcher) RunForever(ctx context.Context) error {
 }
 
 func (w *Watcher) ValidateKafkaServers(ctx context.Context) error {
-	invalidServers := make([]types.NamespacedName, 0)
+	invalidServers := make([]string, 0)
 	for _, kafkaServer := range w.kafkaServers {
 		_, err := w.clientset.CoreV1().Pods(kafkaServer.Namespace).Get(ctx, kafkaServer.Name, metav1.GetOptions{})
 		if err != nil {
-			invalidServers = append(invalidServers, kafkaServer)
+			invalidServers = append(invalidServers, kafkaServer.String())
 		}
 	}
 	if len(invalidServers) == 0 {
 		return nil
 	}
-	logrus.Errorf("Invalid servers: %s", invalidServers)
+	logrus.Errorf("The following Kafka servers were not found or unreachable: %s", invalidServers)
 
 	if reflect.DeepEqual(invalidServers, w.kafkaServers) {
 		return errors.New("failed validating all Kafka servers")
 	}
+	validServers := make([]string, 0)
+	for _, server := range w.kafkaServers {
+		if !slices.Contains(invalidServers, server.String()) {
+			validServers = append(validServers, server.String())
+		}
+	}
 
+	logrus.Infof("Kafka watcher will run for the following servers: %s", validServers)
 	return nil
 }
