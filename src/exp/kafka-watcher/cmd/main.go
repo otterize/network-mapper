@@ -38,12 +38,22 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Panic()
 	}
+	if len(kafkaServers) == 0 {
+		logrus.WithError(
+			fmt.Errorf("no valid Kafka servers parsed from environment variable: %s",
+				viper.GetStringSlice(config.KafkaServersKey))).Panic()
+	}
+
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	w, err := logwatcher.NewWatcher(
 		mapperClient,
 		kafkaServers,
 	)
 	if err != nil {
+		logrus.WithError(err).Panic()
+	}
+
+	if err = w.ValidateKafkaServers(signals.SetupSignalHandler()); err != nil {
 		logrus.WithError(err).Panic()
 	}
 

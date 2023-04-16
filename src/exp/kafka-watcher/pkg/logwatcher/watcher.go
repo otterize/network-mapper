@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
@@ -173,4 +174,18 @@ func (w *Watcher) RunForever(ctx context.Context) error {
 			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
 		}
 	}
+}
+
+func (w *Watcher) ValidateKafkaServers(ctx context.Context) error {
+	for _, kafkaServer := range w.kafkaServers {
+		p, err := w.clientset.CoreV1().Pods(kafkaServer.Namespace).Get(ctx, kafkaServer.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if p == nil {
+			return fmt.Errorf("could not find kafka server pod: %s.%s", kafkaServer.Name, kafkaServer.Namespace)
+		}
+	}
+
+	return nil
 }
