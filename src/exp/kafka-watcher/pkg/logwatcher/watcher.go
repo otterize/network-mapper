@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/oriser/regroup"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
@@ -19,6 +18,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -177,14 +177,20 @@ func (w *Watcher) RunForever(ctx context.Context) error {
 }
 
 func (w *Watcher) ValidateKafkaServers(ctx context.Context) error {
+	invalidServers := make([]types.NamespacedName, 0)
 	for _, kafkaServer := range w.kafkaServers {
-		p, err := w.clientset.CoreV1().Pods(kafkaServer.Namespace).Get(ctx, kafkaServer.Name, metav1.GetOptions{})
+		_, err := w.clientset.CoreV1().Pods(kafkaServer.Namespace).Get(ctx, kafkaServer.Name, metav1.GetOptions{})
 		if err != nil {
-			return err
+			invalidServers = append(invalidServers, kafkaServer)
 		}
-		if p == nil {
-			return fmt.Errorf("could not find kafka server pod: %s.%s", kafkaServer.Name, kafkaServer.Namespace)
-		}
+	}
+	if len(invalidServers) == 0 {
+		return nil
+	}
+	logrus.Errorf("Invalid servers: %s", invalidServers)
+
+	if reflect.DeepEqual(invalidServers, w.kafkaServers) {
+		return errors.New("failed validating all Kafka servers")
 	}
 
 	return nil
