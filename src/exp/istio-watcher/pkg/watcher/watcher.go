@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/oriser/regroup"
+	"fmt"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
 	"github.com/sirupsen/logrus"
@@ -46,26 +46,31 @@ const (
 )
 
 var (
-	EnvoyConnectionMetricRegex = regroup.MustCompile(`.*(?P<source_workload>source_workload\.\b[^.]+).*(?P<source_namespace>source_workload_namespace\.\b[^.]+).*(?P<destination_workload>destination_workload\.\b[^.]+).*(?P<destination_namespace>destination_workload_namespace\.\b[^.]+).*(?P<request_path>request_path\.[^.]+)`)
+	ConnectionInfoInsufficient = errors.New("connection info partial or empty")
+	GroupNames                 = []string{
+		"source_workload",
+		"source_workload_namespace",
+		"destination_workload",
+		"destination_workload_namespace",
+		"request_method",
+		"request_path",
+	}
 )
 
-var (
-	ConnectionInfoInsufficient = errors.New("connection info partial or empty")
-)
+type ConnectionWithPath struct {
+	SourceWorkload       string `json:"source_workload"`
+	SourceNamespace      string `json:"source_workload_namespace"`
+	DestinationWorkload  string `json:"destination_workload"`
+	DestinationNamespace string `json:"destination_workload_namespace"`
+	RequestPath          string `json:"request_path"`
+	RequestMethod        string `json:"request_method"`
+}
 
 type IstioWatcher struct {
 	clientset    *kubernetes.Clientset
 	config       *rest.Config
 	mapperClient mapperclient.MapperClient
 	connections  map[ConnectionWithPath]time.Time
-}
-
-type ConnectionWithPath struct {
-	SourceWorkload       string `regroup:"source_workload"`
-	SourceNamespace      string `regroup:"source_namespace"`
-	DestinationWorkload  string `regroup:"destination_workload"`
-	DestinationNamespace string `regroup:"destination_namespace"`
-	RequestPath          string `regroup:"request_path"`
 }
 
 func (p *ConnectionWithPath) hasMissingInfo() bool {
@@ -76,17 +81,6 @@ func (p *ConnectionWithPath) hasMissingInfo() bool {
 	}
 
 	return p.RequestPath == ""
-}
-
-// omitMetricsFieldsFromConnection drops the metric name and uses the value alone in the connection
-// Since we cant use lookaheads in our regex matching, connections fields are parsed with their metric name as well
-// e.g. for source workload we get "source_workload.some-client", and we need to parse "some-client" and remove the metric name
-func (p *ConnectionWithPath) omitMetricsFieldsFromConnection() {
-	p.SourceWorkload = strings.Split(p.SourceWorkload, ".")[1]
-	p.DestinationWorkload = strings.Split(p.DestinationWorkload, ".")[1]
-	p.SourceNamespace = strings.Split(p.SourceNamespace, ".")[1]
-	p.DestinationNamespace = strings.Split(p.DestinationNamespace, ".")[1]
-	p.RequestPath = strings.Split(p.RequestPath, ".")[1]
 }
 
 type EnvoyMetrics struct {
@@ -245,21 +239,51 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 	}
 }
 
-func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (ConnectionWithPath, error) {
-	conn := ConnectionWithPath{}
-	err := EnvoyConnectionMetricRegex.MatchToTarget(metric.Name, &conn)
-	if err != nil && errors.Is(err, &regroup.NoMatchFoundError{}) {
-		return ConnectionWithPath{}, ConnectionInfoInsufficient
+func extractRegexGroups(inputString string, groupNames []string) (*ConnectionWithPath, error) {
+	connection := &ConnectionWithPath{}
+	for _, groupName := range groupNames {
+		groupKey := groupName + "."
+		groupIndex := strings.Index(inputString, groupKey)
+		if groupIndex == -1 {
+			continue
+		}
+		groupValue := inputString[groupIndex+len(groupKey):]
+		if strings.IndexByte(groupValue, '.') != -1 {
+			groupValue = groupValue[:strings.IndexByte(groupValue, '.')]
+		}
+
+		switch groupName {
+		case "source_workload":
+			connection.SourceWorkload = groupValue
+		case "source_workload_namespace":
+			connection.SourceNamespace = groupValue
+		case "destination_workload":
+			connection.DestinationWorkload = groupValue
+		case "destination_workload_namespace":
+			connection.DestinationNamespace = groupValue
+		case "request_path":
+			connection.RequestPath = groupValue
+		case "request_method":
+			connection.RequestMethod = groupValue
+		default:
+			return nil, fmt.Errorf("unknown group name: %s", groupName)
+		}
 	}
+	return connection, nil
+}
+
+func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (ConnectionWithPath, error) {
+	conn, err := extractRegexGroups(metric.Name, GroupNames)
+
 	if err != nil {
 		return ConnectionWithPath{}, err
 	}
+
 	if conn.hasMissingInfo() {
 		return ConnectionWithPath{}, ConnectionInfoInsufficient
 	}
 
-	conn.omitMetricsFieldsFromConnection()
-	return conn, nil
+	return *conn, nil
 }
 
 func (m *IstioWatcher) ReportResults(ctx context.Context) {
