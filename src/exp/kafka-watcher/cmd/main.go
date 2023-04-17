@@ -56,11 +56,12 @@ func main() {
 		logrus.WithError(err).Panic()
 	}
 
-	if err = w.ValidateKafkaServers(signals.SetupSignalHandler()); err != nil {
+	sigHandlerCtx := signals.SetupSignalHandler()
+	if err = w.ValidateKafkaServers(sigHandlerCtx); err != nil {
 		logrus.WithError(err).Panic()
 	}
 
-	if err := w.RunForever(signals.SetupSignalHandler()); err != nil {
+	if err := w.RunForever(sigHandlerCtx); err != nil {
 		logrus.WithError(err).Panic()
 	}
 }
