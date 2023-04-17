@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/amit7itz/goset"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/spf13/viper"
@@ -14,7 +15,14 @@ const (
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
 	UploadIntervalSecondsKey     = "upload-interval-seconds"
 	UploadIntervalSecondsDefault = 60
+	ExcludedNamespacesKey        = "exclude-namespace"
 )
+
+var excludedNamespaces *goset.Set[string]
+
+func ExcludedNamespaces() *goset.Set[string] {
+	return excludedNamespaces
+}
 
 func init() {
 	viper.SetDefault(sharedconfig.DebugKey, sharedconfig.DebugDefault)
@@ -24,4 +32,5 @@ func init() {
 	viper.SetEnvPrefix(sharedconfig.EnvPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
+	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
