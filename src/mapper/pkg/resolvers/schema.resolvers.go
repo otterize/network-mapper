@@ -185,7 +185,7 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 		operation, err := model.KafkaOpFromText(result.Operation)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve kafka operation %s", result.Operation)
-			continue
+			return false, err
 		}
 
 		intent := model.Intent{
