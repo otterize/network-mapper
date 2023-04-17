@@ -45,13 +45,10 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 				LastSeen:             timestamp,
 			}
 
-			var method mapperclient.HttpMethod
 			method, ok := HTTPMethodsToGQLMethods[connWithPath.RequestMethod]
-			if !ok {
-				method = mapperclient.HttpMethodAll
+			if ok {
+				istioConnection.Methods = []mapperclient.HttpMethod{method}
 			}
-
-			istioConnection.Methods = []mapperclient.HttpMethod{method}
 
 			connectionPairToGraphQLConnection[connectionPair] = istioConnection
 			continue
@@ -67,7 +64,6 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 		}
 
 		connectionPairToGraphQLConnection[connectionPair] = istioConnection
-
 	}
 
 	return lo.Values(connectionPairToGraphQLConnection)
