@@ -15,7 +15,7 @@ const (
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
 	UploadIntervalSecondsKey     = "upload-interval-seconds"
 	UploadIntervalSecondsDefault = 60
-	ExcludedNamespacesKey        = "exclude-namespace"
+	ExcludedNamespacesKey        = "exclude-namespaces"
 )
 
 var excludedNamespaces *goset.Set[string]
