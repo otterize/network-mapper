@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/logwatcher"
@@ -38,6 +39,14 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Panic()
 	}
+
+	if len(kafkaServers) == 0 {
+		logrus.WithFields(
+			logrus.Fields{
+				"KafkaServers": viper.GetStringSlice(config.KafkaServersKey),
+			}).WithError(errors.New("no valid Kafka servers parsed from environment variable")).Panic()
+	}
+
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	w, err := logwatcher.NewWatcher(
 		mapperClient,
@@ -47,7 +56,12 @@ func main() {
 		logrus.WithError(err).Panic()
 	}
 
-	if err := w.RunForever(signals.SetupSignalHandler()); err != nil {
+	sigHandlerCtx := signals.SetupSignalHandler()
+	if err = w.ValidateKafkaServers(sigHandlerCtx); err != nil {
+		logrus.WithError(err).Panic()
+	}
+
+	if err := w.RunForever(sigHandlerCtx); err != nil {
 		logrus.WithError(err).Panic()
 	}
 }
