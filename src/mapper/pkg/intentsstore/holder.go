@@ -2,6 +2,7 @@ package intentsstore
 
 import (
 	"github.com/amit7itz/goset"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
@@ -117,6 +118,10 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 }
 
 func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
+	if config.ExcludedNamespaces().Contains(intent.Client.Namespace) || config.ExcludedNamespaces().Contains(intent.Server.Namespace) {
+		return
+	}
+
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
