@@ -42,13 +42,7 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 						return lo.ToPtr(modelKafkaConfToAPI(item))
 					},
 				),
-				Resources: lo.Map(intent.Intent.HTTPResources,
-					func(item model.HTTPResource, _ int) *cloudclient.HTTPConfigInput {
-						return &cloudclient.HTTPConfigInput{
-							Path: lo.ToPtr(item.Path),
-						}
-					},
-				),
+				Resources: httpResourceToHTTPConfInput(intent.Intent.HTTPResources),
 			},
 		}
 	})
@@ -69,6 +63,18 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
 	}
+}
+
+func httpResourceToHTTPConfInput(resources []model.HTTPResource) []*cloudclient.HTTPConfigInput {
+	httpGQLInputs := make([]*cloudclient.HTTPConfigInput, 0)
+	for _, resource := range resources {
+		httpGQLInputs = append(httpGQLInputs, &cloudclient.HTTPConfigInput{
+			Path: lo.ToPtr(resource.Path),
+			Methods: lo.Map(resource.Methods, func(method model.HTTPMethod, _ int) *cloudclient.HTTPMethod {
+				return lo.ToPtr(modelHTTPMethodToAPI(method))
+			})})
+	}
+	return httpGQLInputs
 }
 
 func (c *CloudUploader) reportStatus(ctx context.Context) {

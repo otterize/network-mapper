@@ -6,6 +6,18 @@ import (
 	"github.com/samber/lo"
 )
 
+var modelMethodToAPIMethodMap = map[model.HTTPMethod]cloudclient.HTTPMethod{
+	model.HTTPMethodGet:     cloudclient.HTTPMethodGet,
+	model.HTTPMethodPost:    cloudclient.HTTPMethodPost,
+	model.HTTPMethodPut:     cloudclient.HTTPMethodPut,
+	model.HTTPMethodPatch:   cloudclient.HTTPMethodPatch,
+	model.HTTPMethodDelete:  cloudclient.HTTPMethodDelete,
+	model.HTTPMethodConnect: cloudclient.HTTPMethodConnect,
+	model.HTTPMethodOptions: cloudclient.HTTPMethodOptions,
+	model.HTTPMethodTrace:   cloudclient.HTTPMethodTrace,
+	model.HTTPMethodAll:     cloudclient.HTTPMethodAll,
+}
+
 func modelKafkaOpToAPI(op model.KafkaOperation) cloudclient.KafkaOperation {
 	return cloudclient.KafkaOperation(op)
 }
@@ -24,4 +36,8 @@ func modelIntentTypeToAPI(it *model.IntentType) *cloudclient.IntentType {
 		return nil
 	}
 	return lo.ToPtr(cloudclient.IntentType(lo.FromPtr(it)))
+}
+
+func modelHTTPMethodToAPI(method model.HTTPMethod) cloudclient.HTTPMethod {
+	return modelMethodToAPIMethodMap[method]
 }

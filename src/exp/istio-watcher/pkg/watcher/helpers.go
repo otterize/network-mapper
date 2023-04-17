@@ -43,6 +43,7 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 				DstWorkloadNamespace: connWithPath.DestinationNamespace,
 				Path:                 connWithPath.RequestPath,
 				LastSeen:             timestamp,
+				Methods:              []mapperclient.HttpMethod{},
 			}
 
 			method, ok := HTTPMethodsToGQLMethods[connWithPath.RequestMethod]
