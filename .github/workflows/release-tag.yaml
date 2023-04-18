@@ -81,6 +81,19 @@ jobs:
           build-args:
             SOURCE_IMAGE=${{ env.REGISTRY }}:kafka-watcher-${{ github.sha }}
 
+      - name: Push to Docker Hub - Istio Watcher
+        uses: docker/build-push-action@v2
+        with:
+          context: .github/workflows
+          file: .github/workflows/release.Dockerfile
+          tags: otterize/network-mapper-istio-watcher:latest,otterize/network-mapper-istio-watcher:${{ github.ref_name }}
+          push: true
+          network: host
+          platforms: linux/amd64,linux/arm64
+          build-args:
+            SOURCE_IMAGE=${{ env.REGISTRY }}:istio-watcher-${{ github.sha }}
+
+
   commit-latest-build-tag-to-helm-chart:
     name: Commit Latest Build Tag
     runs-on: ubuntu-latest
