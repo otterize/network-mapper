@@ -89,12 +89,26 @@ scoop install otterize-cli
 ```
 For more platforms, see [the installation guide](https://docs.otterize.com/installation#install-the-otterize-cli).
 
-## How does the network mapper work?
-The Otterize network mapper creates a map of in-cluster traffic by capturing DNS traffic and inspecting active connections then resolving the IP addresses participating in connections to their pods, and crawling up the ownership of the pod until it reaches the root object. The network mapper continues building the network map as long as it's deployed.
 ### Components
-- Mapper: the mapper is deployed once, and resolves service names using the Kubernetes API with traffic information reported by the sniffers.
-- Sniffer: the sniffer is deployed to each node, and is responsible for capturing node-local DNS traffic and inspecting open connections.
-- Kafka watcher (experimental): deployed once to your cluster, and is responsible for capturing kafka server logs and reporting them through the network mapper. 
+- Mapper - the mapper is deployed once per cluster, and receives traffic information from the sniffer and watchers, and resolves the information to communications between (service identities)[/service-identities].
+- Sniffer - the sniffer is deployed to each node using a DaemonSet, and is responsible for capturing node-local DNS traffic and inspecting open connections.
+- Kafka watcher (**experimental**) - the Kafka watcher is deployed once per cluster and is responsible for detecting accesses to Kafka topics, which services perform those accesses and which operations they use.
+- Istio watcher (**experimental**) - the Istio watcher is deployed once per cluster and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths.
+
+### DNS responses
+DNS is a common network protocol used for service discovery. When a pod (`checkoutservice`) tries to connect to a Kubernetes service
+(`orderservice`) or another pod, a DNS query is sent out. The network mapper watches DNS responses and extracts the IP addresses, which are used for the [service identity resolving process](/reference/service-identities).
+
+### Active TCP connections
+DNS responses will only appear when new connections are opened. To handle long-lived connections, the network mapper also queries open TCP connections in a manner similar to `netstat` or `ss`. The IP addresses are used for the [service identity resolving process](/reference/service-identities), as above.
+
+### Kafka logs
+The Kafka watcher periodically examines logs of Kafka servers provided by the user through configuration, parses them and deduces topic-level access to Kafka from pods in the cluster.
+The watcher is only able to parse Kafka logs when Kafka servers' Authorizer logger is configured to output logs to `stdout` with `DEBUG` level.
+
+### Istio sidecar metrics
+The Istio watcher periodically queries for all pods with the `security.istio.io/tlsMode` label, queries each pod's Istio sidecar for metrics about connections, and deduces connections with HTTP paths between pods covered by the Istio service mesh.
+
 
 ### Service name resolution
 Service names are resolved in one of two ways:
