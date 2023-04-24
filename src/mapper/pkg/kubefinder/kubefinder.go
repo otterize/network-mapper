@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	podIpIndexField = "ip"
+	podIpIndexField            = "ip"
+	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
 )
 
 type KubeFinder struct {
@@ -71,6 +72,20 @@ func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 		return nil, ErrFoundMoreThanOnePod
 	}
 	return &pods.Items[0], nil
+}
+
+func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*coreV1.Pod, error) {
+	podList := coreV1.PodList{}
+	err := k.client.List(ctx, &podList, client.InNamespace(namespace), client.MatchingLabels{IstioCanonicalNameLabelKey: workload})
+	if err != nil {
+		return nil, err
+	}
+	// Cannot happen theoretically
+	if len(podList.Items) == 0 {
+		return nil, fmt.Errorf("no matching pods for workload %s", workload)
+	}
+
+	return &podList.Items[0], nil
 }
 
 func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
