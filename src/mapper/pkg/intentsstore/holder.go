@@ -39,15 +39,7 @@ func NewIntentsHolder() *IntentsHolder {
 	}
 }
 
-func (ti *TimestampedIntent) containsExcludedLabels(excludedLabels []string) bool {
-	excludedLabelsMap := lo.SliceToMap(excludedLabels, func(label string) (key, value string) {
-		labelSlice := strings.Split(label, "=")
-		if len(labelSlice) == 1 {
-			return label, ""
-		}
-		return labelSlice[0], labelSlice[1]
-	})
-
+func (ti *TimestampedIntent) containsExcludedLabels(excludedLabelsMap map[string]string) bool {
 	for _, podLabel := range ti.Intent.Client.Labels {
 		value, ok := excludedLabelsMap[podLabel.Key]
 		if ok {
@@ -171,13 +163,20 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) []TimestampedIntent {
+func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, includeLabels, excludeServiceWithLabels []string, includeAllLabels bool) []TimestampedIntent {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
+	excludedLabelsMap := lo.SliceToMap(excludeServiceWithLabels, func(label string) (key, value string) {
+		labelSlice := strings.Split(label, "=")
+		if len(labelSlice) == 1 {
+			return label, ""
+		}
+		return labelSlice[0], labelSlice[1]
+	})
 
 	for pair, intent := range store {
-		if len(excludeServiceWithLabels) != 0 && intent.containsExcludedLabels(excludeServiceWithLabels) {
+		if len(excludeServiceWithLabels) != 0 && intent.containsExcludedLabels(excludedLabelsMap) {
 			continue
 		}
 
@@ -200,7 +199,7 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces []str
 	return result
 }
 
-func dedupServiceIntentsDests(dests []model.OtterizeServiceIdentity) []model.OtterizeServiceIdentity {
+func dedupeServiceIntentsDests(dests []model.OtterizeServiceIdentity) []model.OtterizeServiceIdentity {
 	return lo.UniqBy(dests, func(dest model.OtterizeServiceIdentity) types.NamespacedName {
 		return dest.AsNamespacedName()
 	})
@@ -223,7 +222,7 @@ func GroupIntentsBySource(intents []TimestampedIntent) []model.ServiceIntents {
 	return lo.Map(lo.Values(intentsBySource), func(serviceIntents *model.ServiceIntents, _ int) model.ServiceIntents {
 		return model.ServiceIntents{
 			Client:  serviceIntents.Client,
-			Intents: dedupServiceIntentsDests(serviceIntents.Intents),
+			Intents: dedupeServiceIntentsDests(serviceIntents.Intents),
 		}
 	})
 }
