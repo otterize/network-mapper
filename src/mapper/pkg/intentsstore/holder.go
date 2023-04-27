@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
 	"k8s.io/apimachinery/pkg/types"
+	"strings"
 	"sync"
 	"time"
 )
@@ -36,6 +37,27 @@ func NewIntentsHolder() *IntentsHolder {
 		sinceLastGetStore: make(IntentsStore),
 		lock:              sync.Mutex{},
 	}
+}
+
+func (ti *TimestampedIntent) containsExcludedLabels(excludedLabels []string) bool {
+	excludedLabelsMap := lo.SliceToMap(excludedLabels, func(label string) (key, value string) {
+		labelSlice := strings.Split(label, "=")
+		if len(labelSlice) == 1 {
+			return label, ""
+		}
+		return labelSlice[0], labelSlice[1]
+	})
+
+	for _, podLabel := range ti.Intent.Client.Labels {
+		value, ok := excludedLabelsMap[podLabel.Key]
+		if ok {
+			if value == podLabel.Value {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (i *IntentsHolder) Reset() {
@@ -114,6 +136,10 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	existingIntent.Intent.KafkaTopics = mergeKafkaTopics(existingIntent.Intent.KafkaTopics, intent.KafkaTopics)
 	existingIntent.Intent.HTTPResources = mergeHTTPResources(existingIntent.Intent.HTTPResources, intent.HTTPResources)
 
+	// Replace labels with latest
+	existingIntent.Intent.Client.Labels = intent.Client.Labels
+	existingIntent.Intent.Server.Labels = intent.Server.Labels
+
 	store[key] = existingIntent
 }
 
@@ -129,27 +155,32 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, includeAllLabels bool) []TimestampedIntent {
+func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) []TimestampedIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, includeAllLabels)
+	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, excludeServiceWithLabels, includeAllLabels)
 }
 
 func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, false)
+	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, nil, false)
 	i.sinceLastGetStore = make(IntentsStore)
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces []string, includeLabels []string, includeAllLabels bool) []TimestampedIntent {
+func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) []TimestampedIntent {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
+
 	for pair, intent := range store {
+		if len(excludeServiceWithLabels) != 0 && intent.containsExcludedLabels(excludeServiceWithLabels) {
+			continue
+		}
+
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
 			continue
 		}
