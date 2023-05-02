@@ -104,12 +104,18 @@ type Cluster {
 
 type ClusterConfiguration {
 	globalDefaultDeny: Boolean!
+	istioGlobalDefaultDeny: Boolean!
 	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	useKafkaACLsInAccessGraphStates: Boolean!
 }
 
 input ClusterConfigurationInput {
 	globalDefaultDeny: Boolean!
+	istioGlobalDefaultDeny: Boolean
 	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean
+	useKafkaACLsInAccessGraphStates: Boolean
 }
 
 type ComponentStatus {
@@ -150,19 +156,37 @@ input DiscoveredIntentInput {
 
 type EdgeAccessStatus {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	useKafkaPoliciesInAccessGraphStates: Boolean!
 	verdict: EdgeAccessStatusVerdict!
 	reason: EdgeAccessStatusReason!
+	reasons: [EdgeAccessStatusReason!]!
 }
 
 enum EdgeAccessStatusReason {
 	ALLOWED_BY_APPLIED_INTENTS
 	ALLOWED_BY_APPLIED_INTENTS_OVERLY_PERMISSIVE
+	ALLOWED_BY_APPLIED_INTENTS_HTTP_OVERLY_PERMISSIVE
+	ALLOWED_BY_APPLIED_INTENTS_KAFKA_OVERLY_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_RESOURCE_MISMATCH
+	BLOCKED_BY_APPLIED_INTENTS_HTTP_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_HTTP_RESOURCE_MISMATCH
+	BLOCKED_BY_APPLIED_INTENTS_KAFKA_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_KAFKA_RESOURCE_MISMATCH
+	BLOCKED_BY_KAFKA_ENFORCEMENT_CONFIG_MISSING_APPLIED_INTENTS
 	BLOCKED_BY_DEFAULT_DENY
+	SHARED_SERVICE_ACCOUNT
+	CLIENT_ISTIO_SIDECAR_MISSING
+	SERVER_ISTIO_SIDECAR_MISSING
 	INTENTS_OPERATOR_NOT_ENFORCING
 	INTENTS_OPERATOR_NOT_ENFORCING_MISSING_APPLIED_INTENT
+	INTENTS_OPERATOR_NOT_ENFORCING_KAFKA_INTENTS_NOT_REQUIRED_FOR_TOPIC
 	MISSING_APPLIED_INTENT
 	INTENTS_OPERATOR_NEVER_CONNECTED
 	NETWORK_MAPPER_NEVER_CONNECTED
+	NO_INTENTS_FOUND_OF_RELEVANT_TYPE
+	IGNORED_IN_CALCULATION
 }
 
 enum EdgeAccessStatusVerdict {
@@ -246,6 +270,7 @@ type Intent {
 	type: IntentType
 	kafkaTopics: [KafkaConfig!]
 	httpResources: [HTTPConfig!]
+	status: IntentStatus
 }
 
 input IntentInput {
@@ -256,6 +281,7 @@ input IntentInput {
 	type: IntentType
 	topics: [KafkaConfigInput!]
 	resources: [HTTPConfigInput!]
+	status: IntentStatusInput
 }
 
 type IntentsOperatorComponent {
@@ -268,12 +294,25 @@ type IntentsOperatorConfiguration {
 	globalEnforcementEnabled: Boolean!
 	networkPolicyEnforcementEnabled: Boolean!
 	kafkaACLEnforcementEnabled: Boolean!
+	istioPolicyEnforcementEnabled: Boolean!
 }
 
 input IntentsOperatorConfigurationInput {
 	globalEnforcementEnabled: Boolean!
 	networkPolicyEnforcementEnabled: Boolean!
 	kafkaACLEnforcementEnabled: Boolean!
+	istioPolicyEnforcementEnabled: Boolean!
+}
+
+type IntentStatus {
+	serviceAccountName: String!
+	isServiceAccountShared: Boolean!
+	isServerMissingSidecar: Boolean!
+	isClientMissingSidecar: Boolean!
+}
+
+input IntentStatusInput {
+	istioStatus: IstioStatusInput
 }
 
 enum IntentType {
@@ -294,6 +333,13 @@ type Invite {
 enum InviteStatus {
 	PENDING
 	ACCEPTED
+}
+
+input IstioStatusInput {
+	serviceAccountName: String!
+	isServiceAccountShared: Boolean!
+	isServerMissingSidecar: Boolean!
+	isClientMissingSidecar: Boolean!
 }
 
 type KafkaConfig {
@@ -699,12 +745,26 @@ type ServerProtectionStatus {
 	reason: ServerProtectionStatusReason!
 }
 
+type ServerProtectionStatuses {
+	networkPolicies: ServerProtectionStatus!
+	kafkaACLs: ServerProtectionStatus!
+	istioPolicies: ServerProtectionStatus!
+}
+
 enum ServerProtectionStatusReason {
 	INTENTS_OPERATOR_NEVER_CONNECTED
 	INTENTS_OPERATOR_NOT_ENFORCING
 	SERVER_HAS_NO_NETWORK_POLICY
+	SERVER_HAS_NO_ISTIO_POLICY
+	SERVER_HAS_NO_ISTIO_SIDECAR
 	PROTECTED_BY_DEFAULT_DENY
 	PROTECTED_BY_SERVER_NETWORK_POLICY
+	PROTECTED_BY_SERVER_ISTIO_POLICY
+	PROTECTED_BY_KAFKA_IDENTITY_REQUIRED_NO_INTENTS_REQUIRED
+	PROTECTED_BY_KAFKA_INTENTS_REQUIRED
+	SERVER_HAS_KAFKASERVERCONFIG_NO_ENFORCEMENT
+	SERVER_HAS_NO_KAFKA_SERVER_CONFIG
+	IGNORED_IN_CALCULATION
 }
 
 enum ServerProtectionStatusVerdict {
@@ -722,6 +782,7 @@ type Service {
 	environment: Environment!
 """If service is Kafka, its KafkaServerConfig."""
 	kafkaServerConfig: KafkaServerConfig
+	serviceAccount: String
 }
 
 type ServiceAccessGraph {
@@ -733,7 +794,10 @@ type ServiceAccessGraph {
 
 type ServiceAccessStatus {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useKafkaACLsInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean!
 	protectionStatus: ServerProtectionStatus!
+	protectionStatuses: ServerProtectionStatuses!
 	blockingStatus: ServerBlockingStatus!
 	hasAppliedIntents: Boolean!
 }
