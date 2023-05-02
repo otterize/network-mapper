@@ -6,6 +6,8 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"strings"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -92,6 +94,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			)
 		}
 	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
 	return true, nil
 }
 
@@ -148,6 +151,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			)
 		}
 	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, len(results.Results))
 	return true, nil
 }
 
@@ -206,6 +210,7 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 		)
 	}
 
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, len(results.Results))
 	return true, nil
 }
 
@@ -225,6 +230,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 		})
 	}
 
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, len(results.Results))
 	return true, nil
 }
 
