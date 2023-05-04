@@ -138,3 +138,15 @@ Explore our [documentation](https://docs.otterize.com/) site to learn how to:
 To join the conversation, ask questions, and engage with other users, join the Otterize Slack!
  
 [![button](https://i.ibb.co/vwRP6xK/Group-3090-2.png)](https://joinslack.otterize.com)
+
+## Usage telemetry
+The mapper reports anonymous usage information back to the Otterize team, to help the team understand how the software is used in the community and what aspects users find useful. No personal or organizational identifying information is transmitted in these metrics: they only reflect patterns of usage. You may opt out at any time through a single configuration flag.
+
+To **disable** sending usage information:
+- Via the Otterize OSS Helm chart: `--set global.telemetry.enabled=false`.
+- Via an environment variable: `OTTERIZE_TELEMETRY_ENABLED=false`.
+- If running a mapper directly: `--telemetry-enabled=false`.
+
+If the `telemetry` flag is omitted or set to `true`, telemetry will be enabled: usage information will be reported.
+
+Read more about it in the [Usage telemetry Documentation](https://docs.otterize.com/otterize-oss/usage-telemetry)
