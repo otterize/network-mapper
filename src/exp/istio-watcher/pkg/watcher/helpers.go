@@ -3,6 +3,7 @@ package istiowatcher
 import (
 	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
 	"github.com/samber/lo"
+	"golang.org/x/exp/slices"
 	"net/http"
 	"time"
 )
@@ -60,7 +61,7 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 		}
 
 		method, ok := HTTPMethodsToGQLMethods[connWithPath.RequestMethod]
-		if ok {
+		if ok && !slices.Contains(istioConnection.Methods, method) {
 			istioConnection.Methods = append(istioConnection.Methods, method)
 		}
 
