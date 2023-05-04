@@ -216,15 +216,40 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 
 func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error) {
 	for _, result := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.SrcWorkload, result.SrcWorkloadNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			continue
+		}
+		dstPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.DstWorkload, result.DstWorkloadNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			continue
+		}
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
+			continue
+		}
+
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+		if srcService.OwnerObject != nil {
+			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+		}
+
+		if dstService.OwnerObject != nil {
+			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+		}
+
 		r.intentsHolder.AddIntent(result.LastSeen, model.Intent{
-			Client: &model.OtterizeServiceIdentity{
-				Name:      result.SrcWorkload,
-				Namespace: result.SrcWorkloadNamespace,
-			},
-			Server: &model.OtterizeServiceIdentity{
-				Name:      result.DstWorkload,
-				Namespace: result.DstWorkloadNamespace,
-			},
+			Client:        &srcSvcIdentity,
+			Server:        &dstSvcIdentity,
 			Type:          lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
 		})
