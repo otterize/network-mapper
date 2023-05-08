@@ -6,6 +6,8 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"strings"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -92,6 +94,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			)
 		}
 	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
 	return true, nil
 }
 
@@ -148,6 +151,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			)
 		}
 	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, len(results.Results))
 	return true, nil
 }
 
@@ -206,25 +210,52 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 		)
 	}
 
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, len(results.Results))
 	return true, nil
 }
 
 func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error) {
 	for _, result := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.SrcWorkload, result.SrcWorkloadNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			continue
+		}
+		dstPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.DstWorkload, result.DstWorkloadNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			continue
+		}
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
+			continue
+		}
+
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+		if srcService.OwnerObject != nil {
+			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+		}
+
+		if dstService.OwnerObject != nil {
+			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+		}
+
 		r.intentsHolder.AddIntent(result.LastSeen, model.Intent{
-			Client: &model.OtterizeServiceIdentity{
-				Name:      result.SrcWorkload,
-				Namespace: result.SrcWorkloadNamespace,
-			},
-			Server: &model.OtterizeServiceIdentity{
-				Name:      result.DstWorkload,
-				Namespace: result.DstWorkloadNamespace,
-			},
+			Client:        &srcSvcIdentity,
+			Server:        &dstSvcIdentity,
 			Type:          lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
 		})
 	}
 
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, len(results.Results))
 	return true, nil
 }
 

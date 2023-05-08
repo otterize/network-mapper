@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/clouduploader"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -15,6 +19,9 @@ import (
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
 	"os/signal"
@@ -68,6 +75,24 @@ func main() {
 		}
 	}()
 
+	metadataClient, err := metadata.NewForConfig(clientconfig.GetConfigOrDie())
+	if err != nil {
+		logrus.WithError(err).Fatal("unable to create metadata client")
+	}
+	mapping, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: "", Kind: "Namespace"}, "v1")
+	if err != nil {
+		logrus.WithError(err).Fatal("unable to create Kubernetes API REST mapping")
+	}
+	kubeSystemUID := ""
+	kubeSystemNs, err := metadataClient.Resource(mapping.Resource).Get(context.Background(), "kube-system", metav1.GetOptions{})
+	if err != nil || kubeSystemNs == nil {
+		logrus.Warningf("failed getting kubesystem UID: %s", err)
+		kubeSystemUID = fmt.Sprintf("rand-%s", uuid.New().String())
+	} else {
+		kubeSystemUID = string(kubeSystemNs.UID)
+	}
+	telemetrysender.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
+
 	// start API server
 	e := echo.New()
 	e.GET("/healthz", func(c echo.Context) error {
@@ -98,6 +123,7 @@ func main() {
 		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
 	logrus.Info("Starting api server")
 	err = e.Start("0.0.0.0:9090")
 	if err != nil {
