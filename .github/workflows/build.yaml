@@ -14,6 +14,7 @@ on:
 
 env:
   REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
+  REPOSITORY_NAME: otterize
 
 jobs:
 
@@ -59,7 +60,7 @@ jobs:
         with:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
-          tags: ${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/${{ matrix.service }}:${{ github.sha }}
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
@@ -101,7 +102,7 @@ jobs:
       # Push the Docker image to AWS ECR
       - name: Tag Images as latest
         run: |-
-          retag_image_as_latest() { if [[ $(gcloud container images add-tag "${{ env.REGISTRY }}/$1:${{ github.sha }}" "${{ env.REGISTRY }}/$1:latest" --quiet) ]]; then echo "Failed tagging $1 as latest"; exit 1; fi } # using --quiet to avoid prompt
+          retag_image_as_latest() { if [[ $(gcloud container images add-tag "${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/$1:${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/$1:latest" --quiet) ]]; then echo "Failed tagging $1 as latest"; exit 1; fi } # using --quiet to avoid prompt
           retag_image_as_latest mapper
           retag_image_as_latest sniffer
           retag_image_as_latest kafka-watcher

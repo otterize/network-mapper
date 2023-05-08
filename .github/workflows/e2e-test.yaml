@@ -19,7 +19,7 @@ on:
 
 
 env:
-  REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
+  REGISTRY: us-central1-docker.pkg.dev/main-383408
   REPOSITORY_NAME: otterize
 
 
@@ -57,10 +57,10 @@ jobs:
 
       - name: Deploy Network Mapper
         run: |-
-          docker pull ${{ env.REGISTRY }}/${{ inputs.mapper-tag }}
-          minikube image load ${{ env.REGISTRY }}/${{ inputs.mapper-tag }}
-          docker pull ${{ env.REGISTRY }}/${{ inputs.sniffer-tag }}
-          minikube image load  ${{ env.REGISTRY }}/${{ inputs.sniffer-tag }}
+          docker pull ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/${{ inputs.mapper-tag }}
+          minikube image load ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/${{ inputs.mapper-tag }}
+          docker pull ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/${{ inputs.sniffer-tag }}
+          minikube image load  ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}/${{ inputs.sniffer-tag }}
           
           MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=${{ env.REPOSITORY_NAME }} --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
           SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=${{ env.REPOSITORY_NAME }} --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
