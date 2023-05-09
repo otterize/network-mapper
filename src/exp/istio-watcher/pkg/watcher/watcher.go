@@ -80,7 +80,7 @@ func (p *ConnectionWithPath) hasMissingInfo() bool {
 		}
 	}
 
-	return p.RequestPath == ""
+	return p.RequestPath == "" || p.RequestPath == "unknown"
 }
 
 type EnvoyMetrics struct {
