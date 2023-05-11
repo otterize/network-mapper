@@ -9,7 +9,6 @@ on:
 
 env:
   REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
-  REPOSITORY_NAME: otterize
 
 jobs:
   push-dockerhub:
