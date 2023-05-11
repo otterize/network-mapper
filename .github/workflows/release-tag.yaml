@@ -8,8 +8,7 @@ on:
       - published
 
 env:
-  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com/otterize
-  REPOSITORY_NAME: otterize
+  REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
 
 jobs:
   push-dockerhub:
@@ -26,17 +25,12 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Login to GCR
+        uses: docker/login-action@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+          registry: ${{ env.REGISTRY }}
+          username: _json_key_base64
+          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON}}
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
@@ -55,7 +49,7 @@ jobs:
           network: host
           platforms: linux/amd64,linux/arm64
           build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:mapper-${{ github.sha }}
+            SOURCE_IMAGE=${{ env.REGISTRY }}/mapper:${{ github.sha }}
 
       - name: Push to Docker Hub - Sniffer
         uses: docker/build-push-action@v2
@@ -67,7 +61,7 @@ jobs:
           network: host
           platforms: linux/amd64,linux/arm64
           build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:sniffer-${{ github.sha }}
+            SOURCE_IMAGE=${{ env.REGISTRY }}/sniffer:${{ github.sha }}
 
       - name: Push to Docker Hub - Kafka Watcher
         uses: docker/build-push-action@v2
@@ -79,7 +73,7 @@ jobs:
           network: host
           platforms: linux/amd64,linux/arm64
           build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:kafka-watcher-${{ github.sha }}
+            SOURCE_IMAGE=${{ env.REGISTRY }}/kafka-watcher:${{ github.sha }}
 
       - name: Push to Docker Hub - Istio Watcher
         uses: docker/build-push-action@v2
@@ -91,7 +85,7 @@ jobs:
           network: host
           platforms: linux/amd64,linux/arm64
           build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}:istio-watcher-${{ github.sha }}
+            SOURCE_IMAGE=${{ env.REGISTRY }}/istio-watcher:${{ github.sha }}
 
 
   commit-latest-build-tag-to-helm-chart:
