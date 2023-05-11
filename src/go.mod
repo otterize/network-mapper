@@ -13,7 +13,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20230504115100-381de2a7b6ff
+	github.com/otterize/intents-operator/src v0.0.0-20230508130441-226e535fdeb7
 	github.com/samber/lo v1.33.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.13.0
