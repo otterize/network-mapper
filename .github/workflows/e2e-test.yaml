@@ -6,9 +6,7 @@ on:
     secrets:
       OTTERIZEBOT_GITHUB_TOKEN:
         required: true
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
+      B64_GCLOUD_SERVICE_ACCOUNT_JSON:
         required: true
 
     inputs:
@@ -21,9 +19,7 @@ on:
 
 
 env:
-  REGISTRY: 353146681200.dkr.ecr.us-east-1.amazonaws.com
-  REPOSITORY_NAME: otterize
-
+  REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
 
 jobs:
   e2e-test:
@@ -36,16 +32,12 @@ jobs:
           submodules: recursive
           token: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }} # required for checking out submodules
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Login to GCR
+        uses: docker/login-action@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+          registry: ${{ env.REGISTRY }}
+          username: _json_key_base64
+          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON}}
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
@@ -63,13 +55,13 @@ jobs:
 
       - name: Deploy Network Mapper
         run: |-
-          docker pull ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ inputs.mapper-tag }}
-          minikube image load ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ inputs.mapper-tag }}
-          docker pull ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ inputs.sniffer-tag }}
-          minikube image load  ${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ inputs.sniffer-tag }}
+          docker pull ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}
+          minikube image load ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}
+          docker pull ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
+          minikube image load  ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
           
-          MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=${{ env.REPOSITORY_NAME }} --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
-          SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=${{ env.REPOSITORY_NAME }} --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
+          MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=mapper --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
+          SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=sniffer --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
           helm dep up ./helm-charts/otterize-kubernetes
           helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace $MAPPER_FLAGS $SNIFFER_FLAGS
 
