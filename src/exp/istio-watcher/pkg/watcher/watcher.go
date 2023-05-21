@@ -39,7 +39,7 @@ Envoy metric sample
 	}
 */
 const (
-	IstioProxyTotalRequestsCMD = "pilot-agent request GET stats?format=json&filter=istio_requests_total"
+	IstioProxyTotalRequestsCMD = "pilot-agent request GET stats?format=json&filter=istio_requests_total\\.*reporter\\.source"
 	IstioSidecarContainerName  = "istio-proxy"
 	IstioPodsLabelSelector     = "security.istio.io/tlsMode"
 	MetricsBufferedChannelSize = 100
