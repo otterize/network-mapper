@@ -3,6 +3,7 @@ package istiowatcher
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -246,10 +247,18 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 	}
 }
 
+func hashString(s string) string {
+	h := md5.New()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 func (m *IstioWatcher) isMetricNew(metric Metric) bool {
-	previousCount, found := m.metricsCount[metric.Name]
+	// Metrics can be 1500 characters long the hash is solely for optimization purposes
+	key := hashString(metric.Name)
+	previousCount, found := m.metricsCount[key]
 	if !found || previousCount != metric.Value {
-		m.metricsCount[metric.Name] = metric.Value
+		m.metricsCount[key] = metric.Value
 		return true
 	}
 
