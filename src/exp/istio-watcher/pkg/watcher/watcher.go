@@ -3,6 +3,7 @@ package istiowatcher
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -71,6 +72,7 @@ type IstioWatcher struct {
 	config       *rest.Config
 	mapperClient mapperclient.MapperClient
 	connections  map[ConnectionWithPath]time.Time
+	metricsCount map[string]int
 }
 
 func (p *ConnectionWithPath) hasMissingInfo() bool {
@@ -88,7 +90,8 @@ type EnvoyMetrics struct {
 }
 
 type Metric struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Value int    `json:"value"`
 }
 
 func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
@@ -116,6 +119,7 @@ func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
 		config:       conf,
 		mapperClient: mapperClient,
 		connections:  map[ConnectionWithPath]time.Time{},
+		metricsCount: map[string]int{},
 	}
 
 	return m, nil
@@ -227,6 +231,10 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 		}
 
 		for _, metric := range metrics.Stats {
+			if !m.isMetricNew(metric) {
+				continue
+			}
+
 			conn, err := m.buildConnectionFromMetric(metric)
 			if err != nil && errors.Is(err, ConnectionInfoInsufficient) {
 				continue
@@ -237,6 +245,24 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 			m.connections[conn] = time.Now()
 		}
 	}
+}
+
+func hashString(s string) string {
+	h := md5.New()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (m *IstioWatcher) isMetricNew(metric Metric) bool {
+	// Metrics can be 1500 characters long the hash is solely for optimization purposes
+	key := hashString(metric.Name)
+	previousCount, found := m.metricsCount[key]
+	if !found || previousCount != metric.Value {
+		m.metricsCount[key] = metric.Value
+		return true
+	}
+
+	return false
 }
 
 func extractRegexGroups(inputString string, groupNames []string) (*ConnectionWithPath, error) {
@@ -289,18 +315,23 @@ func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (ConnectionWithP
 func (m *IstioWatcher) ReportResults(ctx context.Context) {
 	for {
 		time.Sleep(viper.GetDuration(config.IstioReportIntervalKey))
-		connections := m.Flush()
-		if len(connections) == 0 {
-			logrus.Debugln("No connections found in metrics - skipping report")
-			continue
-		}
-
-		logrus.Infof("Reporting %d connections", len(connections))
-		results := ToGraphQLIstioConnections(connections)
-		if err := m.mapperClient.ReportIstioConnections(ctx, mapperclient.IstioConnectionResults{Results: results}); err != nil {
+		err := m.reportResults(ctx)
+		if err != nil {
 			logrus.WithError(err).Errorf("Failed reporting Istio connection results to mapper")
 		}
 	}
+}
+
+func (m *IstioWatcher) reportResults(ctx context.Context) error {
+	connections := m.Flush()
+	if len(connections) == 0 {
+		logrus.Debugln("No connections found in metrics - skipping report")
+		return nil
+	}
+
+	logrus.Infof("Reporting %d connections", len(connections))
+	results := ToGraphQLIstioConnections(connections)
+	return m.mapperClient.ReportIstioConnections(ctx, mapperclient.IstioConnectionResults{Results: results})
 }
 
 func (m *IstioWatcher) RunForever(ctx context.Context) error {
