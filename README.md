@@ -92,8 +92,8 @@ For more platforms, see [the installation guide](https://docs.otterize.com/insta
 ### Components
 - Mapper - the mapper is deployed once per cluster, and receives traffic information from the sniffer and watchers, and resolves the information to communications between (service identities)[/service-identities].
 - Sniffer - the sniffer is deployed to each node using a DaemonSet, and is responsible for capturing node-local DNS traffic and inspecting open connections.
-- Kafka watcher (**experimental**) - the Kafka watcher is deployed once per cluster and is responsible for detecting accesses to Kafka topics, which services perform those accesses and which operations they use.
-- Istio watcher (**experimental**) - the Istio watcher is deployed once per cluster and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths. Currently, the Istio watcher has a limitation where it reports all HTTP traffic seen by the sidecar since it was started, regardless of when it was seen.
+- Kafka watcher (**beta**) - the Kafka watcher is deployed once per cluster and is responsible for detecting accesses to Kafka topics, which services perform those accesses and which operations they use.
+- Istio watcher (**beta**) - the Istio watcher is deployed once per cluster and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths. Currently, the Istio watcher has a limitation where it reports all HTTP traffic seen by the sidecar since it was started, regardless of when it was seen.
 
 ### DNS responses
 DNS is a common network protocol used for service discovery. When a pod (`checkoutservice`) tries to connect to a Kubernetes service
