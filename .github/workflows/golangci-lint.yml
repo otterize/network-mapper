@@ -1,11 +1,12 @@
 name: golangci-lint
 on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
   push:
-    tags:
-      - v*
     branches:
       - main
-  pull_request:
 permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
