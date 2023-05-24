@@ -1,6 +1,7 @@
 package intentsstore
 
 import (
+	"encoding/json"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -41,6 +42,15 @@ func NewIntentsHolder() *IntentsHolder {
 
 func (ti *TimestampedIntent) containsExcludedLabels(excludedLabelsMap map[string]string) bool {
 	for _, podLabel := range ti.Intent.Client.Labels {
+		value, ok := excludedLabelsMap[podLabel.Key]
+		if ok {
+			if value == podLabel.Value {
+				return true
+			}
+		}
+	}
+
+	for _, podLabel := range ti.Intent.Server.Labels {
 		value, ok := excludedLabelsMap[podLabel.Key]
 		if ok {
 			if value == podLabel.Value {
@@ -147,23 +157,27 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) []TimestampedIntent {
+func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) ([]TimestampedIntent, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, excludeServiceWithLabels, includeAllLabels)
+	result, err := i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, excludeServiceWithLabels, includeAllLabels)
+	if err != nil {
+		return []TimestampedIntent{}, err
+	}
+	return result, nil
 }
 
 func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, nil, false)
+	intents, _ := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, nil, false)
 	i.sinceLastGetStore = make(IntentsStore)
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, includeLabels, excludeServiceWithLabels []string, includeAllLabels bool) []TimestampedIntent {
+func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, includeLabels, excludeServiceWithLabels []string, includeAllLabels bool) ([]TimestampedIntent, error) {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
@@ -176,7 +190,12 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, incl
 	})
 
 	for pair, intent := range store {
-		if len(excludeServiceWithLabels) != 0 && intent.containsExcludedLabels(excludedLabelsMap) {
+		intentCopy, err := getIntentDeepCopy(intent)
+		if err != nil {
+			return result, err
+		}
+
+		if len(excludeServiceWithLabels) != 0 && intentCopy.containsExcludedLabels(excludedLabelsMap) {
 			continue
 		}
 
@@ -190,13 +209,25 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, incl
 					return includeLabelsSet.Contains(label.Key)
 				})
 			}
-			intent.Intent.Client.Labels = labelsFilter(intent.Intent.Client.Labels)
-			intent.Intent.Server.Labels = labelsFilter(intent.Intent.Server.Labels)
+			intentCopy.Intent.Client.Labels = labelsFilter(intentCopy.Intent.Client.Labels)
+			intentCopy.Intent.Server.Labels = labelsFilter(intentCopy.Intent.Server.Labels)
 		}
 
 		result = append(result, intent)
 	}
-	return result
+	return result, nil
+}
+
+func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {
+	intentCopy := TimestampedIntent{}
+	intentJSON, err := json.Marshal(intent)
+	if err != nil {
+		return TimestampedIntent{}, err
+	}
+	if err = json.Unmarshal(intentJSON, &intentCopy); err != nil {
+		return TimestampedIntent{}, err
+	}
+	return intentCopy, nil
 }
 
 func dedupeServiceIntentsDests(dests []model.OtterizeServiceIdentity) []model.OtterizeServiceIdentity {

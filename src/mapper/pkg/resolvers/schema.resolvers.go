@@ -246,7 +246,6 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 		if dstService.OwnerObject != nil {
 			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}
-
 		r.intentsHolder.AddIntent(result.LastSeen, model.Intent{
 			Client:        &srcSvcIdentity,
 			Server:        &dstSvcIdentity,
@@ -264,7 +263,10 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
 	}
-	discoveredIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, []string{}, shouldIncludeAllLabels)
+	discoveredIntents, err := r.intentsHolder.GetIntents(namespaces, includeLabels, []string{}, shouldIncludeAllLabels)
+	if err != nil {
+		return []model.ServiceIntents{}, err
+	}
 	intentsBySource := intentsstore.GroupIntentsBySource(discoveredIntents)
 
 	// sorting by service name so results are more consistent
@@ -281,13 +283,22 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	return intentsBySource, nil
 }
 
-func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) ([]model.Intent, error) {
+func (r *queryResolver) Intents(
+	ctx context.Context,
+	namespaces,
+	includeLabels,
+	excludeServiceWithLabels []string,
+	includeAllLabels *bool) ([]model.Intent, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
 	}
 
-	timestampedIntents := r.intentsHolder.GetIntents(namespaces, includeLabels, excludeServiceWithLabels, shouldIncludeAllLabels)
+	timestampedIntents, err := r.intentsHolder.GetIntents(namespaces, includeLabels, excludeServiceWithLabels, shouldIncludeAllLabels)
+	if err != nil {
+		return []model.Intent{}, err
+	}
+
 	intents := lo.Map(timestampedIntents, func(timestampedIntent intentsstore.TimestampedIntent, _ int) model.Intent {
 		return timestampedIntent.Intent
 	})
