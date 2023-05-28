@@ -124,8 +124,8 @@ func main() {
 		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
 	telemetrysender.SetGlobalVersion(version.Version())
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
 	logrus.Info("Starting api server")
 	err = e.Start("0.0.0.0:9090")
 	if err != nil {
