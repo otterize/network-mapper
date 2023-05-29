@@ -68,7 +68,7 @@ jobs:
 
       - name: Install CLI
         run: |-
-          wget https://get.otterize.com/otterize-cli/v0.1.20/otterize_Linux_x86_64.tar.gz
+          wget --header="X-Otterize-Test: true" https://get.otterize.com/otterize-cli/v0.1.26/otterize_Linux_x86_64.tar.gz
           tar xf otterize_Linux_x86_64.tar.gz
           sudo cp otterize /usr/local/bin
 
@@ -93,11 +93,11 @@ jobs:
           # sleeps 10 because this is the report interval from the watcher to the mapper
           for i in 1 2 3
           do
-            if [ `otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
+            if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
           done
           
           echo "export intents and compare to expected file" 
-          otterize network-mapper export -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
+          otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
           diff .github/workflows/tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
           
       
