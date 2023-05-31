@@ -10,6 +10,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"io"
 	"k8s.io/apimachinery/pkg/types"
 	"sync"
 	"time"
@@ -67,10 +68,10 @@ func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record stri
 }
 
 func (w *Watcher) WatchForever(ctx context.Context, serverName types.NamespacedName, authzLogPath string) {
-	t, err := tail.TailFile(authzLogPath, tail.Config{Follow: true, ReOpen: true})
+	t, err := tail.TailFile(authzLogPath, tail.Config{Follow: true, ReOpen: true, MustExist: false, Location: &tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}})
 
 	if err != nil {
-		panic(err)
+		logrus.WithError(err).Panic()
 	}
 
 	for line := range t.Lines {
@@ -117,6 +118,7 @@ func (w *Watcher) RunForever(ctx context.Context, serverName types.NamespacedNam
 
 	for {
 		time.Sleep(viper.GetDuration(config.KafkaCooldownIntervalKey))
+
 		if err := w.ReportResults(ctx); err != nil {
 			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
 		}
