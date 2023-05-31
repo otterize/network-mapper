@@ -18,7 +18,14 @@ const (
 	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
 )
 
-type KubeFinder struct {
+type KubeFinder interface {
+	ResolvePodByName(ctx context.Context, name string, namespace string) (*coreV1.Pod, error)
+	ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error)
+	ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*coreV1.Pod, error)
+	ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error)
+}
+
+type FinderImpl struct {
 	mgr               manager.Manager
 	client            client.Client
 	serviceIdResolver *serviceidresolver.Resolver
@@ -26,8 +33,8 @@ type KubeFinder struct {
 
 var ErrFoundMoreThanOnePod = fmt.Errorf("ip belongs to more than one pod")
 
-func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
-	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
+func NewKubeFinder(mgr manager.Manager) (KubeFinder, error) {
+	indexer := &FinderImpl{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
 	err := indexer.initIndexes()
 	if err != nil {
 		return nil, err
@@ -35,7 +42,7 @@ func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
 	return indexer, nil
 }
 
-func (k *KubeFinder) initIndexes() error {
+func (k *FinderImpl) initIndexes() error {
 	err := k.mgr.GetCache().IndexField(context.Background(), &coreV1.Pod{}, podIpIndexField, func(object client.Object) []string {
 		res := make([]string, 0)
 		pod := object.(*coreV1.Pod)
@@ -50,7 +57,7 @@ func (k *KubeFinder) initIndexes() error {
 	return nil
 }
 
-func (k *KubeFinder) ResolvePodByName(ctx context.Context, name string, namespace string) (*coreV1.Pod, error) {
+func (k *FinderImpl) ResolvePodByName(ctx context.Context, name string, namespace string) (*coreV1.Pod, error) {
 	var pod coreV1.Pod
 	err := k.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &pod)
 	if err != nil {
@@ -60,7 +67,7 @@ func (k *KubeFinder) ResolvePodByName(ctx context.Context, name string, namespac
 	return &pod, nil
 }
 
-func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error) {
+func (k *FinderImpl) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error) {
 	var pods coreV1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIpIndexField: ip})
 	if err != nil {
@@ -74,7 +81,7 @@ func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 	return &pods.Items[0], nil
 }
 
-func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*coreV1.Pod, error) {
+func (k *FinderImpl) ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*coreV1.Pod, error) {
 	podList := coreV1.PodList{}
 	err := k.client.List(ctx, &podList, client.InNamespace(namespace), client.MatchingLabels{IstioCanonicalNameLabelKey: workload})
 	if err != nil {
@@ -88,7 +95,7 @@ func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload str
 	return &podList.Items[0], nil
 }
 
-func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
+func (k *FinderImpl) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
 	clusterDomain := viper.GetString(config.ClusterDomainKey)
 	if !strings.HasSuffix(fqdn, clusterDomain) {
 		return nil, fmt.Errorf("address %s is not in the cluster", fqdn)

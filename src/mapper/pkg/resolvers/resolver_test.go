@@ -7,8 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
-	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
+	"github.com/otterize/network-mapper/src/shared/kubefinder"
 	"github.com/otterize/network-mapper/src/shared/testbase"
 	"github.com/stretchr/testify/suite"
 	"net/http/httptest"
@@ -19,7 +19,7 @@ type ResolverTestSuite struct {
 	testbase.ControllerManagerTestSuiteBase
 	server        *httptest.Server
 	client        graphql.Client
-	kubeFinder    *kubefinder.KubeFinder
+	kubeFinder    kubefinder.KubeFinder
 	intentsHolder *intentsstore.IntentsHolder
 }
 

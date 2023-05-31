@@ -11,7 +11,7 @@ import (
 
 type KubeFinderTestSuite struct {
 	testbase.ControllerManagerTestSuiteBase
-	kubeFinder *KubeFinder
+	kubeFinder KubeFinder
 }
 
 func (s *KubeFinderTestSuite) SetupTest() {

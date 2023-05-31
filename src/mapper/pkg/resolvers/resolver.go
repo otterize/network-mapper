@@ -6,7 +6,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
-	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/shared/kubefinder"
 )
 
 // This file will not be regenerated automatically.
@@ -14,12 +14,12 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	kubeFinder        *kubefinder.KubeFinder
+	kubeFinder        kubefinder.KubeFinder
 	serviceIdResolver *serviceidresolver.Resolver
 	intentsHolder     *intentsstore.IntentsHolder
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder) *Resolver {
+func NewResolver(kubeFinder kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder) *Resolver {
 	return &Resolver{
 		kubeFinder:        kubeFinder,
 		serviceIdResolver: serviceIdResolver,
