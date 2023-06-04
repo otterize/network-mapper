@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	MaxResultsPerUploadKey       = "max-results-per-upload"
+	MaxResultsPerUploadDefault   = 100
 	HostProcDirKey               = "host-proc-dir"
 	HostProcDirDefault           = "/hostproc"
 	CallsTimeoutKey              = "calls-timeout"
@@ -16,6 +18,7 @@ const (
 )
 
 func init() {
+	viper.SetDefault(MaxResultsPerUploadKey, MaxResultsPerUploadDefault)
 	viper.SetDefault(SnifferReportIntervalKey, SnifferReportIntervalDefault)
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
 	viper.SetDefault(HostProcDirKey, HostProcDirDefault)

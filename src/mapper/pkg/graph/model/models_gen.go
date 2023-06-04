@@ -10,8 +10,8 @@ import (
 )
 
 type CaptureResultForSrcIP struct {
-	SrcIP        string        `json:"srcIp"`
-	Destinations []Destination `json:"destinations"`
+	Src          *OtterizeServiceIdentityInput `json:"src"`
+	Destinations []Destination                 `json:"destinations"`
 }
 
 type CaptureResults struct {
@@ -19,8 +19,8 @@ type CaptureResults struct {
 }
 
 type Destination struct {
-	Destination string    `json:"destination"`
-	LastSeen    time.Time `json:"lastSeen"`
+	Destination *OtterizeServiceIdentityInput `json:"destination"`
+	LastSeen    time.Time                     `json:"lastSeen"`
 }
 
 type GroupVersionKind struct {
@@ -82,6 +82,11 @@ type OtterizeServiceIdentity struct {
 	PodOwnerKind *GroupVersionKind `json:"podOwnerKind"`
 }
 
+type OtterizeServiceIdentityInput struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 type PodLabel struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -93,8 +98,8 @@ type ServiceIntents struct {
 }
 
 type SocketScanResultForSrcIP struct {
-	SrcIP   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
+	Src          *OtterizeServiceIdentityInput `json:"src"`
+	Destinations []Destination                 `json:"destinations"`
 }
 
 type SocketScanResults struct {

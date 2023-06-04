@@ -6,6 +6,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
 	"github.com/sirupsen/logrus"
@@ -14,26 +15,33 @@ import (
 )
 
 // capturesMap is a map of source IP to a map of destination DNS to the last time it was seen
-type capturesMap map[string]map[string]time.Time
+type capturesMap map[ipresolver.Identity]map[ipresolver.Identity]time.Time
 
 type Sniffer struct {
 	capturedRequests capturesMap
 	socketScanner    *socketscanner.SocketScanner
 	lastReportTime   time.Time
 	mapperClient     mapperclient.MapperClient
+	resolver         ipresolver.IpResolver
 }
 
-func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
+func NewSniffer(mapperClient mapperclient.MapperClient, ipResolver ipresolver.IpResolver) *Sniffer {
 	return &Sniffer{
 		capturedRequests: make(capturesMap),
-		socketScanner:    socketscanner.NewSocketScanner(mapperClient),
+		socketScanner:    socketscanner.NewSocketScanner(mapperClient, ipResolver),
 		lastReportTime:   time.Now(),
 		mapperClient:     mapperClient,
+		resolver:         ipResolver,
 	}
 }
 
 func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
-	captureTime := detectCaptureTime(packet)
+	captureTime := packet.Metadata().CaptureInfo.Timestamp
+	if captureTime.IsZero() {
+		logrus.Warning("Missing capture time, using current time")
+		captureTime = time.Now()
+	}
+
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS)
 	if dnsLayer != nil && ipLayer != nil {
@@ -45,25 +53,36 @@ func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
 				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
 					continue
 				}
-				s.addCapturedRequest(ip.DstIP.String(), string(answer.Name), captureTime)
+
+				podIp := ip.DstIP.String()
+				srcService, err := s.resolver.ResolveIp(podIp, captureTime)
+				if err != nil {
+					logrus.WithError(err).
+						WithField("podIp", podIp).
+						WithField("captureTime", captureTime).
+						Warning("Failed to resolve pod name")
+					continue
+				}
+
+				destDns := string(answer.Name)
+				destService, err := s.resolver.ResolveDNS(destDns, captureTime)
+				if err != nil {
+					if err != ipresolver.NotK8sService || err != ipresolver.NotPodAddress {
+						logrus.WithError(err).
+							WithField("destDNS", destDns).
+							WithField("captureTime", captureTime).
+							Warning("Failed to resolve pod name")
+					}
+					continue
+				}
+
+				if _, ok := s.capturedRequests[srcService]; !ok {
+					s.capturedRequests[srcService] = make(map[ipresolver.Identity]time.Time)
+				}
+				s.capturedRequests[srcService][destService] = captureTime
 			}
 		}
 	}
-}
-
-func detectCaptureTime(packet gopacket.Packet) time.Time {
-	captureTime := packet.Metadata().CaptureInfo.Timestamp
-	if captureTime.IsZero() {
-		return time.Now()
-	}
-	return captureTime
-}
-
-func (s *Sniffer) addCapturedRequest(srcIp string, destDns string, seenAt time.Time) {
-	if _, ok := s.capturedRequests[srcIp]; !ok {
-		s.capturedRequests[srcIp] = make(map[string]time.Time)
-	}
-	s.capturedRequests[srcIp][destDns] = seenAt
 }
 
 func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
@@ -90,21 +109,34 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 
 func getCaptureResults(capturedRequests capturesMap) []mapperclient.CaptureResultForSrcIp {
 	results := make([]mapperclient.CaptureResultForSrcIp, 0, len(capturedRequests))
-	for srcIp, destDNSToTime := range capturedRequests {
+	for src, destToTime := range capturedRequests {
 		destinations := make([]mapperclient.Destination, 0)
-		for destDNS, lastSeen := range destDNSToTime {
-			destinations = append(destinations, mapperclient.Destination{Destination: destDNS, LastSeen: lastSeen})
+		for dest, lastSeen := range destToTime {
+			destinations = append(destinations, mapperclient.Destination{
+				Destination: mapperclient.OtterizeServiceIdentityInput{
+					Name:      dest.Name,
+					Namespace: dest.Namespace,
+				},
+				LastSeen: lastSeen,
+			})
 		}
-		results = append(results, mapperclient.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations})
+		result := mapperclient.CaptureResultForSrcIp{
+			Src: mapperclient.OtterizeServiceIdentityInput{
+				Name:      src.Name,
+				Namespace: src.Namespace,
+			},
+			Destinations: destinations,
+		}
+		results = append(results, result)
 	}
 	return results
 }
 
 func (s *Sniffer) PrintCapturedRequests() {
-	for ip, destinations := range s.capturedRequests {
-		logrus.Debugf("%s:\n", ip)
-		for destDNS, lastSeen := range destinations {
-			logrus.Debugf("\t%s, %s\n", destDNS, lastSeen)
+	for src, destinations := range s.capturedRequests {
+		logrus.Debugf("%s/%s:\n", src.Namespace, src.Name)
+		for dest, lastSeen := range destinations {
+			logrus.Debugf("\t%s/%s, %s\n", dest.Namespace, dest.Name, lastSeen)
 		}
 	}
 }
@@ -133,6 +165,7 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 			if err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")
 			}
+			// TODO: Convert IP to pod name before reporting
 			err = s.socketScanner.ReportSocketScanResults(ctx)
 			if err != nil {
 				logrus.WithError(err).Error("Failed to report socket scan result to mapper")

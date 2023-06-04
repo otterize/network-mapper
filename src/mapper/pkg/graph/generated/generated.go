@@ -411,13 +411,18 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../mappergraphql/schema.graphql", Input: `scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
+input OtterizeServiceIdentityInput {
+    name: String!
+    namespace: String!
+}
+
 input CaptureResultForSrcIp {
-    srcIp: String!
+    src: OtterizeServiceIdentityInput!
     destinations: [Destination!]!
 }
 
 input Destination {
-    destination: String!
+    destination: OtterizeServiceIdentityInput!
     lastSeen: Time!
 }
 
@@ -426,8 +431,8 @@ input CaptureResults {
 }
 
 input SocketScanResultForSrcIp {
-    srcIp: String!
-    destIps: [Destination!]!
+    src: OtterizeServiceIdentityInput!
+    destinations: [Destination!]!
 }
 
 input SocketScanResults {
@@ -2987,11 +2992,11 @@ func (ec *executionContext) unmarshalInputCaptureResultForSrcIp(ctx context.Cont
 
 	for k, v := range asMap {
 		switch k {
-		case "srcIp":
+		case "src":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
-			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
+			it.Src, err = ec.unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3045,7 +3050,7 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destination"))
-			it.Destination, err = ec.unmarshalNString2string(ctx, v)
+			it.Destination, err = ec.unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3243,6 +3248,37 @@ func (ec *executionContext) unmarshalInputKafkaMapperResults(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputOtterizeServiceIdentityInput(ctx context.Context, obj interface{}) (model.OtterizeServiceIdentityInput, error) {
+	var it model.OtterizeServiceIdentityInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			it.Namespace, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.Context, obj interface{}) (model.SocketScanResultForSrcIP, error) {
 	var it model.SocketScanResultForSrcIP
 	asMap := map[string]interface{}{}
@@ -3252,19 +3288,19 @@ func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.C
 
 	for k, v := range asMap {
 		switch k {
-		case "srcIp":
+		case "src":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
-			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
+			it.Src, err = ec.unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "destIps":
+		case "destinations":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destIps"))
-			it.DestIps, err = ec.unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐDestinationᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destinations"))
+			it.Destinations, err = ec.unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐDestinationᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4532,6 +4568,11 @@ func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋot
 		return graphql.Null
 	}
 	return ec._OtterizeServiceIdentity(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx context.Context, v interface{}) (*model.OtterizeServiceIdentityInput, error) {
+	res, err := ec.unmarshalInputOtterizeServiceIdentityInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNPodLabel2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabel(ctx context.Context, sel ast.SelectionSet, v model.PodLabel) graphql.Marshaler {

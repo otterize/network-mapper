@@ -1,12 +1,17 @@
 scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
+input OtterizeServiceIdentityInput {
+    name: String!
+    namespace: String!
+}
+
 input CaptureResultForSrcIp {
-    srcIp: String!
+    src: OtterizeServiceIdentityInput!
     destinations: [Destination!]!
 }
 
 input Destination {
-    destination: String!
+    destination: OtterizeServiceIdentityInput!
     lastSeen: Time!
 }
 
@@ -15,8 +20,8 @@ input CaptureResults {
 }
 
 input SocketScanResultForSrcIp {
-    srcIp: String!
-    destIps: [Destination!]!
+    src: OtterizeServiceIdentityInput!
+    destinations: [Destination!]!
 }
 
 input SocketScanResults {
