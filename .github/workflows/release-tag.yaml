@@ -84,8 +84,9 @@ jobs:
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}/istio-watcher:${{ github.sha }}
+          build-args: |
+            "VERSION=${{ github.ref_name }}"
+            "SOURCE_IMAGE=${{ env.REGISTRY }}/istio-watcher:${{ github.sha }}"
 
 
   commit-latest-build-tag-to-helm-chart:

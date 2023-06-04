@@ -17,6 +17,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
+	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -123,6 +124,7 @@ func main() {
 		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
+	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
 	logrus.Info("Starting api server")
 	err = e.Start("0.0.0.0:9090")
