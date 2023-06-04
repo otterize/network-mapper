@@ -48,8 +48,9 @@ jobs:
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}/mapper:${{ github.sha }}
+          build-args: |
+            "VERSION=${{ github.ref_name }}"
+            "SOURCE_IMAGE=${{ env.REGISTRY }}/mapper:${{ github.sha }}"
 
       - name: Push to Docker Hub - Sniffer
         uses: docker/build-push-action@v2
@@ -60,8 +61,9 @@ jobs:
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}/sniffer:${{ github.sha }}
+          build-args: |
+            "VERSION=${{ github.ref_name }}"
+            "SOURCE_IMAGE=${{ env.REGISTRY }}/sniffer:${{ github.sha }}"
 
       - name: Push to Docker Hub - Kafka Watcher
         uses: docker/build-push-action@v2
@@ -72,8 +74,9 @@ jobs:
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
-          build-args:
-            SOURCE_IMAGE=${{ env.REGISTRY }}/kafka-watcher:${{ github.sha }}
+          build-args: |
+            "VERSION=${{ github.ref_name }}"
+            "SOURCE_IMAGE=${{ env.REGISTRY }}/kafka-watcher:${{ github.sha }}"
 
       - name: Push to Docker Hub - Istio Watcher
         uses: docker/build-push-action@v2
