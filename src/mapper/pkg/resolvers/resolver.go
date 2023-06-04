@@ -14,12 +14,12 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	kubeFinder        kubefinder.KubeFinder
+	kubeFinder        *kubefinder.KubeFinder
 	serviceIdResolver *serviceidresolver.Resolver
 	intentsHolder     *intentsstore.IntentsHolder
 }
 
-func NewResolver(kubeFinder kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder) *Resolver {
+func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder) *Resolver {
 	return &Resolver{
 		kubeFinder:        kubeFinder,
 		serviceIdResolver: serviceIdResolver,

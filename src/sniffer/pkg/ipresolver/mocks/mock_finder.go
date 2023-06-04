@@ -5,6 +5,7 @@
 package ipresolvermocks
 
 import (
+	context "context"
 	reflect "reflect"
 	time "time"
 
@@ -12,31 +13,31 @@ import (
 	ipresolver "github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 )
 
-// MockIpResolver is a mock of IpResolver interface.
-type MockIpResolver struct {
+// MockPodResolver is a mock of PodResolver interface.
+type MockPodResolver struct {
 	ctrl     *gomock.Controller
-	recorder *MockIpResolverMockRecorder
+	recorder *MockPodResolverMockRecorder
 }
 
-// MockIpResolverMockRecorder is the mock recorder for MockIpResolver.
-type MockIpResolverMockRecorder struct {
-	mock *MockIpResolver
+// MockPodResolverMockRecorder is the mock recorder for MockPodResolver.
+type MockPodResolverMockRecorder struct {
+	mock *MockPodResolver
 }
 
-// NewMockIpResolver creates a new mock instance.
-func NewMockIpResolver(ctrl *gomock.Controller) *MockIpResolver {
-	mock := &MockIpResolver{ctrl: ctrl}
-	mock.recorder = &MockIpResolverMockRecorder{mock}
+// NewMockPodResolver creates a new mock instance.
+func NewMockPodResolver(ctrl *gomock.Controller) *MockPodResolver {
+	mock := &MockPodResolver{ctrl: ctrl}
+	mock.recorder = &MockPodResolverMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockIpResolver) EXPECT() *MockIpResolverMockRecorder {
+func (m *MockPodResolver) EXPECT() *MockPodResolverMockRecorder {
 	return m.recorder
 }
 
 // ResolveDNS mocks base method.
-func (m *MockIpResolver) ResolveDNS(dns string, captureTime time.Time) (ipresolver.Identity, error) {
+func (m *MockPodResolver) ResolveDNS(dns ipresolver.DestDNS, captureTime time.Time) (ipresolver.Identity, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveDNS", dns, captureTime)
 	ret0, _ := ret[0].(ipresolver.Identity)
@@ -45,22 +46,36 @@ func (m *MockIpResolver) ResolveDNS(dns string, captureTime time.Time) (ipresolv
 }
 
 // ResolveDNS indicates an expected call of ResolveDNS.
-func (mr *MockIpResolverMockRecorder) ResolveDNS(dns, captureTime interface{}) *gomock.Call {
+func (mr *MockPodResolverMockRecorder) ResolveDNS(dns, captureTime interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveDNS", reflect.TypeOf((*MockIpResolver)(nil).ResolveDNS), dns, captureTime)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveDNS", reflect.TypeOf((*MockPodResolver)(nil).ResolveDNS), dns, captureTime)
 }
 
-// ResolveIp mocks base method.
-func (m *MockIpResolver) ResolveIp(ip string, captureTime time.Time) (ipresolver.Identity, error) {
+// ResolveIP mocks base method.
+func (m *MockPodResolver) ResolveIP(ip ipresolver.PodIP, captureTime time.Time) (ipresolver.Identity, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResolveIp", ip, captureTime)
+	ret := m.ctrl.Call(m, "ResolveIP", ip, captureTime)
 	ret0, _ := ret[0].(ipresolver.Identity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ResolveIp indicates an expected call of ResolveIp.
-func (mr *MockIpResolverMockRecorder) ResolveIp(ip, captureTime interface{}) *gomock.Call {
+// ResolveIP indicates an expected call of ResolveIP.
+func (mr *MockPodResolverMockRecorder) ResolveIP(ip, captureTime interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveIp", reflect.TypeOf((*MockIpResolver)(nil).ResolveIp), ip, captureTime)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveIP", reflect.TypeOf((*MockPodResolver)(nil).ResolveIP), ip, captureTime)
+}
+
+// WaitForUpdateTime mocks base method.
+func (m *MockPodResolver) WaitForUpdateTime(ctx context.Context, updateTime time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitForUpdateTime", ctx, updateTime)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WaitForUpdateTime indicates an expected call of WaitForUpdateTime.
+func (mr *MockPodResolverMockRecorder) WaitForUpdateTime(ctx, updateTime interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForUpdateTime", reflect.TypeOf((*MockPodResolver)(nil).WaitForUpdateTime), ctx, updateTime)
 }

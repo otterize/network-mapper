@@ -6,42 +6,100 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"fmt"
-	"github.com/otterize/intents-operator/src/operator/api/v1alpha2"
+	"strings"
+
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/shared/kubefinder"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 )
 
-func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
+func (r *mutationResolver) ResetCapture(context.Context) (bool, error) {
 	logrus.Info("Resetting stored intents")
 	r.intentsHolder.Reset()
 	return true, nil
 }
 
-func (r *mutationResolver) getServiceLabels(ctx context.Context, service *model.OtterizeServiceIdentityInput) []model.PodLabel {
-	// TODO: Create a new function to get the labels from the service
-	intent := v1alpha2.Intent{
-		Name: fmt.Sprintf("%s.%s", service.Name, service.Namespace),
-	}
-
-	pod, err := r.serviceIdResolver.ResolveIntentServerToPod(ctx, intent, service.Namespace)
-	if err != nil {
-		logrus.WithError(err).Warningf("Error getting labels for service %s.%s", service.Name, service.Namespace)
-		return nil
-	}
-
-	return podLabelsToOtterizeLabels(&pod)
-}
-
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
 	for _, captureItem := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, captureItem.SrcIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", captureItem.SrcIP)
+			} else {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", captureItem.SrcIP)
+			}
+			continue
+		}
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+		for _, dest := range captureItem.Destinations {
+			destAddress := dest.Destination
+			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
+				// not a k8s service, ignore
+				continue
+			}
+			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
+			if err != nil {
+				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
+				continue
+			}
+			if len(ips) == 0 {
+				logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", dest)
+				continue
+			}
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, ips[0])
+			if err != nil {
+				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
+				} else {
+					logrus.WithError(err).Debugf("Could not resolve %s to pod", ips[0])
+				}
+				continue
+			}
+			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+			if err != nil {
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+				continue
+			}
+
+			srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+			dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+			if srcService.OwnerObject != nil {
+				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			if dstService.OwnerObject != nil {
+				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			intent := model.Intent{
+				Client: &srcSvcIdentity,
+				Server: &dstSvcIdentity,
+			}
+
+			r.intentsHolder.AddIntent(
+				dest.LastSeen,
+				intent,
+			)
+		}
+	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
+	return true, nil
+}
+
+func (r *mutationResolver) ReportResolvedCaptureResults(ctx context.Context, results []model.ResolvedCaptureResult) (bool, error) {
+	for _, captureItem := range results {
 		src := captureItem.Src
 		for _, dest := range captureItem.Destinations {
 			srcLabels := r.getServiceLabels(ctx, src)
@@ -57,12 +115,12 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			)
 		}
 	}
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results))
 	return true, nil
 }
 
-func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
-	for _, socketScanItem := range results.Results {
+func (r *mutationResolver) ReportResolvedSocketScanResults(ctx context.Context, results []model.ResolvedSocketScanResult) (bool, error) {
+	for _, socketScanItem := range results {
 		src := socketScanItem.Src
 		for _, dest := range socketScanItem.Destinations {
 			srcLabels := r.getServiceLabels(ctx, src)
@@ -74,6 +132,63 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 
 			r.intentsHolder.AddIntent(
 				dest.LastSeen,
+				intent,
+			)
+		}
+	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, len(results))
+	return true, nil
+}
+
+func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
+	for _, socketScanItem := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, socketScanItem.SrcIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", socketScanItem.SrcIP)
+			} else {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", socketScanItem.SrcIP)
+			}
+			continue
+		}
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+		for _, destIp := range socketScanItem.DestIps {
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
+			if err != nil {
+				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
+				} else {
+					logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp)
+				}
+				continue
+			}
+			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+			if err != nil {
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+				continue
+			}
+
+			srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+			dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+			if srcService.OwnerObject != nil {
+				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			if dstService.OwnerObject != nil {
+				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			intent := model.Intent{
+				Client: &srcSvcIdentity,
+				Server: &dstSvcIdentity,
+			}
+
+			r.intentsHolder.AddIntent(
+				destIp.LastSeen,
 				intent,
 			)
 		}
@@ -185,7 +300,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 	return true, nil
 }
 
-func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
+func (r *queryResolver) ServiceIntents(_ context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
@@ -210,7 +325,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	return intentsBySource, nil
 }
 
-func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) ([]model.Intent, error) {
+func (r *queryResolver) Intents(_ context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) ([]model.Intent, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true

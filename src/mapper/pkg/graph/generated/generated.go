@@ -69,11 +69,13 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ReportCaptureResults         func(childComplexity int, results model.CaptureResults) int
-		ReportIstioConnectionResults func(childComplexity int, results model.IstioConnectionResults) int
-		ReportKafkaMapperResults     func(childComplexity int, results model.KafkaMapperResults) int
-		ReportSocketScanResults      func(childComplexity int, results model.SocketScanResults) int
-		ResetCapture                 func(childComplexity int) int
+		ReportCaptureResults            func(childComplexity int, results model.CaptureResults) int
+		ReportIstioConnectionResults    func(childComplexity int, results model.IstioConnectionResults) int
+		ReportKafkaMapperResults        func(childComplexity int, results model.KafkaMapperResults) int
+		ReportResolvedCaptureResults    func(childComplexity int, results []model.ResolvedCaptureResult) int
+		ReportResolvedSocketScanResults func(childComplexity int, results []model.ResolvedSocketScanResult) int
+		ReportSocketScanResults         func(childComplexity int, results model.SocketScanResults) int
+		ResetCapture                    func(childComplexity int) int
 	}
 
 	OtterizeServiceIdentity struct {
@@ -102,6 +104,8 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	ResetCapture(ctx context.Context) (bool, error)
 	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error)
+	ReportResolvedCaptureResults(ctx context.Context, results []model.ResolvedCaptureResult) (bool, error)
+	ReportResolvedSocketScanResults(ctx context.Context, results []model.ResolvedSocketScanResult) (bool, error)
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 	ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error)
 	ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error)
@@ -245,6 +249,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ReportKafkaMapperResults(childComplexity, args["results"].(model.KafkaMapperResults)), true
+
+	case "Mutation.reportResolvedCaptureResults":
+		if e.complexity.Mutation.ReportResolvedCaptureResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportResolvedCaptureResults_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportResolvedCaptureResults(childComplexity, args["results"].([]model.ResolvedCaptureResult)), true
+
+	case "Mutation.reportResolvedSocketScanResults":
+		if e.complexity.Mutation.ReportResolvedSocketScanResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportResolvedSocketScanResults_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportResolvedSocketScanResults(childComplexity, args["results"].([]model.ResolvedSocketScanResult)), true
 
 	case "Mutation.reportSocketScanResults":
 		if e.complexity.Mutation.ReportSocketScanResults == nil {
@@ -411,18 +439,28 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../mappergraphql/schema.graphql", Input: `scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
-input OtterizeServiceIdentityInput {
+input ResolvedOtterizeServiceIdentityInput {
     name: String!
     namespace: String!
 }
 
+input ResolvedCaptureResult {
+    src: ResolvedOtterizeServiceIdentityInput!
+    destinations: [ResolvedDestination!]!
+}
+
 input CaptureResultForSrcIp {
-    src: OtterizeServiceIdentityInput!
+    srcIp: String!
     destinations: [Destination!]!
 }
 
+input ResolvedDestination {
+    destination: ResolvedOtterizeServiceIdentityInput!
+    lastSeen: Time!
+}
+
 input Destination {
-    destination: OtterizeServiceIdentityInput!
+    destination: String!
     lastSeen: Time!
 }
 
@@ -430,9 +468,14 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
+input ResolvedSocketScanResult {
+    src: ResolvedOtterizeServiceIdentityInput!
+    destinations: [ResolvedDestination!]!
+}
+
 input SocketScanResultForSrcIp {
-    src: OtterizeServiceIdentityInput!
-    destinations: [Destination!]!
+    srcIp: String!
+    destIps: [Destination!]!
 }
 
 input SocketScanResults {
@@ -564,6 +607,8 @@ type Query {
 type Mutation {
     resetCapture: Boolean!
     reportCaptureResults(results: CaptureResults!): Boolean!
+    reportResolvedCaptureResults(results: [ResolvedCaptureResult!]!): Boolean!
+    reportResolvedSocketScanResults(results: [ResolvedSocketScanResult!]!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
@@ -612,6 +657,36 @@ func (ec *executionContext) field_Mutation_reportKafkaMapperResults_args(ctx con
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
 		arg0, err = ec.unmarshalNKafkaMapperResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐKafkaMapperResults(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["results"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportResolvedCaptureResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []model.ResolvedCaptureResult
+	if tmp, ok := rawArgs["results"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+		arg0, err = ec.unmarshalNResolvedCaptureResult2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedCaptureResultᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["results"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportResolvedSocketScanResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []model.ResolvedSocketScanResult
+	if tmp, ok := rawArgs["results"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+		arg0, err = ec.unmarshalNResolvedSocketScanResult2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedSocketScanResultᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1226,6 +1301,90 @@ func (ec *executionContext) _Mutation_reportCaptureResults(ctx context.Context, 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().ReportCaptureResults(rctx, args["results"].(model.CaptureResults))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_reportResolvedCaptureResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_reportResolvedCaptureResults_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportResolvedCaptureResults(rctx, args["results"].([]model.ResolvedCaptureResult))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_reportResolvedSocketScanResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_reportResolvedSocketScanResults_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportResolvedSocketScanResults(rctx, args["results"].([]model.ResolvedSocketScanResult))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2992,11 +3151,11 @@ func (ec *executionContext) unmarshalInputCaptureResultForSrcIp(ctx context.Cont
 
 	for k, v := range asMap {
 		switch k {
-		case "src":
+		case "srcIp":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
-			it.Src, err = ec.unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
+			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3050,7 +3209,7 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destination"))
-			it.Destination, err = ec.unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx, v)
+			it.Destination, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3248,8 +3407,70 @@ func (ec *executionContext) unmarshalInputKafkaMapperResults(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputOtterizeServiceIdentityInput(ctx context.Context, obj interface{}) (model.OtterizeServiceIdentityInput, error) {
-	var it model.OtterizeServiceIdentityInput
+func (ec *executionContext) unmarshalInputResolvedCaptureResult(ctx context.Context, obj interface{}) (model.ResolvedCaptureResult, error) {
+	var it model.ResolvedCaptureResult
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "src":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
+			it.Src, err = ec.unmarshalNResolvedOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedOtterizeServiceIdentityInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "destinations":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destinations"))
+			it.Destinations, err = ec.unmarshalNResolvedDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedDestinationᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputResolvedDestination(ctx context.Context, obj interface{}) (model.ResolvedDestination, error) {
+	var it model.ResolvedDestination
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "destination":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destination"))
+			it.Destination, err = ec.unmarshalNResolvedOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedOtterizeServiceIdentityInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "lastSeen":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastSeen"))
+			it.LastSeen, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputResolvedOtterizeServiceIdentityInput(ctx context.Context, obj interface{}) (model.ResolvedOtterizeServiceIdentityInput, error) {
+	var it model.ResolvedOtterizeServiceIdentityInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3279,8 +3500,8 @@ func (ec *executionContext) unmarshalInputOtterizeServiceIdentityInput(ctx conte
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.Context, obj interface{}) (model.SocketScanResultForSrcIP, error) {
-	var it model.SocketScanResultForSrcIP
+func (ec *executionContext) unmarshalInputResolvedSocketScanResult(ctx context.Context, obj interface{}) (model.ResolvedSocketScanResult, error) {
+	var it model.ResolvedSocketScanResult
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3292,7 +3513,7 @@ func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.C
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("src"))
-			it.Src, err = ec.unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx, v)
+			it.Src, err = ec.unmarshalNResolvedOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedOtterizeServiceIdentityInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3300,7 +3521,38 @@ func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.C
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destinations"))
-			it.Destinations, err = ec.unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐDestinationᚄ(ctx, v)
+			it.Destinations, err = ec.unmarshalNResolvedDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedDestinationᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSocketScanResultForSrcIp(ctx context.Context, obj interface{}) (model.SocketScanResultForSrcIP, error) {
+	var it model.SocketScanResultForSrcIP
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "srcIp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
+			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "destIps":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destIps"))
+			it.DestIps, err = ec.unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐDestinationᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3559,6 +3811,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "reportCaptureResults":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reportCaptureResults(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "reportResolvedCaptureResults":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportResolvedCaptureResults(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "reportResolvedSocketScanResults":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportResolvedSocketScanResults(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -4570,13 +4842,79 @@ func (ec *executionContext) marshalNOtterizeServiceIdentity2ᚖgithubᚗcomᚋot
 	return ec._OtterizeServiceIdentity(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐOtterizeServiceIdentityInput(ctx context.Context, v interface{}) (*model.OtterizeServiceIdentityInput, error) {
-	res, err := ec.unmarshalInputOtterizeServiceIdentityInput(ctx, v)
+func (ec *executionContext) marshalNPodLabel2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabel(ctx context.Context, sel ast.SelectionSet, v model.PodLabel) graphql.Marshaler {
+	return ec._PodLabel(ctx, sel, &v)
+}
+
+func (ec *executionContext) unmarshalNResolvedCaptureResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedCaptureResult(ctx context.Context, v interface{}) (model.ResolvedCaptureResult, error) {
+	res, err := ec.unmarshalInputResolvedCaptureResult(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNResolvedCaptureResult2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedCaptureResultᚄ(ctx context.Context, v interface{}) ([]model.ResolvedCaptureResult, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.ResolvedCaptureResult, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNResolvedCaptureResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedCaptureResult(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNResolvedDestination2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedDestination(ctx context.Context, v interface{}) (model.ResolvedDestination, error) {
+	res, err := ec.unmarshalInputResolvedDestination(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNResolvedDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedDestinationᚄ(ctx context.Context, v interface{}) ([]model.ResolvedDestination, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.ResolvedDestination, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNResolvedDestination2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedDestination(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNResolvedOtterizeServiceIdentityInput2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedOtterizeServiceIdentityInput(ctx context.Context, v interface{}) (*model.ResolvedOtterizeServiceIdentityInput, error) {
+	res, err := ec.unmarshalInputResolvedOtterizeServiceIdentityInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPodLabel2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabel(ctx context.Context, sel ast.SelectionSet, v model.PodLabel) graphql.Marshaler {
-	return ec._PodLabel(ctx, sel, &v)
+func (ec *executionContext) unmarshalNResolvedSocketScanResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedSocketScanResult(ctx context.Context, v interface{}) (model.ResolvedSocketScanResult, error) {
+	res, err := ec.unmarshalInputResolvedSocketScanResult(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNResolvedSocketScanResult2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedSocketScanResultᚄ(ctx context.Context, v interface{}) ([]model.ResolvedSocketScanResult, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.ResolvedSocketScanResult, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNResolvedSocketScanResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐResolvedSocketScanResult(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalNServiceIntents2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐServiceIntents(ctx context.Context, sel ast.SelectionSet, v model.ServiceIntents) graphql.Marshaler {

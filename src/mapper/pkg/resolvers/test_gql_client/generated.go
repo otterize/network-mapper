@@ -10,12 +10,12 @@ import (
 )
 
 type CaptureResultForSrcIp struct {
-	Src          OtterizeServiceIdentityInput `json:"src"`
-	Destinations []Destination                `json:"destinations"`
+	SrcIp        string        `json:"srcIp"`
+	Destinations []Destination `json:"destinations"`
 }
 
-// GetSrc returns CaptureResultForSrcIp.Src, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrc() OtterizeServiceIdentityInput { return v.Src }
+// GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
+func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
 
 // GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
 func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
@@ -28,26 +28,15 @@ type CaptureResults struct {
 func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
 
 type Destination struct {
-	Destination OtterizeServiceIdentityInput `json:"destination"`
-	LastSeen    time.Time                    `json:"lastSeen"`
+	Destination string    `json:"destination"`
+	LastSeen    time.Time `json:"lastSeen"`
 }
 
 // GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
-func (v *Destination) GetDestination() OtterizeServiceIdentityInput { return v.Destination }
+func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
-
-type OtterizeServiceIdentityInput struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-}
-
-// GetName returns OtterizeServiceIdentityInput.Name, and is useful for accessing the field via an interface.
-func (v *OtterizeServiceIdentityInput) GetName() string { return v.Name }
-
-// GetNamespace returns OtterizeServiceIdentityInput.Namespace, and is useful for accessing the field via an interface.
-func (v *OtterizeServiceIdentityInput) GetNamespace() string { return v.Namespace }
 
 // ReportCaptureResultsResponse is returned by ReportCaptureResults on success.
 type ReportCaptureResultsResponse struct {
@@ -156,15 +145,15 @@ func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetNamespac
 }
 
 type SocketScanResultForSrcIp struct {
-	Src          OtterizeServiceIdentityInput `json:"src"`
-	Destinations []Destination                `json:"destinations"`
+	SrcIp   string        `json:"srcIp"`
+	DestIps []Destination `json:"destIps"`
 }
 
-// GetSrc returns SocketScanResultForSrcIp.Src, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetSrc() OtterizeServiceIdentityInput { return v.Src }
+// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
+func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
 
-// GetDestinations returns SocketScanResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
+// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
+func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
 
 type SocketScanResults struct {
 	Results []SocketScanResultForSrcIp `json:"results"`

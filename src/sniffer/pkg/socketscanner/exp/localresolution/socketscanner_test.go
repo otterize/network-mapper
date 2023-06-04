@@ -1,46 +1,50 @@
-package socketscanner
+package localresolution
 
 import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
+	ipresolvermocks "github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver/mocks"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient/mockclient"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 	"os"
 	"testing"
+	"time"
 )
 
 type SocketScannerTestSuite struct {
 	suite.Suite
 	mockController   *gomock.Controller
 	mockMapperClient *mock_client.MockMapperClient
+	mockIpResolver   *ipresolvermocks.MockPodResolver
 }
 
 func (s *SocketScannerTestSuite) SetupSuite() {
 	s.mockController = gomock.NewController(s.T())
 	s.mockMapperClient = mock_client.NewMockMapperClient(s.mockController)
+	s.mockIpResolver = ipresolvermocks.NewMockPodResolver(s.mockController)
 }
 
-type SocketScanResultForSrcIpMatcher []mapperclient.SocketScanResultForSrcIp
+type ResolvedSocketScanResultMatcher []mapperclient.ResolvedSocketScanResult
 
-func (m SocketScanResultForSrcIpMatcher) Matches(x interface{}) bool {
-	results, ok := x.(mapperclient.SocketScanResults)
+func (m ResolvedSocketScanResultMatcher) Matches(x interface{}) bool {
+	results, ok := x.([]mapperclient.ResolvedSocketScanResult)
 	if !ok {
 		return false
 	}
 
-	actualValues := results.Results
-	if len(actualValues) != len(m) {
+	if len(results) != len(m) {
 		return false
 	}
 
 	// Match in any order
 	for _, expected := range m {
 		found := false
-		for _, actual := range actualValues {
+		for _, actual := range results {
 			if matchSocketScanResult(expected, actual) {
 				found = true
 				break
@@ -53,17 +57,17 @@ func (m SocketScanResultForSrcIpMatcher) Matches(x interface{}) bool {
 	return true
 }
 
-func matchSocketScanResult(expected, actual mapperclient.SocketScanResultForSrcIp) bool {
-	if expected.SrcIp != actual.SrcIp {
+func matchSocketScanResult(expected, actual mapperclient.ResolvedSocketScanResult) bool {
+	if expected.Src != actual.Src {
 		return false
 	}
 
-	if len(expected.DestIps) != len(actual.DestIps) {
+	if len(expected.Destinations) != len(actual.Destinations) {
 		return false
 	}
 
-	for i := range expected.DestIps {
-		if expected.DestIps[i].Destination != actual.DestIps[i].Destination {
+	for i := range expected.Destinations {
+		if expected.Destinations[i].Destination != actual.Destinations[i].Destination {
 			return false
 		}
 	}
@@ -71,15 +75,15 @@ func matchSocketScanResult(expected, actual mapperclient.SocketScanResultForSrcI
 	return true
 }
 
-func (m SocketScanResultForSrcIpMatcher) String() string {
+func (m ResolvedSocketScanResultMatcher) String() string {
 	var result string
 	for _, value := range m {
-		result += fmt.Sprintf("{Src: %v, Dest: %v}", value.SrcIp, value.DestIps)
+		result += fmt.Sprintf("{Src: %v, Dest: %v}", value.Src, value.Destinations)
 	}
 	return result
 }
 
-func GetMatcher(expected []mapperclient.SocketScanResultForSrcIp) SocketScanResultForSrcIpMatcher {
+func GetMatcher(expected []mapperclient.ResolvedSocketScanResult) ResolvedSocketScanResultMatcher {
 	return expected
 }
 
@@ -93,25 +97,62 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	s.Require().NoError(os.WriteFile(mockProcDir+"/100/net/tcp6", []byte(mockTcp6FileContent), 0o444))
 	viper.Set(config.HostProcDirKey, mockProcDir)
 
-	sniffer := NewSocketScanner(s.mockMapperClient)
+	firstClientIP := "192.168.35.14"
+	serverIP := "192.168.38.211"
+	secondClientIP := "176.168.35.14"
+
+	firstClientName := "first-client"
+	secondClientName := "second-client"
+	serverName := "server"
+	namespace := "default"
+
+	server := ipresolver.Identity{Namespace: namespace, Name: serverName}
+	firstClient := ipresolver.Identity{
+		Namespace: namespace,
+		Name:      firstClientName,
+	}
+	secondClient := ipresolver.Identity{
+		Namespace: namespace,
+		Name:      secondClientName,
+	}
+
+	s.mockIpResolver.EXPECT().ResolveIP(firstClientIP, gomock.AssignableToTypeOf(time.Time{})).Return(firstClient, nil)
+	s.mockIpResolver.EXPECT().ResolveIP(serverIP, gomock.AssignableToTypeOf(time.Time{})).Return(server, nil).Times(2)
+	s.mockIpResolver.EXPECT().ResolveIP(secondClientIP, gomock.AssignableToTypeOf(time.Time{})).Return(secondClient, nil)
+
+	sniffer := NewSocketScanner(s.mockMapperClient, s.mockIpResolver)
 	s.Require().NoError(sniffer.ScanProcDir())
 
+	firstClientResult := mapperclient.ResolvedOtterizeServiceIdentityInput{
+		Namespace: namespace,
+		Name:      firstClientName,
+	}
+
+	secondClientResult := mapperclient.ResolvedOtterizeServiceIdentityInput{
+		Namespace: namespace,
+		Name:      secondClientName,
+	}
+
+	serverResult := mapperclient.ResolvedOtterizeServiceIdentityInput{
+		Namespace: namespace,
+		Name:      serverName,
+	}
 	// We should only see sockets that this pod serves to other clients.
 	// all other sockets should be ignored (because parsing the server sides on all pods is enough)
-	expectedResult := []mapperclient.SocketScanResultForSrcIp{
+	expectedResult := []mapperclient.ResolvedSocketScanResult{
 		{
-			SrcIp: "192.168.35.14",
-			DestIps: []mapperclient.Destination{
+			Src: firstClientResult,
+			Destinations: []mapperclient.ResolvedDestination{
 				{
-					Destination: "192.168.38.211",
+					Destination: serverResult,
 				},
 			},
 		},
 		{
-			SrcIp: "176.168.35.14",
-			DestIps: []mapperclient.Destination{
+			Src: secondClientResult,
+			Destinations: []mapperclient.ResolvedDestination{
 				{
-					Destination: "192.168.38.211",
+					Destination: serverResult,
 				},
 			},
 		},

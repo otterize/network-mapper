@@ -49,6 +49,34 @@ func (mr *MockMapperClientMockRecorder) ReportCaptureResults(ctx, results interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportCaptureResults", reflect.TypeOf((*MockMapperClient)(nil).ReportCaptureResults), ctx, results)
 }
 
+// ReportResolvedCaptureResults mocks base method.
+func (m *MockMapperClient) ReportResolvedCaptureResults(ctx context.Context, results []mapperclient.ResolvedCaptureResult) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportResolvedCaptureResults", ctx, results)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportResolvedCaptureResults indicates an expected call of ReportResolvedCaptureResults.
+func (mr *MockMapperClientMockRecorder) ReportResolvedCaptureResults(ctx, results interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportResolvedCaptureResults", reflect.TypeOf((*MockMapperClient)(nil).ReportResolvedCaptureResults), ctx, results)
+}
+
+// ReportResolvedSocketScanResults mocks base method.
+func (m *MockMapperClient) ReportResolvedSocketScanResults(ctx context.Context, results []mapperclient.ResolvedSocketScanResult) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportResolvedSocketScanResults", ctx, results)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportResolvedSocketScanResults indicates an expected call of ReportResolvedSocketScanResults.
+func (mr *MockMapperClientMockRecorder) ReportResolvedSocketScanResults(ctx, results interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportResolvedSocketScanResults", reflect.TypeOf((*MockMapperClient)(nil).ReportResolvedSocketScanResults), ctx, results)
+}
+
 // ReportSocketScanResults mocks base method.
 func (m *MockMapperClient) ReportSocketScanResults(ctx context.Context, results mapperclient.SocketScanResults) error {
 	m.ctrl.T.Helper()

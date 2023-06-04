@@ -5,12 +5,20 @@ import (
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/samber/lo"
 	"github.com/spf13/viper"
-	coreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -18,34 +26,109 @@ const (
 	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
 )
 
-type KubeFinder interface {
-	ResolvePodByName(ctx context.Context, name string, namespace string) (*coreV1.Pod, error)
-	ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error)
-	ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*coreV1.Pod, error)
-	ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error)
-}
-
-type FinderImpl struct {
-	mgr               manager.Manager
-	client            client.Client
-	serviceIdResolver *serviceidresolver.Resolver
+type KubeFinder struct {
+	mgr                  manager.Manager
+	client               client.Client
+	serviceIdResolver    *serviceidresolver.Resolver
+	lastPodUpdate        time.Time
+	podUpdateContext     context.Context
+	podUpdateNotify      context.CancelFunc
+	podUpdateWaitersLock sync.Mutex
 }
 
 var ErrFoundMoreThanOnePod = fmt.Errorf("ip belongs to more than one pod")
 
-func NewKubeFinder(mgr manager.Manager) (KubeFinder, error) {
-	indexer := &FinderImpl{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
-	err := indexer.initIndexes()
+func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
+	finder := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
+	err := finder.initIndexes()
 	if err != nil {
 		return nil, err
 	}
-	return indexer, nil
+	finder.podUpdateContext, finder.podUpdateNotify = context.WithCancel(context.Background())
+	err = finder.startWatch()
+	if err != nil {
+		return nil, err
+	}
+	return finder, nil
 }
 
-func (k *FinderImpl) initIndexes() error {
-	err := k.mgr.GetCache().IndexField(context.Background(), &coreV1.Pod{}, podIpIndexField, func(object client.Object) []string {
+func (k *KubeFinder) getPodUpdateContext() context.Context {
+	k.podUpdateWaitersLock.Lock()
+	defer k.podUpdateWaitersLock.Unlock()
+	if k.podUpdateContext != nil {
+		return k.podUpdateContext
+	}
+	waiter, cancelFunc := context.WithCancel(context.Background())
+	k.podUpdateNotify = cancelFunc
+	return waiter
+}
+
+func (k *KubeFinder) broadcastWaiters() {
+	k.podUpdateWaitersLock.Lock()
+	defer k.podUpdateWaitersLock.Unlock()
+
+	k.podUpdateNotify()
+	k.podUpdateContext, k.podUpdateNotify = context.WithCancel(context.Background())
+}
+
+func (k *KubeFinder) WaitForUpdateTime(ctx context.Context, updateTime time.Time) error {
+	for !k.lastPodUpdate.Before(updateTime) {
+		waitCtx := k.getPodUpdateContext()
+		select {
+		case <-waitCtx.Done():
+			continue
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func (k *KubeFinder) startWatch() error {
+	watcher, err := controller.New("pod-watcher", k.mgr, controller.Options{
+		Reconciler: reconcile.Func(func(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+			pod := &corev1.Pod{}
+			err := k.client.Get(ctx, request.NamespacedName, pod)
+			if errors.IsNotFound(err) {
+				return reconcile.Result{}, nil
+			}
+
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+			updateTime := pod.CreationTimestamp.Time
+			if pod.DeletionTimestamp != nil {
+				updateTime = pod.DeletionTimestamp.Time
+			}
+
+			if pod.Status.StartTime != nil && pod.Status.StartTime.After(updateTime) {
+				updateTime = pod.Status.StartTime.Time
+			}
+
+			if updateTime.After(k.lastPodUpdate) {
+				k.lastPodUpdate = updateTime
+				k.broadcastWaiters()
+			}
+			return reconcile.Result{}, nil
+		}),
+		RecoverPanic: lo.ToPtr(true),
+	})
+	if err != nil {
+		return fmt.Errorf("unable to set up namespace controller: %w", err)
+	}
+
+	if err = watcher.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForObject{}); err != nil {
+		return fmt.Errorf("unable to watch Pods: %w", err)
+	}
+
+	return nil
+}
+
+func (k *KubeFinder) initIndexes() error {
+	err := k.mgr.GetCache().IndexField(context.Background(), &corev1.Pod{}, podIpIndexField, func(object client.Object) []string {
 		res := make([]string, 0)
-		pod := object.(*coreV1.Pod)
+		pod := object.(*corev1.Pod)
 		for _, ip := range pod.Status.PodIPs {
 			res = append(res, ip.IP)
 		}
@@ -57,8 +140,8 @@ func (k *FinderImpl) initIndexes() error {
 	return nil
 }
 
-func (k *FinderImpl) ResolvePodByName(ctx context.Context, name string, namespace string) (*coreV1.Pod, error) {
-	var pod coreV1.Pod
+func (k *KubeFinder) ResolvePodByName(ctx context.Context, name string, namespace string) (*corev1.Pod, error) {
+	var pod corev1.Pod
 	err := k.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &pod)
 	if err != nil {
 		return nil, err
@@ -67,8 +150,8 @@ func (k *FinderImpl) ResolvePodByName(ctx context.Context, name string, namespac
 	return &pod, nil
 }
 
-func (k *FinderImpl) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error) {
-	var pods coreV1.PodList
+func (k *KubeFinder) ResolveIpToPod(ctx context.Context, ip string) (*corev1.Pod, error) {
+	var pods corev1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIpIndexField: ip})
 	if err != nil {
 		return nil, err
@@ -81,8 +164,8 @@ func (k *FinderImpl) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod
 	return &pods.Items[0], nil
 }
 
-func (k *FinderImpl) ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*coreV1.Pod, error) {
-	podList := coreV1.PodList{}
+func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*corev1.Pod, error) {
+	podList := corev1.PodList{}
 	err := k.client.List(ctx, &podList, client.InNamespace(namespace), client.MatchingLabels{IstioCanonicalNameLabelKey: workload})
 	if err != nil {
 		return nil, err
@@ -95,7 +178,7 @@ func (k *FinderImpl) ResolveIstioWorkloadToPod(ctx context.Context, workload str
 	return &podList.Items[0], nil
 }
 
-func (k *FinderImpl) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
+func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, error) {
 	clusterDomain := viper.GetString(config.ClusterDomainKey)
 	if !strings.HasSuffix(fqdn, clusterDomain) {
 		return nil, fmt.Errorf("address %s is not in the cluster", fqdn)
@@ -115,7 +198,7 @@ func (k *FinderImpl) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 		}
 		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
 		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-3]
-		endpoints := &coreV1.Endpoints{}
+		endpoints := &corev1.Endpoints{}
 		err := k.client.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints)
 		if err != nil {
 			return nil, err

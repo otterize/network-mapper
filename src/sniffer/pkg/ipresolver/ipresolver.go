@@ -22,26 +22,34 @@ type Identity struct {
 	Namespace string
 }
 
-type IpResolver interface {
-	ResolveIp(ip string, captureTime time.Time) (Identity, error)
-	ResolveDNS(dns string, captureTime time.Time) (Identity, error)
+type PodIP string
+type DestDNS string
+
+type PodResolver interface {
+	ResolveIP(ip PodIP, captureTime time.Time) (Identity, error)
+	ResolveDNS(dns DestDNS, captureTime time.Time) (Identity, error)
+	WaitForUpdateTime(ctx context.Context, updateTime time.Time) error
 }
 
-type ipResolverImpl struct {
+type PodResolverImpl struct {
 	serviceResolver *serviceidresolver.Resolver
-	finder          kubefinder.KubeFinder
+	finder          *kubefinder.KubeFinder
 }
 
-func NewIpResolver(finder kubefinder.KubeFinder, serviceResolver *serviceidresolver.Resolver) IpResolver {
-	return &ipResolverImpl{
+func NewPodResolver(finder *kubefinder.KubeFinder, serviceResolver *serviceidresolver.Resolver) *PodResolverImpl {
+	return &PodResolverImpl{
 		serviceResolver: serviceResolver,
 		finder:          finder,
 	}
 }
 
-func (r *ipResolverImpl) ResolveIp(podIP string, captureTime time.Time) (Identity, error) {
+func (r *PodResolverImpl) WaitForUpdateTime(ctx context.Context, updateTime time.Time) error {
+	return r.finder.WaitForUpdateTime(ctx, updateTime)
+}
+
+func (r *PodResolverImpl) ResolveIP(podIP PodIP, captureTime time.Time) (Identity, error) {
 	ctx := context.Background()
-	pod, err := r.finder.ResolveIpToPod(ctx, podIP)
+	pod, err := r.finder.ResolveIpToPod(ctx, string(podIP))
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", podIP)
@@ -69,13 +77,13 @@ func (r *ipResolverImpl) ResolveIp(podIP string, captureTime time.Time) (Identit
 	return otterizeIdentity, nil
 }
 
-func (r *ipResolverImpl) ResolveDNS(dns string, captureTime time.Time) (Identity, error) {
-	if !strings.HasSuffix(dns, viper.GetString(config.ClusterDomainKey)) {
+func (r *PodResolverImpl) ResolveDNS(dns DestDNS, captureTime time.Time) (Identity, error) {
+	if !strings.HasSuffix(string(dns), viper.GetString(config.ClusterDomainKey)) {
 		logrus.Debugf("DNS %s does not belong to cluster domain, ignoring", dns)
 		return Identity{}, NotK8sService
 	}
 
-	ips, err := r.finder.ResolveServiceAddressToIps(context.Background(), dns)
+	ips, err := r.finder.ResolveServiceAddressToIps(context.Background(), string(dns))
 	if err != nil {
 		return Identity{}, err
 	}
@@ -86,7 +94,7 @@ func (r *ipResolverImpl) ResolveDNS(dns string, captureTime time.Time) (Identity
 	}
 
 	// TODO: Explain why we are using the first IP
-	serviceName, err := r.ResolveIp(ips[0], captureTime)
+	serviceName, err := r.ResolveIP(PodIP(ips[0]), captureTime)
 	if err != nil {
 		return Identity{}, err
 	}

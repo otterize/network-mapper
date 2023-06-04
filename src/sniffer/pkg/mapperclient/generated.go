@@ -10,12 +10,12 @@ import (
 )
 
 type CaptureResultForSrcIp struct {
-	Src          OtterizeServiceIdentityInput `json:"src"`
-	Destinations []Destination                `json:"destinations"`
+	SrcIp        string        `json:"srcIp"`
+	Destinations []Destination `json:"destinations"`
 }
 
-// GetSrc returns CaptureResultForSrcIp.Src, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrc() OtterizeServiceIdentityInput { return v.Src }
+// GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
+func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
 
 // GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
 func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
@@ -28,37 +28,72 @@ type CaptureResults struct {
 func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
 
 type Destination struct {
-	Destination OtterizeServiceIdentityInput `json:"destination"`
-	LastSeen    time.Time                    `json:"lastSeen"`
+	Destination string    `json:"destination"`
+	LastSeen    time.Time `json:"lastSeen"`
 }
 
 // GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
-func (v *Destination) GetDestination() OtterizeServiceIdentityInput { return v.Destination }
+func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
 
-type OtterizeServiceIdentityInput struct {
+type ResolvedCaptureResult struct {
+	Src          ResolvedOtterizeServiceIdentityInput `json:"src"`
+	Destinations []ResolvedDestination                `json:"destinations"`
+}
+
+// GetSrc returns ResolvedCaptureResult.Src, and is useful for accessing the field via an interface.
+func (v *ResolvedCaptureResult) GetSrc() ResolvedOtterizeServiceIdentityInput { return v.Src }
+
+// GetDestinations returns ResolvedCaptureResult.Destinations, and is useful for accessing the field via an interface.
+func (v *ResolvedCaptureResult) GetDestinations() []ResolvedDestination { return v.Destinations }
+
+type ResolvedDestination struct {
+	Destination ResolvedOtterizeServiceIdentityInput `json:"destination"`
+	LastSeen    time.Time                            `json:"lastSeen"`
+}
+
+// GetDestination returns ResolvedDestination.Destination, and is useful for accessing the field via an interface.
+func (v *ResolvedDestination) GetDestination() ResolvedOtterizeServiceIdentityInput {
+	return v.Destination
+}
+
+// GetLastSeen returns ResolvedDestination.LastSeen, and is useful for accessing the field via an interface.
+func (v *ResolvedDestination) GetLastSeen() time.Time { return v.LastSeen }
+
+type ResolvedOtterizeServiceIdentityInput struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 }
 
-// GetName returns OtterizeServiceIdentityInput.Name, and is useful for accessing the field via an interface.
-func (v *OtterizeServiceIdentityInput) GetName() string { return v.Name }
+// GetName returns ResolvedOtterizeServiceIdentityInput.Name, and is useful for accessing the field via an interface.
+func (v *ResolvedOtterizeServiceIdentityInput) GetName() string { return v.Name }
 
-// GetNamespace returns OtterizeServiceIdentityInput.Namespace, and is useful for accessing the field via an interface.
-func (v *OtterizeServiceIdentityInput) GetNamespace() string { return v.Namespace }
+// GetNamespace returns ResolvedOtterizeServiceIdentityInput.Namespace, and is useful for accessing the field via an interface.
+func (v *ResolvedOtterizeServiceIdentityInput) GetNamespace() string { return v.Namespace }
 
-type SocketScanResultForSrcIp struct {
-	Src          OtterizeServiceIdentityInput `json:"src"`
-	Destinations []Destination                `json:"destinations"`
+type ResolvedSocketScanResult struct {
+	Src          ResolvedOtterizeServiceIdentityInput `json:"src"`
+	Destinations []ResolvedDestination                `json:"destinations"`
 }
 
-// GetSrc returns SocketScanResultForSrcIp.Src, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetSrc() OtterizeServiceIdentityInput { return v.Src }
+// GetSrc returns ResolvedSocketScanResult.Src, and is useful for accessing the field via an interface.
+func (v *ResolvedSocketScanResult) GetSrc() ResolvedOtterizeServiceIdentityInput { return v.Src }
 
-// GetDestinations returns SocketScanResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
+// GetDestinations returns ResolvedSocketScanResult.Destinations, and is useful for accessing the field via an interface.
+func (v *ResolvedSocketScanResult) GetDestinations() []ResolvedDestination { return v.Destinations }
+
+type SocketScanResultForSrcIp struct {
+	SrcIp   string        `json:"srcIp"`
+	DestIps []Destination `json:"destIps"`
+}
+
+// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
+func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
+
+// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
+func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
 
 type SocketScanResults struct {
 	Results []SocketScanResultForSrcIp `json:"results"`
@@ -75,6 +110,24 @@ type __reportCaptureResultsInput struct {
 // GetResults returns __reportCaptureResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportCaptureResultsInput) GetResults() CaptureResults { return v.Results }
 
+// __reportResolvedCaptureResultsInput is used internally by genqlient
+type __reportResolvedCaptureResultsInput struct {
+	Results []ResolvedCaptureResult `json:"results"`
+}
+
+// GetResults returns __reportResolvedCaptureResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportResolvedCaptureResultsInput) GetResults() []ResolvedCaptureResult { return v.Results }
+
+// __reportResolvedSocketScanResultsInput is used internally by genqlient
+type __reportResolvedSocketScanResultsInput struct {
+	Results []ResolvedSocketScanResult `json:"results"`
+}
+
+// GetResults returns __reportResolvedSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportResolvedSocketScanResultsInput) GetResults() []ResolvedSocketScanResult {
+	return v.Results
+}
+
 // __reportSocketScanResultsInput is used internally by genqlient
 type __reportSocketScanResultsInput struct {
 	Results SocketScanResults `json:"results"`
@@ -90,6 +143,26 @@ type reportCaptureResultsResponse struct {
 
 // GetReportCaptureResults returns reportCaptureResultsResponse.ReportCaptureResults, and is useful for accessing the field via an interface.
 func (v *reportCaptureResultsResponse) GetReportCaptureResults() bool { return v.ReportCaptureResults }
+
+// reportResolvedCaptureResultsResponse is returned by reportResolvedCaptureResults on success.
+type reportResolvedCaptureResultsResponse struct {
+	ReportResolvedCaptureResults bool `json:"reportResolvedCaptureResults"`
+}
+
+// GetReportResolvedCaptureResults returns reportResolvedCaptureResultsResponse.ReportResolvedCaptureResults, and is useful for accessing the field via an interface.
+func (v *reportResolvedCaptureResultsResponse) GetReportResolvedCaptureResults() bool {
+	return v.ReportResolvedCaptureResults
+}
+
+// reportResolvedSocketScanResultsResponse is returned by reportResolvedSocketScanResults on success.
+type reportResolvedSocketScanResultsResponse struct {
+	ReportResolvedSocketScanResults bool `json:"reportResolvedSocketScanResults"`
+}
+
+// GetReportResolvedSocketScanResults returns reportResolvedSocketScanResultsResponse.ReportResolvedSocketScanResults, and is useful for accessing the field via an interface.
+func (v *reportResolvedSocketScanResultsResponse) GetReportResolvedSocketScanResults() bool {
+	return v.ReportResolvedSocketScanResults
+}
 
 // reportSocketScanResultsResponse is returned by reportSocketScanResults on success.
 type reportSocketScanResultsResponse struct {
@@ -120,6 +193,66 @@ mutation reportCaptureResults ($results: CaptureResults!) {
 	var err error
 
 	var data reportCaptureResultsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func reportResolvedCaptureResults(
+	ctx context.Context,
+	client graphql.Client,
+	results []ResolvedCaptureResult,
+) (*reportResolvedCaptureResultsResponse, error) {
+	req := &graphql.Request{
+		OpName: "reportResolvedCaptureResults",
+		Query: `
+mutation reportResolvedCaptureResults ($results: [ResolvedCaptureResult!]!) {
+	reportResolvedCaptureResults(results: $results)
+}
+`,
+		Variables: &__reportResolvedCaptureResultsInput{
+			Results: results,
+		},
+	}
+	var err error
+
+	var data reportResolvedCaptureResultsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func reportResolvedSocketScanResults(
+	ctx context.Context,
+	client graphql.Client,
+	results []ResolvedSocketScanResult,
+) (*reportResolvedSocketScanResultsResponse, error) {
+	req := &graphql.Request{
+		OpName: "reportResolvedSocketScanResults",
+		Query: `
+mutation reportResolvedSocketScanResults ($results: [ResolvedSocketScanResult!]!) {
+	reportResolvedSocketScanResults(results: $results)
+}
+`,
+		Variables: &__reportResolvedSocketScanResultsInput{
+			Results: results,
+		},
+	}
+	var err error
+
+	var data reportResolvedSocketScanResultsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

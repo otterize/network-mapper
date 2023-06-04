@@ -5,16 +5,25 @@ import (
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubefinder"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/sniffer"
+	localresolution2 "github.com/otterize/network-mapper/src/sniffer/pkg/sniffer/exp/localresolution"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner/exp/localresolution"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 	"os"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
+
+type Runnable interface {
+	RunForever(ctx context.Context) error
+}
 
 func main() {
 	if viper.GetBool(sharedconfig.DebugKey) {
@@ -29,26 +38,38 @@ func main() {
 
 	logrus.Info("Manager created")
 
-	go func() {
-		logrus.Info("Starting operator manager")
-		if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-			logrus.Error(err, "unable to run manager")
-			os.Exit(1)
-		}
-	}()
+	logrus.Info("Starting operator manager")
+
+	errGroup, ctx := errgroup.WithContext(signals.SetupSignalHandler())
+	errGroup.Go(func() error {
+		return mgr.Start(ctx)
+	})
+	mgr.GetCache().WaitForCacheSync(ctx)
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	kubeFinder, err := kubefinder.NewKubeFinder(mgr)
 	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		logrus.WithError(err).Fatal("unable to start kubefinder")
 	}
 
 	serviceIdResolver := serviceidresolver.NewResolver(mgr.GetClient())
-	ipResolver := ipresolver.NewIpResolver(kubeFinder, serviceIdResolver)
-	snifferInstance := sniffer.NewSniffer(mapperClient, ipResolver)
-	err = snifferInstance.RunForever(context.Background())
+	ipResolver := ipresolver.NewPodResolver(kubeFinder, serviceIdResolver)
+	var socketScanner Runnable = socketscanner.NewSocketScanner(mapperClient)
+	var snifferInstance Runnable = sniffer.NewSniffer(mapperClient)
+	if viper.GetBool(config.SnifferResolveLocallyKey) {
+		socketScanner = localresolution.NewSocketScanner(mapperClient, ipResolver)
+		snifferInstance = localresolution2.NewSniffer(mapperClient, ipResolver)
+	}
+	errGroup.Go(func() error {
+		return socketScanner.RunForever(ctx)
+	})
+	errGroup.Go(func() error {
+		return snifferInstance.RunForever(ctx)
+
+	})
+
+	err = errGroup.Wait()
 	if err != nil {
-		panic(err)
+		logrus.WithError(err).Fatal("critical component exited or failed to start: %s", err.Error())
 	}
 }

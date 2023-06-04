@@ -28,7 +28,19 @@ func (c *MapperClientImpl) ReportSocketScanResults(ctx context.Context, results 
 	return err
 }
 
+func (c *MapperClientImpl) ReportResolvedCaptureResults(ctx context.Context, results []ResolvedCaptureResult) error {
+	_, err := reportResolvedCaptureResults(ctx, c.gqlClient, results)
+	return err
+}
+
+func (c *MapperClientImpl) ReportResolvedSocketScanResults(ctx context.Context, results []ResolvedSocketScanResult) error {
+	_, err := reportResolvedSocketScanResults(ctx, c.gqlClient, results)
+	return err
+}
+
 type MapperClient interface {
 	ReportCaptureResults(ctx context.Context, results CaptureResults) error
 	ReportSocketScanResults(ctx context.Context, results SocketScanResults) error
+	ReportResolvedCaptureResults(ctx context.Context, results []ResolvedCaptureResult) error
+	ReportResolvedSocketScanResults(ctx context.Context, results []ResolvedSocketScanResult) error
 }

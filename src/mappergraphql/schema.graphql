@@ -1,17 +1,27 @@
 scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
-input OtterizeServiceIdentityInput {
+input ResolvedOtterizeServiceIdentityInput {
     name: String!
     namespace: String!
 }
 
+input ResolvedCaptureResult {
+    src: ResolvedOtterizeServiceIdentityInput!
+    destinations: [ResolvedDestination!]!
+}
+
 input CaptureResultForSrcIp {
-    src: OtterizeServiceIdentityInput!
+    srcIp: String!
     destinations: [Destination!]!
 }
 
+input ResolvedDestination {
+    destination: ResolvedOtterizeServiceIdentityInput!
+    lastSeen: Time!
+}
+
 input Destination {
-    destination: OtterizeServiceIdentityInput!
+    destination: String!
     lastSeen: Time!
 }
 
@@ -19,9 +29,14 @@ input CaptureResults {
     results: [CaptureResultForSrcIp!]!
 }
 
+input ResolvedSocketScanResult {
+    src: ResolvedOtterizeServiceIdentityInput!
+    destinations: [ResolvedDestination!]!
+}
+
 input SocketScanResultForSrcIp {
-    src: OtterizeServiceIdentityInput!
-    destinations: [Destination!]!
+    srcIp: String!
+    destIps: [Destination!]!
 }
 
 input SocketScanResults {
@@ -153,6 +168,8 @@ type Query {
 type Mutation {
     resetCapture: Boolean!
     reportCaptureResults(results: CaptureResults!): Boolean!
+    reportResolvedCaptureResults(results: [ResolvedCaptureResult!]!): Boolean!
+    reportResolvedSocketScanResults(results: [ResolvedSocketScanResult!]!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!

@@ -6,3 +6,11 @@ mutation reportCaptureResults($results: CaptureResults!) {
 mutation reportSocketScanResults($results: SocketScanResults!) {
     reportSocketScanResults(results: $results)
 }
+
+mutation reportResolvedCaptureResults($results: [ResolvedCaptureResult!]!) {
+    reportResolvedCaptureResults(results: $results)
+}
+
+mutation reportResolvedSocketScanResults($results: [ResolvedSocketScanResult!]!) {
+    reportResolvedSocketScanResults(results: $results)
+}
