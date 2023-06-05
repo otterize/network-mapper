@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"strings"
+	"time"
 )
 
 const (
@@ -69,10 +71,13 @@ func (k *FinderImpl) ResolvePodByName(ctx context.Context, name string, namespac
 
 func (k *FinderImpl) ResolveIpToPod(ctx context.Context, ip string) (*coreV1.Pod, error) {
 	var pods coreV1.PodList
+	startTime := time.Now()
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIpIndexField: ip})
 	if err != nil {
 		return nil, err
 	}
+	callTime := time.Since(startTime)
+	logrus.Debugf("Resolved ip %s to pod in %s", ip, callTime)
 	if len(pods.Items) == 0 {
 		return nil, fmt.Errorf("pod with ip %s was not found", ip)
 	} else if len(pods.Items) > 1 {

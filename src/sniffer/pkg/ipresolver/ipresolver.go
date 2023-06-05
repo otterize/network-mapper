@@ -55,7 +55,10 @@ func (r *ipResolverImpl) ResolveIp(podIP string, captureTime time.Time) (Identit
 		return Identity{}, errors.New("pod was created after the capture time, can't resolve IP owner")
 	}
 
+	startTime := time.Now()
 	service, err := r.serviceResolver.ResolvePodToServiceIdentity(ctx, pod)
+	callTime := time.Since(startTime)
+	logrus.Debugf("Service resolver took %s pod %s service %s", callTime, pod.Name, service.Name)
 	if err != nil {
 		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", pod.Name)
 		return Identity{}, err
@@ -75,7 +78,10 @@ func (r *ipResolverImpl) ResolveDNS(dns string, captureTime time.Time) (Identity
 		return Identity{}, NotK8sService
 	}
 
+	startTime := time.Now()
 	ips, err := r.finder.ResolveServiceAddressToIps(context.Background(), dns)
+	callTime := time.Since(startTime)
+	logrus.Debugf("DNS resolver took %s dns %s ips %v", callTime, dns, ips)
 	if err != nil {
 		return Identity{}, err
 	}

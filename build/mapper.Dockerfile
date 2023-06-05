@@ -20,7 +20,7 @@ RUN go test ./mapper/...
 FROM test as builder
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./mapper/cmd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /main ./mapper/cmd
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

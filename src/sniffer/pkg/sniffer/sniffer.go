@@ -36,11 +36,13 @@ func NewSniffer(mapperClient mapperclient.MapperClient, ipResolver ipresolver.Ip
 }
 
 func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
+	packetStartTime := time.Now()
 	captureTime := packet.Metadata().CaptureInfo.Timestamp
 	if captureTime.IsZero() {
-		logrus.Warning("Missing capture time, using current time")
+		logrus.Warningf("Missing capture time, using current time. raw: %s", packet.String())
 		captureTime = time.Now()
 	}
+	handled := false
 
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS)
@@ -48,12 +50,15 @@ func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
 		ip, _ := ipLayer.(*layers.IPv4)
 		dns, _ := dnsLayer.(*layers.DNS)
 		if dns.OpCode == layers.DNSOpCodeQuery && dns.ResponseCode == layers.DNSResponseCodeNoErr {
+			logrus.Debugf("Handling packet ip: %s dns count: %d", ip.DstIP, len(dns.Answers))
 			for _, answer := range dns.Answers {
 				// This is the DNS Answer, so the Dst IP is the pod IP
 				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
 					continue
 				}
+				handled = true
 
+				startTime := time.Now()
 				podIp := ip.DstIP.String()
 				srcService, err := s.resolver.ResolveIp(podIp, captureTime)
 				if err != nil {
@@ -80,9 +85,13 @@ func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
 					s.capturedRequests[srcService] = make(map[ipresolver.Identity]time.Time)
 				}
 				s.capturedRequests[srcService][destService] = captureTime
+				resolvingTime := time.Since(startTime)
+				logrus.Debugf("Resolved packet ip: %s dns: %s src: %s dest: %s in %s", podIp, destDns, srcService, destService, resolvingTime)
 			}
 		}
 	}
+	packetHandlingTime := time.Since(packetStartTime)
+	logrus.Debugf("Handled packet in %s handled: %v", packetHandlingTime, handled)
 }
 
 func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
