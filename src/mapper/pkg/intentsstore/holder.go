@@ -70,19 +70,26 @@ func (i *IntentsHolder) Reset() {
 }
 
 func mergeKafkaTopics(existingTopics []model.KafkaConfig, newTopics []model.KafkaConfig) []model.KafkaConfig {
-	existingTopicsByName := lo.SliceToMap(existingTopics, func(topic model.KafkaConfig) (string, model.KafkaConfig) {
-		return topic.Name, topic
+	existingTopicsByName := lo.SliceToMap(existingTopics, func(topic model.KafkaConfig) (string, *model.KafkaConfig) {
+		return topic.Name, &topic
 	})
+
 	for _, newTopic := range newTopics {
 		existingTopic, ok := existingTopicsByName[newTopic.Name]
 		if ok {
 			existingTopic.Operations = lo.Uniq(append(existingTopic.Operations, newTopic.Operations...))
 		} else {
-			existingTopicsByName[newTopic.Name] = newTopic
+			existingTopicsByName[newTopic.Name] = &newTopic
 		}
 	}
 
-	return lo.Values(existingTopicsByName)
+	var res []model.KafkaConfig
+
+	for _, topic := range existingTopicsByName {
+		res = append(res, *topic)
+	}
+
+	return res
 }
 
 func mergeHTTPResources(existingResources, newResources []model.HTTPResource) []model.HTTPResource {
