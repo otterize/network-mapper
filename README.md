@@ -10,7 +10,7 @@
 * [About](#about)
 * [Try the network mapper](#try-the-network-mapper)
 * [Installation instructions](#installation-instructions)
-* [How does the network mapper work?](#how-does-the-network-mapper-work)
+* How does the network mapper work?
   * [Components](#components)
   * [Service name resolution](#service-name-resolution)
 * [Exporting a network map](#exporting-a-network-map)

@@ -263,8 +263,8 @@ github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263 h1:Qd1Ml+uEhpesT8Og
 github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263/go.mod h1:odkMeLkWS8G6+WP2z3Pn2vkzhPSvBtFhAUYTKXAtZMQ=
 github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4og8Kk=
 github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
-github.com/otterize/intents-operator/src v0.0.0-20230514133708-3bdc334dbcaa h1:SAS4KGRUISAncYEkENSyf31Js5WTWpuGoaY+s7KDeMo=
-github.com/otterize/intents-operator/src v0.0.0-20230514133708-3bdc334dbcaa/go.mod h1:TPvftDJUPt+/7Ytrx3m956PZBLxP1bkHorA3IWsvNVQ=
+github.com/otterize/intents-operator/src v0.0.0-20230524155029-08287247d67e h1:J96JPKy7JSVOBQFnR971yQyNFAk5ICj/zsP2rhBpbk8=
+github.com/otterize/intents-operator/src v0.0.0-20230524155029-08287247d67e/go.mod h1:TPvftDJUPt+/7Ytrx3m956PZBLxP1bkHorA3IWsvNVQ=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pelletier/go-toml/v2 v2.0.5 h1:ipoSadvV8oGUjnUbMub59IDPPwfxF694nG/jwbMiyQg=

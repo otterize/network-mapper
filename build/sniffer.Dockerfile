@@ -25,10 +25,15 @@ COPY . .
 RUN go mod download
 RUN go build -o /main ./sniffer/cmd
 
+# add version file
+ARG VERSION
+RUN echo -n $VERSION > /version
+
 FROM alpine as release
 RUN apk add --no-cache ca-certificates libpcap
 WORKDIR /
 COPY --from=builder /main /main
 RUN chmod +x /main
+COPY --from=builder /version .
 
 ENTRYPOINT ["/main"]

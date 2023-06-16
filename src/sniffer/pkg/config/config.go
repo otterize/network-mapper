@@ -12,7 +12,7 @@ const (
 	HostProcDirKey                = "host-proc-dir"
 	HostProcDirDefault            = "/hostproc"
 	CallsTimeoutKey               = "calls-timeout"
-	CallsTimeoutDefault           = 5 * time.Second
+	CallsTimeoutDefault           = 60 * time.Second
 	SnifferReportIntervalKey      = "sniffer-report-interval"
 	SnifferReportIntervalDefault  = 10 * time.Second
 	SnifferResolveIntervalKey     = "sniffer-resolve-interval"

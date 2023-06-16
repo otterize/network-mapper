@@ -38,12 +38,23 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			}
 			continue
 		}
+
+		if srcPod.DeletionTimestamp != nil {
+			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
+			continue
+		}
+
 		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
+			if srcPod.CreationTimestamp.After(dest.LastSeen) {
+				logrus.Debugf("Pod %s was created after capture time %s, ignoring", srcPod.Name, dest.LastSeen)
+				continue
+			}
+
 			destAddress := dest.Destination
 			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
@@ -67,6 +78,17 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				}
 				continue
 			}
+
+			if destPod.CreationTimestamp.After(dest.LastSeen) {
+				logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
+				continue
+			}
+
+			if destPod.DeletionTimestamp != nil {
+				logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
+				continue
+			}
+
 			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
@@ -151,12 +173,23 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			}
 			continue
 		}
+
+		if srcPod.DeletionTimestamp != nil {
+			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
+			continue
+		}
+
 		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
 			continue
 		}
 		for _, destIp := range socketScanItem.DestIps {
+			if srcPod.CreationTimestamp.After(destIp.LastSeen) {
+				logrus.Debugf("Pod %s was created after scan time %s, ignoring", srcPod.Name, destIp.LastSeen)
+				continue
+			}
+
 			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
 			if err != nil {
 				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
@@ -166,6 +199,17 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				}
 				continue
 			}
+
+			if destPod.DeletionTimestamp != nil {
+				logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
+				continue
+			}
+
+			if destPod.CreationTimestamp.After(destIp.LastSeen) {
+				logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, destIp.LastSeen)
+				continue
+			}
+
 			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
@@ -208,6 +252,17 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 			}
 			continue
 		}
+
+		if srcPod.DeletionTimestamp != nil {
+			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
+			continue
+		}
+
+		if srcPod.CreationTimestamp.After(result.LastSeen) {
+			logrus.Debugf("Pod %s was created after scan time %s, ignoring", srcPod.Name, result.LastSeen)
+			continue
+		}
+
 		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
