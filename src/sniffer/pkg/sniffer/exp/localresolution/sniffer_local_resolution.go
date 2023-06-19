@@ -87,7 +87,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context, captureResults captu
 	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
 	defer cancelFunc()
 
-	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(captureResults))
+	logrus.Infof("Reporting resolved captured requests of %d clients to Mapper", len(captureResults))
 	err := s.mapperClient.ReportResolvedCaptureResults(timeoutCtx, results)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (s *Sniffer) resolveAndReportCapturedResponsesForever(ctx context.Context) 
 			latestResponseTimestamp = time.Time{}
 			err = s.ReportCaptureResults(ctx, resolvedResponses)
 			if err != nil {
-				logrus.WithError(err).Errorf("Failed to report captured requests to mapper")
+				logrus.WithError(err).Errorf("Failed to report resolved captured requests to mapper")
 			}
 
 		case <-ctx.Done():

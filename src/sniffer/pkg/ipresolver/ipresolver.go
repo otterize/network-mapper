@@ -5,11 +5,9 @@ import (
 	"errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
-	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/shared/kubefinder"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
 	"time"
 )
@@ -93,23 +91,10 @@ func (r *PodResolverImpl) ResolveDNS(dns DestDNS, captureTime time.Time) (Identi
 		return Identity{}, NotPodAddress
 	}
 
-	// TODO: Explain why we are using the first IP
 	serviceName, err := r.ResolveIP(PodIP(ips[0]), captureTime)
 	if err != nil {
 		return Identity{}, err
 	}
 
 	return serviceName, nil
-}
-
-func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
-	labels := make([]model.PodLabel, 0, len(pod.Labels))
-	for key, value := range pod.Labels {
-		labels = append(labels, model.PodLabel{
-			Key:   key,
-			Value: value,
-		})
-	}
-
-	return labels
 }
