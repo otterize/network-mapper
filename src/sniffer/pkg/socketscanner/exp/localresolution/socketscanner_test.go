@@ -158,7 +158,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 		},
 	}
 
-	s.mockMapperClient.EXPECT().ReportSocketScanResults(gomock.Any(), GetMatcher(expectedResult))
+	s.mockMapperClient.EXPECT().ReportResolvedSocketScanResults(gomock.Any(), GetMatcher(expectedResult))
 	err = sniffer.ReportSocketScanResults(context.Background())
 	s.Require().NoError(err)
 }
