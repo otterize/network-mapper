@@ -28,7 +28,7 @@ type DestDNS string
 type PodResolver interface {
 	ResolveIP(ip PodIP, captureTime time.Time) (Identity, error)
 	ResolveDNS(dns DestDNS, captureTime time.Time) (Identity, error)
-	WaitForUpdateTime(ctx context.Context, updateTime time.Time) error
+	WaitForPodsCacheUpdate(ctx context.Context, updateTime time.Time) error
 }
 
 type PodResolverImpl struct {
@@ -43,8 +43,8 @@ func NewPodResolver(finder *kubefinder.KubeFinder, serviceResolver *serviceidres
 	}
 }
 
-func (r *PodResolverImpl) WaitForUpdateTime(ctx context.Context, updateTime time.Time) error {
-	return r.finder.WaitForUpdateTime(ctx, updateTime)
+func (r *PodResolverImpl) WaitForPodsCacheUpdate(ctx context.Context, latestExpectedUpdateTime time.Time) error {
+	return r.finder.WaitForUpdateTime(ctx, latestExpectedUpdateTime)
 }
 
 func (r *PodResolverImpl) ResolveIP(podIP PodIP, captureTime time.Time) (Identity, error) {

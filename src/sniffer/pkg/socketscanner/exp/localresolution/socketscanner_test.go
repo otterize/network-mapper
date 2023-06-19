@@ -97,9 +97,9 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	s.Require().NoError(os.WriteFile(mockProcDir+"/100/net/tcp6", []byte(mockTcp6FileContent), 0o444))
 	viper.Set(config.HostProcDirKey, mockProcDir)
 
-	firstClientIP := "192.168.35.14"
-	serverIP := "192.168.38.211"
-	secondClientIP := "176.168.35.14"
+	firstClientIP := ipresolver.PodIP("192.168.35.14")
+	serverIP := ipresolver.PodIP("192.168.38.211")
+	secondClientIP := ipresolver.PodIP("176.168.35.14")
 
 	firstClientName := "first-client"
 	secondClientName := "second-client"
@@ -158,7 +158,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 		},
 	}
 
-	s.mockMapperClient.EXPECT().ReportSocketScanResults(gomock.Any(), GetMatcher(expectedResult))
+	s.mockMapperClient.EXPECT().ReportResolvedSocketScanResults(gomock.Any(), GetMatcher(expectedResult))
 	err = sniffer.ReportSocketScanResults(context.Background())
 	s.Require().NoError(err)
 }

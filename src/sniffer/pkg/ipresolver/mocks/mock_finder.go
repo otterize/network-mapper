@@ -66,16 +66,16 @@ func (mr *MockPodResolverMockRecorder) ResolveIP(ip, captureTime interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveIP", reflect.TypeOf((*MockPodResolver)(nil).ResolveIP), ip, captureTime)
 }
 
-// WaitForUpdateTime mocks base method.
-func (m *MockPodResolver) WaitForUpdateTime(ctx context.Context, updateTime time.Time) error {
+// WaitForPodsCacheUpdate mocks base method.
+func (m *MockPodResolver) WaitForPodsCacheUpdate(ctx context.Context, updateTime time.Time) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForUpdateTime", ctx, updateTime)
+	ret := m.ctrl.Call(m, "WaitForPodsCacheUpdate", ctx, updateTime)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// WaitForUpdateTime indicates an expected call of WaitForUpdateTime.
-func (mr *MockPodResolverMockRecorder) WaitForUpdateTime(ctx, updateTime interface{}) *gomock.Call {
+// WaitForPodsCacheUpdate indicates an expected call of WaitForPodsCacheUpdate.
+func (mr *MockPodResolverMockRecorder) WaitForPodsCacheUpdate(ctx, updateTime interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForUpdateTime", reflect.TypeOf((*MockPodResolver)(nil).WaitForUpdateTime), ctx, updateTime)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForPodsCacheUpdate", reflect.TypeOf((*MockPodResolver)(nil).WaitForPodsCacheUpdate), ctx, updateTime)
 }

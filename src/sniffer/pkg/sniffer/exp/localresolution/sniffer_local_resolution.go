@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+type captureResultMap map[ipresolver.Identity]map[ipresolver.Identity]time.Time
+
 type capturedResponse struct {
 	srcIp   ipresolver.PodIP
 	destDns ipresolver.DestDNS
@@ -22,24 +24,24 @@ type capturedResponse struct {
 }
 
 type Sniffer struct {
-	capturedResponses chan capturedResponse
-	lastReportTime    time.Time
-	mapperClient      mapperclient.MapperClient
-	resolver          ipresolver.PodResolver
+	responsesChannel chan capturedResponse
+	lastReportTime   time.Time
+	mapperClient     mapperclient.MapperClient
+	resolver         ipresolver.PodResolver
 }
 
 func NewSniffer(mapperClient mapperclient.MapperClient, ipResolver ipresolver.PodResolver) *Sniffer {
 	return &Sniffer{
-		capturedResponses: make(chan capturedResponse, 10000),
-		lastReportTime:    time.Now(),
-		mapperClient:      mapperClient,
-		resolver:          ipResolver,
+		responsesChannel: make(chan capturedResponse, 10000),
+		lastReportTime:   time.Now(),
+		mapperClient:     mapperClient,
+		resolver:         ipResolver,
 	}
 }
 
 func (s *Sniffer) addCapturedRequest(srcIp ipresolver.PodIP, destDns ipresolver.DestDNS, seenAt time.Time) {
 	select {
-	case s.capturedResponses <- capturedResponse{
+	case s.responsesChannel <- capturedResponse{
 		srcIp:   srcIp,
 		destDns: destDns,
 		seenAt:  seenAt,
@@ -74,7 +76,7 @@ func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
 	}
 }
 
-func (s *Sniffer) ReportCaptureResults(ctx context.Context, captureResults map[ipresolver.Identity]map[ipresolver.Identity]time.Time) error {
+func (s *Sniffer) ReportCaptureResults(ctx context.Context, captureResults captureResultMap) error {
 	s.lastReportTime = time.Now()
 	if len(captureResults) == 0 {
 		logrus.Debugf("No captured requests to report")
@@ -93,7 +95,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context, captureResults map[i
 	return nil
 }
 
-func getCaptureResults(capturedRequests map[ipresolver.Identity]map[ipresolver.Identity]time.Time) []mapperclient.ResolvedCaptureResult {
+func getCaptureResults(capturedRequests captureResultMap) []mapperclient.ResolvedCaptureResult {
 	results := make([]mapperclient.ResolvedCaptureResult, 0, len(capturedRequests))
 	for src, destToTime := range capturedRequests {
 		destinations := make([]mapperclient.ResolvedDestination, 0)
@@ -118,7 +120,7 @@ func getCaptureResults(capturedRequests map[ipresolver.Identity]map[ipresolver.I
 	return results
 }
 
-func (s *Sniffer) PrintCapturedRequests(captureResults map[ipresolver.Identity]map[ipresolver.Identity]time.Time) {
+func (s *Sniffer) PrintCapturedRequests(captureResults captureResultMap) {
 	for src, destinations := range captureResults {
 		logrus.Debugf("%s/%s:\n", src.Namespace, src.Name)
 		for dest, lastSeen := range destinations {
@@ -150,21 +152,35 @@ func (s *Sniffer) handlePacketsForever(ctx context.Context) error {
 }
 
 func (s *Sniffer) resolveAndReportCapturedResponsesForever(ctx context.Context) error {
-	timer := time.NewTimer(viper.GetDuration(config.SnifferResolveIntervalKey))
+	timer := time.NewTicker(viper.GetDuration(config.SnifferResolveIntervalKey))
 	defer timer.Stop()
+
+	maxWaitTime := viper.GetDuration(config.SnifferCacheUpdateWaitingTimeoutKey)
+
 	capturedResponses := make(map[ipresolver.PodIP]map[ipresolver.DestDNS]time.Time)
-	capturedResponseMaxTime := time.Time{}
+	latestResponseTimestamp := time.Time{}
 	// Every 1 sec, wait for latest seen time to appear in update, or wait up to 5 sec.
 	for {
 		select {
+		case resp := <-s.responsesChannel:
+			// Store the response for later resolution
+			if _, ok := capturedResponses[resp.srcIp]; !ok {
+				capturedResponses[resp.srcIp] = make(map[ipresolver.DestDNS]time.Time)
+			}
+			capturedResponses[resp.srcIp][resp.destDns] = resp.seenAt
+			if resp.seenAt.After(latestResponseTimestamp) {
+				latestResponseTimestamp = resp.seenAt
+			}
+
 		case <-timer.C:
+			// Resolve and report the responses
 			previousCapturedResponses := capturedResponses
-			resolvedResponses, err := s.resolveResponses(ctx, capturedResponseMaxTime, previousCapturedResponses)
+			resolvedResponses, err := s.resolveResponses(ctx, latestResponseTimestamp, previousCapturedResponses, maxWaitTime)
 			if err != nil {
 				return err
 			}
 			capturedResponses = make(map[ipresolver.PodIP]map[ipresolver.DestDNS]time.Time)
-			capturedResponseMaxTime = time.Time{}
+			latestResponseTimestamp = time.Time{}
 			err = s.ReportCaptureResults(ctx, resolvedResponses)
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to report captured requests to mapper")
@@ -172,25 +188,19 @@ func (s *Sniffer) resolveAndReportCapturedResponsesForever(ctx context.Context) 
 
 		case <-ctx.Done():
 			return ctx.Err()
-		case resp := <-s.capturedResponses:
-			if _, ok := capturedResponses[resp.srcIp]; !ok {
-				capturedResponses[resp.srcIp] = make(map[ipresolver.DestDNS]time.Time)
-			}
-			capturedResponses[resp.srcIp][resp.destDns] = resp.seenAt
-			if resp.seenAt.After(capturedResponseMaxTime) {
-				capturedResponseMaxTime = resp.seenAt
-			}
 		}
 	}
 }
 
 func (s *Sniffer) resolveResponses(
 	ctx context.Context,
-	capturedResponseMaxTimeInput time.Time,
-	capturedResponseInput map[ipresolver.PodIP]map[ipresolver.DestDNS]time.Time) (resolvedResponses map[ipresolver.Identity]map[ipresolver.Identity]time.Time, err error) {
-	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	latestResponseTimestamp time.Time,
+	capturedResponseInput map[ipresolver.PodIP]map[ipresolver.DestDNS]time.Time,
+	maxWaitTime time.Duration,
+) (resolvedResponses captureResultMap, err error) {
+	ctxTimeout, cancel := context.WithTimeout(ctx, maxWaitTime)
 	defer cancel()
-	waitErr := s.resolver.WaitForUpdateTime(ctxTimeout, capturedResponseMaxTimeInput)
+	waitErr := s.resolver.WaitForPodsCacheUpdate(ctxTimeout, latestResponseTimestamp)
 	if waitErr != nil {
 		if errors.Is(waitErr, context.DeadlineExceeded) {
 			logrus.Warn("waited to receive pod status update before resolving pod identities, but did not receive updates in this time")
@@ -198,7 +208,7 @@ func (s *Sniffer) resolveResponses(
 			return nil, waitErr
 		}
 	}
-	resolvedResponses = make(map[ipresolver.Identity]map[ipresolver.Identity]time.Time)
+	resolvedResponses = make(captureResultMap)
 
 	for podIp, destDnsToTime := range capturedResponseInput {
 		for destDns, seenAt := range destDnsToTime {
@@ -234,10 +244,22 @@ func (s *Sniffer) resolveResponses(
 func (s *Sniffer) RunForever(ctx context.Context) error {
 	errGrp, errGroupCtx := errgroup.WithContext(ctx)
 	errGrp.Go(func() error {
-		return s.handlePacketsForever(errGroupCtx)
+		err := s.handlePacketsForever(errGroupCtx)
+		if err != nil {
+			logrus.WithError(err).Error("Handle packets aborted")
+			return err
+		}
+		logrus.Println("Handle packets quit")
+		return nil
 	})
 	errGrp.Go(func() error {
-		return s.resolveAndReportCapturedResponsesForever(errGroupCtx)
+		err := s.resolveAndReportCapturedResponsesForever(errGroupCtx)
+		if err != nil {
+			logrus.WithError(err).Error("Resolve and report responses aborted")
+			return err
+		}
+		logrus.Println("Resolve and report responses quit")
+		return nil
 	})
 
 	return errGrp.Wait()

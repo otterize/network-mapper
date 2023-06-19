@@ -48,7 +48,7 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 
 	s.mockKubeFinder.EXPECT().ResolveIP(ipresolver.PodIP("10.101.81.13"), timestamp).Return(clientIdentity, nil)
 	s.mockKubeFinder.EXPECT().ResolveDNS(ipresolver.DestDNS("sts.us-east-1.amazonaws.com"), timestamp).Return(serverIdentity, nil)
-	s.mockKubeFinder.EXPECT().WaitForUpdateTime(gomock.Any(), timestamp)
+	s.mockKubeFinder.EXPECT().WaitForPodsCacheUpdate(gomock.Any(), timestamp)
 	sniffer.HandlePacket(packet)
 
 	mock := s.mockMapperClient.EXPECT().ReportResolvedCaptureResults(gomock.Any(), []mapperclient.ResolvedCaptureResult{

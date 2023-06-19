@@ -7,18 +7,20 @@ import (
 )
 
 const (
-	MaxResultsPerUploadKey        = "max-results-per-upload"
-	MaxResultsPerUploadDefault    = 100
-	HostProcDirKey                = "host-proc-dir"
-	HostProcDirDefault            = "/hostproc"
-	CallsTimeoutKey               = "calls-timeout"
-	CallsTimeoutDefault           = 60 * time.Second
-	SnifferReportIntervalKey      = "sniffer-report-interval"
-	SnifferReportIntervalDefault  = 10 * time.Second
-	SnifferResolveIntervalKey     = "sniffer-resolve-interval"
-	SnifferResolveIntervalDefault = 1 * time.Second
-	SnifferResolveLocallyKey      = "exp-sniffer-resolve-locally"
-	SnifferResolveLocallyDefault  = false
+	MaxResultsPerUploadKey                  = "max-results-per-upload"
+	MaxResultsPerUploadDefault              = 100
+	HostProcDirKey                          = "host-proc-dir"
+	HostProcDirDefault                      = "/hostproc"
+	CallsTimeoutKey                         = "calls-timeout"
+	CallsTimeoutDefault                     = 60 * time.Second
+	SnifferReportIntervalKey                = "sniffer-report-interval"
+	SnifferReportIntervalDefault            = 10 * time.Second
+	SnifferResolveIntervalKey               = "sniffer-resolve-interval"
+	SnifferResolveIntervalDefault           = 1 * time.Second
+	SnifferCacheUpdateWaitingTimeoutKey     = "sniffer-cache-update-waiting-timeout"
+	SnifferCacheUpdateWaitingTimeoutDefault = 5 * time.Second
+	SnifferResolveLocallyKey                = "exp-sniffer-resolve-locally"
+	SnifferResolveLocallyDefault            = false
 )
 
 func init() {

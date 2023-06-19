@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubefinder"
@@ -70,6 +71,7 @@ func main() {
 
 	err = errGroup.Wait()
 	if err != nil {
-		logrus.WithError(err).Fatal("critical component exited or failed to start: %s", err.Error())
+		msg := fmt.Sprintf("critical component exited or failed to start: %s", err.Error())
+		logrus.WithError(err).Fatal(msg)
 	}
 }
