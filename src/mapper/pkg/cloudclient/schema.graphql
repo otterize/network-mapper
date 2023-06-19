@@ -1,0 +1,816 @@
+"""Directs the executor to include this field or fragment only when the `if` argument is true."""
+directive @include(
+"""Included when true."""
+	if: Boolean!
+) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""Directs the executor to skip this field or fragment when the `if` argument is true."""
+directive @skip(
+"""Skipped when true."""
+	if: Boolean!
+) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""Marks an element of a GraphQL schema as no longer supported."""
+directive @deprecated(
+"""Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/)."""
+	reason: String
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+
+"""Exposes a URL that specifies the behavior of this scalar."""
+directive @specifiedBy(
+"""The URL that specifies the behavior of this scalar."""
+	url: String!
+) on SCALAR
+
+type AccessGraph {
+	filter: AccessGraphFilter!
+"""Clusters for which there are results"""
+	clusters: [Cluster!]!
+	serviceAccessGraphs: [ServiceAccessGraph!]!
+}
+
+type AccessGraphEdge {
+	client: Service!
+	server: Service!
+	discoveredIntents: [Intent!]!
+	appliedIntents: [Intent!]!
+	accessStatus: EdgeAccessStatus!
+}
+
+type AccessGraphFilter {
+	environmentIds: [ID!]
+	clusterIds: [ID!]
+	namespaceIds: [ID!]
+	serviceIds: [ID!]
+	lastSeenAfter: Time
+	includeServicesWithNoEdges: Boolean
+}
+
+"""The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID."""
+scalar ID
+
+"""The `Boolean` scalar type represents `true` or `false`."""
+scalar Boolean
+
+enum ApiFieldAction {
+"""Do nothing, expose models to the REST API as id-only structs (Default behaviour)"""
+	COLLAPSE_MODEL
+"""Expand model field, returning its full data and not just its ID"""
+	EXPAND_MODEL
+"""Drop this field from the REST API"""
+	DROP_FIELD
+}
+
+enum ApiMethod {
+	GET
+	POST
+	PUT
+	PATCH
+	DELETE
+}
+
+input CertificateCustomization {
+	dnsNames: [String!]
+	ttl: Int
+}
+
+"""The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
+scalar String
+
+"""The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
+scalar Int
+
+type CertificateInformation {
+	commonName: String!
+	dnsNames: [String!]
+	ttl: Int
+}
+
+type Client {
+	id: ID!
+	secret: String!
+}
+
+type Cluster {
+	id: ID!
+	name: String!
+	configuration: ClusterConfiguration
+	namespaces: [Namespace!]!
+	serviceCount: Int!
+	integration: Integration
+	defaultEnvironment: Environment
+	components: IntegrationComponents!
+	createdAt: Time!
+}
+
+type ClusterConfiguration {
+	globalDefaultDeny: Boolean!
+	istioGlobalDefaultDeny: Boolean!
+	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	useKafkaACLsInAccessGraphStates: Boolean!
+}
+
+input ClusterConfigurationInput {
+	globalDefaultDeny: Boolean!
+	istioGlobalDefaultDeny: Boolean
+	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean
+	useKafkaACLsInAccessGraphStates: Boolean
+}
+
+type ComponentStatus {
+	type: ComponentStatusType!
+	lastSeen: Time
+}
+
+enum ComponentStatusType {
+	NOT_INTEGRATED
+	CONNECTED
+	DISCONNECTED
+}
+
+enum ComponentType {
+	INTENTS_OPERATOR
+	CREDENTIALS_OPERATOR
+	NETWORK_MAPPER
+}
+
+type CredentialsOperatorComponent {
+	type: ComponentType!
+	status: ComponentStatus!
+}
+
+"""The set of custom constraints supported by our API schema."""
+enum CustomConstraint {
+	CUSTOM_NAME
+	K8S_NAME
+	LABEL_NAME
+	NONEMPTY
+	ID
+}
+
+input DiscoveredIntentInput {
+	discoveredAt: Time!
+	intent: IntentInput!
+}
+
+type EdgeAccessStatus {
+	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	useKafkaPoliciesInAccessGraphStates: Boolean!
+	verdict: EdgeAccessStatusVerdict!
+	reason: EdgeAccessStatusReason!
+	reasons: [EdgeAccessStatusReason!]!
+}
+
+enum EdgeAccessStatusReason {
+	ALLOWED_BY_APPLIED_INTENTS
+	ALLOWED_BY_APPLIED_INTENTS_OVERLY_PERMISSIVE
+	ALLOWED_BY_APPLIED_INTENTS_HTTP_OVERLY_PERMISSIVE
+	ALLOWED_BY_APPLIED_INTENTS_KAFKA_OVERLY_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_RESOURCE_MISMATCH
+	BLOCKED_BY_APPLIED_INTENTS_HTTP_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_HTTP_RESOURCE_MISMATCH
+	BLOCKED_BY_APPLIED_INTENTS_KAFKA_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_KAFKA_RESOURCE_MISMATCH
+	BLOCKED_BY_KAFKA_ENFORCEMENT_CONFIG_MISSING_APPLIED_INTENTS
+	BLOCKED_BY_DEFAULT_DENY
+	SHARED_SERVICE_ACCOUNT
+	CLIENT_ISTIO_SIDECAR_MISSING
+	SERVER_ISTIO_SIDECAR_MISSING
+	INTENTS_OPERATOR_NOT_ENFORCING
+	INTENTS_OPERATOR_NOT_ENFORCING_MISSING_APPLIED_INTENT
+	INTENTS_OPERATOR_NOT_ENFORCING_KAFKA_INTENTS_NOT_REQUIRED_FOR_TOPIC
+	MISSING_APPLIED_INTENT
+	INTENTS_OPERATOR_NEVER_CONNECTED
+	NETWORK_MAPPER_NEVER_CONNECTED
+	NO_INTENTS_FOUND_OF_RELEVANT_TYPE
+	IGNORED_IN_CALCULATION
+}
+
+enum EdgeAccessStatusVerdict {
+	EXPLICITLY_ALLOWED
+	IMPLICITLY_ALLOWED
+	WOULD_BE_BLOCKED
+	BLOCKED
+	UNKNOWN
+}
+
+type Environment {
+	id: ID!
+	name: String!
+	labels: [Label!]
+	namespaces: [Namespace!]!
+	serviceCount: Int!
+	appliedIntentsCount: Int!
+}
+
+type HTTPConfig {
+	path: String!
+	methods: [HTTPMethod!]
+}
+
+input HTTPConfigInput {
+	path: String!
+	methods: [HTTPMethod!]
+}
+
+enum HTTPMethod {
+	GET
+	POST
+	PUT
+	DELETE
+	OPTIONS
+	TRACE
+	PATCH
+	CONNECT
+	ALL
+}
+
+input InputAccessGraphFilter {
+	environmentIds: [ID!]
+	clusterIds: [ID!]
+	serviceIds: [ID!]
+	namespaceIds: [ID!]
+	lastSeenAfter: Time
+	includeServicesWithNoEdges: Boolean
+}
+
+type Integration {
+	id: ID!
+	name: String!
+	type: IntegrationType!
+	credentials: IntegrationCredentials!
+	components: IntegrationComponents
+	defaultEnvironment: Environment
+	cluster: Cluster
+}
+
+type IntegrationComponents {
+	intentsOperator: IntentsOperatorComponent!
+	credentialsOperator: CredentialsOperatorComponent!
+	networkMapper: NetworkMapperComponent!
+}
+
+type IntegrationCredentials {
+	clientId: String!
+	clientSecret: String!
+}
+
+enum IntegrationType {
+	GENERIC
+	KUBERNETES
+}
+
+type Intent {
+	id: ID!
+	server: Service!
+	client: Service!
+	type: IntentType
+	kafkaTopics: [KafkaConfig!]
+	httpResources: [HTTPConfig!]
+	status: IntentStatus
+}
+
+input IntentInput {
+	namespace: String!
+	clientName: String!
+	serverName: String!
+	serverNamespace: String
+	type: IntentType
+	topics: [KafkaConfigInput!]
+	resources: [HTTPConfigInput!]
+	status: IntentStatusInput
+}
+
+type IntentsOperatorComponent {
+	type: ComponentType!
+	status: ComponentStatus!
+	configuration: IntentsOperatorConfiguration
+}
+
+type IntentsOperatorConfiguration {
+	globalEnforcementEnabled: Boolean!
+	networkPolicyEnforcementEnabled: Boolean!
+	kafkaACLEnforcementEnabled: Boolean!
+	istioPolicyEnforcementEnabled: Boolean!
+}
+
+input IntentsOperatorConfigurationInput {
+	globalEnforcementEnabled: Boolean!
+	networkPolicyEnforcementEnabled: Boolean!
+	kafkaACLEnforcementEnabled: Boolean!
+	istioPolicyEnforcementEnabled: Boolean!
+}
+
+type IntentStatus {
+	serviceAccountName: String!
+	isServiceAccountShared: Boolean!
+	isServerMissingSidecar: Boolean!
+	isClientMissingSidecar: Boolean!
+}
+
+input IntentStatusInput {
+	istioStatus: IstioStatusInput
+}
+
+enum IntentType {
+	HTTP
+	KAFKA
+}
+
+type Invite {
+	id: ID!
+	email: String!
+	organization: Organization!
+	inviter: User!
+	created: Time!
+	acceptedAt: Time
+	status: InviteStatus!
+}
+
+enum InviteStatus {
+	PENDING
+	ACCEPTED
+}
+
+input IstioStatusInput {
+	serviceAccountName: String!
+	isServiceAccountShared: Boolean!
+	isServerMissingSidecar: Boolean!
+	isClientMissingSidecar: Boolean!
+}
+
+type KafkaConfig {
+	name: String!
+	operations: [KafkaOperation!]
+}
+
+input KafkaConfigInput {
+	name: String!
+	operations: [KafkaOperation!]
+}
+
+enum KafkaOperation {
+	ALL
+	CONSUME
+	PRODUCE
+	CREATE
+	ALTER
+	DELETE
+	DESCRIBE
+	CLUSTER_ACTION
+	DESCRIBE_CONFIGS
+	ALTER_CONFIGS
+	IDEMPOTENT_WRITE
+}
+
+type KafkaServerConfig {
+	address: String
+	topics: [KafkaTopic!]!
+}
+
+input KafkaServerConfigInput {
+	name: String!
+	namespace: String!
+	address: String!
+	topics: [KafkaTopicInput!]!
+}
+
+type KafkaTopic {
+	clientIdentityRequired: Boolean!
+	intentsRequired: Boolean!
+	pattern: KafkaTopicPattern!
+	topic: String!
+}
+
+input KafkaTopicInput {
+	clientIdentityRequired: Boolean!
+	intentsRequired: Boolean!
+	pattern: KafkaTopicPattern!
+	topic: String!
+}
+
+enum KafkaTopicPattern {
+	LITERAL
+	PREFIX
+}
+
+type KeyPair {
+	keyPEM: String!
+	caPEM: String!
+	certPEM: String!
+	rootCAPEM: String!
+	expiresAt: Int!
+}
+
+type Label {
+	key: String!
+	value: String
+}
+
+input LabelInput {
+	key: String!
+	value: String
+}
+
+type Me {
+"""The logged-in user details."""
+	user: User!
+"""The organizations to which the current logged-in user belongs."""
+	organizations: [Organization!]!
+"""Organizations to which the current logged-in user may join."""
+	invites: [Invite!]!
+"""The organization under which the current user request acts.
+This is selected by the X-Otterize-Organization header,
+or, for users with a single organization, this is that single selected organization."""
+	selectedOrganization: Organization!
+}
+
+type MeMutation {
+"""Register the user defined by the active session token into the otterize users store."""
+	registerUser: Me!
+}
+
+type Mutation {
+"""This is just a placeholder since currently GraphQL does not allow empty types"""
+	dummy: Boolean
+"""Create client"""
+	createClient: Client!
+"""Delete client"""
+	deleteClient(
+		id: ID!
+	): ID!
+"""Create user invite"""
+	createInvite(
+		email: String!
+	): Invite!
+"""Delete user invite"""
+	deleteInvite(
+		id: ID!
+	): ID!
+"""Accept user invite"""
+	acceptInvite(
+		id: ID!
+	): Invite!
+"""Operate on the current logged-in user"""
+	me: MeMutation!
+"""Create a new organization"""
+	createOrganization: Organization!
+"""Update organization"""
+	updateOrganization(
+		id: ID!
+		name: String
+		imageURL: String
+	): Organization!
+"""Remove user from organization"""
+	removeUserFromOrganization(
+		id: ID!
+		userId: ID!
+	): ID!
+	initializeOrganizationCAs(
+		organizationId: ID!
+	): Boolean!
+"""Register certificate-request details for kubernetes pod owner, returns the service associated with this pod owner"""
+	registerKubernetesPodOwnerCertificateRequest(
+		podOwner: NamespacedPodOwner!
+		certificateCustomization: CertificateCustomization
+	): Service!
+"""Report active pod owners to the cloud, as a result the cloud removes certificate requests of inactive pod owners """
+	reportActiveCertificateRequesters(
+		activePodOwners: [NamespacedPodOwner!]!
+	): Boolean!
+"""Create cluster"""
+	createCluster(
+		name: String!
+	): Cluster!
+"""Delete cluster"""
+	deleteCluster(
+		id: ID!
+	): ID!
+"""Update cluster"""
+	updateCluster(
+		id: ID!
+		name: String
+		configuration: ClusterConfigurationInput
+	): Cluster!
+"""Create a new environment"""
+	createEnvironment(
+		name: String!
+		labels: [LabelInput!]
+	): Environment!
+"""Update environment"""
+	updateEnvironment(
+		id: ID!
+		name: String
+		labels: [LabelInput!]
+	): Environment!
+"""Delete environment"""
+	deleteEnvironment(
+		id: ID!
+	): ID!
+"""Add label to environment"""
+	addEnvironmentLabel(
+		id: ID!
+		label: LabelInput!
+	): Environment!
+"""Remove label from environment"""
+	deleteEnvironmentLabel(
+		id: ID!
+		key: String!
+	): Environment!
+"""Create a new generic integration"""
+	createGenericIntegration(
+		name: String!
+	): Integration
+"""Create a new Kubernetes integration"""
+	createKubernetesIntegration(
+		environmentId: ID
+		clusterId: ID!
+	): Integration
+"""Update Generic integration"""
+	updateGenericIntegration(
+		id: ID!
+		name: String
+	): Integration
+"""Update Kubernetes integration"""
+	updateKubernetesIntegration(
+		id: ID!
+		environmentId: ID
+	): Integration
+"""Delete integration"""
+	deleteIntegration(
+		id: ID!
+	): ID!
+"""Report integration components status"""
+	reportIntegrationComponentStatus(
+		component: ComponentType!
+	): Boolean!
+	reportIntentsOperatorConfiguration(
+		configuration: IntentsOperatorConfigurationInput!
+	): Boolean!
+	reportDiscoveredIntents(
+		intents: [DiscoveredIntentInput!]!
+	): Boolean!
+	reportAppliedKubernetesIntents(
+		namespace: String!
+		intents: [IntentInput!]!
+	): Boolean!
+	reportKafkaServerConfigs(
+		namespace: String!
+		serverConfigs: [KafkaServerConfigInput!]!
+	): Boolean!
+"""Associate namespace to environment"""
+	associateNamespaceToEnv(
+		id: ID!
+		environmentId: ID
+	): Namespace!
+}
+
+type Namespace {
+	id: ID!
+	name: String!
+	cluster: Cluster!
+	environment: Environment!
+	services: [Service!]!
+	serviceCount: Int!
+}
+
+input NamespacedPodOwner {
+	name: String!
+	namespace: String!
+}
+
+type NetworkMapperComponent {
+	type: ComponentType!
+	status: ComponentStatus!
+}
+
+type Organization {
+	id: ID!
+	name: String
+	imageURL: String
+}
+
+type Query {
+"""This is just a placeholder since currently GraphQL does not allow empty types"""
+	dummy: Boolean
+"""Get client"""
+	client(
+		id: ID!
+	): Client!
+"""List user invites"""
+	invites(
+		email: String
+		status: InviteStatus
+	): [Invite!]!
+"""Get user invite"""
+	invite(
+		id: ID!
+	): Invite!
+"""Get one user invite"""
+	oneInvite(
+		email: String
+		status: InviteStatus
+	): Invite!
+"""Get information regarding the current logged-in user"""
+	me: Me!
+"""List organizations"""
+	organizations: [Organization!]!
+"""Get organization"""
+	organization(
+		id: ID!
+	): Organization!
+"""List users"""
+	users: [User!]!
+"""Get user"""
+	user(
+		id: ID!
+	): User!
+"""Get access graph"""
+	accessGraph(
+		filter: InputAccessGraphFilter
+	): AccessGraph!
+"""Get cluster"""
+	cluster(
+		id: ID!
+	): Cluster!
+"""List clusters"""
+	clusters(
+		name: String
+	): [Cluster!]!
+"""Get cluster by filters"""
+	oneCluster(
+		name: String!
+	): Cluster
+"""Get environment"""
+	environment(
+		id: ID!
+	): Environment!
+"""List environments"""
+	environments(
+		name: String
+		labels: [LabelInput!]
+	): [Environment!]!
+"""Get environment by filters"""
+	oneEnvironment(
+		name: String!
+	): Environment!
+"""List integrations"""
+	integrations(
+		name: String
+		integrationType: IntegrationType
+		environmentId: ID
+		clusterId: ID
+	): [Integration!]!
+"""Get integration"""
+	integration(
+		id: ID!
+	): Integration!
+"""Get integration by filters"""
+	oneIntegration(
+		integrationType: IntegrationType
+		environmentId: ID
+		clusterId: ID
+		name: String
+	): Integration!
+"""Get intent"""
+	intent(
+		id: ID!
+	): Intent!
+"""List intents"""
+	intents(
+		environmentId: ID
+		clientId: ID
+		serverId: ID
+	): [Intent!]!
+"""Get namespace"""
+	namespace(
+		id: ID!
+	): Namespace!
+"""List namespaces"""
+	namespaces(
+		environmentId: ID
+		clusterId: ID
+		name: String
+	): [Namespace!]!
+"""Get one namespace"""
+	oneNamespace(
+		environmentId: ID
+		clusterId: ID
+		name: String
+	): Namespace!
+"""Get service"""
+	service(
+		id: ID!
+	): Service!
+"""List services"""
+	services(
+		environmentId: ID
+		namespaceId: ID
+		name: String
+	): [Service!]!
+"""Get service by filters"""
+	oneService(
+		environmentId: ID
+		namespaceId: ID
+		name: String
+	): Service
+}
+
+type ServerBlockingStatus {
+	verdict: ServerBlockingStatusVerdict!
+	reason: ServerBlockingStatusReason!
+}
+
+enum ServerBlockingStatusReason {
+	INTENTS_OPERATOR_NEVER_CONNECTED
+	NETWORK_MAPPER_NEVER_CONNECTED
+	INTENTS_IMPLICITLY_ALLOWED
+	ALL_INTENTS_APPLIED
+	MISSING_APPLIED_INTENTS
+	INTENTS_OPERATOR_NOT_ENFORCING
+}
+
+enum ServerBlockingStatusVerdict {
+	UNKNOWN
+	NOT_BLOCKING
+	WOULD_BLOCK
+	BLOCKING
+}
+
+type ServerProtectionStatus {
+	verdict: ServerProtectionStatusVerdict!
+	reason: ServerProtectionStatusReason!
+}
+
+type ServerProtectionStatuses {
+	networkPolicies: ServerProtectionStatus!
+	kafkaACLs: ServerProtectionStatus!
+	istioPolicies: ServerProtectionStatus!
+}
+
+enum ServerProtectionStatusReason {
+	INTENTS_OPERATOR_NEVER_CONNECTED
+	INTENTS_OPERATOR_NOT_ENFORCING
+	SERVER_HAS_NO_NETWORK_POLICY
+	SERVER_HAS_NO_ISTIO_POLICY
+	SERVER_HAS_NO_ISTIO_SIDECAR
+	PROTECTED_BY_DEFAULT_DENY
+	PROTECTED_BY_SERVER_NETWORK_POLICY
+	PROTECTED_BY_SERVER_ISTIO_POLICY
+	PROTECTED_BY_KAFKA_IDENTITY_REQUIRED_NO_INTENTS_REQUIRED
+	PROTECTED_BY_KAFKA_INTENTS_REQUIRED
+	SERVER_HAS_KAFKASERVERCONFIG_NO_ENFORCEMENT
+	SERVER_HAS_NO_KAFKA_SERVER_CONFIG
+	IGNORED_IN_CALCULATION
+}
+
+enum ServerProtectionStatusVerdict {
+	UNKNOWN
+	UNPROTECTED
+	PROTECTED
+}
+
+type Service {
+	id: ID!
+	certificateInformation: CertificateInformation
+	tlsKeyPair: KeyPair!
+	name: String!
+	namespace: Namespace
+	environment: Environment!
+"""If service is Kafka, its KafkaServerConfig."""
+	kafkaServerConfig: KafkaServerConfig
+	serviceAccount: String
+}
+
+type ServiceAccessGraph {
+	service: Service!
+	accessStatus: ServiceAccessStatus!
+	calls: [AccessGraphEdge!]!
+	serves: [AccessGraphEdge!]!
+}
+
+type ServiceAccessStatus {
+	useNetworkPoliciesInAccessGraphStates: Boolean!
+	useKafkaACLsInAccessGraphStates: Boolean!
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	protectionStatus: ServerProtectionStatus!
+	protectionStatuses: ServerProtectionStatuses!
+	blockingStatus: ServerBlockingStatus!
+	hasAppliedIntents: Boolean!
+}
+
+scalar Time
+
+type User {
+	id: ID!
+	email: String!
+	name: String!
+	imageURL: String!
+	authProviderUserId: String!
+}
+
+

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/shared/notifier"
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -27,13 +27,11 @@ const (
 )
 
 type KubeFinder struct {
-	mgr                  manager.Manager
-	client               client.Client
-	serviceIdResolver    *serviceidresolver.Resolver
-	lastPodUpdate        time.Time
-	podUpdateContext     context.Context
-	podUpdateNotify      context.CancelFunc
-	podUpdateWaitersLock sync.Mutex
+	mgr                   manager.Manager
+	client                client.Client
+	serviceIdResolver     *serviceidresolver.Resolver
+	lastPodUpdate         time.Time
+	podUpdateNotification notifier.Notifier
 }
 
 var ErrFoundMoreThanOnePod = fmt.Errorf("ip belongs to more than one pod")
@@ -44,7 +42,7 @@ func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
 	if err != nil {
 		return nil, err
 	}
-	finder.podUpdateContext, finder.podUpdateNotify = context.WithCancel(context.Background())
+	finder.podUpdateNotification = notifier.NewNotifier()
 	err = finder.startWatch()
 	if err != nil {
 		return nil, err
@@ -52,66 +50,45 @@ func NewKubeFinder(mgr manager.Manager) (*KubeFinder, error) {
 	return finder, nil
 }
 
-func (k *KubeFinder) getPodUpdateContext() context.Context {
-	k.podUpdateWaitersLock.Lock()
-	defer k.podUpdateWaitersLock.Unlock()
-	if k.podUpdateContext != nil {
-		return k.podUpdateContext
-	}
-	waiter, cancelFunc := context.WithCancel(context.Background())
-	k.podUpdateNotify = cancelFunc
-	return waiter
-}
-
-func (k *KubeFinder) broadcastWaiters() {
-	k.podUpdateWaitersLock.Lock()
-	defer k.podUpdateWaitersLock.Unlock()
-
-	k.podUpdateNotify()
-	k.podUpdateContext, k.podUpdateNotify = context.WithCancel(context.Background())
-}
-
-func (k *KubeFinder) WaitForUpdateTime(ctx context.Context, updateTime time.Time) error {
-	for !k.lastPodUpdate.Before(updateTime) {
-		waitCtx := k.getPodUpdateContext()
-		select {
-		case <-waitCtx.Done():
-			continue
-		case <-ctx.Done():
-			return ctx.Err()
+func (k *KubeFinder) WaitForUpdateTime(ctx context.Context, latestExpectedUpdate time.Time) error {
+	for !k.lastPodUpdate.Before(latestExpectedUpdate) {
+		err := k.podUpdateNotification.Wait(ctx)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
+func (k *KubeFinder) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+	pod := &corev1.Pod{}
+	err := k.client.Get(ctx, request.NamespacedName, pod)
+	if errors.IsNotFound(err) {
+		return reconcile.Result{}, nil
+	}
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	updateTime := pod.CreationTimestamp.Time
+	if pod.DeletionTimestamp != nil && pod.DeletionTimestamp.After(updateTime) {
+		updateTime = pod.DeletionTimestamp.Time
+	}
+
+	if pod.Status.StartTime != nil && pod.Status.StartTime.After(updateTime) {
+		updateTime = pod.Status.StartTime.Time
+	}
+
+	if updateTime.After(k.lastPodUpdate) {
+		k.lastPodUpdate = updateTime
+		k.podUpdateNotification.Notify()
+	}
+	return reconcile.Result{}, nil
+}
+
 func (k *KubeFinder) startWatch() error {
 	watcher, err := controller.New("pod-watcher", k.mgr, controller.Options{
-		Reconciler: reconcile.Func(func(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-			pod := &corev1.Pod{}
-			err := k.client.Get(ctx, request.NamespacedName, pod)
-			if errors.IsNotFound(err) {
-				return reconcile.Result{}, nil
-			}
-
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
-			updateTime := pod.CreationTimestamp.Time
-			if pod.DeletionTimestamp != nil {
-				updateTime = pod.DeletionTimestamp.Time
-			}
-
-			if pod.Status.StartTime != nil && pod.Status.StartTime.After(updateTime) {
-				updateTime = pod.Status.StartTime.Time
-			}
-
-			if updateTime.After(k.lastPodUpdate) {
-				k.lastPodUpdate = updateTime
-				k.broadcastWaiters()
-			}
-			return reconcile.Result{}, nil
-		}),
+		Reconciler:   reconcile.Func(k.Reconcile),
 		RecoverPanic: lo.ToPtr(true),
 	})
 	if err != nil {
