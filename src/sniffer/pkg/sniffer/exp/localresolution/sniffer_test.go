@@ -32,6 +32,7 @@ func (s *SnifferTestSuite) SetupSuite() {
 func (s *SnifferTestSuite) TestHandlePacket() {
 	sniffer := NewSniffer(s.mockMapperClient, s.mockKubeFinder)
 	rawDnsResponse, err := hex.DecodeString("f84d8969309600090f090002080045000059eb6c40004011b325d05b70340a65510d0035fcb40045a621339681800001000100000000037374730975732d656173742d3109616d617a6f6e61777303636f6d0000010001c00c000100010000003c00044815ce60")
+	s.Require().NoError(err)
 	packet := gopacket.NewPacket(rawDnsResponse, layers.LayerTypeEthernet, gopacket.Default)
 	timestamp := time.Date(2021, 1, 1, 1, 0, 0, 0, time.UTC)
 
@@ -70,7 +71,7 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 	})
 	testCtxTimeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	mock = mock.Do(func(arg0, arg1 any) { cancel() })
+	_ = mock.Do(func(arg0, arg1 any) { cancel() })
 	err = sniffer.resolveAndReportCapturedResponsesForever(testCtxTimeout)
 	s.Require().True(errors.Is(err, context.Canceled))
 }
