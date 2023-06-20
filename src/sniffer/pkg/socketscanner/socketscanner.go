@@ -96,8 +96,10 @@ func getModelResults(scanResults scanResultMap) mapperclient.SocketScanResults {
 }
 
 func (s *SocketScanner) RunForever(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
