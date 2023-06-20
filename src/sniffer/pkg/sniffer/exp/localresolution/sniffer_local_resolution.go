@@ -152,7 +152,7 @@ func (s *Sniffer) handlePacketsForever(ctx context.Context) error {
 }
 
 func (s *Sniffer) resolveAndReportCapturedResponsesForever(ctx context.Context) error {
-	timer := time.NewTimer(viper.GetDuration(config.SnifferResolveIntervalKey))
+	timer := time.NewTicker(viper.GetDuration(config.SnifferResolveIntervalKey))
 	defer timer.Stop()
 
 	maxWaitTime := viper.GetDuration(config.SnifferCacheUpdateWaitingTimeoutKey)
@@ -244,10 +244,22 @@ func (s *Sniffer) resolveResponses(
 func (s *Sniffer) RunForever(ctx context.Context) error {
 	errGrp, errGroupCtx := errgroup.WithContext(ctx)
 	errGrp.Go(func() error {
-		return s.handlePacketsForever(errGroupCtx)
+		err := s.handlePacketsForever(errGroupCtx)
+		if err != nil {
+			logrus.WithError(err).Error("Handle packets aborted")
+			return err
+		}
+		logrus.Println("Handle packets quit")
+		return nil
 	})
 	errGrp.Go(func() error {
-		return s.resolveAndReportCapturedResponsesForever(errGroupCtx)
+		err := s.resolveAndReportCapturedResponsesForever(errGroupCtx)
+		if err != nil {
+			logrus.WithError(err).Error("Resolve and report responses aborted")
+			return err
+		}
+		logrus.Println("Resolve and report responses quit")
+		return nil
 	})
 
 	return errGrp.Wait()
