@@ -38,20 +38,20 @@ func main() {
 	}
 
 	logrus.Info("Manager created")
-
-	logrus.Info("Starting operator manager")
+	logrus.Info("Starting manager")
 
 	errGroup, ctx := errgroup.WithContext(signals.SetupSignalHandler())
+	kubeFinder, err := kubefinder.NewKubeFinder(mgr)
+	if err != nil {
+		logrus.WithError(err).Fatal("unable to start kubefinder")
+	}
+
 	errGroup.Go(func() error {
 		return mgr.Start(ctx)
 	})
 	mgr.GetCache().WaitForCacheSync(ctx)
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
-	kubeFinder, err := kubefinder.NewKubeFinder(mgr)
-	if err != nil {
-		logrus.WithError(err).Fatal("unable to start kubefinder")
-	}
 
 	serviceIdResolver := serviceidresolver.NewResolver(mgr.GetClient())
 	ipResolver := ipresolver.NewPodResolver(kubeFinder, serviceIdResolver)

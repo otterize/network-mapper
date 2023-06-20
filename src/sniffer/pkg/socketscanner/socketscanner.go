@@ -96,6 +96,6 @@ func getModelResults(scanResults scanResultMap) mapperclient.SocketScanResults {
 }
 
 func (s *SocketScanner) RunForever(ctx context.Context) error {
-	_ = <-ctx.Done()
+	ctx.Done()
 	return ctx.Err()
 }
