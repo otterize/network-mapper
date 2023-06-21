@@ -3,14 +3,10 @@ package logwatcher
 import (
 	"context"
 	"errors"
-	"github.com/nxadm/tail"
 	"github.com/oriser/regroup"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	"io"
 	"k8s.io/apimachinery/pkg/types"
 	"sync"
 	"time"
@@ -33,62 +29,26 @@ type AuthorizerRecord struct {
 
 type SeenRecordsStore map[AuthorizerRecord]time.Time
 
-type Watcher struct {
-	mu            sync.Mutex
-	seen          SeenRecordsStore
-	mapperClient  mapperclient.MapperClient
-	authzFilePath string
+type Watcher interface {
+	RunForever(ctx context.Context)
 }
 
-func NewWatcher(mapperClient mapperclient.MapperClient, authzFilePath string) (*Watcher, error) {
-	w := &Watcher{
-		mu:            sync.Mutex{},
-		seen:          SeenRecordsStore{},
-		mapperClient:  mapperClient,
-		authzFilePath: authzFilePath,
-	}
-
-	return w, nil
+type baseWatcher struct {
+	mu           sync.Mutex
+	seen         SeenRecordsStore
+	mapperClient mapperclient.MapperClient
 }
 
-func (w *Watcher) processLogRecord(kafkaServer types.NamespacedName, record string) {
-	authorizerRecord := AuthorizerRecord{
-		Server: kafkaServer,
-	}
-	if err := AclAuthorizerRegex.MatchToTarget(record, &authorizerRecord); errors.Is(err, &regroup.NoMatchFoundError{}) {
-		return
-	} else if err != nil {
-		logrus.Errorf("Error matching authorizer regex: %s", err)
-		return
-	}
-
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.seen[authorizerRecord] = time.Now()
-}
-
-func (w *Watcher) WatchForever(ctx context.Context, serverName types.NamespacedName, authzLogPath string) {
-	t, err := tail.TailFile(authzLogPath, tail.Config{Follow: true, ReOpen: true, MustExist: false, Location: &tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}})
-
-	if err != nil {
-		logrus.WithError(err).Panic()
-	}
-
-	for line := range t.Lines {
-		w.processLogRecord(serverName, line.Text)
-	}
-}
-
-func (w *Watcher) Flush() SeenRecordsStore {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	r := w.seen
-	w.seen = SeenRecordsStore{}
+func (b *baseWatcher) flush() SeenRecordsStore {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	r := b.seen
+	b.seen = SeenRecordsStore{}
 	return r
 }
 
-func (w *Watcher) ReportResults(ctx context.Context) error {
-	records := w.Flush()
+func (b *baseWatcher) reportResults(ctx context.Context) error {
+	records := b.flush()
 
 	cRecords := len(records)
 
@@ -110,17 +70,21 @@ func (w *Watcher) ReportResults(ctx context.Context) error {
 		}
 	})
 
-	return w.mapperClient.ReportKafkaMapperResults(ctx, mapperclient.KafkaMapperResults{Results: results})
+	return b.mapperClient.ReportKafkaMapperResults(ctx, mapperclient.KafkaMapperResults{Results: results})
 }
 
-func (w *Watcher) RunForever(ctx context.Context, serverName types.NamespacedName) error {
-	go w.WatchForever(ctx, serverName, w.authzFilePath)
-
-	for {
-		time.Sleep(viper.GetDuration(config.KafkaCooldownIntervalKey))
-
-		if err := w.ReportResults(ctx); err != nil {
-			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
-		}
+func (b *baseWatcher) processLogRecord(kafkaServer types.NamespacedName, record string) {
+	authorizerRecord := AuthorizerRecord{
+		Server: kafkaServer,
 	}
+	if err := AclAuthorizerRegex.MatchToTarget(record, &authorizerRecord); errors.Is(err, &regroup.NoMatchFoundError{}) {
+		return
+	} else if err != nil {
+		logrus.Errorf("Error matching authorizer regex: %s", err)
+		return
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.seen[authorizerRecord] = time.Now()
 }
