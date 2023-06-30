@@ -11,11 +11,15 @@ import (
 
 type CaptureResultForSrcIp struct {
 	SrcIp        string        `json:"srcIp"`
+	SrcHostname  string        `json:"srcHostname"`
 	Destinations []Destination `json:"destinations"`
 }
 
 // GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
 func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
+
+// GetSrcHostname returns CaptureResultForSrcIp.SrcHostname, and is useful for accessing the field via an interface.
+func (v *CaptureResultForSrcIp) GetSrcHostname() string { return v.SrcHostname }
 
 // GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
 func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }

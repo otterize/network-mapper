@@ -2,33 +2,43 @@ package sniffer
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/socketscanner"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"time"
 )
 
-// capturesMap is a map of source IP to a map of destination DNS to the last time it was seen
-type capturesMap map[string]map[string]time.Time
+type UniqueRequest struct {
+	srcIP       string
+	srcHostname string
+	destDNS     string
+}
+
+// For each unique request info, we store the time of the last request (no need to report duplicates)
+type capturesMap map[UniqueRequest]time.Time
 
 type Sniffer struct {
 	capturedRequests capturesMap
 	socketScanner    *socketscanner.SocketScanner
 	lastReportTime   time.Time
 	mapperClient     mapperclient.MapperClient
+	resolver         ipresolver.IPResolver
 }
 
-func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
+func NewSniffer(mapperClient mapperclient.MapperClient, resolver ipresolver.IPResolver) *Sniffer {
 	return &Sniffer{
 		capturedRequests: make(capturesMap),
 		socketScanner:    socketscanner.NewSocketScanner(mapperClient),
 		lastReportTime:   time.Now(),
 		mapperClient:     mapperClient,
+		resolver:         resolver,
 	}
 }
 
@@ -45,7 +55,18 @@ func (s *Sniffer) HandlePacket(packet gopacket.Packet) {
 				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
 					continue
 				}
-				s.addCapturedRequest(ip.DstIP.String(), string(answer.Name), captureTime)
+				hostname, err := s.resolver.ResolveIP(ip.DstIP.String())
+				if err != nil {
+					// Try to resolve the IP again after waiting for next refresh interval
+					// TODO: Should we do this asynchronously?
+					s.resolver.WaitForNextRefresh()
+					hostname, err = s.resolver.ResolveIP(ip.DstIP.String())
+					if err != nil {
+						logrus.WithError(err).Errorf("Could not to resolve %s, skipping packet", ip.DstIP.String())
+						continue
+					}
+				}
+				s.addCapturedRequest(ip.DstIP.String(), hostname, string(answer.Name), captureTime)
 			}
 		}
 	}
@@ -59,11 +80,9 @@ func detectCaptureTime(packet gopacket.Packet) time.Time {
 	return captureTime
 }
 
-func (s *Sniffer) addCapturedRequest(srcIp string, destDns string, seenAt time.Time) {
-	if _, ok := s.capturedRequests[srcIp]; !ok {
-		s.capturedRequests[srcIp] = make(map[string]time.Time)
-	}
-	s.capturedRequests[srcIp][destDns] = seenAt
+func (s *Sniffer) addCapturedRequest(srcIp string, srcHost string, destDns string, seenAt time.Time) {
+	req := UniqueRequest{srcIp, srcHost, destDns}
+	s.capturedRequests[req] = seenAt
 }
 
 func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
@@ -72,8 +91,7 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 		logrus.Debugf("No captured requests to report")
 		return nil
 	}
-	s.PrintCapturedRequests()
-	results := getCaptureResults(s.capturedRequests)
+	results := normalizeCaptureResults(s.capturedRequests)
 	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
 	defer cancelFunc()
 
@@ -88,25 +106,34 @@ func (s *Sniffer) ReportCaptureResults(ctx context.Context) error {
 	return nil
 }
 
-func getCaptureResults(capturedRequests capturesMap) []mapperclient.CaptureResultForSrcIp {
-	results := make([]mapperclient.CaptureResultForSrcIp, 0, len(capturedRequests))
-	for srcIp, destDNSToTime := range capturedRequests {
-		destinations := make([]mapperclient.Destination, 0)
-		for destDNS, lastSeen := range destDNSToTime {
-			destinations = append(destinations, mapperclient.Destination{Destination: destDNS, LastSeen: lastSeen})
-		}
-		results = append(results, mapperclient.CaptureResultForSrcIp{SrcIp: srcIp, Destinations: destinations})
+func normalizeCaptureResults(capturedRequests capturesMap) []mapperclient.CaptureResultForSrcIp {
+	type srcInfo struct {
+		Ip       string
+		Hostname string
 	}
-	return results
-}
+	srcToDests := make(map[srcInfo][]mapperclient.Destination)
 
-func (s *Sniffer) PrintCapturedRequests() {
-	for ip, destinations := range s.capturedRequests {
-		logrus.Debugf("%s:\n", ip)
-		for destDNS, lastSeen := range destinations {
-			logrus.Debugf("\t%s, %s\n", destDNS, lastSeen)
+	for reqInfo, reqLastSeen := range capturedRequests {
+		src := srcInfo{Ip: reqInfo.srcIP, Hostname: reqInfo.srcHostname}
+
+		if _, ok := srcToDests[src]; !ok {
+			srcToDests[src] = make([]mapperclient.Destination, 0)
 		}
+		srcToDests[src] = append(srcToDests[src], mapperclient.Destination{Destination: reqInfo.destDNS, LastSeen: reqLastSeen})
 	}
+
+	results := make([]mapperclient.CaptureResultForSrcIp, 0)
+	for src, destinations := range srcToDests {
+		// Debug print the results
+		logrus.Debugf("%s (%s):\n", src.Ip, src.Hostname)
+		for _, dest := range destinations {
+			logrus.Debugf("\t%s, %s\n", dest.Destination, dest.LastSeen)
+		}
+
+		results = append(results, mapperclient.CaptureResultForSrcIp{SrcIp: src.Ip, SrcHostname: src.Hostname, Destinations: destinations})
+	}
+
+	return results
 }
 
 func (s *Sniffer) RunForever(ctx context.Context) error {

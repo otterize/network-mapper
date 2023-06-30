@@ -3,15 +3,23 @@ package sniffer
 import (
 	"context"
 	"encoding/hex"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	mock_client "github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient/mockclient"
 	"github.com/stretchr/testify/suite"
-	"testing"
-	"time"
 )
+
+type MockIPResolver struct{}
+
+func (r *MockIPResolver) WaitForNextRefresh() {}
+func (r *MockIPResolver) ResolveIP(ipaddr string) (hostname string, err error) {
+	return "", nil
+}
 
 type SnifferTestSuite struct {
 	suite.Suite
@@ -25,7 +33,8 @@ func (s *SnifferTestSuite) SetupSuite() {
 }
 
 func (s *SnifferTestSuite) TestHandlePacket() {
-	sniffer := NewSniffer(s.mockMapperClient)
+	sniffer := NewSniffer(s.mockMapperClient, &MockIPResolver{})
+
 	rawDnsResponse, err := hex.DecodeString("f84d8969309600090f090002080045000059eb6c40004011b325d05b70340a65510d0035fcb40045a621339681800001000100000000037374730975732d656173742d3109616d617a6f6e61777303636f6d0000010001c00c000100010000003c00044815ce60")
 	if err != nil {
 		s.Require().NoError(err)
@@ -34,6 +43,7 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 	timestamp := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
 	packet.Metadata().CaptureInfo.Timestamp = timestamp
 	sniffer.HandlePacket(packet)
+	time.Sleep(1 * time.Second)
 
 	s.mockMapperClient.EXPECT().ReportCaptureResults(gomock.Any(), mapperclient.CaptureResults{
 		Results: []mapperclient.CaptureResultForSrcIp{

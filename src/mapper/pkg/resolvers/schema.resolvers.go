@@ -6,10 +6,10 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"strings"
 
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -36,6 +36,12 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			} else {
 				logrus.WithError(err).Debugf("Could not resolve %s to pod", captureItem.SrcIP)
 			}
+			continue
+		}
+		if captureItem.SrcHostname != "" && srcPod.Name != captureItem.SrcHostname {
+			// This could mean a new pod is reusing the same IP
+			// TODO: Use the captured hostname to actually find the relevant pod (instead of the IP that might no longer exist or be reused)
+			logrus.Warnf("Found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, captureItem.SrcIP, captureItem.SrcHostname)
 			continue
 		}
 
@@ -338,12 +344,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	return intentsBySource, nil
 }
 
-func (r *queryResolver) Intents(
-	ctx context.Context,
-	namespaces,
-	includeLabels,
-	excludeServiceWithLabels []string,
-	includeAllLabels *bool) ([]model.Intent, error) {
+func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) ([]model.Intent, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true

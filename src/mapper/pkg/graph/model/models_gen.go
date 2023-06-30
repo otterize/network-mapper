@@ -11,6 +11,7 @@ import (
 
 type CaptureResultForSrcIP struct {
 	SrcIP        string        `json:"srcIp"`
+	SrcHostname  string        `json:"srcHostname"`
 	Destinations []Destination `json:"destinations"`
 }
 

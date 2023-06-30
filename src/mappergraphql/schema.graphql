@@ -2,6 +2,7 @@ scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
 input CaptureResultForSrcIp {
     srcIp: String!
+    srcHostname: String!
     destinations: [Destination!]!
 }
 

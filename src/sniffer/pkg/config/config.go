@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 const (
@@ -13,10 +14,13 @@ const (
 	CallsTimeoutDefault          = 60 * time.Second
 	SnifferReportIntervalKey     = "sniffer-report-interval"
 	SnifferReportIntervalDefault = 10 * time.Second
+	PacketsBufferLengthKey       = "packets-buffer-length"
+	PacketsBufferLengthDefault   = 4096
 )
 
 func init() {
 	viper.SetDefault(SnifferReportIntervalKey, SnifferReportIntervalDefault)
+	viper.SetDefault(PacketsBufferLengthKey, PacketsBufferLengthDefault)
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
 	viper.SetDefault(HostProcDirKey, HostProcDirDefault)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

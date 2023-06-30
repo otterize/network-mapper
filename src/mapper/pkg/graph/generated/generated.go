@@ -413,6 +413,7 @@ var sources = []*ast.Source{
 
 input CaptureResultForSrcIp {
     srcIp: String!
+    srcHostname: String!
     destinations: [Destination!]!
 }
 
@@ -2992,6 +2993,14 @@ func (ec *executionContext) unmarshalInputCaptureResultForSrcIp(ctx context.Cont
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
 			it.SrcIP, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "srcHostname":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcHostname"))
+			it.SrcHostname, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
