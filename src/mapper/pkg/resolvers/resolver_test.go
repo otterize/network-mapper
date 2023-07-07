@@ -46,7 +46,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 
 	packetTime := time.Now().Add(time.Minute)
 	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
-		Results: []test_gql_client.CaptureResultForSrcIp{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
 			{
 				SrcIp: "1.1.1.1",
 				Destinations: []test_gql_client.Destination{
@@ -152,7 +152,7 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIgnoreOldPacket() {
 
 	packetTime := time.Now().Add(-1 * time.Minute)
 	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
-		Results: []test_gql_client.CaptureResultForSrcIp{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
 			{
 				SrcIp: "1.1.1.1",
 				Destinations: []test_gql_client.Destination{
@@ -181,10 +181,10 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 	packetTime := time.Now().Add(time.Minute)
 
 	_, err := test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
-		Results: []test_gql_client.SocketScanResultForSrcIp{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
 			{
 				SrcIp: "1.1.2.1",
-				DestIps: []test_gql_client.Destination{
+				Destinations: []test_gql_client.Destination{
 					{
 						Destination: "1.1.2.2",
 						LastSeen:    packetTime,
@@ -193,7 +193,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			},
 			{
 				SrcIp: "1.1.2.3",
-				DestIps: []test_gql_client.Destination{
+				Destinations: []test_gql_client.Destination{
 					{
 						Destination: "1.1.2.1",
 						LastSeen:    packetTime,
@@ -206,7 +206,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			},
 			{
 				SrcIp: "1.1.2.4",
-				DestIps: []test_gql_client.Destination{
+				Destinations: []test_gql_client.Destination{
 					{
 						Destination: "1.1.2.2",
 						LastSeen:    packetTime,

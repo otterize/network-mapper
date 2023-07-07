@@ -100,6 +100,7 @@ type Cluster {
 	integration: Integration
 	defaultEnvironment: Environment
 	components: IntegrationComponents!
+	createdAt: Time!
 }
 
 type ClusterConfiguration {
@@ -557,6 +558,10 @@ type Mutation {
 		namespace: String!
 		intents: [IntentInput!]!
 	): Boolean!
+	reportNetworkPolicies(
+		namespace: String!
+		policies: [NetworkPolicyInput!]!
+	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
@@ -585,6 +590,12 @@ input NamespacedPodOwner {
 type NetworkMapperComponent {
 	type: ComponentType!
 	status: ComponentStatus!
+}
+
+input NetworkPolicyInput {
+	namespace: String!
+	serverName: String!
+	externalTrafficPolicy: Boolean!
 }
 
 type Organization {

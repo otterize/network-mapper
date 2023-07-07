@@ -9,27 +9,12 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-type CaptureResultForSrcIp struct {
-	SrcIp        string        `json:"srcIp"`
-	SrcHostname  string        `json:"srcHostname"`
-	Destinations []Destination `json:"destinations"`
-}
-
-// GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
-
-// GetSrcHostname returns CaptureResultForSrcIp.SrcHostname, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrcHostname() string { return v.SrcHostname }
-
-// GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
-
 type CaptureResults struct {
-	Results []CaptureResultForSrcIp `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
-func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
+func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 type Destination struct {
 	Destination string    `json:"destination"`
@@ -42,23 +27,27 @@ func (v *Destination) GetDestination() string { return v.Destination }
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
 
-type SocketScanResultForSrcIp struct {
-	SrcIp   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
+type RecordedDestinationsForSrc struct {
+	SrcIp        string        `json:"srcIp"`
+	SrcHostname  string        `json:"srcHostname"`
+	Destinations []Destination `json:"destinations"`
 }
 
-// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
+// GetSrcIp returns RecordedDestinationsForSrc.SrcIp, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetSrcIp() string { return v.SrcIp }
 
-// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
+// GetSrcHostname returns RecordedDestinationsForSrc.SrcHostname, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetSrcHostname() string { return v.SrcHostname }
+
+// GetDestinations returns RecordedDestinationsForSrc.Destinations, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetDestinations() []Destination { return v.Destinations }
 
 type SocketScanResults struct {
-	Results []SocketScanResultForSrcIp `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 // GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
-func (v *SocketScanResults) GetResults() []SocketScanResultForSrcIp { return v.Results }
+func (v *SocketScanResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 // __reportCaptureResultsInput is used internally by genqlient
 type __reportCaptureResultsInput struct {
