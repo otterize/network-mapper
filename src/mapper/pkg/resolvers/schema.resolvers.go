@@ -74,6 +74,9 @@ func (r *mutationResolver) discoverSrcIdentity(ctx context.Context, src model.Re
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
 	for _, captureItem := range results.Results {
 		srcSvcIdentity := r.discoverSrcIdentity(ctx, captureItem)
+		if srcSvcIdentity == nil {
+			continue
+		}
 		for _, dest := range captureItem.Destinations {
 			destAddress := dest.Destination
 			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
@@ -138,6 +141,9 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity := r.discoverSrcIdentity(ctx, socketScanItem)
+		if srcSvcIdentity == nil {
+			continue
+		}
 		for _, destIp := range socketScanItem.Destinations {
 			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
 			if err != nil {
