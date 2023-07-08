@@ -76,6 +76,11 @@ func (s *Sniffer) report(ctx context.Context) {
 	s.lastReportTime = time.Now()
 }
 
+func (s *Sniffer) getTimeTilNextReport() time.Duration {
+	nextReportTime := s.lastReportTime.Add(viper.GetDuration(config.SnifferReportIntervalKey))
+	return nextReportTime.Sub(time.Now())
+}
+
 func (s *Sniffer) RunForever(ctx context.Context) error {
 	packetsChan, err := s.dnsSniffer.CreateDNSPacketStream()
 	if err != nil {
@@ -86,9 +91,7 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 		select {
 		case packet := <-packetsChan:
 			s.dnsSniffer.HandlePacket(packet)
-		case <-time.After(viper.GetDuration(config.SnifferReportIntervalKey)):
-		}
-		if s.lastReportTime.Add(viper.GetDuration(config.SnifferReportIntervalKey)).Before(time.Now()) {
+		case <-time.After(s.getTimeTilNextReport()):
 			err := s.socketScanner.ScanProcDir()
 			if err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")
