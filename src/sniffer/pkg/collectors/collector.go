@@ -1,7 +1,6 @@
 package collectors
 
 import (
-	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -17,7 +16,6 @@ type UniqueRequest struct {
 type capturesMap map[UniqueRequest]time.Time
 
 type NetworkCollector struct {
-	resolver         ipresolver.IPResolver
 	capturedRequests capturesMap
 }
 

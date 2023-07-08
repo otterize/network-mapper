@@ -3,7 +3,6 @@ package collectors
 import (
 	"fmt"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
@@ -92,7 +91,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 
 	viper.Set(config.HostProcDirKey, mockProcDir)
 
-	scanner := NewSocketScanner(&ipresolver.MockIPResolver{})
+	scanner := NewSocketScanner()
 	s.Require().NoError(scanner.ScanProcDir())
 
 	// We should only see sockets that this pod serves to other clients.

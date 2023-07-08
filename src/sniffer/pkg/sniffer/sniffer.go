@@ -13,18 +13,18 @@ import (
 )
 
 type Sniffer struct {
-	dnsSniffer     *collectors.DNSSniffer
-	socketScanner  *collectors.SocketScanner
-	lastReportTime time.Time
-	mapperClient   mapperclient.MapperClient
+	dnsSniffer           *collectors.DNSSniffer
+	socketScanner        *collectors.SocketScanner
+	lastReportTime       time.Time
+	lastHostsRefreshTime time.Time
+	mapperClient         mapperclient.MapperClient
 }
 
-func NewSniffer(mapperClient mapperclient.MapperClient, resolver ipresolver.IPResolver) *Sniffer {
+func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
 	return &Sniffer{
-		dnsSniffer:     collectors.NewDNSSniffer(resolver),
-		socketScanner:  collectors.NewSocketScanner(resolver),
-		lastReportTime: time.Now(),
-		mapperClient:   mapperClient,
+		dnsSniffer:    collectors.NewDNSSniffer(ipresolver.NewProcFSIPResolver()),
+		socketScanner: collectors.NewSocketScanner(),
+		mapperClient:  mapperClient,
 	}
 }
 
@@ -91,6 +91,10 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 		select {
 		case packet := <-packetsChan:
 			s.dnsSniffer.HandlePacket(packet)
+		case <-time.After(s.dnsSniffer.GetTimeTilNextRefresh()):
+			if err := s.dnsSniffer.RefreshHostsMapping(); err != nil {
+				logrus.WithError(err).Error("Failed to refresh ip->host resolving map")
+			}
 		case <-time.After(s.getTimeTilNextReport()):
 			err := s.socketScanner.ScanProcDir()
 			if err != nil {

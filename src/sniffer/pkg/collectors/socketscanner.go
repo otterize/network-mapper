@@ -3,7 +3,6 @@ package collectors
 import (
 	"fmt"
 	"github.com/otterize/go-procnet/procnet"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/utils"
 
 	"time"
@@ -13,11 +12,9 @@ type SocketScanner struct {
 	NetworkCollector
 }
 
-func NewSocketScanner(resolver ipresolver.IPResolver) *SocketScanner {
+func NewSocketScanner() *SocketScanner {
 	s := SocketScanner{
-		NetworkCollector{
-			resolver: resolver,
-		},
+		NetworkCollector{},
 	}
 	s.resetData()
 	return &s

@@ -31,7 +31,7 @@ func (s *ProcFSIPResolverTestSuite) SetupSuite() {
 
 func (s *ProcFSIPResolverTestSuite) TearDownSuite() {
 	_ = os.RemoveAll(s.mockRootProcDir)
-	s.resolver.Stop()
+	//s.resolver.Stop()
 }
 
 const mockEnvironFileContent = "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\x00HOSTNAME=%s\x00TERM=xterm\x00HOME=/root\x00"
@@ -99,14 +99,14 @@ func (s *ProcFSIPResolverTestSuite) mockKillProcess(pid int64) {
 
 func (s *ProcFSIPResolverTestSuite) TestResolverSimple() {
 	s.mockCreateProcess(10, "172.17.0.1", "service-1")
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err := s.resolver.ResolveIP("172.17.0.1")
 	s.Require().NoError(err)
 	s.Require().Equal("service-1", hostname)
 
 	s.mockKillProcess(10)
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err = s.resolver.ResolveIP("172.17.0.1")
 	s.Require().ErrorContains(err, "not found")
@@ -115,7 +115,7 @@ func (s *ProcFSIPResolverTestSuite) TestResolverSimple() {
 
 func (s *ProcFSIPResolverTestSuite) TestResolverRefCount() {
 	s.mockCreateProcess(20, "172.17.0.2", "service-2")
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err := s.resolver.ResolveIP("172.17.0.2")
 	s.Require().NoError(err)
@@ -123,7 +123,7 @@ func (s *ProcFSIPResolverTestSuite) TestResolverRefCount() {
 
 	s.mockCreateProcess(21, "172.17.0.2", "service-2")
 	s.mockCreateProcess(22, "172.17.0.2", "service-2")
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err = s.resolver.ResolveIP("172.17.0.2")
 	s.Require().NoError(err)
@@ -131,14 +131,14 @@ func (s *ProcFSIPResolverTestSuite) TestResolverRefCount() {
 
 	s.mockKillProcess(20)
 	s.mockKillProcess(21)
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err = s.resolver.ResolveIP("172.17.0.2")
 	s.Require().NoError(err)
 	s.Require().Equal("service-2", hostname)
 
 	s.mockKillProcess(22)
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err = s.resolver.ResolveIP("172.17.0.2")
 	s.Require().ErrorContains(err, "not found")
@@ -147,14 +147,14 @@ func (s *ProcFSIPResolverTestSuite) TestResolverRefCount() {
 
 func (s *ProcFSIPResolverTestSuite) TestResolverCollision() {
 	s.mockCreateProcess(30, "172.17.0.3", "service-3")
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	hostname, err := s.resolver.ResolveIP("172.17.0.3")
 	s.Require().NoError(err)
 	s.Require().Equal("service-3", hostname)
 
 	s.mockCreateProcess(31, "172.17.0.3", "service-3-new")
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	// Newer hostname should override older one
 	hostname, err = s.resolver.ResolveIP("172.17.0.3")
@@ -162,7 +162,7 @@ func (s *ProcFSIPResolverTestSuite) TestResolverCollision() {
 	s.Require().Equal("service-3-new", hostname)
 
 	s.mockKillProcess(31)
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 
 	// Older process isn't counted into ProcRefCount, the exit of the new one should be enough to remove the entry
 	hostname, err = s.resolver.ResolveIP("172.17.0.3")
@@ -170,7 +170,7 @@ func (s *ProcFSIPResolverTestSuite) TestResolverCollision() {
 	s.Require().Equal(hostname, "")
 
 	s.mockKillProcess(30)
-	s.resolver.WaitForNextRefresh()
+	_ = s.resolver.Refresh()
 	hostname, err = s.resolver.ResolveIP("172.17.0.3")
 	s.Require().ErrorContains(err, "not found")
 	s.Require().Equal(hostname, "")
