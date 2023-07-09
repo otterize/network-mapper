@@ -28,51 +28,47 @@ func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
 	}
 }
 
-func (s *Sniffer) reportCaptureResults(ctx context.Context) error {
+func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 	results := s.dnsSniffer.CollectResults()
 	if len(results) == 0 {
 		logrus.Debugf("No captured sniffed requests to report")
-		return nil
+		return
 	}
-
-	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
-	defer cancelFunc()
-
 	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(results))
-	err := s.mapperClient.ReportCaptureResults(timeoutCtx, mapperclient.CaptureResults{Results: results})
-	if err != nil {
-		return err
-	}
-	return nil
+
+	go func() {
+		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
+		defer cancelFunc()
+
+		err := s.mapperClient.ReportCaptureResults(timeoutCtx, mapperclient.CaptureResults{Results: results})
+		if err != nil {
+			logrus.WithError(err).Error("Failed to report capture results")
+		}
+	}()
 }
 
-func (s *Sniffer) reportSocketScanResults(ctx context.Context) error {
+func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 	results := s.socketScanner.CollectResults()
 	if len(results) == 0 {
 		logrus.Debugf("No scanned tcp connections to report")
-		return nil
+		return
 	}
-
-	timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
-	defer cancelFunc()
-
 	logrus.Infof("Reporting scanned requests of %d clients to Mapper", len(results))
-	err := s.mapperClient.ReportSocketScanResults(timeoutCtx, mapperclient.SocketScanResults{Results: results})
-	if err != nil {
-		return err
-	}
-	return nil
+
+	go func() {
+		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
+		defer cancelFunc()
+
+		err := s.mapperClient.ReportSocketScanResults(timeoutCtx, mapperclient.SocketScanResults{Results: results})
+		if err != nil {
+			logrus.WithError(err).Error("Failed to report socket scan results")
+		}
+	}()
 }
 
 func (s *Sniffer) report(ctx context.Context) {
-	err := s.reportSocketScanResults(ctx)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to report socket scan result to mapper")
-	}
-	err = s.reportCaptureResults(ctx)
-	if err != nil {
-		logrus.WithError(err).Errorf("Failed to report captured requests to mapper")
-	}
+	s.reportSocketScanResults(ctx)
+	s.reportCaptureResults(ctx)
 	s.lastReportTime = time.Now()
 }
 
@@ -96,18 +92,15 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 				logrus.WithError(err).Error("Failed to refresh ip->host resolving map")
 			}
 		case <-time.After(s.getTimeTilNextReport()):
-			logrus.Infof("Before report: %d Packets are in queue", len(packetsChan))
 			if err := s.socketScanner.ScanProcDir(); err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")
 			}
-
 			// Flush pending packets before reporting
 			if err := s.dnsSniffer.RefreshHostsMapping(); err != nil {
 				logrus.WithError(err).Error("Failed to refresh ip->host resolving map")
 			}
-
+			// Actual server request is async, won't block packet handling
 			s.report(ctx)
-			logrus.Infof("After report: %d Packets are in queue", len(packetsChan))
 		}
 	}
 }
