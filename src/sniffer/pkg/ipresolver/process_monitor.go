@@ -1,49 +1,47 @@
 package ipresolver
 
-import "github.com/otterize/network-mapper/src/sniffer/pkg/utils"
+import (
+	"github.com/otterize/network-mapper/src/sniffer/pkg/utils"
+	"k8s.io/apimachinery/pkg/util/sets"
+)
 
 type ProcessMonitor struct {
-	processes  map[int64]interface{}
-	onProcNew  utils.ProcessScanCallback
-	onProcExit utils.ProcessScanCallback
-	done       chan bool
+	processes      sets.Set[int64]
+	onProcNew      utils.ProcessScanCallback
+	onProcExit     utils.ProcessScanCallback
+	forEachProcess utils.ProcessScanner
 }
 
-func NewProcessMonitor(onProcNew, onProcExit utils.ProcessScanCallback) *ProcessMonitor {
+func NewProcessMonitor(
+	onProcNew utils.ProcessScanCallback,
+	onProcExit utils.ProcessScanCallback,
+	forEachProcess utils.ProcessScanner,
+) *ProcessMonitor {
 	return &ProcessMonitor{
-		processes:  make(map[int64]interface{}),
-		onProcNew:  onProcNew,
-		onProcExit: onProcExit,
-		done:       nil,
+		processes:      sets.New[int64](),
+		onProcNew:      onProcNew,
+		onProcExit:     onProcExit,
+		forEachProcess: forEachProcess,
 	}
 }
 
 func (pm *ProcessMonitor) Poll() error {
-	oldProcesses := make(map[int64]bool)
-	for pid := range pm.processes {
-		oldProcesses[pid] = false
-	}
+	processesSeenLastTime := pm.processes.Clone()
+	pm.processes = sets.New[int64]()
 
-	err := utils.ScanProcDirProcesses(func(pid int64, pDir string) {
-		if _, ok := pm.processes[pid]; !ok {
-			// New process
+	err := pm.forEachProcess(func(pid int64, pDir string) {
+		if !processesSeenLastTime.Has(pid) {
 			pm.onProcNew(pid, pDir)
-			pm.processes[pid] = nil
-		} else {
-			// Existing process
-			oldProcesses[pid] = true
 		}
+		pm.processes.Insert(pid)
 	})
 	if err != nil {
 		return err
 	}
 
-	for pid := range oldProcesses {
-		if !oldProcesses[pid] {
-			pm.onProcExit(pid, "")
-			// Process no longer exists
-			delete(pm.processes, pid)
-		}
+	exitedProcesses := processesSeenLastTime.Difference(pm.processes)
+	for _, pid := range exitedProcesses.UnsortedList() {
+		pm.onProcExit(pid, "")
 	}
 
 	return nil

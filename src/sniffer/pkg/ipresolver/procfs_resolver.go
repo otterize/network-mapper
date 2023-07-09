@@ -24,7 +24,7 @@ func NewProcFSIPResolver() *ProcFSIPResolver {
 		byAddr:  make(map[string]*ProcFSIPResolverEntry),
 		byPid:   make(map[int64]*ProcFSIPResolverEntry),
 	}
-	r.monitor = NewProcessMonitor(r.onProcessNew, r.onProcessExit)
+	r.monitor = NewProcessMonitor(r.onProcessNew, r.onProcessExit, utils.ScanProcDirProcesses)
 
 	return &r
 }

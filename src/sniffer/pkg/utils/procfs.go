@@ -15,6 +15,7 @@ import (
 )
 
 type ProcessScanCallback func(pid int64, pDir string)
+type ProcessScanner func(callback ProcessScanCallback) error
 
 func ScanProcDirProcesses(callback ProcessScanCallback) error {
 	hostProcDir := viper.GetString(config.HostProcDirKey)
