@@ -30,6 +30,7 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 	timestamp := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
 	packet.Metadata().CaptureInfo.Timestamp = timestamp
 	sniffer.HandlePacket(packet)
+	_ = sniffer.RefreshHostsMapping()
 	time.Sleep(1 * time.Second)
 
 	s.Require().Equal(sniffer.CollectResults(), []mapperclient.RecordedDestinationsForSrc{

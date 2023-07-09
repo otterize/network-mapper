@@ -12,9 +12,10 @@ import (
 )
 
 type pendingCapture struct {
-	srcIp string
-	dest  string
-	time  time.Time
+	srcIp       string
+	srcHostname string
+	dest        string
+	time        time.Time
 }
 
 type DNSSniffer struct {
@@ -64,12 +65,12 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 				}
 				hostname, err := s.resolver.ResolveIP(ip.DstIP.String())
 				if err != nil {
-					// Try to resolve the IP again after next refresh interval
-					s.pending = append(s.pending, pendingCapture{
-						srcIp: ip.DstIP.String(), dest: string(answer.Name), time: captureTime,
-					})
+					logrus.Debugf("Can't resolve IP addr %s, skipping", ip.DstIP.String())
 				}
-				s.addCapturedRequest(ip.DstIP.String(), hostname, string(answer.Name), captureTime)
+				// Resolver cache could be outdated, make sure again after next poll interval
+				s.pending = append(s.pending, pendingCapture{
+					srcIp: ip.DstIP.String(), srcHostname: hostname, dest: string(answer.Name), time: captureTime,
+				})
 			}
 		}
 	}
@@ -84,7 +85,11 @@ func (s *DNSSniffer) RefreshHostsMapping() error {
 	for _, p := range s.pending {
 		hostname, err := s.resolver.ResolveIP(p.srcIp)
 		if err != nil {
-			logrus.WithError(err).Errorf("Could not to resolve %s, skipping packet", p.srcIp)
+			logrus.WithError(err).Debugf("Could not to resolve %s, skipping packet", p.srcIp)
+			continue
+		}
+		if p.srcHostname != hostname {
+			logrus.Debugf("IP %s was resolved to %s, but now resolves to %s. skipping packet", p.srcIp, p.srcHostname, hostname)
 			continue
 		}
 		s.addCapturedRequest(p.srcIp, hostname, p.dest, p.time)

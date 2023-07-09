@@ -78,7 +78,7 @@ func (s *Sniffer) report(ctx context.Context) {
 
 func (s *Sniffer) getTimeTilNextReport() time.Duration {
 	nextReportTime := s.lastReportTime.Add(viper.GetDuration(config.SnifferReportIntervalKey))
-	return nextReportTime.Sub(time.Now())
+	return time.Until(nextReportTime)
 }
 
 func (s *Sniffer) RunForever(ctx context.Context) error {
@@ -96,12 +96,18 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 				logrus.WithError(err).Error("Failed to refresh ip->host resolving map")
 			}
 		case <-time.After(s.getTimeTilNextReport()):
-			err := s.socketScanner.ScanProcDir()
-			if err != nil {
+			logrus.Infof("Before report: %d Packets are in queue", len(packetsChan))
+			if err := s.socketScanner.ScanProcDir(); err != nil {
 				logrus.WithError(err).Error("Failed to scan proc dir for sockets")
 			}
 
+			// Flush pending packets before reporting
+			if err := s.dnsSniffer.RefreshHostsMapping(); err != nil {
+				logrus.WithError(err).Error("Failed to refresh ip->host resolving map")
+			}
+
 			s.report(ctx)
+			logrus.Infof("After report: %d Packets are in queue", len(packetsChan))
 		}
 	}
 }
