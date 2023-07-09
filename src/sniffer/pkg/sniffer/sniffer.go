@@ -13,11 +13,10 @@ import (
 )
 
 type Sniffer struct {
-	dnsSniffer           *collectors.DNSSniffer
-	socketScanner        *collectors.SocketScanner
-	lastReportTime       time.Time
-	lastHostsRefreshTime time.Time
-	mapperClient         mapperclient.MapperClient
+	dnsSniffer     *collectors.DNSSniffer
+	socketScanner  *collectors.SocketScanner
+	lastReportTime time.Time
+	mapperClient   mapperclient.MapperClient
 }
 
 func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {

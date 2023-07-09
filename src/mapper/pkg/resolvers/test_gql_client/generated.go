@@ -179,6 +179,13 @@ type __ServiceIntentsInput struct {
 // GetNamespaces returns __ServiceIntentsInput.Namespaces, and is useful for accessing the field via an interface.
 func (v *__ServiceIntentsInput) GetNamespaces() []string { return v.Namespaces }
 
+// The query or mutation executed by ReportCaptureResults.
+const ReportCaptureResults_Operation = `
+mutation ReportCaptureResults ($results: CaptureResults!) {
+	reportCaptureResults(results: $results)
+}
+`
+
 func ReportCaptureResults(
 	ctx context.Context,
 	client graphql.Client,
@@ -186,11 +193,7 @@ func ReportCaptureResults(
 ) (*ReportCaptureResultsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportCaptureResults",
-		Query: `
-mutation ReportCaptureResults ($results: CaptureResults!) {
-	reportCaptureResults(results: $results)
-}
-`,
+		Query:  ReportCaptureResults_Operation,
 		Variables: &__ReportCaptureResultsInput{
 			Results: results,
 		},
@@ -209,6 +212,13 @@ mutation ReportCaptureResults ($results: CaptureResults!) {
 	return &data, err
 }
 
+// The query or mutation executed by ReportSocketScanResults.
+const ReportSocketScanResults_Operation = `
+mutation ReportSocketScanResults ($results: SocketScanResults!) {
+	reportSocketScanResults(results: $results)
+}
+`
+
 func ReportSocketScanResults(
 	ctx context.Context,
 	client graphql.Client,
@@ -216,11 +226,7 @@ func ReportSocketScanResults(
 ) (*ReportSocketScanResultsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportSocketScanResults",
-		Query: `
-mutation ReportSocketScanResults ($results: SocketScanResults!) {
-	reportSocketScanResults(results: $results)
-}
-`,
+		Query:  ReportSocketScanResults_Operation,
 		Variables: &__ReportSocketScanResultsInput{
 			Results: results,
 		},
@@ -239,14 +245,8 @@ mutation ReportSocketScanResults ($results: SocketScanResults!) {
 	return &data, err
 }
 
-func ServiceIntents(
-	ctx context.Context,
-	client graphql.Client,
-	namespaces []string,
-) (*ServiceIntentsResponse, error) {
-	req := &graphql.Request{
-		OpName: "ServiceIntents",
-		Query: `
+// The query or mutation executed by ServiceIntents.
+const ServiceIntents_Operation = `
 query ServiceIntents ($namespaces: [String!]) {
 	serviceIntents(namespaces: $namespaces) {
 		client {
@@ -264,7 +264,16 @@ query ServiceIntents ($namespaces: [String!]) {
 		}
 	}
 }
-`,
+`
+
+func ServiceIntents(
+	ctx context.Context,
+	client graphql.Client,
+	namespaces []string,
+) (*ServiceIntentsResponse, error) {
+	req := &graphql.Request{
+		OpName: "ServiceIntents",
+		Query:  ServiceIntents_Operation,
 		Variables: &__ServiceIntentsInput{
 			Namespaces: namespaces,
 		},

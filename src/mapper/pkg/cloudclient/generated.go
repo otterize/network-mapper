@@ -185,6 +185,13 @@ type __ReportDiscoveredIntentsInput struct {
 // GetIntents returns __ReportDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
 func (v *__ReportDiscoveredIntentsInput) GetIntents() []*DiscoveredIntentInput { return v.Intents }
 
+// The query or mutation executed by ReportComponentStatus.
+const ReportComponentStatus_Operation = `
+mutation ReportComponentStatus ($component: ComponentType!) {
+	reportIntegrationComponentStatus(component: $component)
+}
+`
+
 func ReportComponentStatus(
 	ctx context.Context,
 	client graphql.Client,
@@ -192,11 +199,7 @@ func ReportComponentStatus(
 ) (*ReportComponentStatusResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportComponentStatus",
-		Query: `
-mutation ReportComponentStatus ($component: ComponentType!) {
-	reportIntegrationComponentStatus(component: $component)
-}
-`,
+		Query:  ReportComponentStatus_Operation,
 		Variables: &__ReportComponentStatusInput{
 			Component: component,
 		},
@@ -215,6 +218,14 @@ mutation ReportComponentStatus ($component: ComponentType!) {
 	return &data, err
 }
 
+// The query or mutation executed by ReportDiscoveredIntents.
+const ReportDiscoveredIntents_Operation = `
+# @genqlient(pointer: true)
+mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
+	reportDiscoveredIntents(intents: $intents)
+}
+`
+
 func ReportDiscoveredIntents(
 	ctx context.Context,
 	client graphql.Client,
@@ -222,11 +233,7 @@ func ReportDiscoveredIntents(
 ) (*ReportDiscoveredIntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportDiscoveredIntents",
-		Query: `
-mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
-	reportDiscoveredIntents(intents: $intents)
-}
-`,
+		Query:  ReportDiscoveredIntents_Operation,
 		Variables: &__ReportDiscoveredIntentsInput{
 			Intents: intents,
 		},
