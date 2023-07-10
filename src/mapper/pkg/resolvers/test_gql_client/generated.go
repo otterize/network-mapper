@@ -9,23 +9,12 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-type CaptureResultForSrcIp struct {
-	SrcIp        string        `json:"srcIp"`
-	Destinations []Destination `json:"destinations"`
-}
-
-// GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
-
-// GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
-
 type CaptureResults struct {
-	Results []CaptureResultForSrcIp `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
-func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
+func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 type Destination struct {
 	Destination string    `json:"destination"`
@@ -37,6 +26,21 @@ func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
+
+type RecordedDestinationsForSrc struct {
+	SrcIp        string        `json:"srcIp"`
+	SrcHostname  string        `json:"srcHostname"`
+	Destinations []Destination `json:"destinations"`
+}
+
+// GetSrcIp returns RecordedDestinationsForSrc.SrcIp, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetSrcIp() string { return v.SrcIp }
+
+// GetSrcHostname returns RecordedDestinationsForSrc.SrcHostname, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetSrcHostname() string { return v.SrcHostname }
+
+// GetDestinations returns RecordedDestinationsForSrc.Destinations, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetDestinations() []Destination { return v.Destinations }
 
 // ReportCaptureResultsResponse is returned by ReportCaptureResults on success.
 type ReportCaptureResultsResponse struct {
@@ -144,23 +148,12 @@ func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetNamespac
 	return v.Namespace
 }
 
-type SocketScanResultForSrcIp struct {
-	SrcIp   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
-}
-
-// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
-
-// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
-
 type SocketScanResults struct {
-	Results []SocketScanResultForSrcIp `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 // GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
-func (v *SocketScanResults) GetResults() []SocketScanResultForSrcIp { return v.Results }
+func (v *SocketScanResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 // __ReportCaptureResultsInput is used internally by genqlient
 type __ReportCaptureResultsInput struct {
@@ -186,6 +179,13 @@ type __ServiceIntentsInput struct {
 // GetNamespaces returns __ServiceIntentsInput.Namespaces, and is useful for accessing the field via an interface.
 func (v *__ServiceIntentsInput) GetNamespaces() []string { return v.Namespaces }
 
+// The query or mutation executed by ReportCaptureResults.
+const ReportCaptureResults_Operation = `
+mutation ReportCaptureResults ($results: CaptureResults!) {
+	reportCaptureResults(results: $results)
+}
+`
+
 func ReportCaptureResults(
 	ctx context.Context,
 	client graphql.Client,
@@ -193,11 +193,7 @@ func ReportCaptureResults(
 ) (*ReportCaptureResultsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportCaptureResults",
-		Query: `
-mutation ReportCaptureResults ($results: CaptureResults!) {
-	reportCaptureResults(results: $results)
-}
-`,
+		Query:  ReportCaptureResults_Operation,
 		Variables: &__ReportCaptureResultsInput{
 			Results: results,
 		},
@@ -216,6 +212,13 @@ mutation ReportCaptureResults ($results: CaptureResults!) {
 	return &data, err
 }
 
+// The query or mutation executed by ReportSocketScanResults.
+const ReportSocketScanResults_Operation = `
+mutation ReportSocketScanResults ($results: SocketScanResults!) {
+	reportSocketScanResults(results: $results)
+}
+`
+
 func ReportSocketScanResults(
 	ctx context.Context,
 	client graphql.Client,
@@ -223,11 +226,7 @@ func ReportSocketScanResults(
 ) (*ReportSocketScanResultsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportSocketScanResults",
-		Query: `
-mutation ReportSocketScanResults ($results: SocketScanResults!) {
-	reportSocketScanResults(results: $results)
-}
-`,
+		Query:  ReportSocketScanResults_Operation,
 		Variables: &__ReportSocketScanResultsInput{
 			Results: results,
 		},
@@ -246,14 +245,8 @@ mutation ReportSocketScanResults ($results: SocketScanResults!) {
 	return &data, err
 }
 
-func ServiceIntents(
-	ctx context.Context,
-	client graphql.Client,
-	namespaces []string,
-) (*ServiceIntentsResponse, error) {
-	req := &graphql.Request{
-		OpName: "ServiceIntents",
-		Query: `
+// The query or mutation executed by ServiceIntents.
+const ServiceIntents_Operation = `
 query ServiceIntents ($namespaces: [String!]) {
 	serviceIntents(namespaces: $namespaces) {
 		client {
@@ -271,7 +264,16 @@ query ServiceIntents ($namespaces: [String!]) {
 		}
 	}
 }
-`,
+`
+
+func ServiceIntents(
+	ctx context.Context,
+	client graphql.Client,
+	namespaces []string,
+) (*ServiceIntentsResponse, error) {
+	req := &graphql.Request{
+		OpName: "ServiceIntents",
+		Query:  ServiceIntents_Operation,
 		Variables: &__ServiceIntentsInput{
 			Namespaces: namespaces,
 		},

@@ -6,10 +6,10 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"strings"
 
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -29,32 +29,11 @@ func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
 	for _, captureItem := range results.Results {
-		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, captureItem.SrcIP)
-		if err != nil {
-			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", captureItem.SrcIP)
-			} else {
-				logrus.WithError(err).Debugf("Could not resolve %s to pod", captureItem.SrcIP)
-			}
-			continue
-		}
-
-		if srcPod.DeletionTimestamp != nil {
-			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
-			continue
-		}
-
-		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+		srcSvcIdentity := r.discoverSrcIdentity(ctx, captureItem)
+		if srcSvcIdentity == nil {
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
-			if srcPod.CreationTimestamp.After(dest.LastSeen) {
-				logrus.Debugf("Pod %s was created after capture time %s, ignoring", srcPod.Name, dest.LastSeen)
-				continue
-			}
-
 			destAddress := dest.Destination
 			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
@@ -95,19 +74,14 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				continue
 			}
 
-			srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
-			dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
-			if srcService.OwnerObject != nil {
-				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
-			}
-
+			dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
 			if dstService.OwnerObject != nil {
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
 			intent := model.Intent{
-				Client: &srcSvcIdentity,
-				Server: &dstSvcIdentity,
+				Client: srcSvcIdentity,
+				Server: dstSvcIdentity,
 			}
 
 			r.intentsHolder.AddIntent(
@@ -122,32 +96,11 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	for _, socketScanItem := range results.Results {
-		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, socketScanItem.SrcIP)
-		if err != nil {
-			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", socketScanItem.SrcIP)
-			} else {
-				logrus.WithError(err).Debugf("Could not resolve %s to pod", socketScanItem.SrcIP)
-			}
+		srcSvcIdentity := r.discoverSrcIdentity(ctx, socketScanItem)
+		if srcSvcIdentity == nil {
 			continue
 		}
-
-		if srcPod.DeletionTimestamp != nil {
-			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
-			continue
-		}
-
-		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
-			continue
-		}
-		for _, destIp := range socketScanItem.DestIps {
-			if srcPod.CreationTimestamp.After(destIp.LastSeen) {
-				logrus.Debugf("Pod %s was created after scan time %s, ignoring", srcPod.Name, destIp.LastSeen)
-				continue
-			}
-
+		for _, destIp := range socketScanItem.Destinations {
 			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
 			if err != nil {
 				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
@@ -174,19 +127,14 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				continue
 			}
 
-			srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
-			dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
-			if srcService.OwnerObject != nil {
-				srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
-			}
-
+			dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
 			if dstService.OwnerObject != nil {
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
 
 			intent := model.Intent{
-				Client: &srcSvcIdentity,
-				Server: &dstSvcIdentity,
+				Client: srcSvcIdentity,
+				Server: dstSvcIdentity,
 			}
 
 			r.intentsHolder.AddIntent(
@@ -338,12 +286,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	return intentsBySource, nil
 }
 
-func (r *queryResolver) Intents(
-	ctx context.Context,
-	namespaces,
-	includeLabels,
-	excludeServiceWithLabels []string,
-	includeAllLabels *bool) ([]model.Intent, error) {
+func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) ([]model.Intent, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true

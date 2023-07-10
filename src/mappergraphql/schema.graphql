@@ -1,26 +1,23 @@
 scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
-input CaptureResultForSrcIp {
-    srcIp: String!
-    destinations: [Destination!]!
-}
-
 input Destination {
+    # Could be either IP addr or hostname
     destination: String!
     lastSeen: Time!
 }
 
-input CaptureResults {
-    results: [CaptureResultForSrcIp!]!
+input RecordedDestinationsForSrc {
+    srcIp: String!
+    srcHostname: String!
+    destinations: [Destination!]!
 }
 
-input SocketScanResultForSrcIp {
-    srcIp: String!
-    destIps: [Destination!]!
+input CaptureResults {
+    results: [RecordedDestinationsForSrc!]!
 }
 
 input SocketScanResults {
-    results: [SocketScanResultForSrcIp!]!
+    results: [RecordedDestinationsForSrc!]!
 }
 
 type PodLabel {

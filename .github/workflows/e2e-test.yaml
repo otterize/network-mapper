@@ -91,7 +91,7 @@ jobs:
         run: |-
           # wait for 2 intents to be discovered with timeout of 30 seconds. 
           # sleeps 10 because this is the report interval from the watcher to the mapper
-          for i in 1 2 3
+          for i in 1 2 3 4 5 
           do
             if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
           done
@@ -99,7 +99,8 @@ jobs:
           echo "export intents and compare to expected file" 
           otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
           diff .github/workflows/tests-expected-results/simple-tutorial-intents.json /tmp/intents.json 
-          
+          echo "expected" && cat .github/workflows/tests-expected-results/simple-tutorial-intents.json
+          echo "actual" && cat /tmp/intents.json
       
       
 

@@ -11,6 +11,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.9.1
+	github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
 	github.com/otterize/intents-operator/src v0.0.0-20230625103947-5358f6dba9b9
