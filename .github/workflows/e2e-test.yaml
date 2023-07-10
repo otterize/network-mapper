@@ -91,7 +91,7 @@ jobs:
         run: |-
           # wait for 2 intents to be discovered with timeout of 30 seconds. 
           # sleeps 10 because this is the report interval from the watcher to the mapper
-          for i in 1 2 3 4 5 
+          for i in {1..60}
           do
             if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
           done
