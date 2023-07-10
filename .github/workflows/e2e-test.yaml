@@ -24,6 +24,9 @@ env:
 jobs:
   e2e-test:
     timeout-minutes: 5
+    strategy:
+      matrix:
+        workers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -64,7 +67,7 @@ jobs:
           SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=sniffer --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
           TELEMETRY_FLAG="--set global.telemetry.enabled=false"
           helm dep up ./helm-charts/otterize-kubernetes
-          helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
+          helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace --set debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
 
       - name: Install CLI
         run: |-
@@ -89,12 +92,26 @@ jobs:
 
       - name: Test Policy Export
         run: |-
+
           # wait for 2 intents to be discovered with timeout of 30 seconds. 
           # sleeps 10 because this is the report interval from the watcher to the mapper
-          for i in 1 2 3 4 5 
+          for i in {1..5}
           do
-            if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
+            if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then
+          echo "wait for discovered intents";
+          echo _SNIFFER LOGS_
+          kubectl logs --since=15s -n otterize-system -l app=otterize-network-sniffer
+          echo _MAPPER LOGS_
+          kubectl logs --since=15s -n otterize-system -l app=otterize-network-mapper
+          sleep 10 ;
+          fi
           done
+          
+          echo Outputting all logs
+          echo _SNIFFER LOGS_
+          kubectl logs -n otterize-system -l app=otterize-network-sniffer --tail=-1
+          echo _MAPPER LOGS_
+          kubectl logs -n otterize-system -l app=otterize-network-mapper --tail=-1
           
           echo "export intents and compare to expected file" 
           otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
