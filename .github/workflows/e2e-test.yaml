@@ -23,7 +23,7 @@ env:
 
 jobs:
   e2e-test:
-    timeout-minutes: 5
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -93,7 +93,14 @@ jobs:
           # sleeps 10 because this is the report interval from the watcher to the mapper
           for i in {1..60}
           do
-            if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then echo "wait for discovered intents"; sleep 10 ; fi
+            if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then
+          echo "wait for discovered intents";
+          echo _SNIFFER LOGS_
+          kubectl logs --since=15s -n otterize-system -l app=otterize-network-sniffer
+          echo _MAPPER LOGS_
+          kubectl logs --since=15s -n otterize-system -l app=otterize-network-mapper
+          sleep 10 ;
+          fi
           done
           
           echo "export intents and compare to expected file" 
