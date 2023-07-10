@@ -64,7 +64,7 @@ jobs:
           SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=sniffer --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
           TELEMETRY_FLAG="--set global.telemetry.enabled=false"
           helm dep up ./helm-charts/otterize-kubernetes
-          helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
+          helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace --set debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
 
       - name: Install CLI
         run: |-
