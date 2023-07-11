@@ -89,10 +89,7 @@ jobs:
 
       - name: Test Policy Export
         run: |-
-          echo _SNIFFER LOGS_
-          kubectl logs -n otterize-system -l app=otterize-network-sniffer
-          echo _MAPPER LOGS_
-          kubectl logs -n otterize-system -l app=otterize-network-mapper
+
           # wait for 2 intents to be discovered with timeout of 30 seconds. 
           # sleeps 10 because this is the report interval from the watcher to the mapper
           for i in {1..60}
@@ -106,6 +103,12 @@ jobs:
           sleep 10 ;
           fi
           done
+          
+          echo Outputting all logs
+          echo _SNIFFER LOGS_
+          kubectl logs -n otterize-system -l app=otterize-network-sniffer
+          echo _MAPPER LOGS_
+          kubectl logs -n otterize-system -l app=otterize-network-mapper
           
           echo "export intents and compare to expected file" 
           otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
