@@ -92,3 +92,19 @@ func ExtractProcessIPAddr(pDir string) (string, error) {
 
 	return ips[0], nil
 }
+
+func ExtractParentID(pDir string) (string, error) {
+	contentBytes, err := os.ReadFile(fmt.Sprintf("%s/status", pDir))
+	if err != nil {
+		return "", err
+	}
+
+	content := string(contentBytes)
+	for _, line := range strings.Split(content, "\n") {
+		fields := strings.Fields(line)
+		if fields[0] == "PPid:" {
+			return fields[1], nil
+		}
+	}
+	return "", errors.New("can't find ppid")
+}

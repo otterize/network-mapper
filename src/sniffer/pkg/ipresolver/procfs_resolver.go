@@ -53,6 +53,13 @@ func (r *ProcFSIPResolver) onProcessNew(pid int64, pDir string) {
 		return
 	}
 
+	ppid, err := utils.ExtractParentID(pDir)
+	if err != nil {
+		logrus.Debugf("Failed to extract ppid for process %d: %v", pid, err)
+	}
+
+	logrus.Debugf("New process: pid %d, hostname %s, ipaddr %s, ppid %s", pid, hostname, ipaddr, ppid)
+
 	if entry, ok := r.byAddr[ipaddr]; ok {
 		if entry.Hostname == hostname {
 			// Already mapped to this hostname, add another process reference
