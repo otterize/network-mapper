@@ -29,11 +29,16 @@ func (pm *ProcessMonitor) Poll() error {
 	processesSeenLastTime := pm.processes.Clone()
 	pm.processes = sets.New[int64]()
 
-	err := pm.forEachProcess(func(pid int64, pDir string) {
+	err := pm.forEachProcess(func(pid int64, pDir string) error {
 		if !processesSeenLastTime.Has(pid) {
-			pm.onProcNew(pid, pDir)
+			err := pm.onProcNew(pid, pDir)
+			if err == nil {
+				pm.processes.Insert(pid)
+			}
+		} else {
+			pm.processes.Insert(pid)
 		}
-		pm.processes.Insert(pid)
+		return nil
 	})
 	if err != nil {
 		return err

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type ProcessScanCallback func(pid int64, pDir string)
+type ProcessScanCallback func(pid int64, pDir string) error
 type ProcessScanner func(callback ProcessScanCallback) error
 
 func ScanProcDirProcesses(callback ProcessScanCallback) error {

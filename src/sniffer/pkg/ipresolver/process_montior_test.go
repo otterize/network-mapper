@@ -19,12 +19,14 @@ func (s *ProcessMonitorTestSuite) SetupTest() {
 	s.processMonitor = NewProcessMonitor(s.onNew, s.onExit, s.scanPids)
 }
 
-func (s *ProcessMonitorTestSuite) onNew(pid int64, pDir string) {
+func (s *ProcessMonitorTestSuite) onNew(pid int64, pDir string) error {
 	s.pidCalledNew = append(s.pidCalledNew, pid)
+	return nil
 }
 
-func (s *ProcessMonitorTestSuite) onExit(pid int64, pDir string) {
+func (s *ProcessMonitorTestSuite) onExit(pid int64, pDir string) error {
 	s.pidCalledExit = append(s.pidCalledExit, pid)
+	return nil
 }
 
 func (s *ProcessMonitorTestSuite) scanPids(callback utils.ProcessScanCallback) error {
