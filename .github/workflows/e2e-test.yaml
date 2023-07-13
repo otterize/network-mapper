@@ -95,23 +95,19 @@ jobs:
 
           # wait for 2 intents to be discovered with timeout of 30 seconds. 
           # sleeps 10 because this is the report interval from the watcher to the mapper
-          for i in {1..60}
+          for i in 1 2 3 4 5
           do
             if [ `otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq ". | length"` != 2 ]; then
           echo "wait for discovered intents";
-          echo _SNIFFER LOGS_
-          kubectl logs --since=15s -n otterize-system -l app=otterize-network-sniffer
-          echo _MAPPER LOGS_
-          kubectl logs --since=15s -n otterize-system -l app=otterize-network-mapper
           sleep 10 ;
           fi
           done
           
           echo Outputting all logs
           echo _SNIFFER LOGS_
-          kubectl logs -n otterize-system -l app=otterize-network-sniffer --tail=-1
+          kubectl logs -n otterize-system -l app=otterize-network-sniffer
           echo _MAPPER LOGS_
-          kubectl logs -n otterize-system -l app=otterize-network-mapper --tail=-1
+          kubectl logs -n otterize-system -l app=otterize-network-mapper
           
           echo "export intents and compare to expected file" 
           otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-mapper --format=json | jq 'sort_by(.metadata.namespace + .metadata.name)' > /tmp/intents.json
