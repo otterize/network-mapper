@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// ProcessMonitorCallback Should be idempotent on failures because retried on error
 type ProcessMonitorCallback func(pid int64, pDir string) error
 
 type ProcessMonitor struct {
@@ -30,16 +31,17 @@ func NewProcessMonitor(
 
 func (pm *ProcessMonitor) retryCallbacks(callbacks []func() error) {
 	// Retry handling failed processes (to mitigate failing to handle partly initiated /proc/$pid dirs)
-	for i := 0; i < 3; i++ {
-		if len(callbacks) > 0 {
-			time.Sleep(10 * time.Millisecond)
-			failed := make([]func() error, 0)
-			for _, callback := range callbacks {
-				if err := callback(); err != nil {
-					failed = append(failed, callback)
-				}
+	MaxRetries := 3
+	for i := 0; i < MaxRetries && len(callbacks) > 0; i++ {
+		failed := make([]func() error, 0)
+		for _, callback := range callbacks {
+			if err := callback(); err != nil {
+				failed = append(failed, callback)
 			}
-			callbacks = failed
+		}
+		callbacks = failed
+		if i < MaxRetries-1 {
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
 }
