@@ -45,13 +45,12 @@ func (s *SocketScanner) scanTcpFile(hostname string, path string) {
 }
 
 func (s *SocketScanner) ScanProcDir() error {
-	return utils.ScanProcDirProcesses(func(_ int64, pDir string) error {
+	return utils.ScanProcDirProcesses(func(_ int64, pDir string) {
 		hostname, err := utils.ExtractProcessHostname(pDir)
 		if err != nil {
-			return err
+			return
 		}
 		s.scanTcpFile(hostname, fmt.Sprintf("%s/net/tcp", pDir))
 		s.scanTcpFile(hostname, fmt.Sprintf("%s/net/tcp6", pDir))
-		return nil
 	})
 }

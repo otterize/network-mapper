@@ -3,18 +3,21 @@ package ipresolver
 import (
 	"github.com/otterize/network-mapper/src/sniffer/pkg/utils"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"time"
 )
+
+type ProcessMonitorCallback func(pid int64, pDir string) error
 
 type ProcessMonitor struct {
 	processes      sets.Set[int64]
-	onProcNew      utils.ProcessScanCallback
-	onProcExit     utils.ProcessScanCallback
+	onProcNew      ProcessMonitorCallback
+	onProcExit     ProcessMonitorCallback
 	forEachProcess utils.ProcessScanner
 }
 
 func NewProcessMonitor(
-	onProcNew utils.ProcessScanCallback,
-	onProcExit utils.ProcessScanCallback,
+	onProcNew ProcessMonitorCallback,
+	onProcExit ProcessMonitorCallback,
 	forEachProcess utils.ProcessScanner,
 ) *ProcessMonitor {
 	return &ProcessMonitor{
@@ -25,28 +28,43 @@ func NewProcessMonitor(
 	}
 }
 
+func (pm *ProcessMonitor) retryCallbacks(callbacks []func() error) {
+	// Retry handling failed processes (to mitigate failing to handle partly initiated /proc/$pid dirs)
+	for i := 0; i < 3; i++ {
+		if len(callbacks) > 0 {
+			time.Sleep(10 * time.Millisecond)
+			failed := make([]func() error, 0)
+			for _, callback := range callbacks {
+				if err := callback(); err != nil {
+					failed = append(failed, callback)
+				}
+			}
+			callbacks = failed
+		}
+	}
+}
+
 func (pm *ProcessMonitor) Poll() error {
 	processesSeenLastTime := pm.processes.Clone()
 	pm.processes = sets.New[int64]()
+	procNewCallbacks := make([]func() error, 0)
 
-	err := pm.forEachProcess(func(pid int64, pDir string) error {
+	if err := pm.forEachProcess(func(pid int64, pDir string) {
 		if !processesSeenLastTime.Has(pid) {
-			err := pm.onProcNew(pid, pDir)
-			if err == nil {
-				pm.processes.Insert(pid)
-			}
-		} else {
-			pm.processes.Insert(pid)
+			procNewCallbacks = append(procNewCallbacks, func() error {
+				return pm.onProcNew(pid, pDir)
+			})
 		}
-		return nil
-	})
-	if err != nil {
+		pm.processes.Insert(pid)
+	}); err != nil {
 		return err
 	}
 
+	pm.retryCallbacks(procNewCallbacks)
+
 	exitedProcesses := processesSeenLastTime.Difference(pm.processes)
 	for _, pid := range exitedProcesses.UnsortedList() {
-		pm.onProcExit(pid, "")
+		_ = pm.onProcExit(pid, "")
 	}
 
 	return nil
