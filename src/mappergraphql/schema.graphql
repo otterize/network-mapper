@@ -139,7 +139,13 @@ type Query {
     excludeLabels: Labels to exclude from the response. Ignored if includeAllLabels is specified.
     includeAllLabels: Return all labels for the pod in the response.
     """
-    intents(namespaces: [String!], includeLabels: [String!], excludeServiceWithLabels: [String!] includeAllLabels: Boolean): [Intent!]!
+    intents(
+        namespaces: [String!],
+        includeLabels: [String!],
+        excludeServiceWithLabels: [String!],
+        includeAllLabels: Boolean,
+        serverName: String,
+    ): [Intent!]!
 }
 
 type Mutation {

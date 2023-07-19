@@ -164,11 +164,24 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) ([]TimestampedIntent, error) {
+func (i *IntentsHolder) GetIntents(
+	namespaces []string,
+	includeLabels []string,
+	excludeServiceWithLabels []string,
+	includeAllLabels bool,
+	serverName string,
+) ([]TimestampedIntent, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	result, err := i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, excludeServiceWithLabels, includeAllLabels)
+	result, err := i.getIntentsFromStore(
+		i.accumulatingStore,
+		namespaces,
+		includeLabels,
+		excludeServiceWithLabels,
+		includeAllLabels,
+		serverName)
+
 	if err != nil {
 		return []TimestampedIntent{}, err
 	}
@@ -179,12 +192,24 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents, _ := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, nil, false)
+	intents, _ := i.getIntentsFromStore(
+		i.sinceLastGetStore,
+		nil,
+		nil,
+		nil,
+		false,
+		"")
+
 	i.sinceLastGetStore = make(IntentsStore)
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, includeLabels, excludeServiceWithLabels []string, includeAllLabels bool) ([]TimestampedIntent, error) {
+func (i *IntentsHolder) getIntentsFromStore(
+	store IntentsStore,
+	namespaces, includeLabels, excludeServiceWithLabels []string,
+	includeAllLabels bool,
+	serverName string,
+) ([]TimestampedIntent, error) {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
@@ -207,6 +232,10 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, incl
 		}
 
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
+			continue
+		}
+
+		if serverName != "" && intent.Intent.Server.Name != serverName {
 			continue
 		}
 
