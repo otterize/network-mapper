@@ -66,11 +66,12 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 				hostname, err := s.resolver.ResolveIP(ip.DstIP.String())
 				if err != nil {
 					logrus.Debugf("Can't resolve IP addr %s, skipping", ip.DstIP.String())
+				} else {
+					// Resolver cache could be outdated, verify same resolving result after next poll
+					s.pending = append(s.pending, pendingCapture{
+						srcIp: ip.DstIP.String(), srcHostname: hostname, dest: string(answer.Name), time: captureTime,
+					})
 				}
-				// Resolver cache could be outdated, verify same resolving result after next poll
-				s.pending = append(s.pending, pendingCapture{
-					srcIp: ip.DstIP.String(), srcHostname: hostname, dest: string(answer.Name), time: captureTime,
-				})
 			}
 		}
 	}

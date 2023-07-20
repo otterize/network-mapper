@@ -130,14 +130,14 @@ func (s *ProcFSIPResolverTestSuite) TestResolverRefCount() {
 	s.Require().Equal("service-2", hostname)
 
 	s.mockKillProcess(20)
-	s.mockKillProcess(21)
+	s.mockKillProcess(22)
 	_ = s.resolver.Refresh()
 
 	hostname, err = s.resolver.ResolveIP("172.17.0.2")
 	s.Require().NoError(err)
 	s.Require().Equal("service-2", hostname)
 
-	s.mockKillProcess(22)
+	s.mockKillProcess(21)
 	_ = s.resolver.Refresh()
 
 	hostname, err = s.resolver.ResolveIP("172.17.0.2")
