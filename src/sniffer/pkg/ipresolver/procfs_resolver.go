@@ -33,24 +33,25 @@ func (r *ProcFSIPResolver) ResolveIP(ipaddr string) (hostname string, err error)
 	if hostInfo, ok := r.byAddr[ipaddr]; ok {
 		return hostInfo.Hostname, nil
 	}
-	return "", errors.New("IP not found")
+	return "", errors.New("ip not found")
 }
 
 func (r *ProcFSIPResolver) Refresh() error {
 	return r.monitor.Poll()
 }
 
-func (r *ProcFSIPResolver) onProcessNew(pid int64, pDir string) {
-	hostname, err := utils.ExtractProcessHostname(pDir)
+func (r *ProcFSIPResolver) onProcessNew(pid int64, pDir string) (err error) {
+	var hostname, ipaddr string
+	hostname, err = utils.ExtractProcessHostname(pDir)
 	if err != nil {
 		logrus.Debugf("Failed to extract hostname for process %d: %v", pid, err)
-		return
+		return err
 	}
 
-	ipaddr, err := utils.ExtractProcessIPAddr(pDir)
+	ipaddr, err = utils.ExtractProcessIPAddr(pDir)
 	if err != nil {
 		logrus.Debugf("Failed to extract IP address for process %d: %v", pid, err)
-		return
+		return err
 	}
 
 	if entry, ok := r.byAddr[ipaddr]; ok {
@@ -58,7 +59,8 @@ func (r *ProcFSIPResolver) onProcessNew(pid int64, pDir string) {
 			// Already mapped to this hostname, add another process reference
 			r.byPid[pid] = entry
 			entry.ProcessRefCount++
-			return
+			logrus.Debugf("Mapping %s:%s already exists, increased refcount to %d", ipaddr, hostname, entry.ProcessRefCount)
+			return nil
 		} else {
 			// Shouldn't happen - it could happen if an ip replaces its pod very fast and the current single scan sees the new process and not the older one
 			logrus.Warnf("IP mapping conflict: %s got new hostname %s, but already mapped to %s. Would use the newer hostname", ipaddr, hostname, entry.Hostname)
@@ -66,6 +68,7 @@ func (r *ProcFSIPResolver) onProcessNew(pid int64, pDir string) {
 		}
 	}
 
+	logrus.Debugf("Found new mapping %s:%s", ipaddr, hostname)
 	newEntry := &ProcFSIPResolverEntry{
 		IPAddr:          ipaddr,
 		Hostname:        hostname,
@@ -73,13 +76,14 @@ func (r *ProcFSIPResolver) onProcessNew(pid int64, pDir string) {
 	}
 	r.byPid[pid] = newEntry
 	r.byAddr[ipaddr] = newEntry
+	return nil
 }
 
-func (r *ProcFSIPResolver) onProcessExit(pid int64, _ string) {
+func (r *ProcFSIPResolver) onProcessExit(pid int64, _ string) error {
 	if entry, ok := r.byPid[pid]; !ok {
 		// Shouldn't happen
 		logrus.Debugf("Unknown process %d exited", pid)
-		return
+		return nil
 	} else {
 		entry.ProcessRefCount--
 		if entry.ProcessRefCount == 0 {
@@ -93,4 +97,5 @@ func (r *ProcFSIPResolver) onProcessExit(pid int64, _ string) {
 		// Remove process from pid map
 		delete(r.byPid, pid)
 	}
+	return nil
 }
