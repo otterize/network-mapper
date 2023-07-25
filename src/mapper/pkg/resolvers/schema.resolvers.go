@@ -299,7 +299,20 @@ func (r *queryResolver) Intents(
 		shouldIncludeAllLabels = true
 	}
 
-	timestampedIntents, err := r.intentsHolder.GetIntents(namespaces, includeLabels, excludeServiceWithLabels, shouldIncludeAllLabels, *serverName)
+	var server string
+	if serverName == nil {
+		server = ""
+	} else {
+		server = *serverName
+	}
+
+	timestampedIntents, err := r.intentsHolder.GetIntents(
+		namespaces,
+		includeLabels,
+		excludeServiceWithLabels,
+		shouldIncludeAllLabels,
+		server,
+	)
 	if err != nil {
 		return []model.Intent{}, err
 	}

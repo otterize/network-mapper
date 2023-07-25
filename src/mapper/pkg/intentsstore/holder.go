@@ -221,7 +221,44 @@ func (i *IntentsHolder) getIntentsFromStore(
 		return labelSlice[0], labelSlice[1]
 	})
 
+	var intentsByClient = make(map[string]IntentsStore)
+	var intentsByServer = make(map[string]IntentsStore)
+
 	for pair, intent := range store {
+		_, ok := intentsByClient[intent.Intent.Client.Name]
+
+		if !ok {
+			newStore := make(IntentsStore)
+			intentsByClient[intent.Intent.Client.Name] = newStore
+		}
+
+		_, ok = intentsByServer[intent.Intent.Server.Name]
+
+		if !ok {
+			newStore := make(IntentsStore)
+			intentsByServer[intent.Intent.Server.Name] = newStore
+		}
+
+		intentsByClient[intent.Intent.Client.Name][pair] = intent
+		intentsByServer[intent.Intent.Server.Name][pair] = intent
+	}
+
+	// if the caller asks to filter by server, we filter the intent store to
+	// only include intents that:
+	//   1. are between any client and the specified server
+	//   2. are between any client selected in (1), and any other server
+	var filteredStore IntentsStore
+	if serverName != "" {
+		filteredStore = lo.Assign(filteredStore, intentsByServer[serverName])
+
+		for _, intent := range intentsByServer[serverName] {
+			filteredStore = lo.Assign(filteredStore, intentsByClient[intent.Intent.Client.Name])
+		}
+	} else {
+		filteredStore = store
+	}
+
+	for pair, intent := range filteredStore {
 		intentCopy, err := getIntentDeepCopy(intent)
 		if err != nil {
 			return result, err
@@ -232,10 +269,6 @@ func (i *IntentsHolder) getIntentsFromStore(
 		}
 
 		if !namespacesSet.IsEmpty() && !namespacesSet.Contains(pair.Source.Namespace) {
-			continue
-		}
-
-		if serverName != "" && intent.Intent.Server.Name != serverName {
 			continue
 		}
 
@@ -251,6 +284,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 
 		result = append(result, intent)
 	}
+
 	return result, nil
 }
 
