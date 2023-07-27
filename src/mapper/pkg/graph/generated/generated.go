@@ -89,7 +89,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Intents        func(childComplexity int, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) int
+		Intents        func(childComplexity int, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, serverName *string) int
 		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string, includeAllLabels *bool) int
 	}
 
@@ -108,7 +108,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
-	Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool) ([]model.Intent, error)
+	Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, serverName *string) ([]model.Intent, error)
 }
 
 type executableSchema struct {
@@ -317,7 +317,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool)), true
+		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["serverName"].(*string)), true
 
 	case "Query.serviceIntents":
 		if e.complexity.Query.ServiceIntents == nil {
@@ -550,7 +550,13 @@ type Query {
     excludeLabels: Labels to exclude from the response. Ignored if includeAllLabels is specified.
     includeAllLabels: Return all labels for the pod in the response.
     """
-    intents(namespaces: [String!], includeLabels: [String!], excludeServiceWithLabels: [String!] includeAllLabels: Boolean): [Intent!]!
+    intents(
+        namespaces: [String!],
+        includeLabels: [String!],
+        excludeServiceWithLabels: [String!],
+        includeAllLabels: Boolean,
+        serverName: String,
+    ): [Intent!]!
 }
 
 type Mutation {
@@ -681,6 +687,15 @@ func (ec *executionContext) field_Query_intents_args(ctx context.Context, rawArg
 		}
 	}
 	args["includeAllLabels"] = arg3
+	var arg4 *string
+	if tmp, ok := rawArgs["serverName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serverName"))
+		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["serverName"] = arg4
 	return args, nil
 }
 
@@ -1631,7 +1646,7 @@ func (ec *executionContext) _Query_intents(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool))
+		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["serverName"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
