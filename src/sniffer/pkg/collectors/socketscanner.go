@@ -39,7 +39,9 @@ func (s *SocketScanner) scanTcpFile(hostname string, path string) {
 		}
 
 		if _, ok := listenPorts[sock.LocalAddr.Port]; ok {
-			s.addCapturedRequest(sock.RemoteAddr.IP.String(), hostname, sock.LocalAddr.IP.String(), time.Now())
+			// FIXME: don't check hostname since we have the server's hostname and the client's IP here
+			// For example, Remote: 10.244.120.96 (loadgenerator) -> Local: 10.244.120.95 (frontend). The hostname we have is frontend (local), but the client we are attempting to report is loadgenerator.
+			s.addCapturedRequest(sock.RemoteAddr.IP.String(), "", sock.LocalAddr.IP.String(), time.Now())
 		}
 	}
 }
