@@ -96,28 +96,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 
 	// We should only see sockets that this pod serves to other clients.
 	// all other sockets should be ignored (because parsing the server sides on all pods is enough)
-	//expectedResult := GetMatcher([]mapperclient.RecordedDestinationsForSrc{
-	//	{
-	//		SrcIp:       "192.168.35.14",
-	//		SrcHostname: "thisverypod",
-	//		Destinations: []mapperclient.Destination{
-	//			{
-	//				Destination: "192.168.38.211",
-	//			},
-	//		},
-	//	},
-	//	{
-	//		SrcIp:       "176.168.35.14",
-	//		SrcHostname: "thisverypod",
-	//		Destinations: []mapperclient.Destination{
-	//			{
-	//				Destination: "192.168.38.211",
-	//			},
-	//		},
-	//	},
-	//})
-	results := scanner.CollectResults()
-	s.Require().ElementsMatch([]mapperclient.RecordedDestinationsForSrc{
+	expectedResult := GetMatcher([]mapperclient.RecordedDestinationsForSrc{
 		{
 			SrcIp:       "192.168.35.14",
 			SrcHostname: "",
@@ -136,7 +115,9 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 				},
 			},
 		},
-	}, results)
+	})
+	results := scanner.CollectResults()
+	s.Require().True(expectedResult.Matches(results))
 }
 
 func TestSocketScannerSuite(t *testing.T) {
