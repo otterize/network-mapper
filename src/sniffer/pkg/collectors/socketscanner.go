@@ -38,8 +38,16 @@ func (s *SocketScanner) scanTcpFile(hostname string, path string) {
 			continue
 		}
 
+		if sock.State != procnet.Established {
+			// Skip sockets that are not in ESTABLISHED state, to avoid reporting stale connections (such as connections in TIME_WAIT).
+			continue
+		}
+
 		if _, ok := listenPorts[sock.LocalAddr.Port]; ok {
-			s.addCapturedRequest(sock.RemoteAddr.IP.String(), hostname, sock.LocalAddr.IP.String(), time.Now())
+			// FIXME: don't check hostname since we have the server's hostname and the client's IP here. Consider reversing direction to reporting from the client's point-of-view,
+			// but this requires being able to resolve service IPs
+			// For example, Remote: 10.244.120.96 (loadgenerator) -> Local: 10.244.120.95 (frontend). The hostname we have is frontend (local), but the client we are attempting to report is loadgenerator.
+			s.addCapturedRequest(sock.RemoteAddr.IP.String(), "", sock.LocalAddr.IP.String(), time.Now())
 		}
 	}
 }

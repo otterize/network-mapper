@@ -23,6 +23,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.5
 	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874
 	golang.org/x/sync v0.3.0
+	gotest.tools/v3 v3.0.3
 	k8s.io/api v0.26.2
 	k8s.io/apimachinery v0.26.2
 	k8s.io/client-go v0.26.2
