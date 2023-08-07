@@ -2,6 +2,7 @@ package intentsstore
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -208,8 +209,11 @@ func (i *IntentsHolder) getIntentsFromStore(
 	store IntentsStore,
 	namespaces, includeLabels, excludeServiceWithLabels []string,
 	includeAllLabels bool,
-	serverName string,
+	filterByServer string,
 ) ([]TimestampedIntent, error) {
+	var targetedServerClients []types.NamespacedName
+	var err error
+
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
@@ -221,44 +225,15 @@ func (i *IntentsHolder) getIntentsFromStore(
 		return labelSlice[0], labelSlice[1]
 	})
 
-	var intentsByClient = make(map[string]IntentsStore)
-	var intentsByServer = make(map[string]IntentsStore)
+	shouldFilterByServer := len(filterByServer) != 0
+	if shouldFilterByServer {
+		targetedServerClients, err = getAllClientsCallingServer(filterByServer, store)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	for pair, intent := range store {
-		_, ok := intentsByClient[intent.Intent.Client.Name]
-
-		if !ok {
-			newStore := make(IntentsStore)
-			intentsByClient[intent.Intent.Client.Name] = newStore
-		}
-
-		_, ok = intentsByServer[intent.Intent.Server.Name]
-
-		if !ok {
-			newStore := make(IntentsStore)
-			intentsByServer[intent.Intent.Server.Name] = newStore
-		}
-
-		intentsByClient[intent.Intent.Client.Name][pair] = intent
-		intentsByServer[intent.Intent.Server.Name][pair] = intent
-	}
-
-	// if the caller asks to filter by server, we filter the intent store to
-	// only include intents that:
-	//   1. are between any client and the specified server
-	//   2. are between any client selected in (1), and any other server
-	var filteredStore IntentsStore
-	if serverName != "" {
-		filteredStore = lo.Assign(filteredStore, intentsByServer[serverName])
-
-		for _, intent := range intentsByServer[serverName] {
-			filteredStore = lo.Assign(filteredStore, intentsByClient[intent.Intent.Client.Name])
-		}
-	} else {
-		filteredStore = store
-	}
-
-	for pair, intent := range filteredStore {
 		intentCopy, err := getIntentDeepCopy(intent)
 		if err != nil {
 			return result, err
@@ -282,10 +257,36 @@ func (i *IntentsHolder) getIntentsFromStore(
 			intentCopy.Intent.Server.Labels = labelsFilter(intentCopy.Intent.Server.Labels)
 		}
 
+		if shouldFilterByServer && !slices.Contains(targetedServerClients, pair.Source) {
+			continue
+		}
+
 		result = append(result, intent)
 	}
 
 	return result, nil
+}
+
+func getAllClientsCallingServer(server string, store IntentsStore) ([]types.NamespacedName, error) {
+	serverNamespacedName := strings.Split(server, ".")
+	if len(serverNamespacedName) != 2 {
+		return nil, fmt.Errorf("invalid server name %s", server)
+	}
+
+	serverName := serverNamespacedName[0]
+	serverNamespace := serverNamespacedName[1]
+	// if the caller asks to filter by server, we filter the intent store to
+	// only include intents that:
+	//   1. are between any client and the specified server
+	//   2. are between any client selected in (1), and any other server
+
+	targetedServerClients := make([]types.NamespacedName, 0)
+	for pair := range store {
+		if pair.Destination.Name == serverName && pair.Destination.Namespace == serverNamespace {
+			targetedServerClients = append(targetedServerClients, pair.Source)
+		}
+	}
+	return targetedServerClients, nil
 }
 
 func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {

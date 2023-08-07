@@ -16,6 +16,41 @@ query ServiceIntents($namespaces: [String!]) {
     }
 }
 
+query Intents(
+    $namespaces: [String!],
+    $includeLabels: [String!],
+    $excludeServiceWithLabels: [String!],
+    $includeAllLabels: Boolean,
+    $serverName: String,
+) {
+    intents(
+        namespaces: $namespaces,
+        includeLabels: $includeLabels,
+        excludeServiceWithLabels: $excludeServiceWithLabels,
+        includeAllLabels: $includeAllLabels,
+        serverName: $serverName,
+    ) {
+        client {
+            name
+            namespace
+            podOwnerKind {
+                group
+                kind
+                version
+            }
+        }
+        server {
+            name
+            namespace
+            podOwnerKind {
+                group
+                kind
+                version
+            }
+        }
+    }
+}
+
 mutation ReportCaptureResults($results: CaptureResults!) {
     reportCaptureResults(results: $results)
 }
