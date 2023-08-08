@@ -290,7 +290,7 @@ func (s *ResolverTestSuite) TestIntents() {
 	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
 		Results: []test_gql_client.RecordedDestinationsForSrc{
 			{
-				SrcIp: "1.1.1.1",
+				SrcIp: "1.1.21.1",
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
@@ -299,7 +299,7 @@ func (s *ResolverTestSuite) TestIntents() {
 				},
 			},
 			{
-				SrcIp: "1.1.1.3",
+				SrcIp: "1.1.21.3",
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
@@ -312,7 +312,7 @@ func (s *ResolverTestSuite) TestIntents() {
 				},
 			},
 			{
-				SrcIp: "1.1.1.4",
+				SrcIp: "1.1.21.4",
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
