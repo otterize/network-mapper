@@ -88,6 +88,11 @@ type RecordedDestinationsForSrc struct {
 	Destinations []Destination `json:"destinations"`
 }
 
+type ServerFilter struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 type ServiceIntents struct {
 	Client  *OtterizeServiceIdentity  `json:"client"`
 	Intents []OtterizeServiceIdentity `json:"intents"`

@@ -89,7 +89,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Intents        func(childComplexity int, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, serverName *string) int
+		Intents        func(childComplexity int, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) int
 		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string, includeAllLabels *bool) int
 	}
 
@@ -108,7 +108,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
-	Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, serverName *string) ([]model.Intent, error)
+	Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) ([]model.Intent, error)
 }
 
 type executableSchema struct {
@@ -317,7 +317,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["serverName"].(*string)), true
+		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["server"].(*model.ServerFilter)), true
 
 	case "Query.serviceIntents":
 		if e.complexity.Query.ServiceIntents == nil {
@@ -533,6 +533,11 @@ input IstioConnectionResults {
     results: [IstioConnection!]!
 }
 
+input ServerFilter {
+    name: String!
+    namespace: String!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -555,7 +560,7 @@ type Query {
         includeLabels: [String!],
         excludeServiceWithLabels: [String!],
         includeAllLabels: Boolean,
-        serverName: String,
+        server: ServerFilter,
     ): [Intent!]!
 }
 
@@ -687,15 +692,15 @@ func (ec *executionContext) field_Query_intents_args(ctx context.Context, rawArg
 		}
 	}
 	args["includeAllLabels"] = arg3
-	var arg4 *string
-	if tmp, ok := rawArgs["serverName"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("serverName"))
-		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+	var arg4 *model.ServerFilter
+	if tmp, ok := rawArgs["server"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("server"))
+		arg4, err = ec.unmarshalOServerFilter2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐServerFilter(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["serverName"] = arg4
+	args["server"] = arg4
 	return args, nil
 }
 
@@ -1646,7 +1651,7 @@ func (ec *executionContext) _Query_intents(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["serverName"].(*string))
+		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["server"].(*model.ServerFilter))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3254,6 +3259,37 @@ func (ec *executionContext) unmarshalInputRecordedDestinationsForSrc(ctx context
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destinations"))
 			it.Destinations, err = ec.unmarshalNDestination2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐDestinationᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputServerFilter(ctx context.Context, obj interface{}) (model.ServerFilter, error) {
+	var it model.ServerFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			it.Namespace, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5185,6 +5221,14 @@ func (ec *executionContext) marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetwor
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalOServerFilter2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐServerFilter(ctx context.Context, v interface{}) (*model.ServerFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputServerFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

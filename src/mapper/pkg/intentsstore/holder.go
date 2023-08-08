@@ -169,7 +169,7 @@ func (i *IntentsHolder) GetIntents(
 	includeLabels []string,
 	excludeServiceWithLabels []string,
 	includeAllLabels bool,
-	serverName string,
+	serverFilter *model.ServerFilter,
 ) ([]TimestampedIntent, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -180,7 +180,7 @@ func (i *IntentsHolder) GetIntents(
 		includeLabels,
 		excludeServiceWithLabels,
 		includeAllLabels,
-		serverName)
+		serverFilter)
 
 	if err != nil {
 		return []TimestampedIntent{}, err
@@ -198,7 +198,7 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 		nil,
 		nil,
 		false,
-		"")
+		nil)
 
 	i.sinceLastGetStore = make(IntentsStore)
 	return intents
@@ -208,7 +208,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 	store IntentsStore,
 	namespaces, includeLabels, excludeServiceWithLabels []string,
 	includeAllLabels bool,
-	serverName string,
+	serverFilter *model.ServerFilter,
 ) ([]TimestampedIntent, error) {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
@@ -221,44 +221,13 @@ func (i *IntentsHolder) getIntentsFromStore(
 		return labelSlice[0], labelSlice[1]
 	})
 
-	var intentsByClient = make(map[string]IntentsStore)
-	var intentsByServer = make(map[string]IntentsStore)
+	var targetedServerClients []types.NamespacedName
+	shouldFilterByServer := serverFilter != nil
+	if shouldFilterByServer {
+		targetedServerClients = getAllClientsCallingServer(serverFilter.Name, serverFilter.Namespace, store)
+	}
 
 	for pair, intent := range store {
-		_, ok := intentsByClient[intent.Intent.Client.Name]
-
-		if !ok {
-			newStore := make(IntentsStore)
-			intentsByClient[intent.Intent.Client.Name] = newStore
-		}
-
-		_, ok = intentsByServer[intent.Intent.Server.Name]
-
-		if !ok {
-			newStore := make(IntentsStore)
-			intentsByServer[intent.Intent.Server.Name] = newStore
-		}
-
-		intentsByClient[intent.Intent.Client.Name][pair] = intent
-		intentsByServer[intent.Intent.Server.Name][pair] = intent
-	}
-
-	// if the caller asks to filter by server, we filter the intent store to
-	// only include intents that:
-	//   1. are between any client and the specified server
-	//   2. are between any client selected in (1), and any other server
-	var filteredStore IntentsStore
-	if serverName != "" {
-		filteredStore = lo.Assign(filteredStore, intentsByServer[serverName])
-
-		for _, intent := range intentsByServer[serverName] {
-			filteredStore = lo.Assign(filteredStore, intentsByClient[intent.Intent.Client.Name])
-		}
-	} else {
-		filteredStore = store
-	}
-
-	for pair, intent := range filteredStore {
 		intentCopy, err := getIntentDeepCopy(intent)
 		if err != nil {
 			return result, err
@@ -282,10 +251,29 @@ func (i *IntentsHolder) getIntentsFromStore(
 			intentCopy.Intent.Server.Labels = labelsFilter(intentCopy.Intent.Server.Labels)
 		}
 
+		if shouldFilterByServer && !slices.Contains(targetedServerClients, pair.Source) {
+			continue
+		}
+
 		result = append(result, intent)
 	}
 
 	return result, nil
+}
+
+func getAllClientsCallingServer(serverName string, serverNamespace string, store IntentsStore) []types.NamespacedName {
+	// if the caller asks to filter by server, we filter the intent store to
+	// only include intents that:
+	//   1. are between any client and the specified server
+	//   2. are between any client selected in (1), and any other server
+
+	targetedServerClients := make([]types.NamespacedName, 0)
+	for pair := range store {
+		if pair.Destination.Name == serverName && pair.Destination.Namespace == serverNamespace {
+			targetedServerClients = append(targetedServerClients, pair.Source)
+		}
+	}
+	return targetedServerClients
 }
 
 func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {
