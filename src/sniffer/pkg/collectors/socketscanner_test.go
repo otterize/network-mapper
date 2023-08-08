@@ -7,6 +7,7 @@ import (
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/exp/slices"
 	"gotest.tools/v3/assert"
 	"os"
 	"testing"
@@ -102,15 +103,6 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	results := scanner.CollectResults()
 	expectedResults := []mapperclient.RecordedDestinationsForSrc{
 		{
-			SrcIp:       "192.168.35.14",
-			SrcHostname: "", // Intentional - socket scan does not currently report hostnames
-			Destinations: []mapperclient.Destination{
-				{
-					Destination: "192.168.38.211",
-				},
-			},
-		},
-		{
 			SrcIp:       "176.168.35.14",
 			SrcHostname: "", // Intentional - socket scan does not currently report hostnames
 			Destinations: []mapperclient.Destination{
@@ -119,7 +111,19 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 				},
 			},
 		},
+		{
+			SrcIp:       "192.168.35.14",
+			SrcHostname: "", // Intentional - socket scan does not currently report hostnames
+			Destinations: []mapperclient.Destination{
+				{
+					Destination: "192.168.38.211",
+				},
+			},
+		},
 	}
+	slices.SortFunc(results, func(a, b mapperclient.RecordedDestinationsForSrc) bool {
+		return a.SrcIp < b.SrcIp
+	})
 	assert.DeepEqual(s.T(), expectedResults, results, cmpopts.IgnoreTypes(time.Time{}))
 }
 
