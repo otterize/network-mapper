@@ -171,6 +171,17 @@ func (v *ReportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
 }
 
+type ServerFilter struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// GetName returns ServerFilter.Name, and is useful for accessing the field via an interface.
+func (v *ServerFilter) GetName() string { return v.Name }
+
+// GetNamespace returns ServerFilter.Namespace, and is useful for accessing the field via an interface.
+func (v *ServerFilter) GetNamespace() string { return v.Namespace }
+
 // ServiceIntentsResponse is returned by ServiceIntents on success.
 type ServiceIntentsResponse struct {
 	// Kept for backwards compatibility with CLI -
@@ -268,11 +279,11 @@ func (v *SocketScanResults) GetResults() []RecordedDestinationsForSrc { return v
 
 // __IntentsInput is used internally by genqlient
 type __IntentsInput struct {
-	Namespaces               []string `json:"namespaces"`
-	IncludeLabels            []string `json:"includeLabels"`
-	ExcludeServiceWithLabels []string `json:"excludeServiceWithLabels"`
-	IncludeAllLabels         bool     `json:"includeAllLabels"`
-	ServerName               string   `json:"serverName"`
+	Namespaces               []string      `json:"namespaces"`
+	IncludeLabels            []string      `json:"includeLabels"`
+	ExcludeServiceWithLabels []string      `json:"excludeServiceWithLabels"`
+	IncludeAllLabels         bool          `json:"includeAllLabels"`
+	Server                   *ServerFilter `json:"server"`
 }
 
 // GetNamespaces returns __IntentsInput.Namespaces, and is useful for accessing the field via an interface.
@@ -287,8 +298,8 @@ func (v *__IntentsInput) GetExcludeServiceWithLabels() []string { return v.Exclu
 // GetIncludeAllLabels returns __IntentsInput.IncludeAllLabels, and is useful for accessing the field via an interface.
 func (v *__IntentsInput) GetIncludeAllLabels() bool { return v.IncludeAllLabels }
 
-// GetServerName returns __IntentsInput.ServerName, and is useful for accessing the field via an interface.
-func (v *__IntentsInput) GetServerName() string { return v.ServerName }
+// GetServer returns __IntentsInput.Server, and is useful for accessing the field via an interface.
+func (v *__IntentsInput) GetServer() *ServerFilter { return v.Server }
 
 // __ReportCaptureResultsInput is used internally by genqlient
 type __ReportCaptureResultsInput struct {
@@ -316,8 +327,9 @@ func (v *__ServiceIntentsInput) GetNamespaces() []string { return v.Namespaces }
 
 // The query or mutation executed by Intents.
 const Intents_Operation = `
-query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServiceWithLabels: [String!], $includeAllLabels: Boolean, $serverName: String) {
-	intents(namespaces: $namespaces, includeLabels: $includeLabels, excludeServiceWithLabels: $excludeServiceWithLabels, includeAllLabels: $includeAllLabels, serverName: $serverName) {
+query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServiceWithLabels: [String!], $includeAllLabels: Boolean, # @genqlient(pointer: true)
+$server: ServerFilter) {
+	intents(namespaces: $namespaces, includeLabels: $includeLabels, excludeServiceWithLabels: $excludeServiceWithLabels, includeAllLabels: $includeAllLabels, server: $server) {
 		client {
 			name
 			namespace
@@ -347,7 +359,7 @@ func Intents(
 	includeLabels []string,
 	excludeServiceWithLabels []string,
 	includeAllLabels bool,
-	serverName string,
+	server *ServerFilter,
 ) (*IntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "Intents",
@@ -357,7 +369,7 @@ func Intents(
 			IncludeLabels:            includeLabels,
 			ExcludeServiceWithLabels: excludeServiceWithLabels,
 			IncludeAllLabels:         includeAllLabels,
-			ServerName:               serverName,
+			Server:                   server,
 		},
 	}
 	var err error

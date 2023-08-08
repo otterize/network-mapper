@@ -325,7 +325,7 @@ func (s *ResolverTestSuite) TestIntents() {
 	s.Require().NoError(err)
 
 	logrus.Info("Testing Intents query")
-	res, err := test_gql_client.Intents(context.Background(), s.client, nil, nil, nil, true, "")
+	res, err := test_gql_client.Intents(context.Background(), s.client, nil, nil, nil, true, nil)
 	s.Require().NoError(err)
 	logrus.Info("Testing Intents query done")
 	logrus.Infof("Intents: %v", res.Intents)
@@ -468,7 +468,10 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 	s.Require().NoError(err)
 
 	logrus.Info("Waiting for report to be processed")
-	serverFilter := fmt.Sprintf("%s.%s", service1Name, s.TestNamespace)
+	serverFilter := &test_gql_client.ServerFilter{
+		Name:      service1Name,
+		Namespace: s.TestNamespace,
+	}
 	res, err := test_gql_client.Intents(context.Background(), s.client, []string{s.TestNamespace}, nil, nil, true, serverFilter)
 	s.Require().NoError(err)
 	logrus.Info("Report processed")

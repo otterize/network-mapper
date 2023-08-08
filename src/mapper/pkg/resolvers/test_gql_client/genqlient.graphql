@@ -21,14 +21,15 @@ query Intents(
     $includeLabels: [String!],
     $excludeServiceWithLabels: [String!],
     $includeAllLabels: Boolean,
-    $serverName: String,
+    # @genqlient(pointer: true)
+    $server: ServerFilter,
 ) {
     intents(
         namespaces: $namespaces,
         includeLabels: $includeLabels,
         excludeServiceWithLabels: $excludeServiceWithLabels,
         includeAllLabels: $includeAllLabels,
-        serverName: $serverName,
+        server: $server,
     ) {
         client {
             name

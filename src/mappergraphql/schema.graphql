@@ -122,6 +122,11 @@ input IstioConnectionResults {
     results: [IstioConnection!]!
 }
 
+input ServerFilter {
+    name: String!
+    namespace: String!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -144,7 +149,7 @@ type Query {
         includeLabels: [String!],
         excludeServiceWithLabels: [String!],
         includeAllLabels: Boolean,
-        serverName: String,
+        server: ServerFilter,
     ): [Intent!]!
 }
 

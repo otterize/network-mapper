@@ -2,7 +2,6 @@ package intentsstore
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -170,7 +169,7 @@ func (i *IntentsHolder) GetIntents(
 	includeLabels []string,
 	excludeServiceWithLabels []string,
 	includeAllLabels bool,
-	serverName string,
+	serverFilter *model.ServerFilter,
 ) ([]TimestampedIntent, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -181,7 +180,7 @@ func (i *IntentsHolder) GetIntents(
 		includeLabels,
 		excludeServiceWithLabels,
 		includeAllLabels,
-		serverName)
+		serverFilter)
 
 	if err != nil {
 		return []TimestampedIntent{}, err
@@ -199,7 +198,7 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 		nil,
 		nil,
 		false,
-		"")
+		nil)
 
 	i.sinceLastGetStore = make(IntentsStore)
 	return intents
@@ -209,7 +208,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 	store IntentsStore,
 	namespaces, includeLabels, excludeServiceWithLabels []string,
 	includeAllLabels bool,
-	filterByServer string,
+	serverFilter *model.ServerFilter,
 ) ([]TimestampedIntent, error) {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
@@ -223,13 +222,9 @@ func (i *IntentsHolder) getIntentsFromStore(
 	})
 
 	var targetedServerClients []types.NamespacedName
-	var err error
-	shouldFilterByServer := len(filterByServer) != 0
+	shouldFilterByServer := serverFilter != nil
 	if shouldFilterByServer {
-		targetedServerClients, err = getAllClientsCallingServer(filterByServer, store)
-		if err != nil {
-			return nil, err
-		}
+		targetedServerClients = getAllClientsCallingServer(serverFilter.Name, serverFilter.Namespace, store)
 	}
 
 	for pair, intent := range store {
@@ -266,14 +261,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 	return result, nil
 }
 
-func getAllClientsCallingServer(server string, store IntentsStore) ([]types.NamespacedName, error) {
-	serverNamespacedName := strings.Split(server, ".")
-	if len(serverNamespacedName) != 2 {
-		return nil, fmt.Errorf("invalid server name %s", server)
-	}
-
-	serverName := serverNamespacedName[0]
-	serverNamespace := serverNamespacedName[1]
+func getAllClientsCallingServer(serverName string, serverNamespace string, store IntentsStore) []types.NamespacedName {
 	// if the caller asks to filter by server, we filter the intent store to
 	// only include intents that:
 	//   1. are between any client and the specified server
@@ -285,7 +273,7 @@ func getAllClientsCallingServer(server string, store IntentsStore) ([]types.Name
 			targetedServerClients = append(targetedServerClients, pair.Source)
 		}
 	}
-	return targetedServerClients, nil
+	return targetedServerClients
 }
 
 func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {
