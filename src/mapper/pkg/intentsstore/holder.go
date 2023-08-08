@@ -211,9 +211,6 @@ func (i *IntentsHolder) getIntentsFromStore(
 	includeAllLabels bool,
 	filterByServer string,
 ) ([]TimestampedIntent, error) {
-	var targetedServerClients []types.NamespacedName
-	var err error
-
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
@@ -225,6 +222,8 @@ func (i *IntentsHolder) getIntentsFromStore(
 		return labelSlice[0], labelSlice[1]
 	})
 
+	var targetedServerClients []types.NamespacedName
+	var err error
 	shouldFilterByServer := len(filterByServer) != 0
 	if shouldFilterByServer {
 		targetedServerClients, err = getAllClientsCallingServer(filterByServer, store)
