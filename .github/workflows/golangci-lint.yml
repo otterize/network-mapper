@@ -31,8 +31,8 @@ jobs:
       - name: go vet
         run: go vet ./...
         working-directory: src/
-#      - name: check git diff
-#        run: git diff --exit-code
+     - name: check git diff
+       run: git diff --exit-code
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
