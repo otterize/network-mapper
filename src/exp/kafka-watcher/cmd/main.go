@@ -30,10 +30,11 @@ func main() {
 		logPath := viper.GetString(config.KafkaAuthZLogPathKey)
 
 		if logPath == "" {
-			logrus.Panic("Kafka log path is not set - please set OTTERIZE_KAFKA_AUTHZ_LOG_PATH")
+			logrus.Fatalf("Kafka log path is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaAuthZLogPathKey))
+
 		}
 
-		logrus.Infof("Reading from filesystem - %s", logPath)
+		logrus.Infof("Kafka watcher: reading from filesystem - %s", logPath)
 
 		serverName := types.NamespacedName{
 			Namespace: viper.GetString(sharedconfig.EnvNamespaceKey),
@@ -41,23 +42,25 @@ func main() {
 		}
 
 		watcher, err = logwatcher.NewLogFileWatcher(mapperClient, logPath, serverName)
+		if err != nil {
+			logrus.WithError(err).Fatal("could not initialize log file watcher")
+		}
 	case config.KubernetesLogReadMode:
 		kafkaServers, parseErr := parseKafkaServers(viper.GetStringSlice(config.KafkaServersKey))
 		logrus.Infof("Reading from k8s logs - %d servers", len(kafkaServers))
 
 		if parseErr != nil {
-			logrus.WithError(err).Panic()
+			logrus.WithError(err).Fatal("could not parse Kafka servers list")
 		}
 
 		watcher, err = logwatcher.NewKubernetesLogWatcher(mapperClient, kafkaServers)
+		if err != nil {
+			logrus.WithError(err).Fatal("could not initialize Kubernetes log watcher")
+		}
 	case "":
-		logrus.Panicf("Kafka watcher mode is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaLogReadModeKey))
+		logrus.Fatalf("Kafka watcher mode is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaLogReadModeKey))
 	default:
-		logrus.Panicf("Kafka watcher mode (%s) is not set to a valid mode", mode)
-	}
-
-	if err != nil {
-		logrus.WithError(err).Panic()
+		logrus.Fatalf("Kafka watcher mode (%s) is not set to a valid mode", mode)
 	}
 
 	watcher.RunForever(signals.SetupSignalHandler())
