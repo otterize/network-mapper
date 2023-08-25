@@ -9,13 +9,8 @@ import (
 	"time"
 )
 
-type CaptureResultForSrcIP struct {
-	SrcIP        string        `json:"srcIp"`
-	Destinations []Destination `json:"destinations"`
-}
-
 type CaptureResults struct {
-	Results []CaptureResultForSrcIP `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 type Destination struct {
@@ -87,18 +82,24 @@ type PodLabel struct {
 	Value string `json:"value"`
 }
 
+type RecordedDestinationsForSrc struct {
+	SrcIP        string        `json:"srcIp"`
+	SrcHostname  string        `json:"srcHostname"`
+	Destinations []Destination `json:"destinations"`
+}
+
+type ServerFilter struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 type ServiceIntents struct {
 	Client  *OtterizeServiceIdentity  `json:"client"`
 	Intents []OtterizeServiceIdentity `json:"intents"`
 }
 
-type SocketScanResultForSrcIP struct {
-	SrcIP   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
-}
-
 type SocketScanResults struct {
-	Results []SocketScanResultForSrcIP `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 type HTTPMethod string

@@ -17,6 +17,27 @@ const (
 	ComponentTypeNetworkMapper       ComponentType = "NETWORK_MAPPER"
 )
 
+type DatabaseConfigInput struct {
+	Table      *string              `json:"table"`
+	Operations []*DatabaseOperation `json:"operations"`
+}
+
+// GetTable returns DatabaseConfigInput.Table, and is useful for accessing the field via an interface.
+func (v *DatabaseConfigInput) GetTable() *string { return v.Table }
+
+// GetOperations returns DatabaseConfigInput.Operations, and is useful for accessing the field via an interface.
+func (v *DatabaseConfigInput) GetOperations() []*DatabaseOperation { return v.Operations }
+
+type DatabaseOperation string
+
+const (
+	DatabaseOperationAll    DatabaseOperation = "ALL"
+	DatabaseOperationSelect DatabaseOperation = "SELECT"
+	DatabaseOperationInsert DatabaseOperation = "INSERT"
+	DatabaseOperationUpdate DatabaseOperation = "UPDATE"
+	DatabaseOperationDelete DatabaseOperation = "DELETE"
+)
+
 type DiscoveredIntentInput struct {
 	DiscoveredAt *time.Time   `json:"discoveredAt"`
 	Intent       *IntentInput `json:"intent"`
@@ -54,14 +75,15 @@ const (
 )
 
 type IntentInput struct {
-	Namespace       *string             `json:"namespace"`
-	ClientName      *string             `json:"clientName"`
-	ServerName      *string             `json:"serverName"`
-	ServerNamespace *string             `json:"serverNamespace"`
-	Type            *IntentType         `json:"type"`
-	Topics          []*KafkaConfigInput `json:"topics"`
-	Resources       []*HTTPConfigInput  `json:"resources"`
-	Status          *IntentStatusInput  `json:"status"`
+	Namespace         *string                `json:"namespace"`
+	ClientName        *string                `json:"clientName"`
+	ServerName        *string                `json:"serverName"`
+	ServerNamespace   *string                `json:"serverNamespace"`
+	Type              *IntentType            `json:"type"`
+	Topics            []*KafkaConfigInput    `json:"topics"`
+	Resources         []*HTTPConfigInput     `json:"resources"`
+	DatabaseResources []*DatabaseConfigInput `json:"databaseResources"`
+	Status            *IntentStatusInput     `json:"status"`
 }
 
 // GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -85,6 +107,9 @@ func (v *IntentInput) GetTopics() []*KafkaConfigInput { return v.Topics }
 // GetResources returns IntentInput.Resources, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetResources() []*HTTPConfigInput { return v.Resources }
 
+// GetDatabaseResources returns IntentInput.DatabaseResources, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetDatabaseResources() []*DatabaseConfigInput { return v.DatabaseResources }
+
 // GetStatus returns IntentInput.Status, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetStatus() *IntentStatusInput { return v.Status }
 
@@ -98,8 +123,9 @@ func (v *IntentStatusInput) GetIstioStatus() *IstioStatusInput { return v.IstioS
 type IntentType string
 
 const (
-	IntentTypeHttp  IntentType = "HTTP"
-	IntentTypeKafka IntentType = "KAFKA"
+	IntentTypeHttp     IntentType = "HTTP"
+	IntentTypeKafka    IntentType = "KAFKA"
+	IntentTypeDatabase IntentType = "DATABASE"
 )
 
 type IstioStatusInput struct {
@@ -185,6 +211,13 @@ type __ReportDiscoveredIntentsInput struct {
 // GetIntents returns __ReportDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
 func (v *__ReportDiscoveredIntentsInput) GetIntents() []*DiscoveredIntentInput { return v.Intents }
 
+// The query or mutation executed by ReportComponentStatus.
+const ReportComponentStatus_Operation = `
+mutation ReportComponentStatus ($component: ComponentType!) {
+	reportIntegrationComponentStatus(component: $component)
+}
+`
+
 func ReportComponentStatus(
 	ctx context.Context,
 	client graphql.Client,
@@ -192,11 +225,7 @@ func ReportComponentStatus(
 ) (*ReportComponentStatusResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportComponentStatus",
-		Query: `
-mutation ReportComponentStatus ($component: ComponentType!) {
-	reportIntegrationComponentStatus(component: $component)
-}
-`,
+		Query:  ReportComponentStatus_Operation,
 		Variables: &__ReportComponentStatusInput{
 			Component: component,
 		},
@@ -215,6 +244,14 @@ mutation ReportComponentStatus ($component: ComponentType!) {
 	return &data, err
 }
 
+// The query or mutation executed by ReportDiscoveredIntents.
+const ReportDiscoveredIntents_Operation = `
+# @genqlient(pointer: true)
+mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
+	reportDiscoveredIntents(intents: $intents)
+}
+`
+
 func ReportDiscoveredIntents(
 	ctx context.Context,
 	client graphql.Client,
@@ -222,11 +259,7 @@ func ReportDiscoveredIntents(
 ) (*ReportDiscoveredIntentsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportDiscoveredIntents",
-		Query: `
-mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
-	reportDiscoveredIntents(intents: $intents)
-}
-`,
+		Query:  ReportDiscoveredIntents_Operation,
 		Variables: &__ReportDiscoveredIntentsInput{
 			Intents: intents,
 		},

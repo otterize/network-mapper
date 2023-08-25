@@ -164,11 +164,24 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 }
 
-func (i *IntentsHolder) GetIntents(namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels bool) ([]TimestampedIntent, error) {
+func (i *IntentsHolder) GetIntents(
+	namespaces []string,
+	includeLabels []string,
+	excludeServiceWithLabels []string,
+	includeAllLabels bool,
+	serverFilter *model.ServerFilter,
+) ([]TimestampedIntent, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	result, err := i.getIntentsFromStore(i.accumulatingStore, namespaces, includeLabels, excludeServiceWithLabels, includeAllLabels)
+	result, err := i.getIntentsFromStore(
+		i.accumulatingStore,
+		namespaces,
+		includeLabels,
+		excludeServiceWithLabels,
+		includeAllLabels,
+		serverFilter)
+
 	if err != nil {
 		return []TimestampedIntent{}, err
 	}
@@ -179,12 +192,24 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	intents, _ := i.getIntentsFromStore(i.sinceLastGetStore, nil, nil, nil, false)
+	intents, _ := i.getIntentsFromStore(
+		i.sinceLastGetStore,
+		nil,
+		nil,
+		nil,
+		false,
+		nil)
+
 	i.sinceLastGetStore = make(IntentsStore)
 	return intents
 }
 
-func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, includeLabels, excludeServiceWithLabels []string, includeAllLabels bool) ([]TimestampedIntent, error) {
+func (i *IntentsHolder) getIntentsFromStore(
+	store IntentsStore,
+	namespaces, includeLabels, excludeServiceWithLabels []string,
+	includeAllLabels bool,
+	serverFilter *model.ServerFilter,
+) ([]TimestampedIntent, error) {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
 	result := make([]TimestampedIntent, 0)
@@ -195,6 +220,12 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, incl
 		}
 		return labelSlice[0], labelSlice[1]
 	})
+
+	var targetedServerClients []types.NamespacedName
+	shouldFilterByServer := serverFilter != nil
+	if shouldFilterByServer {
+		targetedServerClients = getAllClientsCallingServer(serverFilter.Name, serverFilter.Namespace, store)
+	}
 
 	for pair, intent := range store {
 		intentCopy, err := getIntentDeepCopy(intent)
@@ -220,9 +251,29 @@ func (i *IntentsHolder) getIntentsFromStore(store IntentsStore, namespaces, incl
 			intentCopy.Intent.Server.Labels = labelsFilter(intentCopy.Intent.Server.Labels)
 		}
 
+		if shouldFilterByServer && !slices.Contains(targetedServerClients, pair.Source) {
+			continue
+		}
+
 		result = append(result, intent)
 	}
+
 	return result, nil
+}
+
+func getAllClientsCallingServer(serverName string, serverNamespace string, store IntentsStore) []types.NamespacedName {
+	// if the caller asks to filter by server, we filter the intent store to
+	// only include intents that:
+	//   1. are between any client and the specified server
+	//   2. are between any client selected in (1), and any other server
+
+	targetedServerClients := make([]types.NamespacedName, 0)
+	for pair := range store {
+		if pair.Destination.Name == serverName && pair.Destination.Namespace == serverNamespace {
+			targetedServerClients = append(targetedServerClients, pair.Source)
+		}
+	}
+	return targetedServerClients
 }
 
 func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {

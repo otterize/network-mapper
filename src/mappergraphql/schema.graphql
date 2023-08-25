@@ -1,26 +1,23 @@
 scalar Time # Equivalent of Go's time.Time provided by gqlgen
 
-input CaptureResultForSrcIp {
-    srcIp: String!
-    destinations: [Destination!]!
-}
-
 input Destination {
+    # Could be either IP addr or hostname
     destination: String!
     lastSeen: Time!
 }
 
-input CaptureResults {
-    results: [CaptureResultForSrcIp!]!
+input RecordedDestinationsForSrc {
+    srcIp: String!
+    srcHostname: String!
+    destinations: [Destination!]!
 }
 
-input SocketScanResultForSrcIp {
-    srcIp: String!
-    destIps: [Destination!]!
+input CaptureResults {
+    results: [RecordedDestinationsForSrc!]!
 }
 
 input SocketScanResults {
-    results: [SocketScanResultForSrcIp!]!
+    results: [RecordedDestinationsForSrc!]!
 }
 
 type PodLabel {
@@ -125,6 +122,11 @@ input IstioConnectionResults {
     results: [IstioConnection!]!
 }
 
+input ServerFilter {
+    name: String!
+    namespace: String!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -142,7 +144,13 @@ type Query {
     excludeLabels: Labels to exclude from the response. Ignored if includeAllLabels is specified.
     includeAllLabels: Return all labels for the pod in the response.
     """
-    intents(namespaces: [String!], includeLabels: [String!], excludeServiceWithLabels: [String!] includeAllLabels: Boolean): [Intent!]!
+    intents(
+        namespaces: [String!],
+        includeLabels: [String!],
+        excludeServiceWithLabels: [String!],
+        includeAllLabels: Boolean,
+        server: ServerFilter,
+    ): [Intent!]!
 }
 
 type Mutation {

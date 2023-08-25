@@ -9,23 +9,12 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-type CaptureResultForSrcIp struct {
-	SrcIp        string        `json:"srcIp"`
-	Destinations []Destination `json:"destinations"`
-}
-
-// GetSrcIp returns CaptureResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetSrcIp() string { return v.SrcIp }
-
-// GetDestinations returns CaptureResultForSrcIp.Destinations, and is useful for accessing the field via an interface.
-func (v *CaptureResultForSrcIp) GetDestinations() []Destination { return v.Destinations }
-
 type CaptureResults struct {
-	Results []CaptureResultForSrcIp `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
-func (v *CaptureResults) GetResults() []CaptureResultForSrcIp { return v.Results }
+func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 type Destination struct {
 	Destination string    `json:"destination"`
@@ -37,6 +26,132 @@ func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
+
+// IntentsIntentsIntent includes the requested fields of the GraphQL type Intent.
+type IntentsIntentsIntent struct {
+	Client IntentsIntentsIntentClientOtterizeServiceIdentity `json:"client"`
+	Server IntentsIntentsIntentServerOtterizeServiceIdentity `json:"server"`
+}
+
+// GetClient returns IntentsIntentsIntent.Client, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntent) GetClient() IntentsIntentsIntentClientOtterizeServiceIdentity {
+	return v.Client
+}
+
+// GetServer returns IntentsIntentsIntent.Server, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntent) GetServer() IntentsIntentsIntentServerOtterizeServiceIdentity {
+	return v.Server
+}
+
+// IntentsIntentsIntentClientOtterizeServiceIdentity includes the requested fields of the GraphQL type OtterizeServiceIdentity.
+type IntentsIntentsIntentClientOtterizeServiceIdentity struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
+	PodOwnerKind IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind `json:"podOwnerKind"`
+}
+
+// GetName returns IntentsIntentsIntentClientOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentClientOtterizeServiceIdentity) GetName() string { return v.Name }
+
+// GetNamespace returns IntentsIntentsIntentClientOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentClientOtterizeServiceIdentity) GetNamespace() string { return v.Namespace }
+
+// GetPodOwnerKind returns IntentsIntentsIntentClientOtterizeServiceIdentity.PodOwnerKind, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentClientOtterizeServiceIdentity) GetPodOwnerKind() IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind {
+	return v.PodOwnerKind
+}
+
+// IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind includes the requested fields of the GraphQL type GroupVersionKind.
+type IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind struct {
+	Group   string `json:"group"`
+	Kind    string `json:"kind"`
+	Version string `json:"version"`
+}
+
+// GetGroup returns IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Group, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetGroup() string {
+	return v.Group
+}
+
+// GetKind returns IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Kind, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetKind() string {
+	return v.Kind
+}
+
+// GetVersion returns IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Version, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetVersion() string {
+	return v.Version
+}
+
+// IntentsIntentsIntentServerOtterizeServiceIdentity includes the requested fields of the GraphQL type OtterizeServiceIdentity.
+type IntentsIntentsIntentServerOtterizeServiceIdentity struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
+	PodOwnerKind IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind `json:"podOwnerKind"`
+}
+
+// GetName returns IntentsIntentsIntentServerOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentity) GetName() string { return v.Name }
+
+// GetNamespace returns IntentsIntentsIntentServerOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentity) GetNamespace() string { return v.Namespace }
+
+// GetPodOwnerKind returns IntentsIntentsIntentServerOtterizeServiceIdentity.PodOwnerKind, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentity) GetPodOwnerKind() IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind {
+	return v.PodOwnerKind
+}
+
+// IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind includes the requested fields of the GraphQL type GroupVersionKind.
+type IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind struct {
+	Group   string `json:"group"`
+	Kind    string `json:"kind"`
+	Version string `json:"version"`
+}
+
+// GetGroup returns IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Group, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetGroup() string {
+	return v.Group
+}
+
+// GetKind returns IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Kind, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetKind() string {
+	return v.Kind
+}
+
+// GetVersion returns IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind.Version, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind) GetVersion() string {
+	return v.Version
+}
+
+// IntentsResponse is returned by Intents on success.
+type IntentsResponse struct {
+	// Query intents list.
+	// namespaces: Namespaces filter.
+	// includeLabels: Labels to include in the response. Ignored if includeAllLabels is specified.
+	// excludeLabels: Labels to exclude from the response. Ignored if includeAllLabels is specified.
+	// includeAllLabels: Return all labels for the pod in the response.
+	Intents []IntentsIntentsIntent `json:"intents"`
+}
+
+// GetIntents returns IntentsResponse.Intents, and is useful for accessing the field via an interface.
+func (v *IntentsResponse) GetIntents() []IntentsIntentsIntent { return v.Intents }
+
+type RecordedDestinationsForSrc struct {
+	SrcIp        string        `json:"srcIp"`
+	SrcHostname  string        `json:"srcHostname"`
+	Destinations []Destination `json:"destinations"`
+}
+
+// GetSrcIp returns RecordedDestinationsForSrc.SrcIp, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetSrcIp() string { return v.SrcIp }
+
+// GetSrcHostname returns RecordedDestinationsForSrc.SrcHostname, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetSrcHostname() string { return v.SrcHostname }
+
+// GetDestinations returns RecordedDestinationsForSrc.Destinations, and is useful for accessing the field via an interface.
+func (v *RecordedDestinationsForSrc) GetDestinations() []Destination { return v.Destinations }
 
 // ReportCaptureResultsResponse is returned by ReportCaptureResults on success.
 type ReportCaptureResultsResponse struct {
@@ -55,6 +170,17 @@ type ReportSocketScanResultsResponse struct {
 func (v *ReportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
 }
+
+type ServerFilter struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// GetName returns ServerFilter.Name, and is useful for accessing the field via an interface.
+func (v *ServerFilter) GetName() string { return v.Name }
+
+// GetNamespace returns ServerFilter.Namespace, and is useful for accessing the field via an interface.
+func (v *ServerFilter) GetNamespace() string { return v.Namespace }
 
 // ServiceIntentsResponse is returned by ServiceIntents on success.
 type ServiceIntentsResponse struct {
@@ -144,23 +270,36 @@ func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetNamespac
 	return v.Namespace
 }
 
-type SocketScanResultForSrcIp struct {
-	SrcIp   string        `json:"srcIp"`
-	DestIps []Destination `json:"destIps"`
-}
-
-// GetSrcIp returns SocketScanResultForSrcIp.SrcIp, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetSrcIp() string { return v.SrcIp }
-
-// GetDestIps returns SocketScanResultForSrcIp.DestIps, and is useful for accessing the field via an interface.
-func (v *SocketScanResultForSrcIp) GetDestIps() []Destination { return v.DestIps }
-
 type SocketScanResults struct {
-	Results []SocketScanResultForSrcIp `json:"results"`
+	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
 // GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
-func (v *SocketScanResults) GetResults() []SocketScanResultForSrcIp { return v.Results }
+func (v *SocketScanResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
+
+// __IntentsInput is used internally by genqlient
+type __IntentsInput struct {
+	Namespaces               []string      `json:"namespaces"`
+	IncludeLabels            []string      `json:"includeLabels"`
+	ExcludeServiceWithLabels []string      `json:"excludeServiceWithLabels"`
+	IncludeAllLabels         bool          `json:"includeAllLabels"`
+	Server                   *ServerFilter `json:"server"`
+}
+
+// GetNamespaces returns __IntentsInput.Namespaces, and is useful for accessing the field via an interface.
+func (v *__IntentsInput) GetNamespaces() []string { return v.Namespaces }
+
+// GetIncludeLabels returns __IntentsInput.IncludeLabels, and is useful for accessing the field via an interface.
+func (v *__IntentsInput) GetIncludeLabels() []string { return v.IncludeLabels }
+
+// GetExcludeServiceWithLabels returns __IntentsInput.ExcludeServiceWithLabels, and is useful for accessing the field via an interface.
+func (v *__IntentsInput) GetExcludeServiceWithLabels() []string { return v.ExcludeServiceWithLabels }
+
+// GetIncludeAllLabels returns __IntentsInput.IncludeAllLabels, and is useful for accessing the field via an interface.
+func (v *__IntentsInput) GetIncludeAllLabels() bool { return v.IncludeAllLabels }
+
+// GetServer returns __IntentsInput.Server, and is useful for accessing the field via an interface.
+func (v *__IntentsInput) GetServer() *ServerFilter { return v.Server }
 
 // __ReportCaptureResultsInput is used internally by genqlient
 type __ReportCaptureResultsInput struct {
@@ -186,6 +325,74 @@ type __ServiceIntentsInput struct {
 // GetNamespaces returns __ServiceIntentsInput.Namespaces, and is useful for accessing the field via an interface.
 func (v *__ServiceIntentsInput) GetNamespaces() []string { return v.Namespaces }
 
+// The query or mutation executed by Intents.
+const Intents_Operation = `
+query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServiceWithLabels: [String!], $includeAllLabels: Boolean, # @genqlient(pointer: true)
+$server: ServerFilter) {
+	intents(namespaces: $namespaces, includeLabels: $includeLabels, excludeServiceWithLabels: $excludeServiceWithLabels, includeAllLabels: $includeAllLabels, server: $server) {
+		client {
+			name
+			namespace
+			podOwnerKind {
+				group
+				kind
+				version
+			}
+		}
+		server {
+			name
+			namespace
+			podOwnerKind {
+				group
+				kind
+				version
+			}
+		}
+	}
+}
+`
+
+func Intents(
+	ctx context.Context,
+	client graphql.Client,
+	namespaces []string,
+	includeLabels []string,
+	excludeServiceWithLabels []string,
+	includeAllLabels bool,
+	server *ServerFilter,
+) (*IntentsResponse, error) {
+	req := &graphql.Request{
+		OpName: "Intents",
+		Query:  Intents_Operation,
+		Variables: &__IntentsInput{
+			Namespaces:               namespaces,
+			IncludeLabels:            includeLabels,
+			ExcludeServiceWithLabels: excludeServiceWithLabels,
+			IncludeAllLabels:         includeAllLabels,
+			Server:                   server,
+		},
+	}
+	var err error
+
+	var data IntentsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by ReportCaptureResults.
+const ReportCaptureResults_Operation = `
+mutation ReportCaptureResults ($results: CaptureResults!) {
+	reportCaptureResults(results: $results)
+}
+`
+
 func ReportCaptureResults(
 	ctx context.Context,
 	client graphql.Client,
@@ -193,11 +400,7 @@ func ReportCaptureResults(
 ) (*ReportCaptureResultsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportCaptureResults",
-		Query: `
-mutation ReportCaptureResults ($results: CaptureResults!) {
-	reportCaptureResults(results: $results)
-}
-`,
+		Query:  ReportCaptureResults_Operation,
 		Variables: &__ReportCaptureResultsInput{
 			Results: results,
 		},
@@ -216,6 +419,13 @@ mutation ReportCaptureResults ($results: CaptureResults!) {
 	return &data, err
 }
 
+// The query or mutation executed by ReportSocketScanResults.
+const ReportSocketScanResults_Operation = `
+mutation ReportSocketScanResults ($results: SocketScanResults!) {
+	reportSocketScanResults(results: $results)
+}
+`
+
 func ReportSocketScanResults(
 	ctx context.Context,
 	client graphql.Client,
@@ -223,11 +433,7 @@ func ReportSocketScanResults(
 ) (*ReportSocketScanResultsResponse, error) {
 	req := &graphql.Request{
 		OpName: "ReportSocketScanResults",
-		Query: `
-mutation ReportSocketScanResults ($results: SocketScanResults!) {
-	reportSocketScanResults(results: $results)
-}
-`,
+		Query:  ReportSocketScanResults_Operation,
 		Variables: &__ReportSocketScanResultsInput{
 			Results: results,
 		},
@@ -246,14 +452,8 @@ mutation ReportSocketScanResults ($results: SocketScanResults!) {
 	return &data, err
 }
 
-func ServiceIntents(
-	ctx context.Context,
-	client graphql.Client,
-	namespaces []string,
-) (*ServiceIntentsResponse, error) {
-	req := &graphql.Request{
-		OpName: "ServiceIntents",
-		Query: `
+// The query or mutation executed by ServiceIntents.
+const ServiceIntents_Operation = `
 query ServiceIntents ($namespaces: [String!]) {
 	serviceIntents(namespaces: $namespaces) {
 		client {
@@ -271,7 +471,16 @@ query ServiceIntents ($namespaces: [String!]) {
 		}
 	}
 }
-`,
+`
+
+func ServiceIntents(
+	ctx context.Context,
+	client graphql.Client,
+	namespaces []string,
+) (*ServiceIntentsResponse, error) {
+	req := &graphql.Request{
+		OpName: "ServiceIntents",
+		Query:  ServiceIntents_Operation,
 		Variables: &__ServiceIntentsInput{
 			Namespaces: namespaces,
 		},
