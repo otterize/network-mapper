@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"strings"
 )
@@ -18,13 +19,19 @@ const (
 	EnvPodKey       = "pod"
 	EnvNamespaceKey = "namespace"
 
-	EnvPrefix = "OTTERIZE"
+	envPrefix = "OTTERIZE"
 )
+
+var replacer = strings.NewReplacer("-", "_")
+
+func GetEnvVarForKey(key string) string {
+	return fmt.Sprintf("%s_%s", envPrefix, replacer.Replace(key))
+}
 
 func init() {
 	viper.SetDefault(MapperApiUrlKey, MapperApiUrlDefault)
 	viper.SetDefault(DebugKey, DebugDefault)
-	viper.SetEnvPrefix(EnvPrefix)
+	viper.SetEnvPrefix(envPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 }

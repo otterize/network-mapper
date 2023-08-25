@@ -51,7 +51,7 @@ func main() {
 
 		watcher, err = logwatcher.NewKubernetesLogWatcher(mapperClient, kafkaServers)
 	case "":
-		logrus.Panic("Kafka watcher mode is not set - please set OTTERIZE_KAFKA_LOG_READ_MODE")
+		logrus.Panicf("Kafka watcher mode is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaLogReadModeKey))
 	default:
 		logrus.Panicf("Kafka watcher mode (%s) is not set to a valid mode", mode)
 	}
