@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/logwatcher"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
+	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -23,7 +23,7 @@ func main() {
 	mode := viper.GetString(config.KafkaLogReadModeKey)
 
 	var err error
-	var watcher logwatcher.Watcher
+	var watcher logwatcher2.Watcher
 
 	switch mode {
 	case config.FileReadMode:
@@ -41,7 +41,7 @@ func main() {
 			Name:      viper.GetString(sharedconfig.EnvPodKey),
 		}
 
-		watcher, err = logwatcher.NewLogFileWatcher(mapperClient, logPath, serverName)
+		watcher, err = logwatcher2.NewLogFileWatcher(mapperClient, logPath, serverName)
 		if err != nil {
 			logrus.WithError(err).Fatal("could not initialize log file watcher")
 		}
@@ -53,7 +53,7 @@ func main() {
 			logrus.WithError(err).Fatal("could not parse Kafka servers list")
 		}
 
-		watcher, err = logwatcher.NewKubernetesLogWatcher(mapperClient, kafkaServers)
+		watcher, err = logwatcher2.NewKubernetesLogWatcher(mapperClient, kafkaServers)
 		if err != nil {
 			logrus.WithError(err).Fatal("could not initialize Kubernetes log watcher")
 		}

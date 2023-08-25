@@ -3,8 +3,8 @@ package logwatcher
 import (
 	"context"
 	"github.com/nxadm/tail"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/config"
-	"github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"io"

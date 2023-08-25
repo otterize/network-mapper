@@ -6,10 +6,10 @@ package mock_mapperclient
 
 import (
 	context "context"
+	"github.com/otterize/network-mapper/src/istio-watcher/mapperclient"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	mapperclient "github.com/otterize/network-mapper/src/exp/kafka-watcher/pkg/mapperclient"
 )
 
 // MockMapperClient is a mock of MapperClient interface.
@@ -35,16 +35,16 @@ func (m *MockMapperClient) EXPECT() *MockMapperClientMockRecorder {
 	return m.recorder
 }
 
-// ReportKafkaMapperResults mocks base method.
-func (m *MockMapperClient) ReportKafkaMapperResults(ctx context.Context, results mapperclient.KafkaMapperResults) error {
+// ReportIstioConnections mocks base method.
+func (m *MockMapperClient) ReportIstioConnections(ctx context.Context, results mapperclient.IstioConnectionResults) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportKafkaMapperResults", ctx, results)
+	ret := m.ctrl.Call(m, "ReportIstioConnections", ctx, results)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ReportKafkaMapperResults indicates an expected call of ReportKafkaMapperResults.
-func (mr *MockMapperClientMockRecorder) ReportKafkaMapperResults(ctx, results interface{}) *gomock.Call {
+// ReportIstioConnections indicates an expected call of ReportIstioConnections.
+func (mr *MockMapperClientMockRecorder) ReportIstioConnections(ctx, results interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportKafkaMapperResults", reflect.TypeOf((*MockMapperClient)(nil).ReportKafkaMapperResults), ctx, results)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportIstioConnections", reflect.TypeOf((*MockMapperClient)(nil).ReportIstioConnections), ctx, results)
 }
