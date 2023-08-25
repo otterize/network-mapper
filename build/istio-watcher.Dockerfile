@@ -10,12 +10,12 @@ RUN go mod download
 COPY . .
 
 FROM buildenv as test
-RUN go test ./exp/istio-watcher/...
+RUN go test ./istio-watcher/...
 
 FROM test as builder
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./exp/istio-watcher/cmd
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./istio-watcher/cmd
 
 # add version file
 ARG VERSION

@@ -12,6 +12,7 @@ const (
 
 const (
 	KafkaLogReadModeKey          = "kafka-log-read-mode"
+	KafkaLogReadModeDefault      = FileReadMode
 	KafkaServersKey              = "kafka-servers"
 	KafkaReportIntervalKey       = "kafka-report-interval"
 	KafkaReportIntervalDefault   = 10 * time.Second
@@ -26,5 +27,5 @@ func init() {
 	viper.SetDefault(KafkaServersKey, []string{})
 	viper.SetDefault(KafkaCooldownIntervalKey, KafkaCooldownIntervalDefault)
 	viper.SetDefault(KafkaAuthZLogPathKey, KafkaAuthZLogPathDefault)
-	viper.SetDefault(KafkaLogReadModeKey, KubernetesLogReadMode)
+	viper.SetDefault(KafkaLogReadModeKey, KafkaLogReadModeDefault)
 }
