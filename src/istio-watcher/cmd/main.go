@@ -15,7 +15,7 @@ func main() {
 	}
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
-	istioWatcher, err := istiowatcher.istiowatcher.NewWatcher(mapperClient)
+	istioWatcher, err := istiowatcher.NewWatcher(mapperClient)
 	if err != nil {
 		logrus.WithError(err).Panic()
 	}
