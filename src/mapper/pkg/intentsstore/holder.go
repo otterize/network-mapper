@@ -6,6 +6,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 	"k8s.io/apimachinery/pkg/types"
 	"strings"
@@ -160,6 +161,19 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
+	intentLogger := logrus.WithFields(logrus.Fields{
+		"client":          intent.Client.Name,
+		"clientNamespace": intent.Client.Namespace,
+		"server":          intent.Server.Name,
+		"serverNamespace": intent.Server.Namespace,
+	})
+	if intent.Client.PodOwnerKind != nil && intent.Client.PodOwnerKind.Kind != "" {
+		intentLogger = intentLogger.WithField("clientKind", intent.Client.PodOwnerKind.Kind)
+	}
+	if intent.Client.PodOwnerKind != nil && intent.Client.PodOwnerKind.Kind != "" {
+		intentLogger = intentLogger.WithField("serverKind", intent.Server.PodOwnerKind.Kind)
+	}
+	intentLogger.Debug("Adding client to intent store")
 	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 }
