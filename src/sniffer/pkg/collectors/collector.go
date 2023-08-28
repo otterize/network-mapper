@@ -47,9 +47,9 @@ func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsF
 	results := make([]mapperclient.RecordedDestinationsForSrc, 0)
 	for src, destinations := range srcToDests {
 		// Debug print the results
-		logrus.Debugf("%s (%s):\n", src.Ip, src.Hostname)
+		logrus.Debugf("%s (%s):", src.Ip, src.Hostname)
 		for _, dest := range destinations {
-			logrus.Debugf("\t%s, %s\n", dest.Destination, dest.LastSeen)
+			logrus.Debugf("%s, %s", dest.Destination, dest.LastSeen)
 		}
 
 		results = append(results, mapperclient.RecordedDestinationsForSrc{SrcIp: src.Ip, SrcHostname: src.Hostname, Destinations: destinations})

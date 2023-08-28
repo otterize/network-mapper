@@ -27,7 +27,11 @@ type AccessGraph {
 """Clusters for which there are results"""
 	clusters: [Cluster!]!
 	serviceAccessGraphs: [ServiceAccessGraph!]!
+	serviceCount: Int!
 }
+
+"""The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
+scalar Int
 
 type AccessGraphEdge {
 	client: Service!
@@ -76,9 +80,6 @@ input CertificateCustomization {
 
 """The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
 scalar String
-
-"""The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
-scalar Int
 
 type CertificateInformation {
 	commonName: String!
@@ -531,9 +532,6 @@ type Mutation {
 		id: ID!
 		userId: ID!
 	): ID!
-	initializeOrganizationCAs(
-		organizationId: ID!
-	): Boolean!
 """Register certificate-request details for kubernetes pod owner, returns the service associated with this pod owner"""
 	registerKubernetesPodOwnerCertificateRequest(
 		podOwner: NamespacedPodOwner!
@@ -557,6 +555,9 @@ type Mutation {
 		name: String
 		configuration: ClusterConfigurationInput
 	): Cluster!
+	initializeOrganizationCAs(
+		organizationId: ID!
+	): Boolean!
 """Create a new environment"""
 	createEnvironment(
 		name: String!
@@ -864,14 +865,14 @@ enum ServerProtectionStatusVerdict {
 
 type Service {
 	id: ID!
-	certificateInformation: CertificateInformation
-	tlsKeyPair: KeyPair!
 	name: String!
 	namespace: Namespace
 	environment: Environment!
 """If service is Kafka, its KafkaServerConfig."""
 	kafkaServerConfig: KafkaServerConfig
+	certificateInformation: CertificateInformation
 	serviceAccount: String
+	tlsKeyPair: KeyPair!
 }
 
 type ServiceAccessGraph {

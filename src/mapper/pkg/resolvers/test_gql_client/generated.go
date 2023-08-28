@@ -393,6 +393,39 @@ mutation ReportCaptureResults ($results: CaptureResults!) {
 }
 `
 
+// The query or mutation executed by ReportCaptureResults.
+const ReportTCPCaptureResults_Operation = `
+mutation ReportTCPCaptureResults ($results: CaptureResults!) {
+	reportTCPCaptureResults(results: $results)
+}
+`
+
+func ReportTCPCaptureResults(
+	ctx context.Context,
+	client graphql.Client,
+	results CaptureResults,
+) (*ReportCaptureResultsResponse, error) {
+	req := &graphql.Request{
+		OpName: "ReportTCPCaptureResults",
+		Query:  ReportTCPCaptureResults_Operation,
+		Variables: &__ReportCaptureResultsInput{
+			Results: results,
+		},
+	}
+	var err error
+
+	var data ReportCaptureResultsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func ReportCaptureResults(
 	ctx context.Context,
 	client graphql.Client,

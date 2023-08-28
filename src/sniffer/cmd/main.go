@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
@@ -17,7 +20,9 @@ func main() {
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
 	snifferInstance := sniffer.NewSniffer(mapperClient)
-	err := snifferInstance.RunForever(context.Background())
+	stopCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	err := snifferInstance.RunForever(stopCtx)
 	if err != nil {
 		panic(err)
 	}

@@ -65,6 +65,14 @@ type __reportSocketScanResultsInput struct {
 // GetResults returns __reportSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportSocketScanResultsInput) GetResults() SocketScanResults { return v.Results }
 
+// __reportTCPCaptureResultsInput is used internally by genqlient
+type __reportTCPCaptureResultsInput struct {
+	Results CaptureResults `json:"results"`
+}
+
+// GetResults returns __reportTCPCaptureResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportTCPCaptureResultsInput) GetResults() CaptureResults { return v.Results }
+
 // reportCaptureResultsResponse is returned by reportCaptureResults on success.
 type reportCaptureResultsResponse struct {
 	ReportCaptureResults bool `json:"reportCaptureResults"`
@@ -81,6 +89,16 @@ type reportSocketScanResultsResponse struct {
 // GetReportSocketScanResults returns reportSocketScanResultsResponse.ReportSocketScanResults, and is useful for accessing the field via an interface.
 func (v *reportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
+}
+
+// reportTCPCaptureResultsResponse is returned by reportTCPCaptureResults on success.
+type reportTCPCaptureResultsResponse struct {
+	ReportTCPCaptureResults bool `json:"reportTCPCaptureResults"`
+}
+
+// GetReportTCPCaptureResults returns reportTCPCaptureResultsResponse.ReportTCPCaptureResults, and is useful for accessing the field via an interface.
+func (v *reportTCPCaptureResultsResponse) GetReportTCPCaptureResults() bool {
+	return v.ReportTCPCaptureResults
 }
 
 func reportCaptureResults(
@@ -132,6 +150,36 @@ mutation reportSocketScanResults ($results: SocketScanResults!) {
 	var err error
 
 	var data reportSocketScanResultsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func reportTCPCaptureResults(
+	ctx context.Context,
+	client graphql.Client,
+	results CaptureResults,
+) (*reportTCPCaptureResultsResponse, error) {
+	req := &graphql.Request{
+		OpName: "reportTCPCaptureResults",
+		Query: `
+mutation reportTCPCaptureResults ($results: CaptureResults!) {
+	reportTCPCaptureResults(results: $results)
+}
+`,
+		Variables: &__reportTCPCaptureResultsInput{
+			Results: results,
+		},
+	}
+	var err error
+
+	var data reportTCPCaptureResultsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

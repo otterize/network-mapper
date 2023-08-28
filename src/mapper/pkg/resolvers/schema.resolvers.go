@@ -94,6 +94,60 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	return true, nil
 }
 
+func (r *mutationResolver) ReportTCPCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
+	for _, captureItem := range results.Results {
+		srcSvcIdentity := r.discoverSrcIdentity(ctx, captureItem)
+		if srcSvcIdentity == nil {
+			continue
+		}
+		for _, dest := range captureItem.Destinations {
+			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, dest.Destination)
+			if err != nil {
+				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", dest.Destination)
+				} else {
+					logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
+				}
+				continue
+			}
+
+			if destPod.CreationTimestamp.After(dest.LastSeen) {
+				logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
+				continue
+			}
+
+			if destPod.DeletionTimestamp != nil {
+				logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
+				continue
+			}
+
+			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+			if err != nil {
+				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+				continue
+			}
+
+			dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+			if dstService.OwnerObject != nil {
+				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+
+			intent := model.Intent{
+				Client: srcSvcIdentity,
+				Server: dstSvcIdentity,
+			}
+
+			r.intentsHolder.AddIntent(
+				dest.LastSeen,
+				intent,
+			)
+		}
+	}
+	// TODO
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
+	return true, nil
+}
+
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity := r.discoverSrcIdentity(ctx, socketScanItem)

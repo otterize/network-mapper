@@ -156,6 +156,7 @@ type Query {
 type Mutation {
     resetCapture: Boolean!
     reportCaptureResults(results: CaptureResults!): Boolean!
+    reportTCPCaptureResults(results: CaptureResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!

@@ -4,14 +4,12 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"time"
 )
 
-type pendingCapture struct {
+type pendingHostnameCapture struct {
 	srcIp       string
 	srcHostname string
 	dest        string
@@ -20,17 +18,15 @@ type pendingCapture struct {
 
 type DNSSniffer struct {
 	NetworkCollector
-	resolver    ipresolver.IPResolver
-	pending     []pendingCapture
-	lastRefresh time.Time
+	resolver ipresolver.IPResolver
+	pending  []pendingHostnameCapture
 }
 
 func NewDNSSniffer(resolver ipresolver.IPResolver) *DNSSniffer {
 	s := DNSSniffer{
 		NetworkCollector: NetworkCollector{},
 		resolver:         resolver,
-		pending:          make([]pendingCapture, 0),
-		lastRefresh:      time.Now().Add(-viper.GetDuration(config.HostsMappingRefreshIntervalKey)), // Should refresh immediately
+		pending:          make([]pendingHostnameCapture, 0),
 	}
 	s.resetData()
 	return &s
@@ -68,7 +64,7 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 					logrus.Debugf("Can't resolve IP addr %s, skipping", ip.DstIP.String())
 				} else {
 					// Resolver cache could be outdated, verify same resolving result after next poll
-					s.pending = append(s.pending, pendingCapture{
+					s.pending = append(s.pending, pendingHostnameCapture{
 						srcIp: ip.DstIP.String(), srcHostname: hostname, dest: string(answer.Name), time: captureTime,
 					})
 				}
@@ -78,11 +74,6 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 }
 
 func (s *DNSSniffer) RefreshHostsMapping() error {
-	err := s.resolver.Refresh()
-	if err != nil {
-		return err
-	}
-
 	for _, p := range s.pending {
 		hostname, err := s.resolver.ResolveIP(p.srcIp)
 		if err != nil {
@@ -95,14 +86,8 @@ func (s *DNSSniffer) RefreshHostsMapping() error {
 		}
 		s.addCapturedRequest(p.srcIp, hostname, p.dest, p.time)
 	}
-	s.pending = make([]pendingCapture, 0)
-	s.lastRefresh = time.Now()
+	s.pending = make([]pendingHostnameCapture, 0)
 	return nil
-}
-
-func (s *DNSSniffer) GetTimeTilNextRefresh() time.Duration {
-	nextRefreshTime := s.lastRefresh.Add(viper.GetDuration(config.HostsMappingRefreshIntervalKey))
-	return time.Until(nextRefreshTime)
 }
 
 func detectCaptureTime(packet gopacket.Packet) time.Time {

@@ -144,6 +144,112 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	})
 }
 
+func (s *ResolverTestSuite) TestReportTCPCaptureResults() {
+	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"})
+	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"})
+	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"})
+	s.AddPod("pod4", "1.1.1.4", nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "1.1.1.1",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: "1.1.1.2",
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			{
+				SrcIp: "1.1.1.3",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: "1.1.1.1",
+						LastSeen:    packetTime,
+					},
+					{
+						Destination: "1.1.1.2",
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			{
+				SrcIp: "1.1.1.4",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: "1.1.1.2",
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
+	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "service1",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "service3",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "DaemonSet",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:      "service1",
+					Namespace: s.TestNamespace,
+				},
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "pod4",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "",
+					Kind:    "Pod",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:      "service2",
+					Namespace: s.TestNamespace,
+				},
+			},
+		},
+	})
+}
+
 func (s *ResolverTestSuite) TestReportCaptureResultsIgnoreOldPacket() {
 	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"})
 	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"})
