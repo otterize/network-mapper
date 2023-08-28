@@ -28,13 +28,6 @@ type MockIPResolverMockRecorder struct {
 	mock *MockIPResolver
 }
 
-// NewMockMapperClient creates a new mock instance.
-func NewMockMapperClient(ctrl *gomock.Controller) *MockIPResolver {
-	mock := &MockIPResolver{ctrl: ctrl}
-	mock.recorder = &MockIPResolverMockRecorder{mock}
-	return mock
-}
-
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockIPResolver) EXPECT() *MockIPResolverMockRecorder {
 	return m.recorder

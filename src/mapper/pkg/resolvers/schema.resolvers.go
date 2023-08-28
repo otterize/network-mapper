@@ -21,7 +21,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
+func (r *mutationResolver) ResetCapture(context.Context) (bool, error) {
 	logrus.Info("Resetting stored intents")
 	r.intentsHolder.Reset()
 	return true, nil
@@ -315,7 +315,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 	return true, nil
 }
 
-func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
+func (r *queryResolver) ServiceIntents(_ context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
@@ -340,7 +340,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	return intentsBySource, nil
 }
 
-func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) ([]model.Intent, error) {
+func (r *queryResolver) Intents(_ context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) ([]model.Intent, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
