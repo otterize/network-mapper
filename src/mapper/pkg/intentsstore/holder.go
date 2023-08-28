@@ -161,6 +161,8 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
+	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
+	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
 	intentLogger := logrus.WithFields(logrus.Fields{
 		"client":          intent.Client.Name,
 		"clientNamespace": intent.Client.Namespace,
@@ -173,9 +175,7 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	if intent.Client.PodOwnerKind != nil && intent.Client.PodOwnerKind.Kind != "" {
 		intentLogger = intentLogger.WithField("serverKind", intent.Server.PodOwnerKind.Kind)
 	}
-	intentLogger.Debug("Adding client to intent store")
-	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
-	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
+	intentLogger.Debug("Added client to intent store")
 }
 
 func (i *IntentsHolder) GetIntents(
