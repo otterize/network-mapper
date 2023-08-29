@@ -172,7 +172,7 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 	if intent.Client.PodOwnerKind != nil && intent.Client.PodOwnerKind.Kind != "" {
 		intentLogger = intentLogger.WithField("clientKind", intent.Client.PodOwnerKind.Kind)
 	}
-	if intent.Client.PodOwnerKind != nil && intent.Client.PodOwnerKind.Kind != "" {
+	if intent.Server.PodOwnerKind != nil && intent.Server.PodOwnerKind.Kind != "" {
 		intentLogger = intentLogger.WithField("serverKind", intent.Server.PodOwnerKind.Kind)
 	}
 	intentLogger.Debug("Added client to intent store")
