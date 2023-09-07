@@ -28,6 +28,7 @@ func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
 }
 
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
+	var newResults int
 	for _, captureItem := range results.Results {
 		srcSvcIdentity := r.discoverSrcIdentity(ctx, captureItem)
 		if srcSvcIdentity == nil {
@@ -88,14 +89,16 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				dest.LastSeen,
 				intent,
 			)
+			newResults++
 		}
 	}
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
+	var newResults int
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity := r.discoverSrcIdentity(ctx, socketScanItem)
 		if srcSvcIdentity == nil {
@@ -142,14 +145,16 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				destIp.LastSeen,
 				intent,
 			)
+			newResults++
 		}
 	}
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, len(results.Results))
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
 func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error) {
+	var newResults int
 	for _, result := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, result.SrcIP)
 		if err != nil {
@@ -213,14 +218,16 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 			result.LastSeen,
 			intent,
 		)
+		newResults++
 	}
 
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, len(results.Results))
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
 func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error) {
+	var newResults int
 	for _, result := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.SrcWorkload, result.SrcWorkloadNamespace)
 		if err != nil {
@@ -258,9 +265,10 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 			Type:          lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
 		})
+		newResults++
 	}
 
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, len(results.Results))
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
