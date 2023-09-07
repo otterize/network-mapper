@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
-	"github.com/otterize/network-mapper/src/exp/istio-watcher/pkg/watcher"
+	"github.com/otterize/network-mapper/src/istio-watcher/mapperclient"
+	"github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"

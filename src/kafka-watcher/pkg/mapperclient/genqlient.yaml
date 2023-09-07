@@ -3,7 +3,7 @@
 schema:
   - ../../../mappergraphql/schema.graphql
 operations:
-  - genqlient.graphql
+- genqlient.graphql
 generated: generated.go
 bindings:
   Time:

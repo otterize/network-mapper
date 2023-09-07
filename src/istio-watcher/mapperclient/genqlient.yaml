@@ -1,9 +1,9 @@
 # genqlient config; for full documentation see:
 # https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
 schema:
-  - ../../../../mappergraphql/schema.graphql
+  - ../../mappergraphql/schema.graphql
 operations:
-- genqlient.graphql
+  - genqlient.graphql
 generated: generated.go
 bindings:
   Time:
