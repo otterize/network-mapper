@@ -1,10 +1,8 @@
 package config
 
 import (
-	"strings"
-	"time"
-
 	"github.com/spf13/viper"
+	"time"
 )
 
 const (
@@ -26,7 +24,4 @@ func init() {
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
 	viper.SetDefault(HostProcDirKey, HostProcDirDefault)
 	viper.SetDefault(HostsMappingRefreshIntervalKey, HostsMappingRefreshIntervalDefault)
-
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	viper.AutomaticEnv()
 }

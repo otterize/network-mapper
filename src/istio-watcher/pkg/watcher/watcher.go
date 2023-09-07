@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/otterize/network-mapper/src/exp/istio-watcher/config"
-	"github.com/otterize/network-mapper/src/exp/istio-watcher/mapperclient"
+	"github.com/otterize/network-mapper/src/istio-watcher/config"
+	mapperclient2 "github.com/otterize/network-mapper/src/istio-watcher/mapperclient"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -70,7 +70,7 @@ type ConnectionWithPath struct {
 type IstioWatcher struct {
 	clientset    *kubernetes.Clientset
 	config       *rest.Config
-	mapperClient mapperclient.MapperClient
+	mapperClient mapperclient2.MapperClient
 	connections  map[ConnectionWithPath]time.Time
 	metricsCount map[string]int
 }
@@ -94,7 +94,7 @@ type Metric struct {
 	Value int    `json:"value"`
 }
 
-func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
+func NewWatcher(mapperClient mapperclient2.MapperClient) (*IstioWatcher, error) {
 	conf, err := rest.InClusterConfig()
 
 	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
@@ -331,7 +331,7 @@ func (m *IstioWatcher) reportResults(ctx context.Context) error {
 
 	logrus.Infof("Reporting %d connections", len(connections))
 	results := ToGraphQLIstioConnections(connections)
-	return m.mapperClient.ReportIstioConnections(ctx, mapperclient.IstioConnectionResults{Results: results})
+	return m.mapperClient.ReportIstioConnections(ctx, mapperclient2.IstioConnectionResults{Results: results})
 }
 
 func (m *IstioWatcher) RunForever(ctx context.Context) error {
