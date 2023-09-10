@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,7 @@ type IntentsStore map[IntentsStoreKey]TimestampedIntent
 type IntentsHolder struct {
 	accumulatingStore IntentsStore
 	sinceLastGetStore IntentsStore
+	servicesStore     sets.Set[types.NamespacedName]
 	lock              sync.Mutex
 }
 
@@ -38,6 +40,7 @@ func NewIntentsHolder() *IntentsHolder {
 		accumulatingStore: make(IntentsStore),
 		sinceLastGetStore: make(IntentsStore),
 		lock:              sync.Mutex{},
+		servicesStore:     make(sets.Set[types.NamespacedName]),
 	}
 }
 
@@ -163,6 +166,11 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 
 	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
+	i.servicesStore.Insert(
+		intent.Client.AsNamespacedName(),
+		intent.Server.AsNamespacedName(),
+	)
+
 	intentLogger := logrus.WithFields(logrus.Fields{
 		"client":          intent.Client.Name,
 		"clientNamespace": intent.Client.Namespace,
@@ -207,6 +215,13 @@ func (i *IntentsHolder) GetIntentsCount() int {
 	defer i.lock.Unlock()
 
 	return len(i.accumulatingStore)
+}
+
+func (i *IntentsHolder) GetServiceCount() int {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	return i.servicesStore.Len()
 }
 
 func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {

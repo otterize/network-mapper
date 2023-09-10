@@ -414,6 +414,115 @@ func (s *ResolverTestSuite) TestIntents() {
 	s.Require().ElementsMatch(res.Intents, expectedIntents)
 }
 
+func (s *ResolverTestSuite) TestCounters() {
+	s1IP := "1.1.23.1"
+	s2IP := "1.1.23.2"
+	s3IP := "1.1.23.3"
+	s4IP := "1.1.23.4"
+
+	s.AddDeploymentWithService("service1", []string{s1IP}, map[string]string{"app": "service1"})
+	s.AddDeploymentWithService("service2", []string{s2IP}, map[string]string{"app": "service2"})
+	s.AddDaemonSetWithService("service3", []string{s3IP}, map[string]string{"app": "service3"})
+	s.AddPod("pod4", s4IP, nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	s.Require().Equal(0, s.intentsHolder.GetServiceCount())
+	s.Require().Equal(0, s.intentsHolder.GetIntentsCount())
+
+	// One intent, two services
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: s1IP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(2, s.intentsHolder.GetServiceCount())
+	s.Require().Equal(1, s.intentsHolder.GetIntentsCount())
+
+	// Same services with reversed intent
+	_, err = test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: s2IP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(2, s.intentsHolder.GetServiceCount())
+	s.Require().Equal(2, s.intentsHolder.GetIntentsCount())
+
+	// Same intent as before, counters should ignore it and count only unique intents and services
+	_, err = test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: s2IP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(2, s.intentsHolder.GetServiceCount())
+	s.Require().Equal(2, s.intentsHolder.GetIntentsCount())
+
+	_, err = test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: s3IP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+					{
+						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(3, s.intentsHolder.GetServiceCount())
+	s.Require().Equal(4, s.intentsHolder.GetIntentsCount())
+
+	_, err = test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: s4IP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(4, s.intentsHolder.GetServiceCount())
+	s.Require().Equal(5, s.intentsHolder.GetIntentsCount())
+}
+
 func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 	service1Name := "service1"
 	service1IP := "1.1.18.1"

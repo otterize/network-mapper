@@ -92,8 +92,11 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			newResults++
 		}
 	}
+
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, r.intentsHolder.GetServiceCount())
+
 	return true, nil
 }
 
@@ -150,6 +153,8 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	}
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, r.intentsHolder.GetServiceCount())
+
 	return true, nil
 }
 
@@ -223,6 +228,8 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, r.intentsHolder.GetServiceCount())
+
 	return true, nil
 }
 
@@ -270,6 +277,8 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, r.intentsHolder.GetServiceCount())
+
 	return true, nil
 }
 
