@@ -151,6 +151,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			newResults++
 		}
 	}
+
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, r.intentsHolder.GetServiceCount())
