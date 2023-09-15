@@ -77,8 +77,8 @@ brew install otterize/otterize/otterize-cli
 ```
 Linux 64-bit
 ```bash
-wget https://get.otterize.com/otterize-cli/v0.1.30/otterize_Linux_x86_64.tar.gz
-tar xf otterize_Linux_x86_64.tar.gz
+wget https://get.otterize.com/otterize-cli/v0.1.30/otterize_linux_x86_64.tar.gz
+tar xf otterize_linux_x86_64.tar.gz
 sudo cp otterize /usr/local/bin
 ```
 Windows
