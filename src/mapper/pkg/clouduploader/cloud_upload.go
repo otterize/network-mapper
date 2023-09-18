@@ -56,13 +56,17 @@ func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
 	discoveredIntentsChunks := lo.Chunk(discoveredIntents, c.config.UploadBatchSize)
 	currentChunk := 0
 	err := backoff.Retry(func() error {
-		err := c.client.ReportDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
-		if err != nil {
-			logrus.WithError(err).Error("Failed to report discovered intents to cloud, retrying")
-			return err
+		for {
+			if currentChunk >= len(discoveredIntentsChunks) {
+				return nil
+			}
+			err := c.client.ReportDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
+			if err != nil {
+				logrus.WithError(err).Error("Failed to report discovered intents to cloud, retrying")
+				return err
+			}
+			currentChunk += 1
 		}
-		currentChunk += 1
-		return nil
 	}, exponentialBackoff)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
