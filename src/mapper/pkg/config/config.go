@@ -14,7 +14,7 @@ const (
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
 	UploadIntervalSecondsKey     = "upload-interval-seconds"
 	UploadIntervalSecondsDefault = 60
-	UploadBatchSizeKey           = "upload-interval-seconds"
+	UploadBatchSizeKey           = "upload-batch-size"
 	UploadBatchSizeDefault       = 500
 	ExcludedNamespacesKey        = "exclude-namespaces"
 )
