@@ -7,11 +7,13 @@ import (
 )
 
 type Config struct {
-	UploadInterval time.Duration
+	UploadInterval  time.Duration
+	UploadBatchSize int
 }
 
 func ConfigFromViper() Config {
 	return Config{
-		UploadInterval: time.Duration(viper.GetInt(config.UploadIntervalSecondsKey)) * time.Second,
+		UploadInterval:  time.Duration(viper.GetInt(config.UploadIntervalSecondsKey)) * time.Second,
+		UploadBatchSize: viper.GetInt(config.UploadBatchSizeKey),
 	}
 }

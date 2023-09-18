@@ -14,6 +14,8 @@ const (
 	CloudApiAddrDefault          = "https://app.otterize.com/api"
 	UploadIntervalSecondsKey     = "upload-interval-seconds"
 	UploadIntervalSecondsDefault = 60
+	UploadBatchSizeKey           = "upload-interval-seconds"
+	UploadBatchSizeDefault       = 500
 	ExcludedNamespacesKey        = "exclude-namespaces"
 )
 
@@ -28,5 +30,6 @@ func init() {
 	viper.SetDefault(ClusterDomainKey, ClusterDomainDefault) // If not set by the user, the main.go of mapper will try to find the cluster domain and set it itself.
 	viper.SetDefault(CloudApiAddrKey, CloudApiAddrDefault)
 	viper.SetDefault(UploadIntervalSecondsKey, UploadIntervalSecondsDefault)
+	viper.SetDefault(UploadBatchSizeKey, UploadBatchSizeDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
