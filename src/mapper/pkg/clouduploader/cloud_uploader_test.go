@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
@@ -34,7 +35,7 @@ func (s *CloudUploaderTestSuite) SetupTest() {
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
 	controller := gomock.NewController(s.T())
 	s.clientMock = cloudclientmocks.NewMockCloudClient(controller)
-	s.cloudUploader = NewCloudUploader(s.intentsHolder, Config{}, s.clientMock)
+	s.cloudUploader = NewCloudUploader(s.intentsHolder, Config{UploadBatchSize: config.UploadBatchSizeDefault}, s.clientMock)
 }
 
 func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, destination string, dstNamespace string) {
@@ -85,6 +86,27 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents2)).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
+}
+
+func (s *CloudUploaderTestSuite) TestUploadIntentsInBatches() {
+	s.cloudUploader.config.UploadBatchSize = 1
+	s.addIntent("client1", s.testNamespace, "server1", s.testNamespace)
+	s.addIntent("client1", s.testNamespace, "server2", "external-namespace")
+
+	intents1 := []cloudclient.IntentInput{
+		intentInput("client1", s.testNamespace, "server1", s.testNamespace),
+		intentInput("client1", s.testNamespace, "server2", "external-namespace"),
+	}
+
+	firstReport := s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher([]cloudclient.IntentInput{intents1[0]})).Return(nil).Times(1)
+	secondReport := s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher([]cloudclient.IntentInput{intents1[1]})).Return(nil).Times(1)
+	gomock.InOrder(
+		firstReport,
+		secondReport,
+	)
+
+	s.cloudUploader.uploadDiscoveredIntents(context.Background())
+
 }
 
 func (s *CloudUploaderTestSuite) TestDontUploadWithoutIntents() {
