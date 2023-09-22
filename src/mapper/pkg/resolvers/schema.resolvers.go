@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"strings"
 
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
@@ -16,6 +15,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
