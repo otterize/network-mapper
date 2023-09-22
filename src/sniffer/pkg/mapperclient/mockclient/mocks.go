@@ -35,6 +35,20 @@ func (m *MockMapperClient) EXPECT() *MockMapperClientMockRecorder {
 	return m.recorder
 }
 
+// Health mocks base method.
+func (m *MockMapperClient) Health(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Health", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Health indicates an expected call of Health.
+func (mr *MockMapperClientMockRecorder) Health(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Health", reflect.TypeOf((*MockMapperClient)(nil).Health), ctx)
+}
+
 // ReportCaptureResults mocks base method.
 func (m *MockMapperClient) ReportCaptureResults(ctx context.Context, results mapperclient.CaptureResults) error {
 	m.ctrl.T.Helper()

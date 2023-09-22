@@ -6,3 +6,7 @@ mutation reportCaptureResults($results: CaptureResults!) {
 mutation reportSocketScanResults($results: SocketScanResults!) {
     reportSocketScanResults(results: $results)
 }
+
+query Health {
+    health
+}

@@ -11,10 +11,12 @@ Shared config keys between all reporter components - DNS Sniffer, Kafka watcher,
 */
 
 const (
-	MapperApiUrlKey     = "mapper-api-url"
-	MapperApiUrlDefault = "http://mapper:9090/query"
-	DebugKey            = "debug"
-	DebugDefault        = false
+	MapperApiUrlKey              = "mapper-api-url"
+	MapperApiUrlDefault          = "http://mapper:9090/query"
+	DebugKey                     = "debug"
+	DebugDefault                 = false
+	PrometheusMetricsPortKey     = "metrics-port"
+	PrometheusMetricsPortDefault = 2112
 
 	EnvPodKey       = "pod"
 	EnvNamespaceKey = "namespace"
@@ -31,6 +33,7 @@ func GetEnvVarForKey(key string) string {
 func init() {
 	viper.SetDefault(MapperApiUrlKey, MapperApiUrlDefault)
 	viper.SetDefault(DebugKey, DebugDefault)
+	viper.SetDefault(PrometheusMetricsPortKey, PrometheusMetricsPortDefault)
 	viper.SetEnvPrefix(envPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()

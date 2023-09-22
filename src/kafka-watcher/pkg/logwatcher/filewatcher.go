@@ -34,7 +34,7 @@ func NewLogFileWatcher(mapperClient mapperclient.MapperClient, authzFilePath str
 	return w, nil
 }
 
-func (w *LogFileWatcher) RunForever(ctx context.Context) {
+func (w *LogFileWatcher) RunForever(ctx context.Context) error {
 	go w.watchForever(ctx)
 
 	for {

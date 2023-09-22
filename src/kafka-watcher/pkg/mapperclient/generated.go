@@ -9,6 +9,14 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// HealthResponse is returned by Health on success.
+type HealthResponse struct {
+	Health bool `json:"health"`
+}
+
+// GetHealth returns HealthResponse.Health, and is useful for accessing the field via an interface.
+func (v *HealthResponse) GetHealth() bool { return v.Health }
+
 type KafkaMapperResult struct {
 	SrcIp           string    `json:"srcIp"`
 	ServerPodName   string    `json:"serverPodName"`
@@ -59,6 +67,32 @@ type reportKafkaMapperResultsResponse struct {
 // GetReportKafkaMapperResults returns reportKafkaMapperResultsResponse.ReportKafkaMapperResults, and is useful for accessing the field via an interface.
 func (v *reportKafkaMapperResultsResponse) GetReportKafkaMapperResults() bool {
 	return v.ReportKafkaMapperResults
+}
+
+func Health(
+	ctx context.Context,
+	client graphql.Client,
+) (*HealthResponse, error) {
+	req := &graphql.Request{
+		OpName: "Health",
+		Query: `
+query Health {
+	health
+}
+`,
+	}
+	var err error
+
+	var data HealthResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
 }
 
 func reportKafkaMapperResults(

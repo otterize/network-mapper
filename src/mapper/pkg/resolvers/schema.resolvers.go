@@ -15,6 +15,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -92,6 +93,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			newResults++
 		}
 	}
+	prometheus.IncrementDNSCaptureReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -148,6 +150,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			newResults++
 		}
 	}
+	prometheus.IncrementSocketScanReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -221,6 +224,7 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 		newResults++
 	}
 
+	prometheus.IncrementKafkaReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -268,6 +272,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 		newResults++
 	}
 
+	prometheus.IncrementIstioReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -332,6 +337,10 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 	})
 
 	return intents, nil
+}
+
+func (r *queryResolver) Health(ctx context.Context) (bool, error) {
+	return true, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
