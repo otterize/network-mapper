@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"strings"
 
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
@@ -92,6 +93,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			newResults++
 		}
 	}
+	prometheus.IncrementDNSCaptureReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -148,6 +150,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			newResults++
 		}
 	}
+	prometheus.IncrementSocketScanReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -221,6 +224,7 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 		newResults++
 	}
 
+	prometheus.IncrementKafkaReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
@@ -268,6 +272,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 		newResults++
 	}
 
+	prometheus.IncrementIstioReports(newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, newResults)
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil

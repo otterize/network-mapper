@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/oriser/regroup"
 	mapperclient2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
@@ -58,6 +59,7 @@ func (b *baseWatcher) reportResults(ctx context.Context) error {
 	}
 
 	logrus.Infof("Reporting %d records", cRecords)
+	prometheus.IncrementKafkaTopicReports(cRecords)
 
 	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) mapperclient2.KafkaMapperResult {
 		return mapperclient2.KafkaMapperResult{
