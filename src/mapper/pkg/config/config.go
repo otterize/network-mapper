@@ -8,15 +8,17 @@ import (
 )
 
 const (
-	ClusterDomainKey             = "cluster-domain"
-	ClusterDomainDefault         = kubeutils.DefaultClusterDomain
-	CloudApiAddrKey              = "api-address"
-	CloudApiAddrDefault          = "https://app.otterize.com/api"
-	UploadIntervalSecondsKey     = "upload-interval-seconds"
-	UploadIntervalSecondsDefault = 60
-	UploadBatchSizeKey           = "upload-batch-size"
-	UploadBatchSizeDefault       = 500
-	ExcludedNamespacesKey        = "exclude-namespaces"
+	ClusterDomainKey                 = "cluster-domain"
+	ClusterDomainDefault             = kubeutils.DefaultClusterDomain
+	CloudApiAddrKey                  = "api-address"
+	CloudApiAddrDefault              = "https://app.otterize.com/api"
+	UploadIntervalSecondsKey         = "upload-interval-seconds"
+	UploadIntervalSecondsDefault     = 60
+	UploadBatchSizeKey               = "upload-batch-size"
+	UploadBatchSizeDefault           = 500
+	ExcludedNamespacesKey            = "exclude-namespaces"
+	OTelExportIntervalSecondsKey     = "otel-export-interval-seconds"
+	OTelExportIntervalSecondsDefault = 60
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -31,5 +33,6 @@ func init() {
 	viper.SetDefault(CloudApiAddrKey, CloudApiAddrDefault)
 	viper.SetDefault(UploadIntervalSecondsKey, UploadIntervalSecondsDefault)
 	viper.SetDefault(UploadBatchSizeKey, UploadBatchSizeDefault)
+	viper.SetDefault(OTelExportIntervalSecondsKey, OTelExportIntervalSecondsDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
