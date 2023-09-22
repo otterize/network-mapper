@@ -1,3 +1,6 @@
+query Health {
+    health
+}
 
 mutation reportKafkaMapperResults($results: KafkaMapperResults!) {
     reportKafkaMapperResults(results: $results)

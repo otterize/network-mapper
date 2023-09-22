@@ -28,7 +28,13 @@ func (c *MapperClientImpl) ReportSocketScanResults(ctx context.Context, results 
 	return err
 }
 
+func (c *MapperClientImpl) Health(ctx context.Context) error {
+	_, err := Health(ctx, c.gqlClient)
+	return err
+}
+
 type MapperClient interface {
 	ReportCaptureResults(ctx context.Context, results CaptureResults) error
 	ReportSocketScanResults(ctx context.Context, results SocketScanResults) error
+	Health(ctx context.Context) error
 }

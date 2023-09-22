@@ -30,7 +30,7 @@ type AuthorizerRecord struct {
 type SeenRecordsStore map[AuthorizerRecord]time.Time
 
 type Watcher interface {
-	RunForever(ctx context.Context)
+	RunForever(ctx context.Context) error
 }
 
 type baseWatcher struct {

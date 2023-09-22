@@ -1,3 +1,7 @@
+query Health {
+    health
+}
+
 
 mutation reportIstioConnections($results: IstioConnectionResults!) {
     reportIstioConnectionResults(results: $results)

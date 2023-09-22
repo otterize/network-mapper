@@ -61,11 +61,11 @@ func NewKubernetesLogWatcher(mapperClient mapperclient.MapperClient, kafkaServer
 	return w, nil
 }
 
-func (w *KubernetesLogWatcher) RunForever(ctx context.Context) {
+func (w *KubernetesLogWatcher) RunForever(ctx context.Context) error {
 	err := w.validateKafkaServers(ctx)
 
 	if err != nil {
-		logrus.WithError(err).Panic()
+		return err
 	}
 
 	for _, kafkaServer := range w.kafkaServers {

@@ -2,6 +2,7 @@ package sniffer
 
 import (
 	"context"
+	"github.com/otterize/network-mapper/src/sniffer/pkg/prometheus"
 	"time"
 
 	"github.com/otterize/network-mapper/src/sniffer/pkg/collectors"
@@ -43,6 +44,8 @@ func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 		if err != nil {
 			logrus.WithError(err).Error("Failed to report capture results")
 		}
+		logrus.Infof("Reported captured requests of %d clients to Mapper", len(results))
+		prometheus.IncrementDNSCaptureReports(len(results))
 	}()
 }
 
@@ -62,6 +65,8 @@ func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 		if err != nil {
 			logrus.WithError(err).Error("Failed to report socket scan results")
 		}
+		logrus.Infof("Reported scanned requests of %d clients to Mapper", len(results))
+		prometheus.IncrementSocketScanReports(len(results))
 	}()
 }
 

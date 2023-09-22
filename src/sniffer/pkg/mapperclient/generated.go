@@ -27,6 +27,14 @@ func (v *Destination) GetDestination() string { return v.Destination }
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
 
+// HealthResponse is returned by Health on success.
+type HealthResponse struct {
+	Health bool `json:"health"`
+}
+
+// GetHealth returns HealthResponse.Health, and is useful for accessing the field via an interface.
+func (v *HealthResponse) GetHealth() bool { return v.Health }
+
 type RecordedDestinationsForSrc struct {
 	SrcIp        string        `json:"srcIp"`
 	SrcHostname  string        `json:"srcHostname"`
@@ -81,6 +89,32 @@ type reportSocketScanResultsResponse struct {
 // GetReportSocketScanResults returns reportSocketScanResultsResponse.ReportSocketScanResults, and is useful for accessing the field via an interface.
 func (v *reportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
+}
+
+func Health(
+	ctx context.Context,
+	client graphql.Client,
+) (*HealthResponse, error) {
+	req := &graphql.Request{
+		OpName: "Health",
+		Query: `
+query Health {
+	health
+}
+`,
+	}
+	var err error
+
+	var data HealthResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
 }
 
 func reportCaptureResults(

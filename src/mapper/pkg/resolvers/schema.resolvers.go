@@ -334,6 +334,10 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 	return intents, nil
 }
 
+func (r *queryResolver) Health(ctx context.Context) (bool, error) {
+	return true, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
