@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
-	"github.com/otterize/network-mapper/src/istio-watcher/mapperclient"
+	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"

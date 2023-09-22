@@ -1,7 +1,7 @@
 package istiowatcher
 
 import (
-	"github.com/otterize/network-mapper/src/istio-watcher/mapperclient"
+	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
 	"net/http"
