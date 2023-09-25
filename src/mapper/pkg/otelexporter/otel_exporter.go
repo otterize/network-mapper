@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/version"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
@@ -57,15 +60,23 @@ func newMeterProvider(ctx context.Context, res *resource.Resource, exportInterva
 		return nil, err
 	}
 
-	stdOutExporter, err := stdoutmetric.New()
-	if err != nil {
-		return nil, err
+	if viper.GetBool(sharedconfig.DebugKey) {
+		stdOutExporter, err := stdoutmetric.New()
+		if err != nil {
+			return nil, err
+		}
+		meterProvider := sdk.NewMeterProvider(
+			sdk.WithResource(res),
+			sdk.WithReader(sdk.NewPeriodicReader(stdOutExporter,
+				sdk.WithInterval(1*time.Second))),
+			sdk.WithReader(sdk.NewPeriodicReader(metricExporter,
+				sdk.WithInterval(exportInterval))),
+		)
+		return meterProvider, nil
 	}
 
 	meterProvider := sdk.NewMeterProvider(
 		sdk.WithResource(res),
-		sdk.WithReader(sdk.NewPeriodicReader(stdOutExporter,
-			sdk.WithInterval(exportInterval))),
 		sdk.WithReader(sdk.NewPeriodicReader(metricExporter,
 			sdk.WithInterval(exportInterval))),
 	)
@@ -111,6 +122,7 @@ func (o *OtelExporter) countDiscoveredIntents(_ context.Context) {
 	for _, intent := range o.intentsHolder.GetNewIntentsSinceLastGet() {
 		clientName := intent.Intent.Client.Name
 		serverName := intent.Intent.Server.Name
+		logrus.Debugf("incremeting otel metric counter: %s -> %s", clientName, serverName)
 		o.counter.Add(context.Background(), 1, metric.WithAttributes(attribute.String(ClientAttributeName, clientName), attribute.String(ServerAttributeName, serverName)))
 	}
 }
