@@ -118,12 +118,12 @@ func NewOtelExporter(ctx context.Context, ih *intentsstore.IntentsHolder, config
 	}
 }
 
-func (o *OtelExporter) countDiscoveredIntents(_ context.Context) {
+func (o *OtelExporter) countDiscoveredIntents(ctx context.Context) {
 	for _, intent := range o.intentsHolder.GetNewIntentsSinceLastGet() {
 		clientName := intent.Intent.Client.Name
 		serverName := intent.Intent.Server.Name
 		logrus.Debugf("incremeting otel metric counter: %s -> %s", clientName, serverName)
-		o.counter.Add(context.Background(), 1, metric.WithAttributes(attribute.String(ClientAttributeName, clientName), attribute.String(ServerAttributeName, serverName)))
+		o.counter.Add(ctx, 1, metric.WithAttributes(attribute.String(ClientAttributeName, clientName), attribute.String(ServerAttributeName, serverName)))
 	}
 }
 
