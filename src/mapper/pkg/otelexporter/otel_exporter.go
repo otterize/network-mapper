@@ -29,7 +29,7 @@ func newResource() (*resource.Resource, error) {
 	return resource.Merge(resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL,
 			semconv.OTelLibraryName("otterize/network-mapper"),
-			semconv.ServiceVersion(version.Version()),
+			semconv.OTelLibraryVersion(version.Version()),
 		))
 }
 
