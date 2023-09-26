@@ -90,17 +90,17 @@ scoop install otterize-cli
 For more platforms, see [the installation guide](https://docs.otterize.com/installation#install-the-otterize-cli).
 
 ### Components
-- Mapper - the mapper is deployed once per cluster, and receives traffic information from the sniffer and watchers, and resolves the information to communications between (service identities)[/service-identities].
+- Mapper - the mapper is deployed once per cluster, and receives traffic information from the sniffer and watchers, and resolves the information to communications between [service identities](https://docs.otterize.com/reference/service-identities).
 - Sniffer - the sniffer is deployed to each node using a DaemonSet, and is responsible for capturing node-local DNS traffic and inspecting open connections.
 - Kafka watcher - the Kafka watcher is deployed once per cluster and is responsible for detecting accesses to Kafka topics, which services perform those accesses and which operations they use.
 - Istio watcher - the Istio watcher is deployed once per cluster and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths. Currently, the Istio watcher has a limitation where it reports all HTTP traffic seen by the sidecar since it was started, regardless of when it was seen.
 
 ### DNS responses
 DNS is a common network protocol used for service discovery. When a pod (`checkoutservice`) tries to connect to a Kubernetes service
-(`orderservice`) or another pod, a DNS query is sent out. The network mapper watches DNS responses and extracts the IP addresses, which are used for the [service identity resolving process](/reference/service-identities).
+(`orderservice`) or another pod, a DNS query is sent out. The network mapper watches DNS responses and extracts the IP addresses, which are used for the [service identity resolving process](https://docs.otterize.com/reference/service-identities).
 
 ### Active TCP connections
-DNS responses will only appear when new connections are opened. To handle long-lived connections, the network mapper also queries open TCP connections in a manner similar to `netstat` or `ss`. The IP addresses are used for the [service identity resolving process](/reference/service-identities), as above.
+DNS responses will only appear when new connections are opened. To handle long-lived connections, the network mapper also queries open TCP connections in a manner similar to `netstat` or `ss`. The IP addresses are used for the [service identity resolving process](https://docs.otterize.com/reference/service-identities), as above.
 
 ### Kafka logs
 The Kafka watcher periodically examines logs of Kafka servers provided by the user through configuration, parses them and deduces topic-level access to Kafka from pods in the cluster.
