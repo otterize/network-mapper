@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
@@ -20,6 +21,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
+)
+
+type SourceType string
+
+const (
+	SourceTypeDNSCapture  SourceType = "Capture"
+	SourceTypeSocketScan  SourceType = "SocketScan"
+	SourceTypeKafkaMapper SourceType = "KafkaMapper"
+	SourceTypeIstio       SourceType = "Istio"
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
@@ -86,6 +96,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				Server: dstSvcIdentity,
 			}
 
+			updateTelemetriesCounters(SourceTypeDNSCapture, intent)
 			r.intentsHolder.AddIntent(
 				dest.LastSeen,
 				intent,
@@ -93,9 +104,8 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			newResults++
 		}
 	}
+
 	prometheus.IncrementDNSCaptureReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -143,6 +153,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				Server: dstSvcIdentity,
 			}
 
+			updateTelemetriesCounters(SourceTypeSocketScan, intent)
 			r.intentsHolder.AddIntent(
 				destIp.LastSeen,
 				intent,
@@ -151,8 +162,6 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 		}
 	}
 	prometheus.IncrementSocketScanReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -217,6 +226,7 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 			},
 		}
 
+		updateTelemetriesCounters(SourceTypeKafkaMapper, intent)
 		r.intentsHolder.AddIntent(
 			result.LastSeen,
 			intent,
@@ -225,8 +235,6 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 	}
 
 	prometheus.IncrementKafkaReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -263,18 +271,20 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 		if dstService.OwnerObject != nil {
 			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}
-		r.intentsHolder.AddIntent(result.LastSeen, model.Intent{
+
+		intent := model.Intent{
 			Client:        &srcSvcIdentity,
 			Server:        &dstSvcIdentity,
 			Type:          lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
-		})
+		}
+
+		updateTelemetriesCounters(SourceTypeIstio, intent)
+		r.intentsHolder.AddIntent(result.LastSeen, intent)
 		newResults++
 	}
 
 	prometheus.IncrementIstioReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -337,6 +347,27 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 	})
 
 	return intents, nil
+}
+
+func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
+	clientKey := telemetrysender.Anonymize(fmt.Sprintf("%s/%s", intent.Client.Namespace, intent.Client.Name))
+	serverKey := telemetrysender.Anonymize(fmt.Sprintf("%s/%s", intent.Server.Namespace, intent.Server.Name))
+	intentKey := telemetrysender.Anonymize(fmt.Sprintf("%s-%s", clientKey, serverKey))
+
+	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, intentKey)
+	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, clientKey)
+	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, serverKey)
+
+	logrus.Infof("Discovered intent %s, %s, %s", clientKey, serverKey, intentKey)
+	if sourceType == SourceTypeDNSCapture {
+		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, intentKey)
+	} else if sourceType == SourceTypeSocketScan {
+		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, intentKey)
+	} else if sourceType == SourceTypeKafkaMapper {
+		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, intentKey)
+	} else if sourceType == SourceTypeIstio {
+		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, intentKey)
+	}
 }
 
 func (r *queryResolver) Health(ctx context.Context) (bool, error) {
