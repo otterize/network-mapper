@@ -246,7 +246,6 @@ func ReportComponentStatus(
 
 // The query or mutation executed by ReportDiscoveredIntents.
 const ReportDiscoveredIntents_Operation = `
-# @genqlient(pointer: true)
 mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
 	reportDiscoveredIntents(intents: $intents)
 }

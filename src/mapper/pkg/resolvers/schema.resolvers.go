@@ -6,11 +6,8 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -21,15 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-)
-
-type SourceType string
-
-const (
-	SourceTypeDNSCapture  SourceType = "Capture"
-	SourceTypeSocketScan  SourceType = "SocketScan"
-	SourceTypeKafkaMapper SourceType = "KafkaMapper"
-	SourceTypeIstio       SourceType = "Istio"
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
@@ -347,27 +335,6 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 	})
 
 	return intents, nil
-}
-
-func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
-	clientKey := telemetrysender.Anonymize(fmt.Sprintf("%s/%s", intent.Client.Namespace, intent.Client.Name))
-	serverKey := telemetrysender.Anonymize(fmt.Sprintf("%s/%s", intent.Server.Namespace, intent.Server.Name))
-	intentKey := telemetrysender.Anonymize(fmt.Sprintf("%s-%s", clientKey, serverKey))
-
-	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, intentKey)
-	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, clientKey)
-	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, serverKey)
-
-	logrus.Infof("Discovered intent %s, %s, %s", clientKey, serverKey, intentKey)
-	if sourceType == SourceTypeDNSCapture {
-		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, intentKey)
-	} else if sourceType == SourceTypeSocketScan {
-		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, intentKey)
-	} else if sourceType == SourceTypeKafkaMapper {
-		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, intentKey)
-	} else if sourceType == SourceTypeIstio {
-		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, intentKey)
-	}
 }
 
 func (r *queryResolver) Health(ctx context.Context) (bool, error) {
