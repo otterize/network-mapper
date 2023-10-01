@@ -202,13 +202,6 @@ func (i *IntentsHolder) GetIntents(
 	return result, nil
 }
 
-func (i *IntentsHolder) GetIntentsCount() int {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-
-	return len(i.accumulatingStore)
-}
-
 func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 	i.lock.Lock()
 	defer i.lock.Unlock()
