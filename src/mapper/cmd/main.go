@@ -129,7 +129,10 @@ func main() {
 	otelCtx, otelCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer otelCancel()
 	otelExporterConfig := otelexporter.ConfigFromViper()
-	otelExporter := otelexporter.NewOtelExporter(otelCtx, intentsHolder, otelExporterConfig)
+	otelExporter, err := otelexporter.NewOtelExporter(otelCtx, intentsHolder, otelExporterConfig)
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to initialize otel exporter")
+	}
 	go otelExporter.PeriodicIntentsExport(otelCtx)
 
 	telemetrysender.SetGlobalVersion(version.Version())

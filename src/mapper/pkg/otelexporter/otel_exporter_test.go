@@ -27,7 +27,8 @@ func (o *OTelExporterTestSuite) SetupTest() {
 }
 
 func (o *OTelExporterTestSuite) BeforeTest(_, testName string) {
-	o.otelExporter = NewOtelExporter(context.Background(), o.intentsHolder, Config{ExportInterval: 1 * time.Second})
+	otelExporter, _ := NewOtelExporter(context.Background(), o.intentsHolder, Config{ExportInterval: 1 * time.Second})
+	o.otelExporter = otelExporter
 }
 
 func (o *OTelExporterTestSuite) addIntent(source string, srcNamespace string, destination string, dstNamespace string) {

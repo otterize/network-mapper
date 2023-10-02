@@ -2,7 +2,6 @@ package otelexporter
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
@@ -21,6 +20,7 @@ import (
 
 type OtelExporter struct {
 	config        Config
+	meterProvider *sdk.MeterProvider
 	counter       metric.Int64Counter
 	intentsHolder *intentsstore.IntentsHolder
 }
@@ -33,29 +33,17 @@ func newResource() (*resource.Resource, error) {
 		))
 }
 
-const DefaultMetricEndpoint = "ingest.lightstep.com:443"
-
 // uses same name as expected in opentelemetry-collector-contrib's servicegraphprocessor
 const CounterMetricName = "traces_service_graph_request_total"
 const ClientAttributeName = "client"
 const ServerAttributeName = "server"
 
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
-}
-
 func newMeterProvider(ctx context.Context, res *resource.Resource, exportInterval time.Duration) (*sdk.MeterProvider, error) {
-	metricExporter, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithEndpoint(getenv("OTEL_EXPORTER_OTLP_ENDPOINT", DefaultMetricEndpoint)),
-		otlpmetricgrpc.WithHeaders(map[string]string{
-			"lightstep-access-token": os.Getenv("LS_ACCESS_TOKEN"),
-		}),
-		otlpmetricgrpc.WithTimeout(7*time.Second),
-	)
+	// SDK automatically configured via environment variables:
+	// - OTEL_EXPORTER_OTLP_ENDPOINT
+	// - OTEL_EXPORTER_OTLP_HEADERS
+	// - OTEL_EXPORTER_OTLP_TIMEOUT (...)
+	metricExporter, err := otlpmetricgrpc.New(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,24 +71,16 @@ func newMeterProvider(ctx context.Context, res *resource.Resource, exportInterva
 	return meterProvider, nil
 }
 
-func NewOtelExporter(ctx context.Context, ih *intentsstore.IntentsHolder, config Config) *OtelExporter {
+func NewOtelExporter(ctx context.Context, ih *intentsstore.IntentsHolder, config Config) (*OtelExporter, error) {
 	res, err := newResource()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	meterProvider, err := newMeterProvider(ctx, res, config.ExportInterval)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-
-	// TODO: this is not the right place to handle shutdown
-	// defer func() {
-	// 	err := meterProvider.Shutdown(context.Background())
-	// 	if err != nil {
-	// 		logrus.Fatalln(err)
-	// 	}
-	// }()
 
 	var meter = meterProvider.Meter("otelexporter")
 	edgeCounter, err := meter.Int64Counter(
@@ -108,14 +88,15 @@ func NewOtelExporter(ctx context.Context, ih *intentsstore.IntentsHolder, config
 		metric.WithDescription("Count of edges between two nodes"),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &OtelExporter{
 		intentsHolder: ih,
 		config:        config,
 		counter:       edgeCounter,
-	}
+		meterProvider: meterProvider,
+	}, nil
 }
 
 func (o *OtelExporter) countDiscoveredIntents(ctx context.Context) {
@@ -134,6 +115,7 @@ func (o *OtelExporter) PeriodicIntentsExport(ctx context.Context) {
 			o.countDiscoveredIntents(ctx)
 
 		case <-ctx.Done():
+			o.meterProvider.Shutdown(ctx)
 			return
 		}
 	}
