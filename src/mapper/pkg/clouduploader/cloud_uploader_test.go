@@ -98,15 +98,11 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsInBatches() {
 		intentInput("client1", s.testNamespace, "server2", "external-namespace"),
 	}
 
-	firstReport := s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher([]cloudclient.IntentInput{intents1[0]})).Return(nil).Times(1)
-	secondReport := s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher([]cloudclient.IntentInput{intents1[1]})).Return(nil).Times(1)
-	gomock.InOrder(
-		firstReport,
-		secondReport,
-	)
+	// This can happen in any order, but either way only one intent should be uploaded at a batch
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher([]cloudclient.IntentInput{intents1[0]})).Return(nil).Times(1)
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher([]cloudclient.IntentInput{intents1[1]})).Return(nil).Times(1)
 
 	s.cloudUploader.uploadDiscoveredIntents(context.Background())
-
 }
 
 func (s *CloudUploaderTestSuite) TestDontUploadWithoutIntents() {
