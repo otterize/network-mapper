@@ -8,8 +8,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
-	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -86,6 +84,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				Server: dstSvcIdentity,
 			}
 
+			updateTelemetriesCounters(SourceTypeDNSCapture, intent)
 			r.intentsHolder.AddIntent(
 				dest.LastSeen,
 				intent,
@@ -93,9 +92,8 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			newResults++
 		}
 	}
+
 	prometheus.IncrementDNSCaptureReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -143,6 +141,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				Server: dstSvcIdentity,
 			}
 
+			updateTelemetriesCounters(SourceTypeSocketScan, intent)
 			r.intentsHolder.AddIntent(
 				destIp.LastSeen,
 				intent,
@@ -151,8 +150,6 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 		}
 	}
 	prometheus.IncrementSocketScanReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredSocketScan, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -217,6 +214,7 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 			},
 		}
 
+		updateTelemetriesCounters(SourceTypeKafkaMapper, intent)
 		r.intentsHolder.AddIntent(
 			result.LastSeen,
 			intent,
@@ -225,8 +223,6 @@ func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results
 	}
 
 	prometheus.IncrementKafkaReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 
@@ -263,18 +259,20 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 		if dstService.OwnerObject != nil {
 			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}
-		r.intentsHolder.AddIntent(result.LastSeen, model.Intent{
+
+		intent := model.Intent{
 			Client:        &srcSvcIdentity,
 			Server:        &dstSvcIdentity,
 			Type:          lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
-		})
+		}
+
+		updateTelemetriesCounters(SourceTypeIstio, intent)
+		r.intentsHolder.AddIntent(result.LastSeen, intent)
 		newResults++
 	}
 
 	prometheus.IncrementIstioReports(newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, newResults)
-	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, r.intentsHolder.GetIntentsCount())
 	return true, nil
 }
 

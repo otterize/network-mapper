@@ -327,8 +327,7 @@ func (v *__ServiceIntentsInput) GetNamespaces() []string { return v.Namespaces }
 
 // The query or mutation executed by Intents.
 const Intents_Operation = `
-query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServiceWithLabels: [String!], $includeAllLabels: Boolean, # @genqlient(pointer: true)
-$server: ServerFilter) {
+query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServiceWithLabels: [String!], $includeAllLabels: Boolean, $server: ServerFilter) {
 	intents(namespaces: $namespaces, includeLabels: $includeLabels, excludeServiceWithLabels: $excludeServiceWithLabels, includeAllLabels: $includeAllLabels, server: $server) {
 		client {
 			name

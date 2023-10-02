@@ -775,16 +775,6 @@ type Query {
 		clusterId: ID
 		name: String
 	): Integration!
-"""Get intent"""
-	intent(
-		id: ID!
-	): Intent!
-"""List intents"""
-	intents(
-		environmentId: ID
-		clientId: ID
-		serverId: ID
-	): [Intent!]!
 """Get namespace"""
 	namespace(
 		id: ID!
