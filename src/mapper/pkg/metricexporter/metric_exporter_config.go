@@ -1,4 +1,4 @@
-package otelexporter
+package metricexporter
 
 import (
 	"time"

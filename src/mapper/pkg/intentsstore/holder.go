@@ -1,7 +1,12 @@
 package intentsstore
 
 import (
+	"context"
 	"encoding/json"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/amit7itz/goset"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -9,9 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 	"k8s.io/apimachinery/pkg/types"
-	"strings"
-	"sync"
-	"time"
 )
 
 type IntentsStoreKey struct {
@@ -31,6 +33,7 @@ type IntentsHolder struct {
 	accumulatingStore IntentsStore
 	sinceLastGetStore IntentsStore
 	lock              sync.Mutex
+	callbacks         []func(context.Context, []TimestampedIntent)
 }
 
 func NewIntentsHolder() *IntentsHolder {
@@ -38,6 +41,7 @@ func NewIntentsHolder() *IntentsHolder {
 		accumulatingStore: make(IntentsStore),
 		sinceLastGetStore: make(IntentsStore),
 		lock:              sync.Mutex{},
+		callbacks:         make([]func(context.Context, []TimestampedIntent), 0),
 	}
 }
 
@@ -151,6 +155,31 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	existingIntent.Intent.Server.Labels = intent.Server.Labels
 
 	store[key] = existingIntent
+}
+
+func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, d time.Duration) {
+	logrus.Info("Starting periodic intents upload")
+
+	for {
+		select {
+		case <-time.After(d):
+			if len(i.callbacks) == 0 {
+				return
+			}
+
+			intents := i.GetNewIntentsSinceLastGet()
+			for _, callback := range i.callbacks {
+				callback(ctx, intents)
+			}
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (i *IntentsHolder) RegisterGetCallback(callback func(context.Context, []TimestampedIntent)) {
+	i.callbacks = append(i.callbacks, callback)
 }
 
 func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {

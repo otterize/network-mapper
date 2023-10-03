@@ -1,13 +1,10 @@
-package otelexporter
+package metricexporter
 
 import (
 	"context"
 	"time"
 
-	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
-	"github.com/otterize/network-mapper/src/shared/version"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -18,18 +15,15 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
-type OtelExporter struct {
-	config        Config
+type OtelEdgeMetric struct {
 	meterProvider *sdk.MeterProvider
 	counter       metric.Int64Counter
-	intentsHolder *intentsstore.IntentsHolder
 }
 
 func newResource() (*resource.Resource, error) {
 	return resource.Merge(resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL,
 			semconv.OTelLibraryName("otterize/network-mapper"),
-			semconv.OTelLibraryVersion(version.Version()),
 		))
 }
 
@@ -71,13 +65,17 @@ func newMeterProvider(ctx context.Context, res *resource.Resource, exportInterva
 	return meterProvider, nil
 }
 
-func NewOtelExporter(ctx context.Context, ih *intentsstore.IntentsHolder, config Config) (*OtelExporter, error) {
+func (o *OtelEdgeMetric) Record(ctx context.Context, from string, to string) {
+	o.counter.Add(ctx, 1, metric.WithAttributes(attribute.String(ClientAttributeName, from), attribute.String(ServerAttributeName, to)))
+}
+
+func NewOtelEdgeMetric(ctx context.Context, d time.Duration) (*OtelEdgeMetric, error) {
 	res, err := newResource()
 	if err != nil {
 		return nil, err
 	}
 
-	meterProvider, err := newMeterProvider(ctx, res, config.ExportInterval)
+	meterProvider, err := newMeterProvider(ctx, res, d)
 	if err != nil {
 		return nil, err
 	}
@@ -91,32 +89,8 @@ func NewOtelExporter(ctx context.Context, ih *intentsstore.IntentsHolder, config
 		return nil, err
 	}
 
-	return &OtelExporter{
-		intentsHolder: ih,
-		config:        config,
+	return &OtelEdgeMetric{
 		counter:       edgeCounter,
 		meterProvider: meterProvider,
 	}, nil
-}
-
-func (o *OtelExporter) countDiscoveredIntents(ctx context.Context) {
-	for _, intent := range o.intentsHolder.GetNewIntentsSinceLastGet() {
-		clientName := intent.Intent.Client.Name
-		serverName := intent.Intent.Server.Name
-		logrus.Debugf("incremeting otel metric counter: %s -> %s", clientName, serverName)
-		o.counter.Add(ctx, 1, metric.WithAttributes(attribute.String(ClientAttributeName, clientName), attribute.String(ServerAttributeName, serverName)))
-	}
-}
-
-func (o *OtelExporter) PeriodicIntentsExport(ctx context.Context) {
-	for {
-		select {
-		case <-time.After(o.config.ExportInterval):
-			o.countDiscoveredIntents(ctx)
-
-		case <-ctx.Done():
-			o.meterProvider.Shutdown(ctx)
-			return
-		}
-	}
 }

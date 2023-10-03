@@ -20,7 +20,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
-	"github.com/otterize/network-mapper/src/mapper/pkg/otelexporter"
+	"github.com/otterize/network-mapper/src/mapper/pkg/metricexporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
@@ -119,21 +119,27 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to initialize cloud client")
 	}
+
+	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {
-		cloudUploaderConfig := clouduploader.ConfigFromViper()
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
-		go cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
+		intentsHolder.RegisterGetCallback(cloudUploader.GetIntentCallback)
 		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
 	otelCtx, otelCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer otelCancel()
-	otelExporterConfig := otelexporter.ConfigFromViper()
-	otelExporter, err := otelexporter.NewOtelExporter(otelCtx, intentsHolder, otelExporterConfig)
+	otelExporterConfig := metricexporter.ConfigFromViper()
+	otelExporter, err := metricexporter.NewMetricExporter(otelCtx, otelExporterConfig)
+	intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to initialize otel exporter")
 	}
-	go otelExporter.PeriodicIntentsExport(otelCtx)
+
+	// start intent discover and notify callbacks of new intents
+	ihCtx, ihCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer ihCancel()
+	go intentsHolder.PeriodicIntentsUpload(ihCtx, cloudUploaderConfig.UploadInterval)
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
