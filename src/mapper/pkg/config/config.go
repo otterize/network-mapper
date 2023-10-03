@@ -19,6 +19,8 @@ const (
 	ExcludedNamespacesKey        = "exclude-namespaces"
 	OTelEnabledKey               = "enable-otel-export"
 	OTelEnabledDefault           = false
+	OTelMetricKey                = "otel-metric-name"
+	OTelMetricDefault            = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -34,5 +36,6 @@ func init() {
 	viper.SetDefault(UploadIntervalSecondsKey, UploadIntervalSecondsDefault)
 	viper.SetDefault(UploadBatchSizeKey, UploadBatchSizeDefault)
 	viper.SetDefault(OTelEnabledKey, OTelEnabledDefault)
+	viper.SetDefault(OTelMetricKey, OTelMetricDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }

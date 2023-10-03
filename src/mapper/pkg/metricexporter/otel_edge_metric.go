@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,8 +28,6 @@ func newResource() (*resource.Resource, error) {
 		))
 }
 
-// uses same name as expected in opentelemetry-collector-contrib's servicegraphprocessor
-const CounterMetricName = "traces_service_graph_request_total"
 const ClientAttributeName = "client"
 const ServerAttributeName = "server"
 
@@ -80,7 +79,7 @@ func NewOtelEdgeMetric(ctx context.Context) (*OtelEdgeMetric, error) {
 
 	var meter = meterProvider.Meter("otelexporter")
 	edgeCounter, err := meter.Int64Counter(
-		CounterMetricName,
+		viper.GetString(config.OTelMetricKey),
 		metric.WithDescription("Count of edges between two nodes"),
 	)
 	if err != nil {
