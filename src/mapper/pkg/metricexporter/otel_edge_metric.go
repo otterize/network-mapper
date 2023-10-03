@@ -17,7 +17,7 @@ import (
 )
 
 type OtelEdgeMetric struct {
-	meterProvider *sdk.MeterProvider
+	meterProvider metric.MeterProvider
 	counter       metric.Int64Counter
 }
 

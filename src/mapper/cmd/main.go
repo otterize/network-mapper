@@ -128,19 +128,14 @@ func main() {
 	}
 
 	if viper.GetBool(config.OTelEnabledKey) {
-		otelCtx, otelCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		defer otelCancel()
-		otelExporter, err := metricexporter.NewMetricExporter(otelCtx)
+		otelExporter, err := metricexporter.NewMetricExporter(cloudClientCtx)
 		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
 		}
 	}
 
-	// start intent discover and notify callbacks of new intents
-	ihCtx, ihCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer ihCancel()
-	go intentsHolder.PeriodicIntentsUpload(ihCtx, cloudUploaderConfig.UploadInterval)
+	go intentsHolder.PeriodicIntentsUpload(cloudClientCtx, cloudUploaderConfig.UploadInterval)
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
