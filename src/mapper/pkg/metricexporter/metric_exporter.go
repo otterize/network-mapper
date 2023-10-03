@@ -8,18 +8,16 @@ import (
 )
 
 type MetricExporter struct {
-	config     Config
 	edgeMetric EdgeMetric
 }
 
-func NewMetricExporter(ctx context.Context, config Config) (*MetricExporter, error) {
-	em, err := NewOtelEdgeMetric(ctx, config.ExportInterval)
+func NewMetricExporter(ctx context.Context) (*MetricExporter, error) {
+	em, err := NewOtelEdgeMetric(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MetricExporter{
-		config:     config,
 		edgeMetric: em,
 	}, nil
 }

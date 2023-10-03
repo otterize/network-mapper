@@ -127,13 +127,14 @@ func main() {
 		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
 
-	otelCtx, otelCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer otelCancel()
-	otelExporterConfig := metricexporter.ConfigFromViper()
-	otelExporter, err := metricexporter.NewMetricExporter(otelCtx, otelExporterConfig)
-	intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
-	if err != nil {
-		logrus.WithError(err).Fatal("Failed to initialize otel exporter")
+	if viper.GetBool(config.OTelEnabledKey) {
+		otelCtx, otelCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer otelCancel()
+		otelExporter, err := metricexporter.NewMetricExporter(otelCtx)
+		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
+		if err != nil {
+			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
+		}
 	}
 
 	// start intent discover and notify callbacks of new intents

@@ -32,7 +32,7 @@ const CounterMetricName = "traces_service_graph_request_total"
 const ClientAttributeName = "client"
 const ServerAttributeName = "server"
 
-func newMeterProvider(ctx context.Context, res *resource.Resource, exportInterval time.Duration) (*sdk.MeterProvider, error) {
+func newMeterProvider(ctx context.Context, res *resource.Resource) (*sdk.MeterProvider, error) {
 	// SDK automatically configured via environment variables:
 	// - OTEL_EXPORTER_OTLP_ENDPOINT
 	// - OTEL_EXPORTER_OTLP_HEADERS
@@ -51,16 +51,14 @@ func newMeterProvider(ctx context.Context, res *resource.Resource, exportInterva
 			sdk.WithResource(res),
 			sdk.WithReader(sdk.NewPeriodicReader(stdOutExporter,
 				sdk.WithInterval(1*time.Second))),
-			sdk.WithReader(sdk.NewPeriodicReader(metricExporter,
-				sdk.WithInterval(exportInterval))),
+			sdk.WithReader(sdk.NewPeriodicReader(metricExporter)),
 		)
 		return meterProvider, nil
 	}
 
 	meterProvider := sdk.NewMeterProvider(
 		sdk.WithResource(res),
-		sdk.WithReader(sdk.NewPeriodicReader(metricExporter,
-			sdk.WithInterval(exportInterval))),
+		sdk.WithReader(sdk.NewPeriodicReader(metricExporter)),
 	)
 	return meterProvider, nil
 }
@@ -69,13 +67,13 @@ func (o *OtelEdgeMetric) Record(ctx context.Context, from string, to string) {
 	o.counter.Add(ctx, 1, metric.WithAttributes(attribute.String(ClientAttributeName, from), attribute.String(ServerAttributeName, to)))
 }
 
-func NewOtelEdgeMetric(ctx context.Context, d time.Duration) (*OtelEdgeMetric, error) {
+func NewOtelEdgeMetric(ctx context.Context) (*OtelEdgeMetric, error) {
 	res, err := newResource()
 	if err != nil {
 		return nil, err
 	}
 
-	meterProvider, err := newMeterProvider(ctx, res, d)
+	meterProvider, err := newMeterProvider(ctx, res)
 	if err != nil {
 		return nil, err
 	}
