@@ -25,6 +25,8 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscovered, intentKey)
 	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, clientKey)
 	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, serverKey)
+	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeNamespaceDiscovered, intent.Client.Namespace)
+	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeNamespaceDiscovered, intent.Server.Namespace)
 
 	logrus.Infof("Discovered intent %s, %s, %s", clientKey, serverKey, intentKey)
 	if sourceType == SourceTypeDNSCapture {
