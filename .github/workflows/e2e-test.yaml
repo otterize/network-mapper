@@ -14,6 +14,12 @@ on:
       sniffer-tag:
         required: true
         type: string
+      mapper-image:
+        required: true
+        type: string
+      sniffer-image:
+        required: true
+        type: string
       registry:
         required: true
         type: string
@@ -36,13 +42,22 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Log in to the Container registry
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Login to GCR
         if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
           username: _json_key_base64
-          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON}}
+          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
+
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
@@ -60,13 +75,13 @@ jobs:
 
       - name: Deploy Network Mapper
         run: |-
-          docker pull ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}
-          minikube image load ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}
-          docker pull ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
-          minikube image load  ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
+          docker pull ${{ env.REGISTRY }}/${{ inputs.mapper-image }}:${{ inputs.mapper-tag }}
+          minikube image load ${{ env.REGISTRY }}/${{ inputs.mapper-image }}:${{ inputs.mapper-tag }}
+          docker pull ${{ env.REGISTRY }}/${{ inputs.sniffer-image }}:${{ inputs.sniffer-tag }}
+          minikube image load  ${{ env.REGISTRY }}/${{ inputs.sniffer-image }}:${{ inputs.sniffer-tag }}
           
-          MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=mapper --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
-          SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=sniffer --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
+          MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=${{ inputs.mapper-image }} --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
+          SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=${{ inputs.sniffer-image }} --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
           TELEMETRY_FLAG="--set global.telemetry.enabled=false"
           helm dep up ./helm-charts/otterize-kubernetes
           helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace --set networkMapper.debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG

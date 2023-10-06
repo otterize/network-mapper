@@ -83,6 +83,8 @@ jobs:
       registry: ${{ needs.build.outputs.registry }}
       mapper-tag: ${{ github.sha }}
       sniffer-tag: ${{ github.sha }}
+      mapper-image: mapper
+      sniffer-image: sniffer
 
     needs:
       - build
