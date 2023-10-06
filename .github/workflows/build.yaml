@@ -18,8 +18,11 @@ env:
 jobs:
 
   build:
+    if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
     name: Build
     runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
     strategy:
       matrix:
         service:
@@ -29,11 +32,13 @@ jobs:
           - istio-watcher
 
     steps:
+      - id: registry
+        run: echo "registry=${{ env.REGISTRY }}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: recursive
-          token: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }} # required for checking out submodules
 
       - name: Set up Docker Buildx
         id: buildx
@@ -73,11 +78,13 @@ jobs:
     name: Trigger e2e tests
     # Must pass the secrets as the called workflow does not have access to the same context
     secrets:
-      OTTERIZEBOT_GITHUB_TOKEN: ${{ secrets.OTTERIZEBOT_GITHUB_TOKEN }}
       B64_GCLOUD_SERVICE_ACCOUNT_JSON: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
     with:
+      registry: ${{ needs.build.outputs.registry }}
       mapper-tag: ${{ github.sha }}
       sniffer-tag: ${{ github.sha }}
+      mapper-image: mapper
+      sniffer-image: sniffer
 
     needs:
       - build
