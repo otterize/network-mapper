@@ -58,7 +58,7 @@ jobs:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{ matrix.service }}-${{ github.sha }}
-          push: false
+          push: true
           network: host
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
