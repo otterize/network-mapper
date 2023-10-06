@@ -37,7 +37,7 @@ jobs:
           submodules: recursive
 
       - name: Login to GCR
-        if: (github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
+        if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -73,7 +73,7 @@ jobs:
 
       - name: Install CLI
         run: |-
-          wget --header="X-Otterize-Test: true" https://get.otterize.com/otterize-cli/v0.1.30/otterize_Linux_x86_64.tar.gz
+          wget --header="X-Otterize-Test: true" https://get.otterize.com/otterize-cli/v0.1.30/otterize_linux_x86_64.tar.gz
           tar xf otterize_Linux_x86_64.tar.gz
           sudo cp otterize /usr/local/bin
 
