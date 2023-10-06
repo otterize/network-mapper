@@ -1,6 +1,6 @@
 name: Build
 concurrency:
-  group: "${{ github.repository }}${{ github.ref }}"
+  group: "${{ github.repository }}${{ github.ref }}buildfork"
   cancel-in-progress: true
 on:
   pull_request:
@@ -13,13 +13,13 @@ on:
       - develop
 
 env:
-  REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
+  REGISTRY: network-mapper-branch
 
 jobs:
 
   build:
-    if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
     name: Build
+    if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
     runs-on: ubuntu-latest
     outputs:
       registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
@@ -34,7 +34,6 @@ jobs:
     steps:
       - id: registry
         run: echo "registry=${{ env.REGISTRY }}" >> "$GITHUB_OUTPUT"
-
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -65,7 +64,7 @@ jobs:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
           tags: ${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.sha }}
-          push: true
+          push: false
           network: host
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
@@ -77,8 +76,6 @@ jobs:
     uses: ./.github/workflows/e2e-test.yaml
     name: Trigger e2e tests
     # Must pass the secrets as the called workflow does not have access to the same context
-    secrets:
-      B64_GCLOUD_SERVICE_ACCOUNT_JSON: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
     with:
       registry: ${{ needs.build.outputs.registry }}
       mapper-tag: ${{ github.sha }}
@@ -86,30 +83,3 @@ jobs:
 
     needs:
       - build
-
-  tag-latest:
-    name: Tag latest
-    if: github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: GCP auth
-        uses: 'google-github-actions/auth@v1'
-        with:
-          credentials_json: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
-
-      - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v1'
-
-      # Push the Docker image to AWS ECR
-      - name: Tag Images as latest
-        run: |-
-          retag_image_as_latest() { if [[ $(gcloud container images add-tag "${{ env.REGISTRY }}/$1:${{ github.sha }}" "${{ env.REGISTRY }}/$1:latest" --quiet) ]]; then echo "Failed tagging $1 as latest"; exit 1; fi } # using --quiet to avoid prompt
-          retag_image_as_latest mapper
-          retag_image_as_latest sniffer
-          retag_image_as_latest kafka-watcher
-          retag_image_as_latest istio-watcher
