@@ -1,0 +1,72 @@
+name: Build
+concurrency:
+  group: "${{ github.repository }}${{ github.ref }}buildfork"
+  cancel-in-progress: true
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+  push:
+    branches:
+      - main
+      - develop
+
+env:
+  REGISTRY: network-mapper-branch
+
+jobs:
+
+  build:
+    name: Build
+    if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+    runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
+    strategy:
+      matrix:
+        service:
+          - mapper
+          - sniffer
+          - kafka-watcher
+          - istio-watcher
+
+    steps:
+      - id: registry
+        run: echo "registry=${{ env.REGISTRY }}" >> "$GITHUB_OUTPUT"
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+        with:
+          driver-opts: network=host
+
+      - name: Test & Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: src/
+          file: build/${{ matrix.service }}.Dockerfile
+          tags: ${{ env.REGISTRY }}/${{ matrix.service }}:${{ github.sha }}
+          push: false
+          network: host
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            "VERSION=${{ github.run_id }}"
+
+  e2e-test:
+    uses: ./.github/workflows/e2e-test.yaml
+    name: Trigger e2e tests
+    # Must pass the secrets as the called workflow does not have access to the same context
+    with:
+      registry: ${{ needs.build.outputs.registry }}
+      mapper-tag: ${{ github.sha }}
+      sniffer-tag: ${{ github.sha }}
+
+    needs:
+      - build
