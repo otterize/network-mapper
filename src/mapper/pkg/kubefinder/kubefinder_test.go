@@ -38,10 +38,10 @@ func (s *KubeFinderTestSuite) TestResolveIpToPod() {
 }
 
 func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
-	_, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), "www.google.com")
+	_, _, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), "www.google.com")
 	s.Require().Error(err)
 
-	_, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace))
+	_, _, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().Error(err)
 
 	podIp0 := "1.1.1.1"
@@ -52,17 +52,20 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	s.AddDeploymentWithService("service1", []string{podIp1, podIp2}, map[string]string{"app": "service1"})
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
-	ips, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace))
+	ips, serviceName, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().NoError(err)
+	s.Require().Equal("service1", serviceName)
 	s.Require().ElementsMatch(ips, []string{podIp1, podIp2})
 
 	// make sure we don't fail on the longer forms of k8s service addresses, listed on this page: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service
-	ips, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.service1.%s.svc.cluster.local", s.TestNamespace))
+	ips, serviceName, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.service1.%s.svc.cluster.local", s.TestNamespace))
+	s.Require().Equal("service1", serviceName)
 	s.Require().NoError(err)
 	s.Require().ElementsMatch(ips, []string{podIp1, podIp2})
 
-	ips, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
+	ips, serviceName, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
 	s.Require().NoError(err)
+	s.Require().Empty(serviceName)
 	s.Require().ElementsMatch(ips, []string{"4.4.4.4"})
 }
 

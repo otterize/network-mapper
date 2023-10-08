@@ -39,7 +39,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				// not a k8s service, ignore
 				continue
 			}
-			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
+			ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 			if err != nil {
 				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
 				continue
@@ -77,6 +77,9 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
 			if dstService.OwnerObject != nil {
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			}
+			if serviceName != "" {
+				dstSvcIdentity.OriginatingKubernetesService = lo.ToPtr(serviceName)
 			}
 
 			intent := model.Intent{
