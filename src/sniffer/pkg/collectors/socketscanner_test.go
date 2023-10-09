@@ -103,20 +103,20 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	results := scanner.CollectResults()
 	expectedResults := []mapperclient.RecordedDestinationsForSrc{
 		{
-			SrcIp:       "176.168.35.14",
+			SrcIp:       "10.244.120.89",
 			SrcHostname: "thisverypod",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination: "192.168.38.211",
+					Destination: "10.98.14.179",
 				},
 			},
 		},
 		{
-			SrcIp:       "192.168.35.14",
+			SrcIp:       "193.168.38.211",
 			SrcHostname: "thisverypod",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination: "192.168.38.211",
+					Destination: "207.168.35.14",
 				},
 			},
 		},
