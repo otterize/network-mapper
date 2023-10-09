@@ -77,11 +77,11 @@ type ComplexityRoot struct {
 	}
 
 	OtterizeServiceIdentity struct {
-		Labels                       func(childComplexity int) int
-		Name                         func(childComplexity int) int
-		Namespace                    func(childComplexity int) int
-		OriginatingKubernetesService func(childComplexity int) int
-		PodOwnerKind                 func(childComplexity int) int
+		KubernetesService func(childComplexity int) int
+		Labels            func(childComplexity int) int
+		Name              func(childComplexity int) int
+		Namespace         func(childComplexity int) int
+		PodOwnerKind      func(childComplexity int) int
 	}
 
 	PodLabel struct {
@@ -268,6 +268,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ResetCapture(childComplexity), true
 
+	case "OtterizeServiceIdentity.kubernetesService":
+		if e.complexity.OtterizeServiceIdentity.KubernetesService == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.KubernetesService(childComplexity), true
+
 	case "OtterizeServiceIdentity.labels":
 		if e.complexity.OtterizeServiceIdentity.Labels == nil {
 			break
@@ -288,13 +295,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OtterizeServiceIdentity.Namespace(childComplexity), true
-
-	case "OtterizeServiceIdentity.originatingKubernetesService":
-		if e.complexity.OtterizeServiceIdentity.OriginatingKubernetesService == nil {
-			break
-		}
-
-		return e.complexity.OtterizeServiceIdentity.OriginatingKubernetesService(childComplexity), true
 
 	case "OtterizeServiceIdentity.podOwnerKind":
 		if e.complexity.OtterizeServiceIdentity.PodOwnerKind == nil {
@@ -470,7 +470,7 @@ type OtterizeServiceIdentity {
     """
     If the service identity was resolved from a Kubernetes service, its name.
     """
-    originatingKubernetesService: String
+    kubernetesService: String
 }
 
 enum IntentType {
@@ -1537,7 +1537,7 @@ func (ec *executionContext) _OtterizeServiceIdentity_podOwnerKind(ctx context.Co
 	return ec.marshalOGroupVersionKind2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐGroupVersionKind(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _OtterizeServiceIdentity_originatingKubernetesService(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+func (ec *executionContext) _OtterizeServiceIdentity_kubernetesService(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1555,7 +1555,7 @@ func (ec *executionContext) _OtterizeServiceIdentity_originatingKubernetesServic
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.OriginatingKubernetesService, nil
+		return obj.KubernetesService, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3730,9 +3730,9 @@ func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel as
 
 			out.Values[i] = innerFunc(ctx)
 
-		case "originatingKubernetesService":
+		case "kubernetesService":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._OtterizeServiceIdentity_originatingKubernetesService(ctx, field, obj)
+				return ec._OtterizeServiceIdentity_kubernetesService(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)

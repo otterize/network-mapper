@@ -22,7 +22,7 @@ func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
 }
 
 func (r *mutationResolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) *model.OtterizeServiceIdentity {
-	srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, src.SrcIP)
+	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", src.SrcIP)

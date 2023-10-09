@@ -17,12 +17,12 @@ type KubeFinderTestSuite struct {
 func (s *KubeFinderTestSuite) SetupTest() {
 	s.ControllerManagerTestSuiteBase.SetupTest()
 	var err error
-	s.kubeFinder, err = NewKubeFinder(s.Mgr)
+	s.kubeFinder, err = NewKubeFinder(context.Background(), s.Mgr)
 	s.Require().NoError(err)
 }
 
 func (s *KubeFinderTestSuite) TestResolveIpToPod() {
-	pod, err := s.kubeFinder.ResolveIpToPod(context.Background(), "1.1.1.1")
+	pod, err := s.kubeFinder.ResolveIPToService(context.Background(), "1.1.1.1")
 	s.Require().Nil(pod)
 	s.Require().Error(err)
 
@@ -31,7 +31,7 @@ func (s *KubeFinderTestSuite) TestResolveIpToPod() {
 	s.AddPod("pod-with-no-ip", "", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
-	pod, err = s.kubeFinder.ResolveIpToPod(context.Background(), "1.1.1.1")
+	pod, err = s.kubeFinder.ResolveIPToService(context.Background(), "1.1.1.1")
 	s.Require().NoError(err)
 	s.Require().Equal("test-pod", pod.Name)
 
@@ -48,8 +48,8 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	podIp1 := "1.1.1.2"
 	podIp2 := "1.1.1.3"
 	s.Require().NoError(s.Mgr.GetClient().List(context.Background(), &corev1.EndpointsList{})) // Workaround: make then client start caching Endpoints, so when we do "WaitForCacheSync" it will actually sync cache"
-	s.AddDeploymentWithService("service0", []string{podIp0}, map[string]string{"app": "service0"})
-	s.AddDeploymentWithService("service1", []string{podIp1, podIp2}, map[string]string{"app": "service1"})
+	s.AddDeploymentWithService("service0", []string{podIp0}, map[string]string{"app": "service0"}, "10.0.0.10")
+	s.AddDeploymentWithService("service1", []string{podIp1, podIp2}, map[string]string{"app": "service1"}, "10.0.0.11")
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	ips, serviceName, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace))

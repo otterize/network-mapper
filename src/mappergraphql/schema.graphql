@@ -42,7 +42,7 @@ type OtterizeServiceIdentity {
     """
     If the service identity was resolved from a Kubernetes service, its name.
     """
-    originatingKubernetesService: String
+    kubernetesService: String
 }
 
 enum IntentType {

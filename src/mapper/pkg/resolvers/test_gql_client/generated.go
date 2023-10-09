@@ -90,6 +90,8 @@ type IntentsIntentsIntentServerOtterizeServiceIdentity struct {
 	Namespace string `json:"namespace"`
 	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
 	PodOwnerKind IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind `json:"podOwnerKind"`
+	// If the service identity was resolved from a Kubernetes service, its name.
+	KubernetesService string `json:"kubernetesService"`
 }
 
 // GetName returns IntentsIntentsIntentServerOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
@@ -101,6 +103,11 @@ func (v *IntentsIntentsIntentServerOtterizeServiceIdentity) GetNamespace() strin
 // GetPodOwnerKind returns IntentsIntentsIntentServerOtterizeServiceIdentity.PodOwnerKind, and is useful for accessing the field via an interface.
 func (v *IntentsIntentsIntentServerOtterizeServiceIdentity) GetPodOwnerKind() IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind {
 	return v.PodOwnerKind
+}
+
+// GetKubernetesService returns IntentsIntentsIntentServerOtterizeServiceIdentity.KubernetesService, and is useful for accessing the field via an interface.
+func (v *IntentsIntentsIntentServerOtterizeServiceIdentity) GetKubernetesService() string {
+	return v.KubernetesService
 }
 
 // IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind includes the requested fields of the GraphQL type GroupVersionKind.
@@ -260,6 +267,8 @@ func (v *ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGr
 type ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+	// If the service identity was resolved from a Kubernetes service, its name.
+	KubernetesService string `json:"kubernetesService"`
 }
 
 // GetName returns ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity.Name, and is useful for accessing the field via an interface.
@@ -268,6 +277,11 @@ func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetName() s
 // GetNamespace returns ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity.Namespace, and is useful for accessing the field via an interface.
 func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetNamespace() string {
 	return v.Namespace
+}
+
+// GetKubernetesService returns ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity.KubernetesService, and is useful for accessing the field via an interface.
+func (v *ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity) GetKubernetesService() string {
+	return v.KubernetesService
 }
 
 type SocketScanResults struct {
@@ -346,6 +360,7 @@ query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServic
 				kind
 				version
 			}
+			kubernetesService
 		}
 	}
 }
@@ -467,6 +482,7 @@ query ServiceIntents ($namespaces: [String!]) {
 		intents {
 			name
 			namespace
+			kubernetesService
 		}
 	}
 }

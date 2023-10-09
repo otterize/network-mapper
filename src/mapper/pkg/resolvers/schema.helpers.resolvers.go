@@ -5,7 +5,6 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/sirupsen/logrus"
 )
 
 type SourceType string
@@ -26,7 +25,6 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, clientKey)
 	telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeServiceDiscovered, serverKey)
 
-	logrus.Infof("Discovered intent %s, %s, %s", clientKey, serverKey, intentKey)
 	if sourceType == SourceTypeDNSCapture {
 		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, intentKey)
 	} else if sourceType == SourceTypeSocketScan {
