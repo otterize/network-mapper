@@ -104,7 +104,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 	expectedResults := []mapperclient.RecordedDestinationsForSrc{
 		{
 			SrcIp:       "176.168.35.14",
-			SrcHostname: "", // Intentional - socket scan does not currently report hostnames
+			SrcHostname: "thisverypod",
 			Destinations: []mapperclient.Destination{
 				{
 					Destination: "192.168.38.211",
@@ -113,7 +113,7 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 		},
 		{
 			SrcIp:       "192.168.35.14",
-			SrcHostname: "", // Intentional - socket scan does not currently report hostnames
+			SrcHostname: "thisverypod",
 			Destinations: []mapperclient.Destination{
 				{
 					Destination: "192.168.38.211",
@@ -131,6 +131,8 @@ func TestSocketScannerSuite(t *testing.T) {
 	suite.Run(t, new(SocketScannerTestSuite))
 }
 
+// Many connections from 10.244.120.89 -> 10.98.14.179:80 (0x50). Only the first one is ESTABLISHED.
+// No LISTEN socket, which makes the ESTABLISHED socket client-side.
 const mockTcpFileContent = `  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode                                                     
    0: 5978F40A:89A4 B30E620A:0050 01 00000000:00000000 03:00000ACB 00000000     0        0 0 3 0000000000000000                                      
    1: 5978F40A:BB5A B30E620A:0050 06 00000000:00000000 03:00000547 00000000     0        0 0 3 0000000000000000                                      
@@ -164,14 +166,17 @@ const mockTcpFileContent = `  sl  local_address rem_address   st tx_queue rx_que
   29: 5978F40A:956E B30E620A:0050 06 00000000:00000000 03:00000000 00000000     0        0 0 3 0000000000000000                                      
   30: 5978F40A:89AA B30E620A:0050 06 00000000:00000000 03:00000B95 00000000     0        0 0 3 0000000000000000 `
 
-// 192.168.35.14 -> 192.168.38.211 ESTABLISHED
-// 176.168.35.14 -> 192.168.38.211 ESTABLISHED
-// 192.168.35.14 -> 193.168.38.211 TIME_WAIT
-// 176.168.35.14 -> 193.168.38.211 TIME_WAIT
+// LISTEN on port 0x1F90 (8080)
+// 192.168.35.14 -> 192.168.38.211 ESTABLISHED - should be dropped due to LISTEN, server-side socket
+// 176.168.35.14 -> 192.168.38.211 ESTABLISHED - should be dropped due to LISTEN, server-side socket
+// 192.168.35.14 -> 193.168.38.211 TIME_WAIT - should be dropped due to TIME_WAIT
+// 176.168.35.14 -> 193.168.38.211 TIME_WAIT - should be dropped due to TIME_WAIT
+// 193.168.38.211 -> 207.168.35.14 ESTABLISHED - should be returned successfully because client-side socket (no LISTEN)
 const mockTcp6FileContent = `  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
    0: 00000000000000000000000000000000:1F90 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 2448849674 1 0000000000000000 100 0 0 10 0
    1: 0000000000000000FFFF0000D326A8C1:1F90 0000000000000000FFFF00000E23A8C0:CA08 06 00000000:00000000 03:00000A41 00000000     0        0 0 3 0000000000000000
    2: 0000000000000000FFFF0000D326A8C1:1F90 0000000000000000FFFF00000E23A8B0:CA08 06 00000000:00000000 03:00000A41 00000000     0        0 0 3 0000000000000000
    3: 0000000000000000FFFF0000D326A8C0:1F90 0000000000000000FFFF00000E23A8C0:CA08 01 00000000:00000000 03:00000A41 00000000     0        0 0 3 0000000000000000
-   4: 0000000000000000FFFF0000D326A8C0:1F90 0000000000000000FFFF00000E23A8B0:CA08 01 00000000:00000000 03:00000A41 00000000     0        0 0 3 0000000000000000`
+   4: 0000000000000000FFFF0000D326A8C0:1F90 0000000000000000FFFF00000E23A8B0:CA08 01 00000000:00000000 03:00000A41 00000000     0        0 0 3 0000000000000000
+   5: 0000000000000000FFFF0000D326A8C1:D0BE 0000000000000000FFFF00000E23A8CF:0050 01 00000000:00000000 03:00000A41 00000000     0        0 0 3 0000000000000000`
 const mockEnvironFileContent = "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\x00HOSTNAME=thisverypod\x00TERM=xterm\x00HOME=/root\x00"
