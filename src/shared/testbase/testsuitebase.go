@@ -130,9 +130,6 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 
 func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod) *corev1.Endpoints {
 	addresses := lo.Map(pods, func(pod *corev1.Pod, _ int) corev1.EndpointAddress {
-		if len(pod.Status.PodIP) == 0 {
-			println("what!")
-		}
 		return corev1.EndpointAddress{IP: pod.Status.PodIP, TargetRef: &corev1.ObjectReference{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace}}
 	})
 
