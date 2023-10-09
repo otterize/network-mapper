@@ -18,7 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -339,88 +338,3 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *mutationResolver) handleSocketScanService(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
-	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
-	if err != nil {
-		return err
-	}
-
-	if len(pods) == 0 {
-		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
-		return nil
-	}
-
-	// Assume the pods backing the service are identical
-	pod := pods[0]
-
-	if pod.CreationTimestamp.After(dest.LastSeen) {
-		logrus.Debugf("Pod %s was created after scan time %s, ignoring", pod.Name, dest.LastSeen)
-		return nil
-	}
-
-	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
-	if err != nil {
-		return err
-	}
-
-	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: pod.Namespace, Labels: podLabelsToOtterizeLabels(&pod)}
-	if dstService.OwnerObject != nil {
-		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
-	}
-	dstSvcIdentity.KubernetesService = lo.ToPtr(svc.Name)
-
-	intent := model.Intent{
-		Client: srcSvcIdentity,
-		Server: dstSvcIdentity,
-	}
-
-	r.intentsHolder.AddIntent(
-		dest.LastSeen,
-		intent,
-	)
-
-	updateTelemetriesCounters(SourceTypeSocketScan, intent)
-	prometheus.IncrementSocketScanReports(1)
-	return nil
-}
-func (r *mutationResolver) handleSocketScanPod(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
-	if destPod.DeletionTimestamp != nil {
-		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
-		return nil
-	}
-
-	if destPod.CreationTimestamp.After(dest.LastSeen) {
-		logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, dest.LastSeen)
-		return nil
-	}
-
-	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
-	if err != nil {
-		return err
-	}
-
-	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
-	if dstService.OwnerObject != nil {
-		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
-	}
-
-	intent := model.Intent{
-		Client: srcSvcIdentity,
-		Server: dstSvcIdentity,
-	}
-
-	r.intentsHolder.AddIntent(
-		dest.LastSeen,
-		intent,
-	)
-	updateTelemetriesCounters(SourceTypeSocketScan, intent)
-	prometheus.IncrementSocketScanReports(1)
-	return nil
-}
