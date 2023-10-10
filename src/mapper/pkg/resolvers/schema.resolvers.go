@@ -18,7 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
@@ -108,35 +107,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 			continue
 		}
 		for _, destIp := range socketScanItem.Destinations {
-			destSvc, err := r.kubeFinder.ResolveIPToService(ctx, destIp.Destination)
-			if err != nil {
-				if k8serrors.IsNotFound(err) {
-					continue
-				}
-				logrus.WithError(err).Errorf("Could not resolve IP '%s' to service", destIp)
-			} else {
-				err := r.handleSocketScanService(ctx, srcSvcIdentity, destIp, destSvc)
-				if err != nil {
-					logrus.WithError(err).Errorf("Failed to handle service '%s' in namespace '%s'", destSvc.Name, destSvc.Namespace)
-					continue
-				}
-			}
-
-			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destIp.Destination)
-			if err != nil {
-				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp.Destination)
-				} else {
-					logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp.Destination)
-				}
-				continue
-			}
-
-			err = r.handleSocketScanPod(ctx, srcSvcIdentity, destIp, destPod)
-			if err != nil {
-				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", destIp.Destination)
-				continue
-			}
+			r.discoverIntentFromSocketScan(ctx, srcSvcIdentity, destIp)
 		}
 	}
 	return true, nil
