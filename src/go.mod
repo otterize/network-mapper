@@ -1,6 +1,6 @@
 module github.com/otterize/network-mapper/src
 
-go 1.18
+go 1.21.3
 
 require (
 	github.com/99designs/gqlgen v0.17.31
