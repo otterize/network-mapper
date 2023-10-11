@@ -18,7 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
@@ -107,34 +106,29 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 		if srcSvcIdentity == nil {
 			continue
 		}
-		for _, destIp := range socketScanItem.Destinations {
-			destSvc, err := r.kubeFinder.ResolveIPToService(ctx, destIp.Destination)
+		for _, dest := range socketScanItem.Destinations {
+			isService, err := r.tryHandleSocketScanDestinationAsService(ctx, srcSvcIdentity, dest)
 			if err != nil {
-				if k8serrors.IsNotFound(err) {
-					continue
-				}
-				logrus.WithError(err).Errorf("Could not resolve IP '%s' to service", destIp)
-			} else {
-				err := r.handleSocketScanService(ctx, srcSvcIdentity, destIp, destSvc)
-				if err != nil {
-					logrus.WithError(err).Errorf("Failed to handle service '%s' in namespace '%s'", destSvc.Name, destSvc.Namespace)
-					continue
-				}
-			}
-
-			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destIp.Destination)
-			if err != nil {
-				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp.Destination)
-				} else {
-					logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp.Destination)
-				}
+				logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
+				// Log error but don't stop handling other destinations.
 				continue
 			}
 
-			err = r.handleSocketScanPod(ctx, srcSvcIdentity, destIp, destPod)
+			if isService {
+				continue // No need to try to handle IP as Pod, since IP belonged to a service.
+			}
+
+			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
 			if err != nil {
-				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", destIp.Destination)
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
+				// Log error but don't stop handling other destinations.
+				continue
+			}
+
+			err = r.addSocketScanPodIntent(ctx, srcSvcIdentity, dest, destPod)
+			if err != nil {
+				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", dest.Destination)
+				// Log error but don't stop handling other destinations.
 				continue
 			}
 		}

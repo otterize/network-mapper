@@ -73,20 +73,20 @@ func (k *KubeFinder) ResolvePodByName(ctx context.Context, name string, namespac
 	return &pod, nil
 }
 
-func (k *KubeFinder) ResolveIPToService(ctx context.Context, ip string) (*corev1.Service, error) {
+func (k *KubeFinder) ResolveIPToService(ctx context.Context, ip string) (*corev1.Service, bool, error) {
 	var services corev1.ServiceList
 	err := k.client.List(ctx, &services, client.MatchingFields{serviceIPIndexField: ip})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if len(services.Items) == 0 {
-		return nil, errors.NewNotFound(corev1.Resource("service"), ip)
+		return nil, false, nil
 	}
 
 	if len(services.Items) != 1 {
-		return nil, ErrFoundMoreThanOneService
+		return nil, false, ErrFoundMoreThanOneService
 	}
-	return &services.Items[0], nil
+	return &services.Items[0], true, nil
 }
 
 func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Service) ([]corev1.Pod, error) {

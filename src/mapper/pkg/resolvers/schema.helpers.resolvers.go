@@ -41,7 +41,22 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func (r *mutationResolver) handleSocketScanService(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
+func (r *mutationResolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
+	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
+	if err != nil {
+		return false, err
+	}
+	if !foundSvc {
+		return false, nil
+	}
+	err = r.addSocketScanServiceIntent(ctx, srcSvcIdentity, dest, destSvc)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *mutationResolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
 		return err
@@ -85,7 +100,7 @@ func (r *mutationResolver) handleSocketScanService(ctx context.Context, srcSvcId
 	prometheus.IncrementSocketScanReports(1)
 	return nil
 }
-func (r *mutationResolver) handleSocketScanPod(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
+func (r *mutationResolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
 	if destPod.DeletionTimestamp != nil {
 		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
 		return nil
