@@ -115,26 +115,30 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 	err := s.Mgr.GetClient().Create(context.Background(), pod)
 	s.Require().NoError(err)
 
+	// Prevents race - UpdateStatus can alter the pod.
+	podCopy := pod.DeepCopy()
 	if podIp != "" {
 		pod.Status.PodIP = podIp
 		pod.Status.PodIPs = []corev1.PodIP{{IP: podIp}}
-		pod, err = s.K8sDirectClient.CoreV1().Pods(s.TestNamespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
+		pod.Status.DeepCopyInto(&podCopy.Status)
+		_, err = s.K8sDirectClient.CoreV1().Pods(s.TestNamespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
 		s.Require().NoError(err)
 	}
 	s.waitForObjectToBeCreated(pod)
-	return pod
+	return podCopy
 }
 
-func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, podIps []string) *corev1.Endpoints {
-	addresses := lo.Map(podIps, func(ip string, _ int) corev1.EndpointAddress {
-		return corev1.EndpointAddress{IP: ip}
+func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod) *corev1.Endpoints {
+	addresses := lo.Map(pods, func(pod *corev1.Pod, _ int) corev1.EndpointAddress {
+		return corev1.EndpointAddress{IP: pod.Status.PodIP, TargetRef: &corev1.ObjectReference{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace}}
 	})
 
 	endpoints := &corev1.Endpoints{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("svc-%s", name), Namespace: s.TestNamespace},
 		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}}}},
 	}
 
+	s.Require().NotEmpty(addresses[0].IP)
 	err := s.Mgr.GetClient().Create(context.Background(), endpoints)
 	s.Require().NoError(err)
 
@@ -142,12 +146,14 @@ func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, podIps []stri
 	return endpoints
 }
 
-func (s *ControllerManagerTestSuiteBase) AddService(name string, podIps []string, selector map[string]string) *corev1.Service {
+func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[string]string, serviceIp string, pods []*corev1.Pod) *corev1.Service {
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("svc-%s", name), Namespace: s.TestNamespace},
 		Spec: corev1.ServiceSpec{Selector: selector,
-			Ports: []corev1.ServicePort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}},
-			Type:  corev1.ServiceTypeClusterIP,
+			Ports:      []corev1.ServicePort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}},
+			Type:       corev1.ServiceTypeClusterIP,
+			ClusterIP:  serviceIp,
+			ClusterIPs: []string{serviceIp},
 		},
 	}
 	err := s.Mgr.GetClient().Create(context.Background(), service)
@@ -155,13 +161,13 @@ func (s *ControllerManagerTestSuiteBase) AddService(name string, podIps []string
 
 	s.waitForObjectToBeCreated(service)
 
-	s.AddEndpoints(name, podIps)
+	s.AddEndpoints(name, pods)
 	return service
 }
 
-func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []string, podLabels map[string]string) *appsv1.ReplicaSet {
+func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []string, podLabels map[string]string) (*appsv1.ReplicaSet, []*corev1.Pod) {
 	replicaSet := &appsv1.ReplicaSet{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("replicaset-%s", name), Namespace: s.TestNamespace},
 		Spec: appsv1.ReplicaSetSpec{
 			Replicas: lo.ToPtr(int32(len(podIps))),
 			Selector: &metav1.LabelSelector{MatchLabels: podLabels},
@@ -183,8 +189,9 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 
 	s.waitForObjectToBeCreated(replicaSet)
 
+	pods := make([]*corev1.Pod, 0)
 	for i, ip := range podIps {
-		s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels, []metav1.OwnerReference{
+		pod := s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels, []metav1.OwnerReference{
 			{
 				APIVersion:         "apps/v1",
 				Kind:               "ReplicaSet",
@@ -194,14 +201,15 @@ func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []str
 				UID:                replicaSet.UID,
 			},
 		})
+		pods = append(pods, pod)
 	}
 
-	return replicaSet
+	return replicaSet, pods
 }
 
-func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []string, podLabels map[string]string) *appsv1.Deployment {
+func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []string, podLabels map[string]string) (*appsv1.Deployment, []*corev1.Pod) {
 	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("deployment-%s", name), Namespace: s.TestNamespace},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: lo.ToPtr(int32(len(podIps))),
 			Selector: &metav1.LabelSelector{MatchLabels: podLabels},
@@ -223,7 +231,7 @@ func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []str
 
 	s.waitForObjectToBeCreated(deployment)
 
-	replicaSet := s.AddReplicaSet(name, podIps, podLabels)
+	replicaSet, pods := s.AddReplicaSet(name, podIps, podLabels)
 	replicaSet.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion:         "apps/v1",
@@ -237,18 +245,18 @@ func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []str
 	err = s.Mgr.GetClient().Update(context.Background(), replicaSet)
 	s.Require().NoError(err)
 
-	return deployment
+	return deployment, pods
 }
 
-func (s *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, podIps []string, podLabels map[string]string) (*appsv1.Deployment, *corev1.Service) {
-	deployment := s.AddDeployment(name, podIps, podLabels)
-	service := s.AddService(name, podIps, podLabels)
-	return deployment, service
+func (s *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, podIps []string, podLabels map[string]string, serviceIp string) (*appsv1.Deployment, *corev1.Service, []*corev1.Pod) {
+	deployment, pods := s.AddDeployment(name, podIps, podLabels)
+	service := s.AddService(name, podLabels, serviceIp, pods)
+	return deployment, service, pods
 }
 
-func (s *ControllerManagerTestSuiteBase) AddDaemonSet(name string, podIps []string, podLabels map[string]string) *appsv1.DaemonSet {
+func (s *ControllerManagerTestSuiteBase) AddDaemonSet(name string, podIps []string, podLabels map[string]string) (*appsv1.DaemonSet, []*corev1.Pod) {
 	daemonSet := &appsv1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: s.TestNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("daemonset-%s", name), Namespace: s.TestNamespace},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: podLabels},
 			Template: corev1.PodTemplateSpec{
@@ -269,8 +277,9 @@ func (s *ControllerManagerTestSuiteBase) AddDaemonSet(name string, podIps []stri
 
 	s.waitForObjectToBeCreated(daemonSet)
 
+	pods := make([]*corev1.Pod, 0)
 	for i, ip := range podIps {
-		s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels, []metav1.OwnerReference{
+		pod := s.AddPod(fmt.Sprintf("%s-%d", name, i), ip, podLabels, []metav1.OwnerReference{
 			{
 				APIVersion:         "apps/v1",
 				Kind:               "DaemonSet",
@@ -280,13 +289,14 @@ func (s *ControllerManagerTestSuiteBase) AddDaemonSet(name string, podIps []stri
 				UID:                daemonSet.UID,
 			},
 		})
+		pods = append(pods, pod)
 	}
 
-	return daemonSet
+	return daemonSet, pods
 }
 
-func (s *ControllerManagerTestSuiteBase) AddDaemonSetWithService(name string, podIps []string, podLabels map[string]string) (*appsv1.DaemonSet, *corev1.Service) {
-	daemonSet := s.AddDaemonSet(name, podIps, podLabels)
-	service := s.AddService(name, podIps, podLabels)
+func (s *ControllerManagerTestSuiteBase) AddDaemonSetWithService(name string, podIps []string, podLabels map[string]string, serviceIp string) (*appsv1.DaemonSet, *corev1.Service) {
+	daemonSet, pods := s.AddDaemonSet(name, podIps, podLabels)
+	service := s.AddService(name, podLabels, serviceIp, pods)
 	return daemonSet, service
 }

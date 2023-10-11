@@ -75,6 +75,8 @@ type OtterizeServiceIdentity struct {
 	Labels    []PodLabel `json:"labels"`
 	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
 	PodOwnerKind *GroupVersionKind `json:"podOwnerKind"`
+	// If the service identity was resolved from a Kubernetes service, its name.
+	KubernetesService *string `json:"kubernetesService"`
 }
 
 type PodLabel struct {

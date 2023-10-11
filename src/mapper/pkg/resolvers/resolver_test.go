@@ -29,7 +29,7 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.ControllerManagerTestSuiteBase.SetupTest()
 	e := echo.New()
 	var err error
-	s.kubeFinder, err = kubefinder.NewKubeFinder(s.Mgr)
+	s.kubeFinder, err = kubefinder.NewKubeFinder(context.Background(), s.Mgr)
 	s.Require().NoError(err)
 	s.intentsHolder = intentsstore.NewIntentsHolder()
 	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder)
@@ -39,9 +39,9 @@ func (s *ResolverTestSuite) SetupTest() {
 }
 
 func (s *ResolverTestSuite) TestReportCaptureResults() {
-	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"})
-	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"})
-	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"})
+	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, "10.0.0.16")
+	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"}, "10.0.0.17")
+	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"}, "10.0.0.18")
 	s.AddPod("pod4", "1.1.1.4", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
@@ -52,7 +52,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				SrcIp: "1.1.1.1",
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -61,11 +61,11 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				SrcIp: "1.1.1.3",
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -74,7 +74,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				SrcIp: "1.1.1.4",
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -88,7 +88,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
 		{
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
-				Name:      "service1",
+				Name:      fmt.Sprintf("deployment-%s", "service1"),
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -98,14 +98,15 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
 				},
 			},
 		},
 		{
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
-				Name:      "service3",
+				Name:      fmt.Sprintf("daemonset-%s", "service3"),
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -115,12 +116,14 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
-					Name:      "service1",
-					Namespace: s.TestNamespace,
+					Name:              fmt.Sprintf("deployment-%s", "service1"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service1",
 				},
 				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
 				},
 			},
 		},
@@ -136,8 +139,9 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
 				},
 			},
 		},
@@ -145,9 +149,9 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 }
 
 func (s *ResolverTestSuite) TestReportCaptureResultsIgnoreOldPacket() {
-	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"})
-	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"})
-	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"})
+	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, "10.0.0.19")
+	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"}, "10.0.0.20")
+	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"}, "10.0.0.21")
 	s.AddPod("pod4", "1.1.1.4", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
@@ -173,10 +177,19 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIgnoreOldPacket() {
 }
 
 func (s *ResolverTestSuite) TestSocketScanResults() {
-	s.AddDaemonSetWithService("service1", []string{"1.1.2.1"}, map[string]string{"app": "service1"})
-	s.AddDeploymentWithService("service2", []string{"1.1.2.2"}, map[string]string{"app": "service2"})
-	s.AddDeploymentWithService("service3", []string{"1.1.2.3"}, map[string]string{"app": "service3"})
-	s.AddPod("pod4", "1.1.2.4", nil, nil)
+	const (
+		service1podIP = "1.1.2.1"
+		service2podIP = "1.1.2.2"
+		service3podIP = "1.1.2.3"
+		service4podIP = "1.1.2.4"
+		service1IP    = "10.0.0.22"
+		service2IP    = "10.0.0.23"
+		service3IP    = "10.0.0.24"
+	)
+	s.AddDaemonSetWithService("service1", []string{service1podIP}, map[string]string{"app": "service1"}, service1IP)
+	s.AddDeploymentWithService("service2", []string{service2podIP}, map[string]string{"app": "service2"}, service2IP)
+	s.AddDeploymentWithService("service3", []string{service3podIP}, map[string]string{"app": "service3"}, service3IP)
+	s.AddPod("pod4", service4podIP, nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	packetTime := time.Now().Add(time.Minute)
@@ -184,32 +197,32 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 	_, err := test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
 		Results: []test_gql_client.RecordedDestinationsForSrc{
 			{
-				SrcIp: "1.1.2.1",
+				SrcIp: service1podIP,
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: "1.1.2.2",
+						Destination: service2IP,
 						LastSeen:    packetTime,
 					},
 				},
 			},
 			{
-				SrcIp: "1.1.2.3",
+				SrcIp: service3podIP,
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: "1.1.2.1",
+						Destination: service1IP,
 						LastSeen:    packetTime,
 					},
 					{
-						Destination: "1.1.2.2",
+						Destination: service2IP,
 						LastSeen:    packetTime,
 					},
 				},
 			},
 			{
-				SrcIp: "1.1.2.4",
+				SrcIp: service4podIP,
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: "1.1.2.2",
+						Destination: service2IP,
 						LastSeen:    packetTime,
 					},
 				},
@@ -223,7 +236,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
 		{
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
-				Name:      "service1",
+				Name:      "daemonset-service1",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -233,14 +246,15 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
+					Name:              "deployment-service2",
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
 				},
 			},
 		},
 		{
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
-				Name:      "service3",
+				Name:      "deployment-service3",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -250,12 +264,14 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
-					Name:      "service1",
-					Namespace: s.TestNamespace,
+					Name:              "daemonset-service1",
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service1",
 				},
 				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
+					Name:              "deployment-service2",
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
 				},
 			},
 		},
@@ -271,8 +287,9 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
-					Name:      "service2",
-					Namespace: s.TestNamespace,
+					Name:              "deployment-service2",
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
 				},
 			},
 		},
@@ -280,9 +297,9 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 }
 
 func (s *ResolverTestSuite) TestIntents() {
-	s.AddDeploymentWithService("service1", []string{"1.1.21.1"}, map[string]string{"app": "service1"})
-	s.AddDeploymentWithService("service2", []string{"1.1.21.2"}, map[string]string{"app": "service2"})
-	s.AddDaemonSetWithService("service3", []string{"1.1.21.3"}, map[string]string{"app": "service3"})
+	s.AddDeploymentWithService("service1", []string{"1.1.21.1"}, map[string]string{"app": "service1"}, "10.0.0.10")
+	s.AddDeploymentWithService("service2", []string{"1.1.21.2"}, map[string]string{"app": "service2"}, "10.0.0.11")
+	s.AddDaemonSetWithService("service3", []string{"1.1.21.3"}, map[string]string{"app": "service3"}, "10.0.0.12")
 	s.AddPod("pod4", "1.1.21.4", nil, nil)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
@@ -293,7 +310,7 @@ func (s *ResolverTestSuite) TestIntents() {
 				SrcIp: "1.1.21.1",
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -302,11 +319,11 @@ func (s *ResolverTestSuite) TestIntents() {
 				SrcIp: "1.1.21.3",
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -315,7 +332,7 @@ func (s *ResolverTestSuite) TestIntents() {
 				SrcIp: "1.1.21.4",
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -333,7 +350,7 @@ func (s *ResolverTestSuite) TestIntents() {
 	expectedIntents := []test_gql_client.IntentsIntentsIntent{
 		{
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
-				Name:      "service1",
+				Name:      "deployment-service1",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -342,18 +359,19 @@ func (s *ResolverTestSuite) TestIntents() {
 				},
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
-				Name:      "service2",
+				Name:      "deployment-service2",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
 					Kind:    "Deployment",
 					Version: "v1",
 				},
+				KubernetesService: "svc-service2",
 			},
 		},
 		{
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
-				Name:      "service3",
+				Name:      "daemonset-service3",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -362,17 +380,18 @@ func (s *ResolverTestSuite) TestIntents() {
 				},
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
-				Name:      "service1",
+				Name:      "deployment-service1",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
 					Kind:    "Deployment",
 					Version: "v1",
 				},
+				KubernetesService: "svc-service1",
 			},
 		}, {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
-				Name:      "service3",
+				Name:      "daemonset-service3",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -381,13 +400,14 @@ func (s *ResolverTestSuite) TestIntents() {
 				},
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
-				Name:      "service2",
+				Name:      "deployment-service2",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
 					Kind:    "Deployment",
 					Version: "v1",
 				},
+				KubernetesService: "svc-service2",
 			},
 		},
 		{
@@ -401,13 +421,14 @@ func (s *ResolverTestSuite) TestIntents() {
 				},
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
-				Name:      "service2",
+				Name:      "deployment-service2",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
 					Kind:    "Deployment",
 					Version: "v1",
 				},
+				KubernetesService: "svc-service2",
 			},
 		},
 	}
@@ -417,13 +438,13 @@ func (s *ResolverTestSuite) TestIntents() {
 func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 	service1Name := "service1"
 	service1IP := "1.1.18.1"
-	s.AddDeploymentWithService(service1Name, []string{service1IP}, map[string]string{"app": service1Name})
+	s.AddDeploymentWithService(service1Name, []string{service1IP}, map[string]string{"app": service1Name}, "10.0.0.13")
 	service2Name := "service2"
 	service2IP := "1.1.18.2"
-	s.AddDeploymentWithService(service2Name, []string{service2IP}, map[string]string{"app": service2Name})
+	s.AddDeploymentWithService(service2Name, []string{service2IP}, map[string]string{"app": service2Name}, "10.0.0.14")
 	service3Name := "service3"
 	service3IP := "1.1.18.3"
-	s.AddDaemonSetWithService(service3Name, []string{service3IP}, map[string]string{"app": service3Name})
+	s.AddDaemonSetWithService(service3Name, []string{service3IP}, map[string]string{"app": service3Name}, "10.0.0.15")
 	podServiceName := "pod4"
 	podIP := "1.1.18.4"
 	s.AddPod(podServiceName, podIP, nil, nil)
@@ -436,7 +457,7 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 				SrcIp: service1IP,
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -445,11 +466,11 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 				SrcIp: service3IP,
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service1.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -458,7 +479,7 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 				SrcIp: podIP,
 				Destinations: []test_gql_client.Destination{
 					{
-						Destination: fmt.Sprintf("service2.%s.svc.cluster.local", s.TestNamespace),
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
 						LastSeen:    packetTime,
 					},
 				},
@@ -469,7 +490,7 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 
 	logrus.Info("Waiting for report to be processed")
 	serverFilter := &test_gql_client.ServerFilter{
-		Name:      service1Name,
+		Name:      fmt.Sprintf("deployment-%s", service1Name),
 		Namespace: s.TestNamespace,
 	}
 	res, err := test_gql_client.Intents(context.Background(), s.client, []string{s.TestNamespace}, nil, nil, true, serverFilter)
@@ -480,7 +501,7 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 	expectedIntents := []test_gql_client.IntentsIntentsIntent{
 		{
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
-				Name:      service3Name,
+				Name:      fmt.Sprintf("daemonset-%s", service3Name),
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -489,17 +510,18 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 				},
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
-				Name:      service1Name,
+				Name:      fmt.Sprintf("deployment-%s", service1Name),
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
 					Kind:    "Deployment",
 					Version: "v1",
 				},
+				KubernetesService: "svc-service1",
 			},
 		}, {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
-				Name:      service3Name,
+				Name:      fmt.Sprintf("daemonset-%s", service3Name),
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
@@ -508,13 +530,14 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 				},
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
-				Name:      service2Name,
+				Name:      fmt.Sprintf("deployment-%s", service2Name),
 				Namespace: s.TestNamespace,
 				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
 					Group:   "apps",
 					Kind:    "Deployment",
 					Version: "v1",
 				},
+				KubernetesService: "svc-service2",
 			},
 		},
 	}
