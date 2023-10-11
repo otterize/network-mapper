@@ -2,17 +2,14 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
-	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type SourceType string
@@ -120,51 +117,5 @@ func (r *mutationResolver) handleSocketScanPod(ctx context.Context, srcSvcIdenti
 	)
 	updateTelemetriesCounters(SourceTypeSocketScan, intent)
 	prometheus.IncrementSocketScanReports(1)
-	return nil
-}
-
-func (r *mutationResolver) discoverIntentFromSocketScan(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, destIp model.Destination) {
-	err := r.discoverIntentFromService(ctx, srcSvcIdentity, destIp)
-	if err != nil {
-		return
-	}
-
-	r.discoverIntentFromPod(ctx, srcSvcIdentity, destIp)
-}
-
-func (r *mutationResolver) discoverIntentFromPod(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, destIp model.Destination) {
-	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destIp.Destination)
-	if err != nil {
-		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp.Destination)
-		} else {
-			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp.Destination)
-		}
-		return
-	}
-
-	err = r.handleSocketScanPod(ctx, srcSvcIdentity, destIp, destPod)
-	if err != nil {
-		logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", destIp.Destination)
-	}
-}
-
-func (r *mutationResolver) discoverIntentFromService(ctx context.Context, srcSvcIdentity *model.OtterizeServiceIdentity, destIp model.Destination) error {
-	destSvc, err := r.kubeFinder.ResolveIPToService(ctx, destIp.Destination)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			logrus.Debugf("IP %s is not backed by any service, ignoring", destIp.Destination)
-			return nil
-		}
-		logrus.WithError(err).Errorf("Could not resolve IP '%s' to service", destIp)
-		return err
-	}
-
-	err = r.handleSocketScanService(ctx, srcSvcIdentity, destIp, destSvc)
-	if err != nil {
-		logrus.WithError(err).Errorf("Failed to handle service '%s' in namespace '%s'", destSvc.Name, destSvc.Namespace)
-		return err
-	}
-
 	return nil
 }
