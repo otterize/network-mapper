@@ -42,13 +42,59 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Log in to the Container registry
-        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
-        uses: docker/login-action@v2
+      - name: Start minikube
+        uses: medyagh/setup-minikube@master
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          start-args: "--network-plugin=cni --cni=calico"
+
+      - name: Load images from GitHub Artifacts
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_mapper_${{ github.sha }}.tar
+
+      - name: Load Docker image
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        run: |-
+          docker image load -i mapper.tar
+          minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/mapper:${{ github.sha }}
+
+      - name: Load images from GitHub Artifacts
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_sniffer_${{ github.sha }}.tar
+
+      - name: Load Docker image
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        run: |-
+          docker image load -i sniffer.tar
+          minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/sniffer:${{ github.sha }}
+
+      - name: Load images from GitHub Artifacts
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_kafka-watcher_${{ github.sha }}.tar
+
+      - name: Load Docker image
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        run: |-
+          docker image load -i kafka-watcher.tar
+          minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/kafka-watcher:${{ github.sha }}
+
+      - name: Load images from GitHub Artifacts
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_istio-watcher_${{ github.sha }}.tar
+
+      - name: Load Docker image
+        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+        run: |-
+          docker image load -i istio-watcher.tar
+          minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/istio-watcher:${{ github.sha }}
+
 
       - name: Login to GCR
         if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
@@ -62,11 +108,6 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v3
 
-      - name: Start minikube
-        uses: medyagh/setup-minikube@master
-        with:
-          start-args: "--network-plugin=cni --cni=calico"
-
       - name: Wait for Calico startup
         run: |-
           kubectl wait pods -n kube-system -l k8s-app=calico-kube-controllers --for condition=Ready --timeout=90s
@@ -75,11 +116,6 @@ jobs:
 
       - name: Deploy Network Mapper
         run: |-
-          docker pull ${{ env.REGISTRY }}/${{ inputs.mapper-image }}:${{ inputs.mapper-tag }}
-          minikube image load ${{ env.REGISTRY }}/${{ inputs.mapper-image }}:${{ inputs.mapper-tag }}
-          docker pull ${{ env.REGISTRY }}/${{ inputs.sniffer-image }}:${{ inputs.sniffer-tag }}
-          minikube image load  ${{ env.REGISTRY }}/${{ inputs.sniffer-image }}:${{ inputs.sniffer-tag }}
-          
           MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=${{ inputs.mapper-image }} --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
           SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=${{ inputs.sniffer-image }} --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
           TELEMETRY_FLAG="--set global.telemetry.enabled=false"

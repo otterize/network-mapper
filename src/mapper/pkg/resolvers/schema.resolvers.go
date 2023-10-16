@@ -39,7 +39,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				// not a k8s service, ignore
 				continue
 			}
-			ips, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
+			ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 			if err != nil {
 				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
 				continue
@@ -48,7 +48,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", dest)
 				continue
 			}
-			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, ips[0])
+			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, ips[0])
 			if err != nil {
 				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
@@ -78,6 +78,9 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			if dstService.OwnerObject != nil {
 				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 			}
+			if serviceName != "" {
+				dstSvcIdentity.KubernetesService = lo.ToPtr(serviceName)
+			}
 
 			intent := model.Intent{
 				Client: srcSvcIdentity,
@@ -98,65 +101,45 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 }
 
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
-	var newResults int
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity := r.discoverSrcIdentity(ctx, socketScanItem)
 		if srcSvcIdentity == nil {
 			continue
 		}
-		for _, destIp := range socketScanItem.Destinations {
-			destPod, err := r.kubeFinder.ResolveIpToPod(ctx, destIp.Destination)
+		for _, dest := range socketScanItem.Destinations {
+			isService, err := r.tryHandleSocketScanDestinationAsService(ctx, srcSvcIdentity, dest)
 			if err != nil {
-				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIp)
-				} else {
-					logrus.WithError(err).Debugf("Could not resolve %s to pod", destIp)
-				}
+				logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
+				// Log error but don't stop handling other destinations.
 				continue
 			}
 
-			if destPod.DeletionTimestamp != nil {
-				logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
-				continue
+			if isService {
+				continue // No need to try to handle IP as Pod, since IP belonged to a service.
 			}
 
-			if destPod.CreationTimestamp.After(destIp.LastSeen) {
-				logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, destIp.LastSeen)
-				continue
-			}
-
-			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
 			if err != nil {
-				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
+				// Log error but don't stop handling other destinations.
 				continue
 			}
 
-			dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
-			if dstService.OwnerObject != nil {
-				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			err = r.addSocketScanPodIntent(ctx, srcSvcIdentity, dest, destPod)
+			if err != nil {
+				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", dest.Destination)
+				// Log error but don't stop handling other destinations.
+				continue
 			}
-
-			intent := model.Intent{
-				Client: srcSvcIdentity,
-				Server: dstSvcIdentity,
-			}
-
-			updateTelemetriesCounters(SourceTypeSocketScan, intent)
-			r.intentsHolder.AddIntent(
-				destIp.LastSeen,
-				intent,
-			)
-			newResults++
 		}
 	}
-	prometheus.IncrementSocketScanReports(newResults)
 	return true, nil
 }
 
 func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error) {
 	var newResults int
 	for _, result := range results.Results {
-		srcPod, err := r.kubeFinder.ResolveIpToPod(ctx, result.SrcIP)
+		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, result.SrcIP)
 		if err != nil {
 			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", result.SrcIP)

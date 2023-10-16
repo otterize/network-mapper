@@ -63,7 +63,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	kubeFinder, err := kubefinder.NewKubeFinder(mgr)
+	stopCtx := signals.SetupSignalHandler()
+
+	kubeFinder, err := kubefinder.NewKubeFinder(stopCtx, mgr)
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
@@ -71,7 +73,7 @@ func main() {
 
 	go func() {
 		logrus.Info("Starting operator manager")
-		if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+		if err := mgr.Start(stopCtx); err != nil {
 			logrus.Error(err, "unable to run manager")
 			os.Exit(1)
 

@@ -8,10 +8,12 @@ query ServiceIntents($namespaces: [String!]) {
                 kind
                 version
             }
+
         }
         intents {
             name
             namespace
+            kubernetesService
         }
     }
 }
@@ -48,6 +50,7 @@ query Intents(
                 kind
                 version
             }
+            kubernetesService
         }
     }
 }
