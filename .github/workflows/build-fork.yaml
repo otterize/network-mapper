@@ -63,13 +63,18 @@ jobs:
           context: src/
           file: build/${{ matrix.service }}.Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.actor }}/${{ matrix.service }}:${{ github.sha }}
-          push: true
           network: host
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          outputs: type=docker,dest=${{ matrix.service }}.tar
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             "VERSION=${{ github.run_id }}"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ${{ matrix.service }}.tar
+          name: ${{ env.REGISTRY }}/${{ github.actor }}/${{ matrix.service }}:${{ github.sha }}
 
   e2e-test:
     uses: ./.github/workflows/e2e-test.yaml
