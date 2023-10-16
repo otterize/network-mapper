@@ -50,13 +50,6 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Test & Build production image
         uses: docker/build-push-action@v2
         with:
