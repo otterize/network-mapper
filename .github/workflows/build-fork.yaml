@@ -67,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           path: ${{ matrix.service }}.tar
-          name: ${{ env.REGISTRY }}/${{ github.actor }}/${{ matrix.service }}:${{ github.sha }}
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_${{ matrix.service }}_${{ github.sha }}
 
   e2e-test:
     uses: ./.github/workflows/e2e-test.yaml
