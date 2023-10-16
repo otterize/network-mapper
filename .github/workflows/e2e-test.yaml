@@ -52,7 +52,6 @@ jobs:
       - name: Load Docker image
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         run: |-
-          ls -lR
           docker image load -i mapper.tar
           minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/mapper:${{ github.sha }}
 
