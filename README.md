@@ -7,6 +7,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/otterize/network-mapper/src)](https://goreportcard.com/report/github.com/otterize/network-mapper/src)
 [![community](https://img.shields.io/badge/slack-Otterize_Slack-purple.svg?logo=slack)](https://joinslack.otterize.com)
 
+
 * [About](#about)
 * [Try the network mapper](#try-the-network-mapper)
 * [Installation instructions](#installation-instructions)
