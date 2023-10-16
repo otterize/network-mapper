@@ -47,48 +47,49 @@ jobs:
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.REGISTRY }}_${{ github.actor }}_mapper_${{ github.sha }}
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_mapper_${{ github.sha }}.tar
 
       - name: Load Docker image
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         run: |-
-          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_mapper_${{ github.sha }}
+          ls -lR
+          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_mapper_${{ github.sha }}.tar
           minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/mapper:${{ github.sha }}
 
       - name: Load images from GitHub Artifacts
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.REGISTRY }}_${{ github.actor }}_sniffer_${{ github.sha }}
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_sniffer_${{ github.sha }}.tar
 
       - name: Load Docker image
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         run: |-
-          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_sniffer_${{ github.sha }}
+          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_sniffer_${{ github.sha }}.tar
           minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/sniffer:${{ github.sha }}
 
       - name: Load images from GitHub Artifacts
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.REGISTRY }}_${{ github.actor }}_kafka-watcher_${{ github.sha }}
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_kafka-watcher_${{ github.sha }}.tar
 
       - name: Load Docker image
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         run: |-
-          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_kafka-watcher_${{ github.sha }}
+          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_kafka-watcher_${{ github.sha }}.tar
           minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/kafka-watcher:${{ github.sha }}
 
       - name: Load images from GitHub Artifacts
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         uses: actions/download-artifact@v3
         with:
-          name: ${{ env.REGISTRY }}_${{ github.actor }}_istio-watcher_${{ github.sha }}
+          name: ${{ env.REGISTRY }}_${{ github.actor }}_istio-watcher_${{ github.sha }}.tar
 
       - name: Load Docker image
         if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
         run: |-
-          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_istio-watcher_${{ github.sha }}
+          docker image load -i ${{ env.REGISTRY }}_${{ github.actor }}_istio-watcher_${{ github.sha }}.tar
           minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/istio-watcher:${{ github.sha }}
 
 
