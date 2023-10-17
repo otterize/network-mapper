@@ -92,6 +92,17 @@ type Client {
 	secret: String!
 }
 
+type ClientIntentsFileRepresentation {
+	clientName: String!
+	rows: [ClientIntentsRow!]!
+	content: String!
+}
+
+type ClientIntentsRow {
+	text: String!
+	diff: RowDiff
+}
+
 type Cluster {
 	id: ID!
 	name: String!
@@ -727,6 +738,10 @@ type Query {
 	accessGraph(
 		filter: InputAccessGraphFilter
 	): AccessGraph!
+	serviceClientIntents(
+		id: ID!
+		lastSeenAfter: Time!
+	): ServiceClientIntents!
 """Get cluster"""
 	cluster(
 		id: ID!
@@ -807,6 +822,11 @@ type Query {
 		namespaceId: ID
 		name: String
 	): Service
+}
+
+enum RowDiff {
+	ADDED
+	REMOVED
 }
 
 type ServerBlockingStatus {
@@ -890,6 +910,11 @@ type ServiceAccessStatus {
 	protectionStatuses: ServerProtectionStatuses!
 	blockingStatus: ServerBlockingStatus!
 	hasAppliedIntents: Boolean!
+}
+
+type ServiceClientIntents {
+	asClient: [ClientIntentsFileRepresentation!]!
+	asServer: [ClientIntentsFileRepresentation!]!
 }
 
 scalar Time
