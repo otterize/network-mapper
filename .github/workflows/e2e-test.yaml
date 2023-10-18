@@ -104,6 +104,13 @@ jobs:
           username: _json_key_base64
           password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
 
+      - name: Load Docker images from GCR
+        if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
+        run: |-
+          docker pull ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}
+          minikube image load ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}
+          docker pull ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
+          minikube image load  ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
