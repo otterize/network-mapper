@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,6 +20,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/metricexporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
@@ -23,14 +30,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/metadata"
-	"net/http"
-	"os"
-	"os/signal"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
-	"syscall"
-	"time"
 )
 
 func getClusterDomainOrDefault() string {
@@ -119,12 +121,23 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to initialize cloud client")
 	}
+
+	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {
-		cloudUploaderConfig := clouduploader.ConfigFromViper()
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
-		go cloudUploader.PeriodicIntentsUpload(cloudClientCtx)
+		intentsHolder.RegisterGetCallback(cloudUploader.GetIntentCallback)
 		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
 	}
+
+	if viper.GetBool(config.OTelEnabledKey) {
+		otelExporter, err := metricexporter.NewMetricExporter(cloudClientCtx)
+		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
+		if err != nil {
+			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
+		}
+	}
+
+	go intentsHolder.PeriodicIntentsUpload(cloudClientCtx, cloudUploaderConfig.UploadInterval)
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)

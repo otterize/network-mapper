@@ -26,7 +26,6 @@ on:
         default: us-central1-docker.pkg.dev/main-383408/otterize
 
 
-
 env:
   REGISTRY: ${{ inputs.registry }}
 

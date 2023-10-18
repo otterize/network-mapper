@@ -2,13 +2,14 @@ package clouduploader
 
 import (
 	"context"
+	"time"
+
 	"github.com/cenkalti/backoff/v4"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type CloudUploader struct {
@@ -25,10 +26,10 @@ func NewCloudUploader(intentsHolder *intentsstore.IntentsHolder, config Config, 
 	}
 }
 
-func (c *CloudUploader) uploadDiscoveredIntents(ctx context.Context) {
+func (c *CloudUploader) GetIntentCallback(ctx context.Context, intents []intentsstore.TimestampedIntent) {
 	logrus.Info("Search for intents")
 
-	discoveredIntents := lo.Map(c.intentsHolder.GetNewIntentsSinceLastGet(), func(intent intentsstore.TimestampedIntent, _ int) *cloudclient.DiscoveredIntentInput {
+	discoveredIntents := lo.Map(intents, func(intent intentsstore.TimestampedIntent, _ int) *cloudclient.DiscoveredIntentInput {
 		return &cloudclient.DiscoveredIntentInput{
 			DiscoveredAt: lo.ToPtr(intent.Timestamp),
 			Intent: &cloudclient.IntentInput{
@@ -87,20 +88,6 @@ func (c *CloudUploader) reportStatus(ctx context.Context) {
 	err := c.client.ReportComponentStatus(ctx, cloudclient.ComponentTypeNetworkMapper)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report component status to cloud")
-	}
-}
-
-func (c *CloudUploader) PeriodicIntentsUpload(ctx context.Context) {
-	logrus.Info("Starting periodic intents upload")
-
-	for {
-		select {
-		case <-time.After(c.config.UploadInterval):
-			c.uploadDiscoveredIntents(ctx)
-
-		case <-ctx.Done():
-			return
-		}
 	}
 }
 
