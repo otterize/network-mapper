@@ -115,9 +115,9 @@ func main() {
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
 	resolver.Register(e)
 
-	cloudClientCtx, cloudClientCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cloudClientCancel()
-	cloudClient, cloudEnabled, err := cloudclient.NewClient(cloudClientCtx)
+	signalHandlerCtx, signalHandlerCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer signalHandlerCancel()
+	cloudClient, cloudEnabled, err := cloudclient.NewClient(signalHandlerCtx)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to initialize cloud client")
 	}
@@ -126,21 +126,23 @@ func main() {
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
 		intentsHolder.RegisterGetCallback(cloudUploader.GetIntentCallback)
-		go cloudUploader.PeriodicStatusReport(cloudClientCtx)
+		go cloudUploader.PeriodicStatusReport(signalHandlerCtx)
 	}
 
 	if viper.GetBool(config.OTelEnabledKey) {
-		otelExporter, err := metricexporter.NewMetricExporter(cloudClientCtx)
+		otelExporter, err := metricexporter.NewMetricExporter(signalHandlerCtx)
 		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
 		}
 	}
 
-	go intentsHolder.PeriodicIntentsUpload(cloudClientCtx, cloudUploaderConfig.UploadInterval)
+	go intentsHolder.PeriodicIntentsUpload(signalHandlerCtx, cloudUploaderConfig.UploadInterval)
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
+	telemetrysender.NetworkMapperRunActiveReporter(signalHandlerCtx)
+
 	logrus.Info("Starting api server")
 	err = e.Start("0.0.0.0:9090")
 	if err != nil {
