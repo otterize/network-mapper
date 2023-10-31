@@ -12,7 +12,7 @@ const (
 
 const (
 	KafkaLogReadModeKey          = "kafka-log-read-mode"
-	KafkaLogReadModeDefault      = FileReadMode
+	KafkaLogReadModeDefault      = KubernetesLogReadMode
 	KafkaServersKey              = "kafka-servers"
 	KafkaReportIntervalKey       = "kafka-report-interval"
 	KafkaReportIntervalDefault   = 10 * time.Second
