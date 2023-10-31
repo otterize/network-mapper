@@ -13,6 +13,11 @@ type CaptureResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
+type ClientFilter struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 type Destination struct {
 	Destination string    `json:"destination"`
 	LastSeen    time.Time `json:"lastSeen"`

@@ -93,6 +93,7 @@ type Client {
 }
 
 type ClientIntentsFileRepresentation {
+	clientServiceId: ID!
 	clientName: String!
 	rows: [ClientIntentsRow!]!
 	content: String!
@@ -101,6 +102,7 @@ type ClientIntentsFileRepresentation {
 type ClientIntentsRow {
 	text: String!
 	diff: RowDiff
+	calledServerId: ID
 }
 
 type Cluster {

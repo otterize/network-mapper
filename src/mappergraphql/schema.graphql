@@ -32,7 +32,7 @@ type GroupVersionKind {
 }
 
 type OtterizeServiceIdentity {
-    name: String!
+    name: String
     namespace: String!
     labels: [PodLabel!]
     """
@@ -130,6 +130,10 @@ input ServerFilter {
     name: String!
     namespace: String!
 }
+input ClientFilter{
+    name: String!
+    namespace: String!
+}
 
 type Query {
     """
@@ -154,6 +158,7 @@ type Query {
         excludeServiceWithLabels: [String!],
         includeAllLabels: Boolean,
         server: ServerFilter,
+        client: ClientFilter,
     ): [Intent!]!
 
     health: Boolean!

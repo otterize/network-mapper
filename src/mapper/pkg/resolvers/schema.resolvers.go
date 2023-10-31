@@ -264,7 +264,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
 	}
-	discoveredIntents, err := r.intentsHolder.GetIntents(namespaces, includeLabels, []string{}, shouldIncludeAllLabels, nil)
+	discoveredIntents, err := r.intentsHolder.GetIntents(namespaces, includeLabels, []string{}, shouldIncludeAllLabels, nil, nil)
 	if err != nil {
 		return []model.ServiceIntents{}, err
 	}
@@ -284,7 +284,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	return intentsBySource, nil
 }
 
-func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) ([]model.Intent, error) {
+func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter, client *model.ClientFilter) ([]model.Intent, error) {
 	shouldIncludeAllLabels := false
 	if includeAllLabels != nil && *includeAllLabels {
 		shouldIncludeAllLabels = true
@@ -296,6 +296,7 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 		excludeServiceWithLabels,
 		shouldIncludeAllLabels,
 		server,
+		client,
 	)
 	if err != nil {
 		return []model.Intent{}, err

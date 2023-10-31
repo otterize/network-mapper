@@ -213,6 +213,7 @@ func (i *IntentsHolder) GetIntents(
 	excludeServiceWithLabels []string,
 	includeAllLabels bool,
 	serverFilter *model.ServerFilter,
+	clientFilter *model.ClientFilter,
 ) ([]TimestampedIntent, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -223,7 +224,8 @@ func (i *IntentsHolder) GetIntents(
 		includeLabels,
 		excludeServiceWithLabels,
 		includeAllLabels,
-		serverFilter)
+		serverFilter,
+		clientFilter)
 
 	if err != nil {
 		return []TimestampedIntent{}, err
@@ -241,6 +243,7 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 		nil,
 		nil,
 		false,
+		nil,
 		nil)
 
 	i.sinceLastGetStore = make(IntentsStore)
@@ -252,6 +255,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 	namespaces, includeLabels, excludeServiceWithLabels []string,
 	includeAllLabels bool,
 	serverFilter *model.ServerFilter,
+	clientFilter *model.ClientFilter,
 ) ([]TimestampedIntent, error) {
 	namespacesSet := goset.FromSlice(namespaces)
 	includeLabelsSet := goset.FromSlice(includeLabels)
@@ -270,6 +274,11 @@ func (i *IntentsHolder) getIntentsFromStore(
 		targetedServerClients = getAllClientsCallingServer(serverFilter.Name, serverFilter.Namespace, store)
 	}
 
+	var targetedClientServers []types.NamespacedName
+	shouldFilterByClient := clientFilter != nil
+	if shouldFilterByClient {
+		targetedClientServers = getAllServerReceivingClient(clientFilter.Name, clientFilter.Namespace, store)
+	}
 	for pair, intent := range store {
 		intentCopy, err := getIntentDeepCopy(intent)
 		if err != nil {
@@ -297,7 +306,9 @@ func (i *IntentsHolder) getIntentsFromStore(
 		if shouldFilterByServer && !slices.Contains(targetedServerClients, pair.Source) {
 			continue
 		}
-
+		if shouldFilterByClient && !slices.Contains(targetedClientServers, pair.Destination) {
+			continue
+		}
 		result = append(result, intent)
 	}
 
@@ -317,6 +328,17 @@ func getAllClientsCallingServer(serverName string, serverNamespace string, store
 		}
 	}
 	return targetedServerClients
+}
+
+func getAllServerReceivingClient(clientName string, clientNameSpace string, store IntentsStore) []types.NamespacedName {
+
+	targetedClientServers := make([]types.NamespacedName, 0)
+	for pair := range store {
+		if pair.Source.Name == clientName && pair.Source.Namespace == clientNameSpace {
+			targetedClientServers = append(targetedClientServers, pair.Destination)
+		}
+	}
+	return targetedClientServers
 }
 
 func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {

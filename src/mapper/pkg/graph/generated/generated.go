@@ -91,7 +91,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Health         func(childComplexity int) int
-		Intents        func(childComplexity int, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) int
+		Intents        func(childComplexity int, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter, client *model.ClientFilter) int
 		ServiceIntents func(childComplexity int, namespaces []string, includeLabels []string, includeAllLabels *bool) int
 	}
 
@@ -110,7 +110,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
-	Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter) ([]model.Intent, error)
+	Intents(ctx context.Context, namespaces []string, includeLabels []string, excludeServiceWithLabels []string, includeAllLabels *bool, server *model.ServerFilter, client *model.ClientFilter) ([]model.Intent, error)
 	Health(ctx context.Context) (bool, error)
 }
 
@@ -334,7 +334,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["server"].(*model.ServerFilter)), true
+		return e.complexity.Query.Intents(childComplexity, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["server"].(*model.ServerFilter), args["client"].(*model.ClientFilter)), true
 
 	case "Query.serviceIntents":
 		if e.complexity.Query.ServiceIntents == nil {
@@ -558,6 +558,10 @@ input ServerFilter {
     name: String!
     namespace: String!
 }
+input ClientFilter{
+    name: String!
+    namespace: String!
+}
 
 type Query {
     """
@@ -582,6 +586,7 @@ type Query {
         excludeServiceWithLabels: [String!],
         includeAllLabels: Boolean,
         server: ServerFilter,
+        client: ClientFilter,
     ): [Intent!]!
 
     health: Boolean!
@@ -724,6 +729,15 @@ func (ec *executionContext) field_Query_intents_args(ctx context.Context, rawArg
 		}
 	}
 	args["server"] = arg4
+	var arg5 *model.ClientFilter
+	if tmp, ok := rawArgs["client"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("client"))
+		arg5, err = ec.unmarshalOClientFilter2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐClientFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["client"] = arg5
 	return args, nil
 }
 
@@ -1706,7 +1720,7 @@ func (ec *executionContext) _Query_intents(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["server"].(*model.ServerFilter))
+		return ec.resolvers.Query().Intents(rctx, args["namespaces"].([]string), args["includeLabels"].([]string), args["excludeServiceWithLabels"].([]string), args["includeAllLabels"].(*bool), args["server"].(*model.ServerFilter), args["client"].(*model.ClientFilter))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3099,6 +3113,37 @@ func (ec *executionContext) unmarshalInputCaptureResults(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
 			it.Results, err = ec.unmarshalNRecordedDestinationsForSrc2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐRecordedDestinationsForSrcᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputClientFilter(ctx context.Context, obj interface{}) (model.ClientFilter, error) {
+	var it model.ClientFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			it.Namespace, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5043,6 +5088,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOClientFilter2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐClientFilter(ctx context.Context, v interface{}) (*model.ClientFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputClientFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOGroupVersionKind2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐGroupVersionKind(ctx context.Context, sel ast.SelectionSet, v *model.GroupVersionKind) graphql.Marshaler {
