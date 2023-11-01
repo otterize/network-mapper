@@ -32,7 +32,7 @@ type GroupVersionKind {
 }
 
 type OtterizeServiceIdentity {
-    name: String
+    name: String!
     namespace: String!
     labels: [PodLabel!]
     """
