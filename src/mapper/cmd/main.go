@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/labstack/echo-contrib/echoprometheus"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -99,13 +100,13 @@ func main() {
 	telemetrysender.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
 
 	// start API server
-	e := echo.New()
-	e.GET("/healthz", func(c echo.Context) error {
+	mapperServer := echo.New()
+	mapperServer.GET("/healthz", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
-	e.Use(middleware.Logger())
-	e.Use(middleware.CORS())
-	e.Use(middleware.RemoveTrailingSlash())
+	mapperServer.Use(middleware.Logger())
+	mapperServer.Use(middleware.CORS())
+	mapperServer.Use(middleware.RemoveTrailingSlash())
 	initCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
@@ -113,11 +114,14 @@ func main() {
 	intentsHolder := intentsstore.NewIntentsHolder()
 
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
-	resolver.Register(e)
+	resolver.Register(mapperServer)
 
-	signalHandlerCtx, signalHandlerCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer signalHandlerCancel()
-	cloudClient, cloudEnabled, err := cloudclient.NewClient(signalHandlerCtx)
+	metricsServer := echo.New()
+
+	metricsServer.GET("/metrics", echoprometheus.NewHandler())
+
+	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to initialize cloud client")
 	}
@@ -126,28 +130,33 @@ func main() {
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
 		intentsHolder.RegisterGetCallback(cloudUploader.GetIntentCallback)
-		go cloudUploader.PeriodicStatusReport(signalHandlerCtx)
+		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 	}
 
 	if viper.GetBool(config.OTelEnabledKey) {
-		otelExporter, err := metricexporter.NewMetricExporter(signalHandlerCtx)
+		otelExporter, err := metricexporter.NewMetricExporter(errGroupCtx)
 		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
 		}
 	}
 
-	go intentsHolder.PeriodicIntentsUpload(signalHandlerCtx, cloudUploaderConfig.UploadInterval)
+	go intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
-	telemetrysender.NetworkMapperRunActiveReporter(signalHandlerCtx)
+	telemetrysender.NetworkMapperRunActiveReporter(errGroupCtx)
 
-	logrus.Info("Starting api server")
-	err = e.Start("0.0.0.0:9090")
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+	errgrp.Go(func() error {
+		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
+	})
+	errgrp.Go(func() error {
+		return mapperServer.Start(":9090")
+	})
+
+	err = errgrp.Wait()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		logrus.WithError(err).Fatal("Error when running server or HTTP server")
 	}
 
 }
