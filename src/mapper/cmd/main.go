@@ -64,22 +64,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	stopCtx := signals.SetupSignalHandler()
-
-	kubeFinder, err := kubefinder.NewKubeFinder(stopCtx, mgr)
+	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+	kubeFinder, err := kubefinder.NewKubeFinder(errGroupCtx, mgr)
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
 	}
 
-	go func() {
+	errgrp.Go(func() error {
 		logrus.Info("Starting operator manager")
-		if err := mgr.Start(stopCtx); err != nil {
+		if err := mgr.Start(errGroupCtx); err != nil {
 			logrus.Error(err, "unable to run manager")
-			os.Exit(1)
-
+			return err
 		}
-	}()
+		return nil
+	})
 
 	metadataClient, err := metadata.NewForConfig(clientconfig.GetConfigOrDie())
 	if err != nil {
@@ -120,7 +119,6 @@ func main() {
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 
-	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to initialize cloud client")
