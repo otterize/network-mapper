@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
@@ -13,14 +14,20 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"time"
 )
 
 func main() {
+	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+	logrus.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339,
+	})
+	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	istioWatcher, err := istiowatcher.NewWatcher(mapperClient)

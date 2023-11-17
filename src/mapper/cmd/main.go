@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
+	"github.com/neko-neko/echo-logrus/v2/log"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
@@ -31,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/metadata"
+	ctrl "sigs.k8s.io/controller-runtime"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
@@ -48,14 +51,22 @@ func getClusterDomainOrDefault() string {
 }
 
 func main() {
-	if viper.GetBool(sharedconfig.DebugKey) {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-
 	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)
 	}
+	mapperServer := echo.New()
+
+	logrus.SetLevel(logrus.InfoLevel)
+	if viper.GetBool(sharedconfig.DebugKey) {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+	logrus.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339,
+	})
+	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+	log.Logger().Logger = logrus.StandardLogger()
+	mapperServer.Use(middleware.Logger())
 
 	// start manager with operators
 	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{MetricsBindAddress: "0"})
@@ -99,7 +110,6 @@ func main() {
 	telemetrysender.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
 
 	// start API server
-	mapperServer := echo.New()
 	mapperServer.GET("/healthz", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
@@ -116,7 +126,6 @@ func main() {
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
-
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 
 	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)

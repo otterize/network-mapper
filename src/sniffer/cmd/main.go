@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"time"
 
@@ -19,9 +21,18 @@ import (
 )
 
 func main() {
+	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+	if viper.GetBool(sharedconfig.DebugKey) {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+	logrus.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339,
+	})
+	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
 	healthServer := echo.New()
