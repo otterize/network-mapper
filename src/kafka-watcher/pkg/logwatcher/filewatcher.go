@@ -38,7 +38,7 @@ func (w *LogFileWatcher) RunForever(ctx context.Context) error {
 	go w.watchForever(ctx)
 
 	for {
-		time.Sleep(viper.GetDuration(config.KafkaCooldownIntervalKey))
+		time.Sleep(viper.GetDuration(config.KafkaReportIntervalKey))
 
 		if err := w.reportResults(ctx); err != nil {
 			logrus.WithError(err).Errorf("Failed reporting watcher results to mapper")
