@@ -62,6 +62,8 @@ func intentInput(clientName string, namespace string, serverName string, serverN
 		ServerName:      nilIfEmpty(serverName),
 		Namespace:       nilIfEmpty(namespace),
 		ServerNamespace: nilIfEmpty(serverNamespace),
+		Topics:          []*cloudclient.KafkaConfigInput{},
+		Resources:       []*cloudclient.HTTPConfigInput{},
 	}
 }
 
@@ -85,6 +87,84 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 	}
 
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents2)).Return(nil).Times(1)
+
+	s.cloudUploader.GetIntentCallback(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
+}
+
+func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
+	discoveredProduce := model.Intent{
+		Client: &model.OtterizeServiceIdentity{Name: "client1", Namespace: s.testNamespace},
+		Server: &model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace},
+		Type:   lo.ToPtr(model.IntentTypeKafka),
+		KafkaTopics: []model.KafkaConfig{
+			{
+				Name:       "my-topic",
+				Operations: []model.KafkaOperation{model.KafkaOperationProduce},
+			},
+		},
+	}
+
+	s.intentsHolder.AddIntent(testTimestamp, discoveredProduce)
+
+	discoveredConsume := model.Intent{
+		Client: &model.OtterizeServiceIdentity{Name: "client1", Namespace: s.testNamespace},
+		Server: &model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace},
+		Type:   lo.ToPtr(model.IntentTypeKafka),
+		KafkaTopics: []model.KafkaConfig{
+			{
+				Name:       "my-topic",
+				Operations: []model.KafkaOperation{model.KafkaOperationConsume},
+			},
+		},
+		HTTPResources: []model.HTTPResource{},
+	}
+
+	s.intentsHolder.AddIntent(testTimestamp, discoveredConsume)
+	cloudIntent := []cloudclient.IntentInput{
+		{
+			ClientName:      lo.ToPtr("client1"),
+			ServerName:      lo.ToPtr("server1"),
+			Namespace:       lo.ToPtr(s.testNamespace),
+			ServerNamespace: lo.ToPtr(s.testNamespace),
+			Type:            lo.ToPtr(cloudclient.IntentTypeKafka),
+			Topics: []*cloudclient.KafkaConfigInput{
+				{
+					Name: lo.ToPtr("my-topic"),
+					Operations: []*cloudclient.KafkaOperation{
+						lo.ToPtr(cloudclient.KafkaOperationConsume),
+						lo.ToPtr(cloudclient.KafkaOperationProduce),
+					},
+				},
+			},
+			Resources: []*cloudclient.HTTPConfigInput{},
+		},
+	}
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(cloudIntent)).Return(nil).Times(1)
+
+	s.cloudUploader.GetIntentCallback(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
+
+	newTimestamp := testTimestamp.Add(time.Hour)
+	s.intentsHolder.AddIntent(newTimestamp, discoveredProduce)
+
+	produceOnly := []cloudclient.IntentInput{
+		{
+			ClientName:      lo.ToPtr("client1"),
+			ServerName:      lo.ToPtr("server1"),
+			Namespace:       lo.ToPtr(s.testNamespace),
+			ServerNamespace: lo.ToPtr(s.testNamespace),
+			Type:            lo.ToPtr(cloudclient.IntentTypeKafka),
+			Topics: []*cloudclient.KafkaConfigInput{
+				{
+					Name: lo.ToPtr("my-topic"),
+					Operations: []*cloudclient.KafkaOperation{
+						lo.ToPtr(cloudclient.KafkaOperationProduce),
+					},
+				},
+			},
+			Resources: []*cloudclient.HTTPConfigInput{},
+		},
+	}
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(produceOnly)).Return(nil).Times(1)
 
 	s.cloudUploader.GetIntentCallback(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
 }
