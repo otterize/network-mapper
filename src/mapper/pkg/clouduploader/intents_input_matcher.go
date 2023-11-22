@@ -2,7 +2,10 @@ package clouduploader
 
 import (
 	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	"golang.org/x/exp/constraints"
+	"sort"
 )
 
 // IntentsMatcher Implement gomock.Matcher interface for []cloudclient.IntentInput
@@ -10,15 +13,92 @@ type IntentsMatcher struct {
 	expected []cloudclient.IntentInput
 }
 
-func NilCompare[T comparable](a *T, b *T) bool {
-	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
+func NilCompare[T constraints.Ordered](a *T, b *T) int {
+	if a == nil && b == nil {
+		return 0
+	}
+	if a == nil {
+		return -1
+	}
+	if b == nil {
+		return 1
+	}
+	if *a > *b {
+		return 1
+	}
+	if *a < *b {
+		return -1
+	}
+	return 0
 }
 
-func compareIntentInput(a cloudclient.IntentInput, b cloudclient.IntentInput) bool {
-	return NilCompare(a.ClientName, b.ClientName) &&
-		NilCompare(a.Namespace, b.Namespace) &&
-		NilCompare(a.ServerName, b.ServerName) &&
-		NilCompare(a.ServerNamespace, b.ServerNamespace)
+func sortIntentInput(intents []cloudclient.IntentInput) {
+	for _, intent := range intents {
+		if intent.Type == nil {
+			continue
+		}
+
+		switch *intent.Type {
+		case cloudclient.IntentTypeKafka:
+			for _, topic := range intent.Topics {
+				sort.Slice(topic.Operations, func(i, j int) bool {
+					return NilCompare(topic.Operations[i], topic.Operations[j]) < 0
+				})
+			}
+			sort.Slice(intent.Topics, func(i, j int) bool {
+				res := NilCompare(intent.Topics[i].Name, intent.Topics[j].Name)
+				if res != 0 {
+					return res < 0
+				}
+
+				return len(intent.Topics[i].Operations) < len(intent.Topics[j].Operations)
+			})
+		case cloudclient.IntentTypeHttp:
+			for _, resource := range intent.Resources {
+				sort.Slice(resource.Methods, func(i, j int) bool {
+					return NilCompare(resource.Methods[i], resource.Methods[j]) < 0
+				})
+			}
+			sort.Slice(intent.Resources, func(i, j int) bool {
+				res := NilCompare(intent.Resources[i].Path, intent.Resources[j].Path)
+				if res != 0 {
+					return res < 0
+				}
+
+				return len(intent.Resources[i].Methods) < len(intent.Resources[j].Methods)
+			})
+		}
+	}
+	sort.Slice(intents, func(i, j int) bool {
+		res := NilCompare(intents[i].Namespace, intents[j].Namespace)
+		if res != 0 {
+			return res < 0
+		}
+		res = NilCompare(intents[i].ClientName, intents[j].ClientName)
+		if res != 0 {
+			return res < 0
+		}
+		res = NilCompare(intents[i].ServerName, intents[j].ServerName)
+		if res != 0 {
+			return res < 0
+		}
+		res = NilCompare(intents[i].ServerNamespace, intents[j].ServerNamespace)
+		if res != 0 {
+			return res < 0
+		}
+		res = NilCompare(intents[i].Type, intents[j].Type)
+		if res != 0 {
+			return res < 0
+		}
+		switch *intents[i].Type {
+		case cloudclient.IntentTypeKafka:
+			return len(intents[i].Topics) < len(intents[j].Topics)
+		case cloudclient.IntentTypeHttp:
+			return len(intents[i].Resources) < len(intents[j].Resources)
+		default:
+			panic("Unimplemented intent type")
+		}
+	})
 }
 
 func (m IntentsMatcher) Matches(x interface{}) bool {
@@ -36,19 +116,14 @@ func (m IntentsMatcher) Matches(x interface{}) bool {
 		return false
 	}
 
-	for _, expected := range expectedIntents {
-		found := false
-		for _, actual := range actualIntents {
-			if compareIntentInput(actual, expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
+	sortIntentInput(actualIntents)
+	sortIntentInput(expectedIntents)
+
+	diff := cmp.Diff(expectedIntents, actualIntents)
+	if diff != "" {
+		fmt.Println(diff)
 	}
-	return true
+	return cmp.Equal(expectedIntents, actualIntents)
 }
 
 func discoveredIntentsPtrToIntents(actualDiscoveredIntents []*cloudclient.DiscoveredIntentInput) []cloudclient.IntentInput {
