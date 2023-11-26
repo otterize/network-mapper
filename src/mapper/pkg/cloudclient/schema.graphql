@@ -73,13 +73,49 @@ enum ApiMethod {
 	DELETE
 }
 
-input CertificateCustomization {
-	dnsNames: [String!]
-	ttl: Int
+type AWSGeneralResource {
+	resource: String!
+	isWildcard: Boolean!
 }
 
 """The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
 scalar String
+
+type AWSInfo {
+	region: String!
+	namespace: String!
+	eksClusterName: String!
+	awsAccountId: String!
+}
+
+input AWSInfoInput {
+	clusterId: ID!
+	region: String!
+	namespace: String!
+	eksClusterName: String!
+	awsAccountId: String!
+}
+
+type AWSResource {
+	type: AWSResourceType!
+	info: AWSResourceInfo!
+}
+
+union AWSResourceInfo =AWSS3Resource | AWSGeneralResource
+
+enum AWSResourceType {
+	GENERAL
+	S3
+}
+
+type AWSS3Resource {
+	bucketName: String!
+}
+
+input CertificateCustomization {
+	dnsNames: [String!]
+	ttl: Int
+}
 
 type CertificateInformation {
 	commonName: String!
@@ -87,13 +123,15 @@ type CertificateInformation {
 	ttl: Int
 }
 
-type Client {
-	id: ID!
-	secret: String!
+enum CertificateProvider {
+	SPIRE
+	CERT_MANAGER
+	CLOUD
+	NONE
 }
 
 type ClientIntentsFileRepresentation {
-	clientName: String!
+	service: Service!
 	rows: [ClientIntentsRow!]!
 	content: String!
 }
@@ -101,6 +139,7 @@ type ClientIntentsFileRepresentation {
 type ClientIntentsRow {
 	text: String!
 	diff: RowDiff
+	calledServerId: ID
 }
 
 type Cluster {
@@ -110,6 +149,7 @@ type Cluster {
 	namespaces: [Namespace!]!
 	serviceCount: Int!
 	integration: Integration
+	integrations: [Integration!]!
 	defaultEnvironment: Environment
 	components: IntegrationComponents!
 	createdAt: Time!
@@ -121,6 +161,7 @@ type ClusterConfiguration {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
 	useKafkaACLsInAccessGraphStates: Boolean!
+	clusterFormSettings: ClusterFormSettings!
 }
 
 input ClusterConfigurationInput {
@@ -129,6 +170,17 @@ input ClusterConfigurationInput {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean
 	useKafkaACLsInAccessGraphStates: Boolean
+	clusterFormSettings: ClusterFormSettingsInput
+}
+
+type ClusterFormSettings {
+	certificateProvider: CertificateProvider!
+	enforcement: Boolean!
+}
+
+input ClusterFormSettingsInput {
+	certificateProvider: CertificateProvider!
+	enforcement: Boolean!
 }
 
 type ComponentStatus {
@@ -172,11 +224,6 @@ input DatabaseConfigInput {
 	operations: [DatabaseOperation!]!
 }
 
-type DatabaseCredentials {
-	username: String!
-	password: String!
-}
-
 input DatabaseCredentialsInput {
 	username: String!
 	password: String!
@@ -185,7 +232,7 @@ input DatabaseCredentialsInput {
 type DatabaseInfo {
 	name: String!
 	address: String!
-	databaseType: DatabaseType
+	databaseType: DatabaseType!
 }
 
 input DatabaseInfoInput {
@@ -311,6 +358,7 @@ type Integration {
 	defaultEnvironment: Environment
 	cluster: Cluster
 	databaseInfo: DatabaseInfo
+	awsInfo: AWSInfo
 }
 
 type IntegrationComponents {
@@ -328,6 +376,7 @@ enum IntegrationType {
 	GENERIC
 	KUBERNETES
 	DATABASE
+	AWS
 }
 
 type Intent {
@@ -338,6 +387,7 @@ type Intent {
 	kafkaTopics: [KafkaConfig!]
 	httpResources: [HTTPConfig!]
 	databaseResources: [DatabaseConfig!]
+	awsActions: [String!]
 	status: IntentStatus
 }
 
@@ -350,6 +400,7 @@ input IntentInput {
 	topics: [KafkaConfigInput!]
 	resources: [HTTPConfigInput!]
 	databaseResources: [DatabaseConfigInput!]
+	awsActions: [String!]
 	status: IntentStatusInput
 }
 
@@ -391,6 +442,8 @@ enum IntentType {
 	HTTP
 	KAFKA
 	DATABASE
+	AWS
+	S3
 }
 
 type Invite {
@@ -509,41 +562,6 @@ type MeMutation {
 type Mutation {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
-"""Create client"""
-	createClient: Client!
-"""Delete client"""
-	deleteClient(
-		id: ID!
-	): ID!
-"""Create user invite"""
-	createInvite(
-		email: String!
-	): Invite!
-"""Delete user invite"""
-	deleteInvite(
-		id: ID!
-	): ID!
-"""Accept user invite"""
-	acceptInvite(
-		id: ID!
-	): Invite!
-"""Operate on the current logged-in user"""
-	me: MeMutation!
-"""Create a new organization"""
-	createOrganization(
-		name: String
-	): Organization!
-"""Update organization"""
-	updateOrganization(
-		id: ID!
-		name: String
-		imageURL: String
-	): Organization!
-"""Remove user from organization"""
-	removeUserFromOrganization(
-		id: ID!
-		userId: ID!
-	): ID!
 """Register certificate-request details for kubernetes pod owner, returns the service associated with this pod owner"""
 	registerKubernetesPodOwnerCertificateRequest(
 		podOwner: NamespacedPodOwner!
@@ -567,9 +585,6 @@ type Mutation {
 		name: String
 		configuration: ClusterConfigurationInput
 	): Cluster!
-	initializeOrganizationCAs(
-		organizationId: ID!
-	): Boolean!
 """Create a new environment"""
 	createEnvironment(
 		name: String!
@@ -612,6 +627,18 @@ type Mutation {
 		environmentId: ID
 		clusterId: ID!
 	): Integration
+"""Create a new AWS integration"""
+	createAWSIntegration(
+		name: String!
+		awsIntegration: AWSInfoInput!
+	): Integration
+"""Update AWS integration"""
+	updateAWSIntegration(
+		id: ID!
+		name: String
+		environmentId: ID
+		awsIntegration: AWSInfoInput
+	): Integration
 """Update Generic integration"""
 	updateGenericIntegration(
 		id: ID!
@@ -648,15 +675,44 @@ type Mutation {
 		namespace: String!
 		policies: [NetworkPolicyInput!]!
 	): Boolean!
+"""Create user invite"""
+	createInvite(
+		email: String!
+	): Invite!
+"""Delete user invite"""
+	deleteInvite(
+		id: ID!
+	): ID!
+"""Accept user invite"""
+	acceptInvite(
+		id: ID!
+	): Invite!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
 	): Boolean!
+"""Operate on the current logged-in user"""
+	me: MeMutation!
 """Associate namespace to environment"""
 	associateNamespaceToEnv(
 		id: ID!
 		environmentId: ID
 	): Namespace!
+"""Create a new organization"""
+	createOrganization(
+		name: String
+	): Organization!
+"""Update organization"""
+	updateOrganization(
+		id: ID!
+		name: String
+		imageURL: String
+	): Organization!
+"""Remove user from organization"""
+	removeUserFromOrganization(
+		id: ID!
+		userId: ID!
+	): ID!
 	reportProtectedServicesSnapshot(
 		namespace: String!
 		services: [ProtectedServiceInput!]!
@@ -702,38 +758,6 @@ input ProtectedServiceInput {
 type Query {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
-"""Get client"""
-	client(
-		id: ID!
-	): Client!
-"""List user invites"""
-	invites(
-		email: String
-		status: InviteStatus
-	): [Invite!]!
-"""Get user invite"""
-	invite(
-		id: ID!
-	): Invite!
-"""Get one user invite"""
-	oneInvite(
-		email: String
-		status: InviteStatus
-	): Invite!
-"""Get information regarding the current logged-in user"""
-	me: Me!
-"""List organizations"""
-	organizations: [Organization!]!
-"""Get organization"""
-	organization(
-		id: ID!
-	): Organization!
-"""List users"""
-	users: [User!]!
-"""Get user"""
-	user(
-		id: ID!
-	): User!
 """Get access graph"""
 	accessGraph(
 		filter: InputAccessGraphFilter
@@ -754,11 +778,10 @@ type Query {
 	oneCluster(
 		name: String!
 	): Cluster
-	serviceDatabaseCredentials(
-		databaseName: String!
+	serviceUserAndPassword(
 		service: String!
 		namespace: String!
-	): DatabaseCredentials!
+	): UserAndPassword!
 """Get environment"""
 	environment(
 		id: ID!
@@ -790,6 +813,22 @@ type Query {
 		clusterId: ID
 		name: String
 	): Integration!
+"""List user invites"""
+	invites(
+		email: String
+		status: InviteStatus
+	): [Invite!]!
+"""Get user invite"""
+	invite(
+		id: ID!
+	): Invite!
+"""Get one user invite"""
+	oneInvite(
+		email: String
+		status: InviteStatus
+	): Invite!
+"""Get information regarding the current logged-in user"""
+	me: Me!
 """Get namespace"""
 	namespace(
 		id: ID!
@@ -806,6 +845,12 @@ type Query {
 		clusterId: ID
 		name: String
 	): Namespace!
+"""List organizations"""
+	organizations: [Organization!]!
+"""Get organization"""
+	organization(
+		id: ID!
+	): Organization!
 """Get service"""
 	service(
 		id: ID!
@@ -822,6 +867,12 @@ type Query {
 		namespaceId: ID
 		name: String
 	): Service
+"""List users"""
+	users: [User!]!
+"""Get user"""
+	user(
+		id: ID!
+	): User!
 }
 
 enum RowDiff {
@@ -875,6 +926,8 @@ enum ServerProtectionStatusReason {
 	SERVER_HAS_KAFKASERVERCONFIG_NO_ENFORCEMENT
 	SERVER_HAS_NO_KAFKA_SERVER_CONFIG
 	IGNORED_IN_CALCULATION
+	PROTECTED_BY_DATABASE_INTEGRATION
+	PROTECTED_BY_AWS_IAM_INTEGRATION
 }
 
 enum ServerProtectionStatusVerdict {
@@ -892,11 +945,13 @@ type Service {
 	kafkaServerConfig: KafkaServerConfig
 	certificateInformation: CertificateInformation
 	serviceAccount: String
+	awsResource: AWSResource
 	tlsKeyPair: KeyPair!
 }
 
 type ServiceAccessGraph {
 	service: Service!
+	types: [ServiceType!]!
 	accessStatus: ServiceAccessStatus!
 	calls: [AccessGraphEdge!]!
 	serves: [AccessGraphEdge!]!
@@ -917,6 +972,13 @@ type ServiceClientIntents {
 	asServer: [ClientIntentsFileRepresentation!]!
 }
 
+enum ServiceType {
+	KUBERNETES
+	KAFKA
+	AWS
+	DATABASE
+}
+
 scalar Time
 
 type User {
@@ -925,6 +987,21 @@ type User {
 	name: String!
 	imageURL: String!
 	authProviderUserId: String!
+}
+
+type UserAndPassword {
+	username: String!
+	password: String!
+}
+
+enum UserErrorType {
+	UNAUTHENTICATED
+	NOT_FOUND
+	INTERNAL_SERVER_ERROR
+	BAD_REQUEST
+	FORBIDDEN
+	CONFLICT
+	BAD_USER_INPUT
 }
 
 
