@@ -83,6 +83,7 @@ type IntentInput struct {
 	Topics            []*KafkaConfigInput    `json:"topics"`
 	Resources         []*HTTPConfigInput     `json:"resources"`
 	DatabaseResources []*DatabaseConfigInput `json:"databaseResources"`
+	AwsActions        []*string              `json:"awsActions"`
 	Status            *IntentStatusInput     `json:"status"`
 }
 
@@ -110,6 +111,9 @@ func (v *IntentInput) GetResources() []*HTTPConfigInput { return v.Resources }
 // GetDatabaseResources returns IntentInput.DatabaseResources, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetDatabaseResources() []*DatabaseConfigInput { return v.DatabaseResources }
 
+// GetAwsActions returns IntentInput.AwsActions, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetAwsActions() []*string { return v.AwsActions }
+
 // GetStatus returns IntentInput.Status, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetStatus() *IntentStatusInput { return v.Status }
 
@@ -126,6 +130,8 @@ const (
 	IntentTypeHttp     IntentType = "HTTP"
 	IntentTypeKafka    IntentType = "KAFKA"
 	IntentTypeDatabase IntentType = "DATABASE"
+	IntentTypeAws      IntentType = "AWS"
+	IntentTypeS3       IntentType = "S3"
 )
 
 type IstioStatusInput struct {
