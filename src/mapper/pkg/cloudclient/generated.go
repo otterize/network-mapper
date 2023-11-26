@@ -18,9 +18,13 @@ const (
 )
 
 type DatabaseConfigInput struct {
+	Dbname     *string              `json:"dbname"`
 	Table      *string              `json:"table"`
 	Operations []*DatabaseOperation `json:"operations"`
 }
+
+// GetDbname returns DatabaseConfigInput.Dbname, and is useful for accessing the field via an interface.
+func (v *DatabaseConfigInput) GetDbname() *string { return v.Dbname }
 
 // GetTable returns DatabaseConfigInput.Table, and is useful for accessing the field via an interface.
 func (v *DatabaseConfigInput) GetTable() *string { return v.Table }

@@ -17,12 +17,16 @@ type CaptureResults struct {
 func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 type Destination struct {
-	Destination string    `json:"destination"`
-	LastSeen    time.Time `json:"lastSeen"`
+	Destination   string    `json:"destination"`
+	DestinationIP string    `json:"destinationIP"`
+	LastSeen      time.Time `json:"lastSeen"`
 }
 
 // GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
 func (v *Destination) GetDestination() string { return v.Destination }
+
+// GetDestinationIP returns Destination.DestinationIP, and is useful for accessing the field via an interface.
+func (v *Destination) GetDestinationIP() string { return v.DestinationIP }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }

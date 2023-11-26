@@ -431,6 +431,8 @@ var sources = []*ast.Source{
 input Destination {
     # Could be either IP addr or hostname
     destination: String!
+    # If destination is a hostname, this _may_ be the IP it resolves to if it is known, but is not required.
+    destinationIP: String
     lastSeen: Time!
 }
 
@@ -3122,6 +3124,14 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destination"))
 			it.Destination, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "destinationIP":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destinationIP"))
+			it.DestinationIP, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

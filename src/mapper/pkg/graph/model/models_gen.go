@@ -14,8 +14,9 @@ type CaptureResults struct {
 }
 
 type Destination struct {
-	Destination string    `json:"destination"`
-	LastSeen    time.Time `json:"lastSeen"`
+	Destination   string    `json:"destination"`
+	DestinationIP *string   `json:"destinationIP"`
+	LastSeen      time.Time `json:"lastSeen"`
 }
 
 type GroupVersionKind struct {

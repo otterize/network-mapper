@@ -215,11 +215,13 @@ enum CustomConstraint {
 }
 
 type DatabaseConfig {
+	dbname: String!
 	table: String!
 	operations: [DatabaseOperation!]
 }
 
 input DatabaseConfigInput {
+	dbname: String!
 	table: String!
 	operations: [DatabaseOperation!]!
 }
@@ -230,13 +232,11 @@ input DatabaseCredentialsInput {
 }
 
 type DatabaseInfo {
-	name: String!
 	address: String!
 	databaseType: DatabaseType!
 }
 
 input DatabaseInfoInput {
-	name: String!
 	address: String!
 	databaseType: DatabaseType!
 	credentials: DatabaseCredentialsInput!

@@ -3,6 +3,8 @@ scalar Time # Equivalent of Go's time.Time provided by gqlgen
 input Destination {
     # Could be either IP addr or hostname
     destination: String!
+    # If destination is a hostname, this _may_ be the IP it resolves to if it is known, but is not required.
+    destinationIP: String
     lastSeen: Time!
 }
 
