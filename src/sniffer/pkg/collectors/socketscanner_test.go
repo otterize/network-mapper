@@ -107,7 +107,8 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 			SrcHostname: "thisverypod",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination: "10.98.14.179",
+					Destination:   "10.98.14.179",
+					DestinationIP: "10.98.14.179",
 				},
 			},
 		},
@@ -116,7 +117,8 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 			SrcHostname: "thisverypod",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination: "207.168.35.14",
+					Destination:   "207.168.35.14",
+					DestinationIP: "207.168.35.14",
 				},
 			},
 		},
