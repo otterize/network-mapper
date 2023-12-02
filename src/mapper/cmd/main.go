@@ -121,8 +121,9 @@ func main() {
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
 	intentsHolder := intentsstore.NewIntentsHolder()
+	externalTrafficIntentsHolder := resolvers.NewExternalTrafficIntentsHolder()
 
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
@@ -136,19 +137,27 @@ func main() {
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
-		intentsHolder.RegisterGetCallback(cloudUploader.GetIntentCallback)
+		intentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIntents)
+		externalTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyExternalTrafficIntents)
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 	}
 
 	if viper.GetBool(config.OTelEnabledKey) {
 		otelExporter, err := metricexporter.NewMetricExporter(errGroupCtx)
-		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
+		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
 		}
 	}
 
-	go intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+	errgrp.Go(func() error {
+		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
+	errgrp.Go(func() error {
+		externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)

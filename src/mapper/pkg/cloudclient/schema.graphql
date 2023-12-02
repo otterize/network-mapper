@@ -131,6 +131,12 @@ enum CertificateProvider {
 	NONE
 }
 
+input CLICommand {
+	noun: String!
+	verb: String!
+	modifiers: [String!]
+}
+
 type ClientIntentsFileRepresentation {
 	service: Service!
 	rows: [ClientIntentsRow!]!
@@ -141,6 +147,17 @@ type ClientIntentsRow {
 	text: String!
 	diff: RowDiff
 	calledServerId: ID
+}
+
+input CLIIdentifier {
+	version: String!
+	contextId: String!
+	cloudClientId: String
+}
+
+input CLITelemetry {
+	identifier: CLIIdentifier!
+	command: CLICommand!
 }
 
 type Cluster {
@@ -182,6 +199,14 @@ type ClusterFormSettings {
 input ClusterFormSettingsInput {
 	certificateProvider: CertificateProvider!
 	enforcement: Boolean!
+}
+
+input Component {
+	componentType: TelemetryComponentType!
+	componentInstanceId: ID!
+	contextId: ID!
+	version: String!
+	cloudClientId: String
 }
 
 type ComponentStatus {
@@ -267,12 +292,12 @@ input DiscoveredIntentInput {
 
 type DNSIPPair {
 	dnsName: String!
-	ip: String
+	ips: [String!]
 }
 
 input DNSIPPairInput {
 	dnsName: String!
-	ip: String
+	ips: [String!]
 }
 
 type EdgeAccessStatus {
@@ -327,6 +352,35 @@ type Environment {
 	namespaces: [Namespace!]!
 	serviceCount: Int!
 	appliedIntentsCount: Int!
+}
+
+enum EventType {
+	INTENTS_DELETED
+	INTENTS_APPLIED
+	INTENTS_APPLIED_KAFKA
+	INTENTS_APPLIED_HTTP
+	INTENTS_APPLIED_DATABASE
+	INTENTS_DISCOVERED
+	INTENTS_DISCOVERED_SOCKET_SCAN
+	INTENTS_DISCOVERED_CAPTURE
+	INTENTS_DISCOVERED_KAFKA
+	INTENTS_DISCOVERED_ISTIO
+	MAPPER_EXPORT
+	MAPPER_VISUALIZE
+	KAFKA_SERVER_CONFIG_APPLIED
+	KAFKA_SERVER_CONFIG_DELETED
+	NETWORK_POLICIES_CREATED
+	NETWORK_POLICIES_DELETED
+	KAFKA_ACLS_CREATED
+	KAFKA_ACLS_DELETED
+	ISTIO_POLICIES_CREATED
+	ISTIO_POLICIES_DELETED
+	STARTED
+	SERVICE_DISCOVERED
+	NAMESPACE_DISCOVERED
+	PROTECTED_SERVICE_APPLIED
+	PROTECTED_SERVICE_DELETED
+	ACTIVE
 }
 
 type ExternalTrafficDiscoveredIntent {
@@ -754,6 +808,12 @@ type Mutation {
 		namespace: String!
 		services: [ProtectedServiceInput!]!
 	): Boolean!
+	sendTelemetries(
+		telemetries: [TelemetryInput!]!
+	): Boolean!
+	sendCLITelemetries(
+		telemetries: [CLITelemetry!]!
+	): Boolean!
 }
 
 type Namespace {
@@ -850,6 +910,9 @@ type Query {
 		clusterId: ID
 		name: String
 	): Integration!
+	testDatabaseConnection(
+		databaseInfo: DatabaseInfoInput!
+	): TestDatabaseConnectionResponse!
 """List user invites"""
 	invites(
 		email: String
@@ -1014,6 +1077,28 @@ enum ServiceType {
 	KAFKA
 	AWS
 	DATABASE
+}
+
+enum TelemetryComponentType {
+	INTENTS_OPERATOR
+	CREDENTIALS_OPERATOR
+	NETWORK_MAPPER
+	CLI
+}
+
+input TelemetryData {
+	eventType: EventType!
+	count: Int
+}
+
+input TelemetryInput {
+	component: Component!
+	data: TelemetryData!
+}
+
+type TestDatabaseConnectionResponse {
+	success: Boolean!
+	errorMessage: String!
 }
 
 scalar Time

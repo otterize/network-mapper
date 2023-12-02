@@ -19,10 +19,11 @@ import (
 
 type ResolverTestSuite struct {
 	testbase.ControllerManagerTestSuiteBase
-	server        *httptest.Server
-	client        graphql.Client
-	kubeFinder    *kubefinder.KubeFinder
-	intentsHolder *intentsstore.IntentsHolder
+	server                       *httptest.Server
+	client                       graphql.Client
+	kubeFinder                   *kubefinder.KubeFinder
+	intentsHolder                *intentsstore.IntentsHolder
+	externalTrafficIntentsHolder *ExternalTrafficIntentsHolder
 }
 
 func (s *ResolverTestSuite) SetupTest() {
@@ -32,7 +33,8 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.kubeFinder, err = kubefinder.NewKubeFinder(context.Background(), s.Mgr)
 	s.Require().NoError(err)
 	s.intentsHolder = intentsstore.NewIntentsHolder()
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder)
+	s.externalTrafficIntentsHolder = NewExternalTrafficIntentsHolder()
+	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder)
 	resolver.Register(e)
 	s.server = httptest.NewServer(e)
 	s.client = graphql.NewClient(s.server.URL+"/query", s.server.Client())

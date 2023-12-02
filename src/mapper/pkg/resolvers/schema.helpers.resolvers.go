@@ -142,11 +142,19 @@ func (r *mutationResolver) addSocketScanPodIntent(ctx context.Context, srcSvcIde
 }
 
 func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
+	intent := ExternalTrafficIntent{
+		Client:   srcSvcIdentity,
+		LastSeen: dest.LastSeen,
+		DNSName:  dest.Destination,
+	}
 	ip := "(unknown)"
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
+		intent.IPs = map[IP]struct{}{IP(*dest.DestinationIP): {}}
 	}
 	logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
+
+	r.externalTrafficIntentsHolder.AddIntent(intent)
 	return nil
 }
 

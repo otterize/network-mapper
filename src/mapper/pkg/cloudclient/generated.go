@@ -18,15 +18,15 @@ const (
 )
 
 type DNSIPPairInput struct {
-	DnsName string `json:"dnsName"`
-	Ip      string `json:"ip"`
+	DnsName string   `json:"dnsName"`
+	Ips     []string `json:"ips"`
 }
 
 // GetDnsName returns DNSIPPairInput.DnsName, and is useful for accessing the field via an interface.
 func (v *DNSIPPairInput) GetDnsName() string { return v.DnsName }
 
-// GetIp returns DNSIPPairInput.Ip, and is useful for accessing the field via an interface.
-func (v *DNSIPPairInput) GetIp() string { return v.Ip }
+// GetIps returns DNSIPPairInput.Ips, and is useful for accessing the field via an interface.
+func (v *DNSIPPairInput) GetIps() []string { return v.Ips }
 
 type DatabaseConfigInput struct {
 	Dbname     *string              `json:"dbname"`

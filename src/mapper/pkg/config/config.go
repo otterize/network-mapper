@@ -8,19 +8,21 @@ import (
 )
 
 const (
-	ClusterDomainKey             = "cluster-domain"
-	ClusterDomainDefault         = kubeutils.DefaultClusterDomain
-	CloudApiAddrKey              = "api-address"
-	CloudApiAddrDefault          = "https://app.otterize.com/api"
-	UploadIntervalSecondsKey     = "upload-interval-seconds"
-	UploadIntervalSecondsDefault = 60
-	UploadBatchSizeKey           = "upload-batch-size"
-	UploadBatchSizeDefault       = 500
-	ExcludedNamespacesKey        = "exclude-namespaces"
-	OTelEnabledKey               = "enable-otel-export"
-	OTelEnabledDefault           = false
-	OTelMetricKey                = "otel-metric-name"
-	OTelMetricDefault            = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
+	ClusterDomainKey                     = "cluster-domain"
+	ClusterDomainDefault                 = kubeutils.DefaultClusterDomain
+	CloudApiAddrKey                      = "api-address"
+	CloudApiAddrDefault                  = "https://app.otterize.com/api"
+	UploadIntervalSecondsKey             = "upload-interval-seconds"
+	UploadIntervalSecondsDefault         = 60
+	UploadBatchSizeKey                   = "upload-batch-size"
+	UploadBatchSizeDefault               = 500
+	ExcludedNamespacesKey                = "exclude-namespaces"
+	OTelEnabledKey                       = "enable-otel-export"
+	OTelEnabledDefault                   = false
+	OTelMetricKey                        = "otel-metric-name"
+	OTelMetricDefault                    = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
+	ExternalTrafficCaptureEnabledKey     = "capture-external-traffic-enabled"
+	ExternalTrafficCaptureEnabledDefault = true // FIXME change to false
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -37,5 +39,6 @@ func init() {
 	viper.SetDefault(UploadBatchSizeKey, UploadBatchSizeDefault)
 	viper.SetDefault(OTelEnabledKey, OTelEnabledDefault)
 	viper.SetDefault(OTelMetricKey, OTelMetricDefault)
+	viper.SetDefault(ExternalTrafficCaptureEnabledKey, ExternalTrafficCaptureEnabledDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
