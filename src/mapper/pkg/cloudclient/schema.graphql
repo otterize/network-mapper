@@ -37,6 +37,7 @@ type AccessGraphEdge {
 	client: Service!
 	server: Service!
 	discoveredIntents: [Intent!]!
+	externalTrafficDiscoveredIntents: [ExternalTrafficIntent!]!
 	appliedIntents: [Intent!]!
 	accessStatus: EdgeAccessStatus!
 }
@@ -264,6 +265,16 @@ input DiscoveredIntentInput {
 	intent: IntentInput!
 }
 
+type DNSIPPair {
+	dnsName: String!
+	ip: String
+}
+
+input DNSIPPairInput {
+	dnsName: String!
+	ip: String
+}
+
 type EdgeAccessStatus {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
@@ -316,6 +327,29 @@ type Environment {
 	namespaces: [Namespace!]!
 	serviceCount: Int!
 	appliedIntentsCount: Int!
+}
+
+type ExternalTrafficDiscoveredIntent {
+	discoveredAt: Time!
+	intent: ExternalTrafficIntent!
+}
+
+input ExternalTrafficDiscoveredIntentInput {
+	discoveredAt: Time!
+	intent: ExternalTrafficIntentInput!
+}
+
+type ExternalTrafficIntent {
+	id: ID!
+	server: Service!
+	client: Service!
+	target: DNSIPPair!
+}
+
+input ExternalTrafficIntentInput {
+	namespace: String!
+	clientName: String!
+	target: DNSIPPairInput!
 }
 
 type HTTPConfig {
@@ -662,6 +696,9 @@ type Mutation {
 	): Boolean!
 	reportDiscoveredIntents(
 		intents: [DiscoveredIntentInput!]!
+	): Boolean!
+	reportExternalTrafficDiscoveredIntents(
+		intents: [ExternalTrafficDiscoveredIntentInput!]!
 	): Boolean!
 	reportAppliedKubernetesIntents(
 		namespace: String!

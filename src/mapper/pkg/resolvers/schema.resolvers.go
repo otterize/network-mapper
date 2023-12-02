@@ -31,7 +31,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	for _, captureItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
 		if err != nil {
-			logrus.WithError(err).Errorf("could not discover src identity for '%s'", captureItem.SrcIP)
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
@@ -44,6 +44,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 					continue
 				}
 				newResults++
+				continue
 			}
 
 			err := r.handleDNSCaptureResultsAsKubernetesPods(ctx, dest, srcSvcIdentity)
