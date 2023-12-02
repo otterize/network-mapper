@@ -7,6 +7,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
@@ -147,7 +148,7 @@ func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Co
 	if !viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		return nil
 	}
-	intent := ExternalTrafficIntent{
+	intent := externaltrafficholder.ExternalTrafficIntent{
 		Client:   srcSvcIdentity,
 		LastSeen: dest.LastSeen,
 		DNSName:  dest.Destination,
@@ -155,7 +156,7 @@ func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Co
 	ip := "(unknown)"
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
-		intent.IPs = map[IP]struct{}{IP(*dest.DestinationIP): {}}
+		intent.IPs = map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}}
 	}
 	logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
 

@@ -7,6 +7,7 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
+	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
@@ -121,7 +122,7 @@ func main() {
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
 	intentsHolder := intentsstore.NewIntentsHolder()
-	externalTrafficIntentsHolder := resolvers.NewExternalTrafficIntentsHolder()
+	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 
 	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder)
 	resolver.Register(mapperServer)

@@ -2,7 +2,7 @@ package clouduploader
 
 import (
 	"context"
-	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers"
+	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -71,7 +71,7 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 	}
 }
 
-func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intents []resolvers.TimestampedExternalTrafficIntent) {
+func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intents []externaltrafficholder.TimestampedExternalTrafficIntent) {
 	if len(intents) == 0 {
 		return
 	}
@@ -79,7 +79,7 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 	logrus.Debugf("Got external traffic notification, len %d", len(intents))
 	//logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
 
-	discoveredIntents := lo.Map(intents, func(intent resolvers.TimestampedExternalTrafficIntent, _ int) cloudclient.ExternalTrafficDiscoveredIntentInput {
+	discoveredIntents := lo.Map(intents, func(intent externaltrafficholder.TimestampedExternalTrafficIntent, _ int) cloudclient.ExternalTrafficDiscoveredIntentInput {
 		output := cloudclient.ExternalTrafficDiscoveredIntentInput{
 			DiscoveredAt: intent.Timestamp,
 			Intent: cloudclient.ExternalTrafficIntentInput{
