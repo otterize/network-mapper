@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -142,6 +144,9 @@ func (r *mutationResolver) addSocketScanPodIntent(ctx context.Context, srcSvcIde
 }
 
 func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
+	if !viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
+		return nil
+	}
 	intent := ExternalTrafficIntent{
 		Client:   srcSvcIdentity,
 		LastSeen: dest.LastSeen,

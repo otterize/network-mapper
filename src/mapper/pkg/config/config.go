@@ -22,7 +22,7 @@ const (
 	OTelMetricKey                        = "otel-metric-name"
 	OTelMetricDefault                    = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
 	ExternalTrafficCaptureEnabledKey     = "capture-external-traffic-enabled"
-	ExternalTrafficCaptureEnabledDefault = true // FIXME change to false
+	ExternalTrafficCaptureEnabledDefault = false
 )
 
 var excludedNamespaces *goset.Set[string]

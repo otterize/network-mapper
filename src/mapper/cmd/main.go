@@ -138,7 +138,9 @@ func main() {
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
 		intentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIntents)
-		externalTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyExternalTrafficIntents)
+		if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
+			externalTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyExternalTrafficIntents)
+		}
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 	}
 
@@ -154,10 +156,12 @@ func main() {
 		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
-	errgrp.Go(func() error {
-		externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
-		return nil
-	})
+	if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
+		errgrp.Go(func() error {
+			externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+			return nil
+		})
+	}
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)

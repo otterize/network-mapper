@@ -17,7 +17,7 @@ const (
 	HostsMappingRefreshIntervalKey       = "hosts-mapping-refresh-interval"
 	HostsMappingRefreshIntervalDefault   = 500 * time.Millisecond
 	ExternalTrafficCaptureEnabledKey     = "capture-external-traffic-enabled"
-	ExternalTrafficCaptureEnabledDefault = true // FIXME change to false
+	ExternalTrafficCaptureEnabledDefault = false
 )
 
 func init() {
