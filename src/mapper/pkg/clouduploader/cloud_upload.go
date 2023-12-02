@@ -77,7 +77,6 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 	}
 
 	logrus.Debugf("Got external traffic notification, len %d", len(intents))
-	//logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
 
 	discoveredIntents := lo.Map(intents, func(intent externaltrafficholder.TimestampedExternalTrafficIntent, _ int) cloudclient.ExternalTrafficDiscoveredIntentInput {
 		output := cloudclient.ExternalTrafficDiscoveredIntentInput{
