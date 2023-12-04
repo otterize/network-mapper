@@ -64,7 +64,7 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
 		if err != nil {
-			logrus.WithError(err).Errorf("could not discover src identity for '%s'", socketScanItem.SrcIP)
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
 			continue
 		}
 		for _, dest := range socketScanItem.Destinations {
