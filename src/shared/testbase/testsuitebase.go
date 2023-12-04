@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +41,7 @@ func (s *ControllerManagerTestSuiteBase) SetupSuite() {
 	s.cfg, err = s.testEnv.Start()
 	s.Require().NoError(err)
 	s.Require().NotNil(s.cfg)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	s.K8sDirectClient, err = kubernetes.NewForConfig(s.cfg)
 	s.Require().NoError(err)
