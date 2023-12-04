@@ -13,7 +13,13 @@ import (
 	"github.com/otterize/network-mapper/src/shared/testbase"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/exp/slices"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http/httptest"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"testing"
 	"time"
 )
@@ -141,6 +147,216 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				},
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
+				},
+			},
+		},
+	})
+}
+
+func (s *ResolverTestSuite) TestReportCaptureResultsHostnameMismatch() {
+	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, "10.0.0.16")
+	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"}, "10.0.0.17")
+	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"}, "10.0.0.18")
+	s.AddPod("pod4", "1.1.1.4", nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "1.1.1.1",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			{
+				SrcIp: "1.1.1.3",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+					{
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			// should be discarded - hostname mismatch
+			{
+				SrcIp:       "1.1.1.4",
+				SrcHostname: "pod5",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
+	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      fmt.Sprintf("deployment-%s", "service1"),
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      fmt.Sprintf("daemonset-%s", "service3"),
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "DaemonSet",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              fmt.Sprintf("deployment-%s", "service1"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service1",
+				},
+				{
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
+				},
+			},
+		},
+	})
+}
+
+func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
+	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, "10.0.0.16")
+	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"}, "10.0.0.17")
+	s.AddDaemonSetWithService("service3", []string{"1.1.1.3"}, map[string]string{"app": "service3"}, "10.0.0.18")
+	pod := s.AddPod("pod4", "1.1.1.4", nil, nil)
+	var podToUpdate v1.Pod
+	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: pod.GetName(), Namespace: pod.GetNamespace()}, &podToUpdate)
+	s.Require().NoError(err)
+	s.Require().True(controllerutil.AddFinalizer(&podToUpdate, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test"))
+	err = s.Mgr.GetClient().Update(context.Background(), &podToUpdate)
+	s.Require().NoError(err)
+	s.Require().NoError(wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
+		var readPod v1.Pod
+		err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: pod.GetName(), Namespace: pod.GetNamespace()}, &readPod)
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+
+		if !slices.Contains(readPod.Finalizers, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test") {
+			return false, nil
+		}
+		return true, nil
+	}))
+
+	err = s.Mgr.GetClient().Delete(context.Background(), pod)
+	s.Require().NoError(err)
+
+	packetTime := time.Now().Add(time.Minute)
+	_, err = test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "1.1.1.1",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			{
+				SrcIp: "1.1.1.3",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+					{
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			// should be discarded - deleted pod
+			{
+				SrcIp: "1.1.1.4",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("svc-service2.%s.svc.cluster.local", s.TestNamespace),
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
+	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      fmt.Sprintf("deployment-%s", "service1"),
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "Deployment",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              fmt.Sprintf("deployment-%s", "service2"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service2",
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      fmt.Sprintf("daemonset-%s", "service3"),
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "apps",
+					Kind:    "DaemonSet",
+					Version: "v1",
+				},
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              fmt.Sprintf("deployment-%s", "service1"),
+					Namespace:         s.TestNamespace,
+					KubernetesService: "svc-service1",
+				},
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
