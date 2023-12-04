@@ -35,10 +35,10 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
+			destCopy := dest
 			destAddress := dest.Destination
 			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
-				// not a k8s service, ignore
-				err := r.handleDNSCaptureResultsAsExternalTraffic(ctx, dest, srcSvcIdentity)
+				err := r.handleDNSCaptureResultsAsExternalTraffic(ctx, destCopy, srcSvcIdentity)
 				if err != nil {
 					logrus.WithError(err).Error("could not handle DNS capture result as external traffic")
 					continue
@@ -47,7 +47,7 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 				continue
 			}
 
-			err := r.handleDNSCaptureResultsAsKubernetesPods(ctx, dest, srcSvcIdentity)
+			err := r.handleDNSCaptureResultsAsKubernetesPods(ctx, destCopy, srcSvcIdentity)
 			if err != nil {
 				logrus.WithError(err).Error("could not handle DNS capture result as pod")
 				continue
@@ -64,11 +64,12 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
 		if err != nil {
-			logrus.WithError(err).Errorf("could not discover src identity for '%s'", socketScanItem.SrcIP)
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
 			continue
 		}
 		for _, dest := range socketScanItem.Destinations {
-			isService, err := r.tryHandleSocketScanDestinationAsService(ctx, srcSvcIdentity, dest)
+			destCopy := dest
+			isService, err := r.tryHandleSocketScanDestinationAsService(ctx, srcSvcIdentity, destCopy)
 			if err != nil {
 				logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
 				// Log error but don't stop handling other destinations.
@@ -79,14 +80,14 @@ func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results 
 				continue // No need to try to handle IP as Pod, since IP belonged to a service.
 			}
 
-			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
+			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destCopy.Destination)
 			if err != nil {
 				logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
 				// Log error but don't stop handling other destinations.
 				continue
 			}
 
-			err = r.addSocketScanPodIntent(ctx, srcSvcIdentity, dest, destPod)
+			err = r.addSocketScanPodIntent(ctx, srcSvcIdentity, destCopy, destPod)
 			if err != nil {
 				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", dest.Destination)
 				// Log error but don't stop handling other destinations.

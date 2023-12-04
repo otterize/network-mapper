@@ -26,21 +26,18 @@ func (r *mutationResolver) discoverSrcIdentity(ctx context.Context, src model.Re
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", src.SrcIP)
-			return model.OtterizeServiceIdentity{}, nil
+			return model.OtterizeServiceIdentity{}, fmt.Errorf("IP %s belongs to more than one pod, ignoring", src.SrcIP)
 		}
 		return model.OtterizeServiceIdentity{}, fmt.Errorf("could not resolve %s to pod: %w", src.SrcIP, err)
 	}
 	if src.SrcHostname != "" && srcPod.Name != src.SrcHostname {
 		// This could mean a new pod is reusing the same IP
 		// TODO: Use the captured hostname to actually find the relevant pod (instead of the IP that might no longer exist or be reused)
-		logrus.Warnf("Found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, src.SrcIP, src.SrcHostname)
-		return model.OtterizeServiceIdentity{}, nil
+		return model.OtterizeServiceIdentity{}, fmt.Errorf("found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, src.SrcIP, src.SrcHostname)
 	}
 
 	if srcPod.DeletionTimestamp != nil {
-		logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
-		return model.OtterizeServiceIdentity{}, nil
+		return model.OtterizeServiceIdentity{}, fmt.Errorf("pod %s is being deleted, ignoring", srcPod.Name)
 	}
 
 	srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)

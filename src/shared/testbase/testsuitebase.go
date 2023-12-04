@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,26 +35,19 @@ type ControllerManagerTestSuiteBase struct {
 	Mgr              manager.Manager
 }
 
-func (s *ControllerManagerTestSuiteBase) SetupSuite() {
+func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	s.testEnv = &envtest.Environment{}
 	var err error
 	s.cfg, err = s.testEnv.Start()
 	s.Require().NoError(err)
 	s.Require().NotNil(s.cfg)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	s.K8sDirectClient, err = kubernetes.NewForConfig(s.cfg)
 	s.Require().NoError(err)
 	s.Require().NotNil(s.K8sDirectClient)
-}
-
-func (s *ControllerManagerTestSuiteBase) TearDownSuite() {
-	s.Require().NoError(s.testEnv.Stop())
-}
-
-func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	s.mgrCtx, s.mgrCtxCancelFunc = context.WithCancel(context.Background())
 
-	var err error
 	s.Mgr, err = manager.New(s.cfg, manager.Options{MetricsBindAddress: "0"})
 	s.Require().NoError(err)
 	testName := s.T().Name()[strings.LastIndex(s.T().Name(), "/")+1:]
@@ -79,6 +73,7 @@ func (s *ControllerManagerTestSuiteBase) TearDownTest() {
 	s.mgrCtxCancelFunc()
 	err := s.K8sDirectClient.CoreV1().Namespaces().Delete(context.Background(), s.TestNamespace, metav1.DeleteOptions{})
 	s.Require().NoError(err)
+	s.Require().NoError(s.testEnv.Stop())
 }
 
 // waitForObjectToBeCreated tries to get an object multiple times until it is available in the k8s API server
