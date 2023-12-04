@@ -29,69 +29,29 @@ func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
 	var newResults int
 	for _, captureItem := range results.Results {
-		srcSvcIdentity := r.discoverSrcIdentity(ctx, captureItem)
-		if srcSvcIdentity == nil {
+		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		if err != nil {
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
 		}
 		for _, dest := range captureItem.Destinations {
 			destAddress := dest.Destination
 			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
 				// not a k8s service, ignore
-				continue
-			}
-			ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
-			if err != nil {
-				logrus.WithError(err).Warningf("Could not resolve service address %s", dest)
-				continue
-			}
-			if len(ips) == 0 {
-				logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", dest)
-				continue
-			}
-			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, ips[0])
-			if err != nil {
-				if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-					logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
-				} else {
-					logrus.WithError(err).Debugf("Could not resolve %s to pod", ips[0])
+				err := r.handleDNSCaptureResultsAsExternalTraffic(ctx, dest, srcSvcIdentity)
+				if err != nil {
+					logrus.WithError(err).Error("could not handle DNS capture result as external traffic")
+					continue
 				}
+				newResults++
 				continue
 			}
 
-			if destPod.CreationTimestamp.After(dest.LastSeen) {
-				logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
-				continue
-			}
-
-			if destPod.DeletionTimestamp != nil {
-				logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
-				continue
-			}
-
-			dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+			err := r.handleDNSCaptureResultsAsKubernetesPods(ctx, dest, srcSvcIdentity)
 			if err != nil {
-				logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+				logrus.WithError(err).Error("could not handle DNS capture result as pod")
 				continue
 			}
-
-			dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
-			if dstService.OwnerObject != nil {
-				dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
-			}
-			if serviceName != "" {
-				dstSvcIdentity.KubernetesService = lo.ToPtr(serviceName)
-			}
-
-			intent := model.Intent{
-				Client: srcSvcIdentity,
-				Server: dstSvcIdentity,
-			}
-
-			updateTelemetriesCounters(SourceTypeDNSCapture, intent)
-			r.intentsHolder.AddIntent(
-				dest.LastSeen,
-				intent,
-			)
 			newResults++
 		}
 	}
@@ -102,8 +62,9 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	for _, socketScanItem := range results.Results {
-		srcSvcIdentity := r.discoverSrcIdentity(ctx, socketScanItem)
-		if srcSvcIdentity == nil {
+		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
+		if err != nil {
+			logrus.WithError(err).Errorf("could not discover src identity for '%s'", socketScanItem.SrcIP)
 			continue
 		}
 		for _, dest := range socketScanItem.Destinations {

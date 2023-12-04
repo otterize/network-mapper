@@ -22,7 +22,7 @@ func NewMetricExporter(ctx context.Context) (*MetricExporter, error) {
 	}, nil
 }
 
-func (o *MetricExporter) GetIntentCallback(ctx context.Context, intents []intentsstore.TimestampedIntent) {
+func (o *MetricExporter) NotifyIntents(ctx context.Context, intents []intentsstore.TimestampedIntent) {
 	for _, intent := range intents {
 		clientName := intent.Intent.Client.Name
 		serverName := intent.Intent.Server.Name

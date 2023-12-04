@@ -62,3 +62,17 @@ func (mr *MockCloudClientMockRecorder) ReportDiscoveredIntents(ctx, intents inte
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportDiscoveredIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportDiscoveredIntents), ctx, intents)
 }
+
+// ReportExternalTrafficDiscoveredIntents mocks base method.
+func (m *MockCloudClient) ReportExternalTrafficDiscoveredIntents(ctx context.Context, intents []cloudclient.ExternalTrafficDiscoveredIntentInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportExternalTrafficDiscoveredIntents", ctx, intents)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportExternalTrafficDiscoveredIntents indicates an expected call of ReportExternalTrafficDiscoveredIntents.
+func (mr *MockCloudClientMockRecorder) ReportExternalTrafficDiscoveredIntents(ctx, intents interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportExternalTrafficDiscoveredIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportExternalTrafficDiscoveredIntents), ctx, intents)
+}

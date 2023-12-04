@@ -52,7 +52,7 @@ func (o *MetricExporterTestSuite) TestExportIntents() {
 	o.addIntent("client1", o.testNamespace, "server2", "external-namespace")
 	o.edgeMock.EXPECT().Record(context.Background(), "client1", "server1").Times(1)
 	o.edgeMock.EXPECT().Record(context.Background(), "client1", "server2").Times(1)
-	o.metricExporter.GetIntentCallback(context.Background(), o.intentsHolder.GetNewIntentsSinceLastGet())
+	o.metricExporter.NotifyIntents(context.Background(), o.intentsHolder.GetNewIntentsSinceLastGet())
 }
 
 func TestRunSuite(t *testing.T) {

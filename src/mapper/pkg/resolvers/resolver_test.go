@@ -6,6 +6,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
+	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
@@ -19,10 +20,11 @@ import (
 
 type ResolverTestSuite struct {
 	testbase.ControllerManagerTestSuiteBase
-	server        *httptest.Server
-	client        graphql.Client
-	kubeFinder    *kubefinder.KubeFinder
-	intentsHolder *intentsstore.IntentsHolder
+	server                       *httptest.Server
+	client                       graphql.Client
+	kubeFinder                   *kubefinder.KubeFinder
+	intentsHolder                *intentsstore.IntentsHolder
+	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 }
 
 func (s *ResolverTestSuite) SetupTest() {
@@ -32,7 +34,8 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.kubeFinder, err = kubefinder.NewKubeFinder(context.Background(), s.Mgr)
 	s.Require().NoError(err)
 	s.intentsHolder = intentsstore.NewIntentsHolder()
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder)
+	s.externalTrafficIntentsHolder = externaltrafficholder.NewExternalTrafficIntentsHolder()
+	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder)
 	resolver.Register(e)
 	s.server = httptest.NewServer(e)
 	s.client = graphql.NewClient(s.server.URL+"/query", s.server.Client())

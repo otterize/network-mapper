@@ -31,19 +31,19 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 	packet.Metadata().CaptureInfo.Timestamp = timestamp
 	sniffer.HandlePacket(packet)
 	_ = sniffer.RefreshHostsMapping()
-	time.Sleep(1 * time.Second)
 
-	s.Require().Equal(sniffer.CollectResults(), []mapperclient.RecordedDestinationsForSrc{
+	s.Require().Equal([]mapperclient.RecordedDestinationsForSrc{
 		{
 			SrcIp: "10.101.81.13",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination: "sts.us-east-1.amazonaws.com",
-					LastSeen:    timestamp,
+					Destination:   "sts.us-east-1.amazonaws.com",
+					DestinationIP: "72.21.206.96",
+					LastSeen:      timestamp,
 				},
 			},
 		},
-	})
+	}, sniffer.CollectResults())
 }
 
 func TestDNSSnifferSuite(t *testing.T) {

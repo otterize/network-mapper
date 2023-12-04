@@ -157,12 +157,12 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	store[key] = existingIntent
 }
 
-func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, d time.Duration) {
+func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval time.Duration) {
 	logrus.Info("Starting periodic intents upload")
 
 	for {
 		select {
-		case <-time.After(d):
+		case <-time.After(interval):
 			if len(i.callbacks) == 0 {
 				return
 			}
@@ -178,7 +178,7 @@ func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, d time.Durati
 	}
 }
 
-func (i *IntentsHolder) RegisterGetCallback(callback func(context.Context, []TimestampedIntent)) {
+func (i *IntentsHolder) RegisterNotifyIntents(callback func(context.Context, []TimestampedIntent)) {
 	i.callbacks = append(i.callbacks, callback)
 }
 

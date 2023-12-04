@@ -3,6 +3,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
@@ -21,32 +22,30 @@ func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
 	return labels
 }
 
-func (r *mutationResolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) *model.OtterizeServiceIdentity {
+func (r *mutationResolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", src.SrcIP)
-		} else {
-			logrus.WithError(err).Debugf("Could not resolve %s to pod", src.SrcIP)
+			return model.OtterizeServiceIdentity{}, nil
 		}
-		return nil
+		return model.OtterizeServiceIdentity{}, fmt.Errorf("could not resolve %s to pod: %w", src.SrcIP, err)
 	}
 	if src.SrcHostname != "" && srcPod.Name != src.SrcHostname {
 		// This could mean a new pod is reusing the same IP
 		// TODO: Use the captured hostname to actually find the relevant pod (instead of the IP that might no longer exist or be reused)
 		logrus.Warnf("Found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, src.SrcIP, src.SrcHostname)
-		return nil
+		return model.OtterizeServiceIdentity{}, nil
 	}
 
 	if srcPod.DeletionTimestamp != nil {
 		logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
-		return nil
+		return model.OtterizeServiceIdentity{}, nil
 	}
 
 	srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 	if err != nil {
-		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
-		return nil
+		return model.OtterizeServiceIdentity{}, fmt.Errorf("could not resolve pod %s to identity: %w", srcPod.Name, err)
 	}
 	filteredDestinations := make([]model.Destination, 0)
 	for _, dest := range src.Destinations {
@@ -63,5 +62,5 @@ func (r *mutationResolver) discoverSrcIdentity(ctx context.Context, src model.Re
 		srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
 
-	return &srcSvcIdentity
+	return srcSvcIdentity, nil
 }

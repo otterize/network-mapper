@@ -7,9 +7,10 @@ import (
 )
 
 type UniqueRequest struct {
-	srcIP       string
-	srcHostname string
-	dest        string // IP or hostname
+	srcIP            string
+	srcHostname      string
+	destHostnameOrIP string // IP or hostname
+	destIP           string
 }
 
 // For each unique request info, we store the time of the last request (no need to report duplicates)
@@ -23,8 +24,8 @@ func (c *NetworkCollector) resetData() {
 	c.capturedRequests = make(capturesMap)
 }
 
-func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, dest string, seenAt time.Time) {
-	req := UniqueRequest{srcIp, srcHost, dest}
+func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time) {
+	req := UniqueRequest{srcIp, srcHost, destNameOrIP, destIP}
 	c.capturedRequests[req] = seenAt
 }
 
@@ -41,7 +42,7 @@ func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsF
 		if _, ok := srcToDests[src]; !ok {
 			srcToDests[src] = make([]mapperclient.Destination, 0)
 		}
-		srcToDests[src] = append(srcToDests[src], mapperclient.Destination{Destination: reqInfo.dest, LastSeen: reqLastSeen})
+		srcToDests[src] = append(srcToDests[src], mapperclient.Destination{Destination: reqInfo.destHostnameOrIP, DestinationIP: reqInfo.destIP, LastSeen: reqLastSeen})
 	}
 
 	results := make([]mapperclient.RecordedDestinationsForSrc, 0)

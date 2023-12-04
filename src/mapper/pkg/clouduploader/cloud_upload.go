@@ -2,6 +2,7 @@ package clouduploader
 
 import (
 	"context"
+	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -26,8 +27,10 @@ func NewCloudUploader(intentsHolder *intentsstore.IntentsHolder, config Config, 
 	}
 }
 
-func (c *CloudUploader) GetIntentCallback(ctx context.Context, intents []intentsstore.TimestampedIntent) {
-	logrus.Info("Search for intents")
+func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstore.TimestampedIntent) {
+	if len(intents) == 0 {
+		return
+	}
 
 	discoveredIntents := lo.Map(intents, func(intent intentsstore.TimestampedIntent, _ int) *cloudclient.DiscoveredIntentInput {
 		return &cloudclient.DiscoveredIntentInput{
@@ -48,10 +51,6 @@ func (c *CloudUploader) GetIntentCallback(ctx context.Context, intents []intents
 		}
 	})
 
-	if len(discoveredIntents) == 0 {
-		return
-	}
-
 	exponentialBackoff := backoff.NewExponentialBackOff()
 
 	discoveredIntentsChunks := lo.Chunk(discoveredIntents, c.config.UploadBatchSize)
@@ -59,6 +58,50 @@ func (c *CloudUploader) GetIntentCallback(ctx context.Context, intents []intents
 	err := backoff.Retry(func() error {
 		for currentChunk < len(discoveredIntentsChunks) {
 			err := c.client.ReportDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
+			if err != nil {
+				logrus.WithError(err).Errorf("Failed to report discovered intents chunk %d to cloud, retrying", currentChunk)
+				return err
+			}
+			currentChunk += 1
+		}
+		return nil
+	}, exponentialBackoff)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
+	}
+}
+
+func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intents []externaltrafficholder.TimestampedExternalTrafficIntent) {
+	if len(intents) == 0 {
+		return
+	}
+
+	logrus.Debugf("Got external traffic notification, len %d", len(intents))
+
+	discoveredIntents := lo.Map(intents, func(intent externaltrafficholder.TimestampedExternalTrafficIntent, _ int) cloudclient.ExternalTrafficDiscoveredIntentInput {
+		output := cloudclient.ExternalTrafficDiscoveredIntentInput{
+			DiscoveredAt: intent.Timestamp,
+			Intent: cloudclient.ExternalTrafficIntentInput{
+				ClientName: intent.Intent.Client.Name,
+				Namespace:  intent.Intent.Client.Namespace,
+				Target: cloudclient.DNSIPPairInput{
+					DnsName: intent.Intent.DNSName,
+				},
+			},
+		}
+		for ip := range intent.Intent.IPs {
+			output.Intent.Target.Ips = append(output.Intent.Target.Ips, string(ip))
+		}
+		return output
+	})
+
+	exponentialBackoff := backoff.NewExponentialBackOff()
+
+	discoveredIntentsChunks := lo.Chunk(discoveredIntents, c.config.UploadBatchSize)
+	currentChunk := 0
+	err := backoff.Retry(func() error {
+		for currentChunk < len(discoveredIntentsChunks) {
+			err := c.client.ReportExternalTrafficDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to report discovered intents chunk %d to cloud, retrying", currentChunk)
 				return err

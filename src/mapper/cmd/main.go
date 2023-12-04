@@ -7,6 +7,7 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
+	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
@@ -121,8 +122,9 @@ func main() {
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
 	intentsHolder := intentsstore.NewIntentsHolder()
+	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
@@ -136,19 +138,31 @@ func main() {
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
-		intentsHolder.RegisterGetCallback(cloudUploader.GetIntentCallback)
+		intentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIntents)
+		if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
+			externalTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyExternalTrafficIntents)
+		}
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 	}
 
 	if viper.GetBool(config.OTelEnabledKey) {
 		otelExporter, err := metricexporter.NewMetricExporter(errGroupCtx)
-		intentsHolder.RegisterGetCallback(otelExporter.GetIntentCallback)
+		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 		if err != nil {
 			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
 		}
 	}
 
-	go intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+	errgrp.Go(func() error {
+		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
+	if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
+		errgrp.Go(func() error {
+			externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+			return nil
+		})
+	}
 
 	telemetrysender.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
