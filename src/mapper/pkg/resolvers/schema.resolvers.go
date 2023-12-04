@@ -37,7 +37,6 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 		for _, dest := range captureItem.Destinations {
 			destAddress := dest.Destination
 			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
-				// not a k8s service, ignore
 				err := r.handleDNSCaptureResultsAsExternalTraffic(ctx, dest, srcSvcIdentity)
 				if err != nil {
 					logrus.WithError(err).Error("could not handle DNS capture result as external traffic")
