@@ -5,15 +5,21 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
+	"github.com/bugsnag/bugsnag-go/v2"
+	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
+	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"golang.org/x/sync/errgroup"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
@@ -31,9 +37,6 @@ import (
 	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/metadata"
 	ctrl "sigs.k8s.io/controller-runtime"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -52,6 +55,7 @@ func getClusterDomainOrDefault() string {
 }
 
 func main() {
+	errorreporter.Init("network-mapper", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)
@@ -84,6 +88,7 @@ func main() {
 	}
 
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		logrus.Info("Starting operator manager")
 		if err := mgr.Start(errGroupCtx); err != nil {
 			logrus.Error(err, "unable to run manager")
@@ -108,7 +113,7 @@ func main() {
 	} else {
 		kubeSystemUID = string(kubeSystemNs.UID)
 	}
-	telemetrysender.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
 
 	// start API server
 	mapperServer.GET("/healthz", func(c echo.Context) error {
@@ -154,24 +159,28 @@ func main() {
 	}
 
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 	if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		errgrp.Go(func() error {
+			defer bugsnag.AutoNotify(errGroupCtx)
 			externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 			return nil
 		})
 	}
 
-	telemetrysender.SetGlobalVersion(version.Version())
+	componentinfo.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
 	telemetrysender.NetworkMapperRunActiveReporter(errGroupCtx)
 
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		return mapperServer.Start(":9090")
 	})
 

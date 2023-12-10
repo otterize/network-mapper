@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/network-mapper/src/shared/version"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +24,7 @@ import (
 )
 
 func main() {
+	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -37,6 +41,7 @@ func main() {
 
 	healthServer := echo.New()
 	healthServer.GET("/healthz", func(c echo.Context) error {
+		bugsnag.AutoNotify(c)
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
 			return err
@@ -49,13 +54,16 @@ func main() {
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	errgrp.Go(func() error {
+		bugsnag.AutoNotify(errGroupCtx)
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
+		bugsnag.AutoNotify(errGroupCtx)
 		return healthServer.Start(":9090")
 	})
 
 	errgrp.Go(func() error {
+		bugsnag.AutoNotify(errGroupCtx)
 		snifferInstance := sniffer.NewSniffer(mapperClient)
 		return snifferInstance.RunForever(errGroupCtx)
 	})
