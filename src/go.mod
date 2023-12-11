@@ -37,9 +37,9 @@ require (
 	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874
 	golang.org/x/sync v0.5.0
 	gotest.tools/v3 v3.0.3
-	k8s.io/api v0.27.2
+	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.28.4
-	k8s.io/client-go v0.27.2
+	k8s.io/client-go v0.28.4
 	sigs.k8s.io/controller-runtime v0.15.0
 )
 
@@ -65,7 +65,6 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
