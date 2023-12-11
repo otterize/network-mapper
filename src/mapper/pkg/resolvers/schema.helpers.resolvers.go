@@ -224,6 +224,16 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 	return nil
 }
 
+// waitForHandledResults is used in tests as result handling is now async.
+func (r *Resolver) waitForHandledResults(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-r.gotResultsCtx.Done():
+		return nil
+	}
+}
+
 func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model.CaptureResults) error {
 	var newResults int
 	for _, captureItem := range results.Results {
@@ -255,6 +265,7 @@ func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model
 	}
 
 	prometheus.IncrementDNSCaptureReports(newResults)
+	r.gotResultsSignal()
 	return nil
 }
 
@@ -293,6 +304,7 @@ func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results mo
 			}
 		}
 	}
+	r.gotResultsSignal()
 	return nil
 }
 
@@ -366,6 +378,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 	}
 
 	prometheus.IncrementKafkaReports(newResults)
+	r.gotResultsSignal()
 	return nil
 }
 
@@ -416,6 +429,7 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 	}
 
 	prometheus.IncrementIstioReports(newResults)
+	r.gotResultsSignal()
 	return nil
 }
 

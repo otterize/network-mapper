@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
