@@ -262,21 +262,30 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 	s.Require().True(controllerutil.AddFinalizer(&podToUpdate, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test"))
 	err = s.Mgr.GetClient().Update(context.Background(), &podToUpdate)
 	s.Require().NoError(err)
-	s.Require().NoError(wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-		var readPod v1.Pod
-		err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: pod.GetName(), Namespace: pod.GetNamespace()}, &readPod)
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		if err != nil {
-			return false, err
-		}
 
-		if !slices.Contains(readPod.Finalizers, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test") {
-			return false, nil
-		}
-		return true, nil
-	}))
+	interval := 1 * time.Second
+	timeout := 10 * time.Second
+	s.Require().NoError(wait.PollUntilContextTimeout(
+		context.Background(),
+		interval,
+		timeout,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			var readPod v1.Pod
+			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: pod.GetName(), Namespace: pod.GetNamespace()}, &readPod)
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+
+			if !slices.Contains(readPod.Finalizers, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test") {
+				return false, nil
+			}
+			return true, nil
+		}),
+	)
 
 	err = s.Mgr.GetClient().Delete(context.Background(), pod)
 	s.Require().NoError(err)

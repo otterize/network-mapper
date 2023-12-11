@@ -78,16 +78,21 @@ func (s *ControllerManagerTestSuiteBase) TearDownTest() {
 
 // waitForObjectToBeCreated tries to get an object multiple times until it is available in the k8s API server
 func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Object) {
-	s.Require().NoError(wait.PollImmediate(waitForCreationInterval, waitForCreationTimeout, func() (done bool, err error) {
-		err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		if err != nil {
-			return false, err
-		}
-		return true, nil
-	}))
+	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
+		waitForCreationInterval,
+		waitForCreationTimeout,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		}),
+	)
 }
 
 func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, labels map[string]string, ownerRefs []metav1.OwnerReference) *corev1.Pod {
