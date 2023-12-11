@@ -3,14 +3,20 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
+
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
+	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -23,6 +29,7 @@ import (
 )
 
 func main() {
+	errorreporter.Init("kafka-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -31,6 +38,8 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+	componentutils.SetCloudClientId()
+	componentinfo.SetGlobalComponentInstanceId()
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
@@ -91,13 +100,16 @@ func main() {
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		return healthServer.Start(":9090")
 	})
 
 	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
 		err := watcher.RunForever(errGroupCtx)
 		return err
 	})
