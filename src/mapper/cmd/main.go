@@ -183,9 +183,13 @@ func main() {
 		defer bugsnag.AutoNotify(errGroupCtx)
 		return mapperServer.Start(":9090")
 	})
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
+		return resolver.RunForever(errGroupCtx)
+	})
 
 	err = errgrp.Wait()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
 		logrus.WithError(err).Fatal("Error when running server or HTTP server")
 	}
 
