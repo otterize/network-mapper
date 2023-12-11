@@ -1,86 +1,67 @@
-"""Directs the executor to include this field or fragment only when the `if` argument is true."""
-directive @include(
-"""Included when true."""
-	if: Boolean!
-) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""@auth indicates that the specified query / mutation / subscription requires user authentication"""
+directive @auth on FIELD_DEFINITION
 
-"""Directs the executor to skip this field or fragment when the `if` argument is true."""
-directive @skip(
-"""Skipped when true."""
-	if: Boolean!
-) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @constraint(
+	tag: String!
+	pattern: String!
+	example: String!
+) on ENUM_VALUE
 
-"""Marks an element of a GraphQL schema as no longer supported."""
+"""The @deprecated built-in directive is used within the type system definition language to indicate deprecated portions of a GraphQL service's schema, such as deprecated fields on a type, arguments on a field, input fields on an input type, or values of an enum type."""
 directive @deprecated(
-"""Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/)."""
 	reason: String
 ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 
-"""Exposes a URL that specifies the behavior of this scalar."""
+directive @goField(
+	forceResolver: Boolean
+	name: String
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+directive @httpError(
+	statusCode: Int!
+) on ENUM_VALUE
+
+"""The @include directive may be provided for fields, fragment spreads, and inline fragments, and allows for conditional inclusion during execution as described by the if argument."""
+directive @include(
+	if: Boolean!
+) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""@noauth indicates that the specified query / mutation / subscription can be executed anonymously without
+user authentication, meaning anyone and everyone can execute it. USE WITH CAUTION."""
+directive @noauth on FIELD_DEFINITION
+
+directive @restApiField(
+	action: ApiFieldAction
+) on FIELD_DEFINITION
+
+directive @restApiRoute(
+	method: ApiMethod!
+	path: String!
+	tags: [String!]!
+) on FIELD_DEFINITION
+
+"""The @skip directive may be provided for fields, fragment spreads, and inline fragments, and allows for conditional exclusion during execution as described by the if argument."""
+directive @skip(
+	if: Boolean!
+) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""The @specifiedBy built-in directive is used within the type system definition language to provide a scalar specification URL for specifying the behavior of custom scalar types."""
 directive @specifiedBy(
-"""The URL that specifies the behavior of this scalar."""
 	url: String!
 ) on SCALAR
 
-type AccessGraph {
-	filter: AccessGraphFilter!
-"""Clusters for which there are results"""
-	clusters: [Cluster!]!
-	serviceAccessGraphs: [ServiceAccessGraph!]!
-	serviceCount: Int!
-}
-
-"""The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
-scalar Int
-
-type AccessGraphEdge {
-	client: Service!
-	server: Service!
-	discoveredIntents: [Intent!]!
-	externalTrafficDiscoveredIntents: [ExternalTrafficIntent!]!
-	appliedIntents: [Intent!]!
-	accessStatus: EdgeAccessStatus!
-}
-
-type AccessGraphFilter {
-	environmentIds: [ID!]
-	clusterIds: [ID!]
-	namespaceIds: [ID!]
-	serviceIds: [ID!]
-	lastSeenAfter: Time
-	includeServicesWithNoEdges: Boolean
-}
-
-"""The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID."""
-scalar ID
-
-"""The `Boolean` scalar type represents `true` or `false`."""
-scalar Boolean
-
-enum ApiFieldAction {
-"""Do nothing, expose models to the REST API as id-only structs (Default behaviour)"""
-	COLLAPSE_MODEL
-"""Expand model field, returning its full data and not just its ID"""
-	EXPAND_MODEL
-"""Drop this field from the REST API"""
-	DROP_FIELD
-}
-
-enum ApiMethod {
-	GET
-	POST
-	PUT
-	PATCH
-	DELETE
-}
+"""@validate should be applied on API input fields / arguments, to enforce API input validation.
+See https://github.com/go-playground/validator for possible built-in constraints,
+and github.com/otterize/cloud/src/backend-service/pkg/lib/graphql/directives for custom contraints."""
+directive @validate(
+	constraint: String
+	customConstraint: CustomConstraint
+) on INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
 type AWSGeneralResource {
 	resource: String!
 	isWildcard: Boolean!
 }
-
-"""The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
-scalar String
 
 type AWSInfo {
 	region: String!
@@ -113,6 +94,69 @@ type AWSS3Resource {
 	bucketName: String!
 }
 
+type AccessGraph {
+	filter: AccessGraphFilter!
+"""Clusters for which there are results"""
+	clusters: [Cluster!]!
+	serviceAccessGraphs: [ServiceAccessGraph!]!
+	serviceCount: Int!
+}
+
+type AccessGraphEdge {
+	client: Service!
+	server: Service!
+	discoveredIntents: [Intent!]!
+	externalTrafficDiscoveredIntents: [ExternalTrafficIntent!]!
+	appliedIntents: [Intent!]!
+	accessStatus: EdgeAccessStatus!
+}
+
+type AccessGraphFilter {
+	environmentIds: [ID!]
+	clusterIds: [ID!]
+	namespaceIds: [ID!]
+	serviceIds: [ID!]
+	lastSeenAfter: Time
+	includeServicesWithNoEdges: Boolean
+}
+
+enum ApiFieldAction {
+"""Do nothing, expose models to the REST API as id-only structs (Default behaviour)"""
+	COLLAPSE_MODEL
+"""Expand model field, returning its full data and not just its ID"""
+	EXPAND_MODEL
+"""Drop this field from the REST API"""
+	DROP_FIELD
+}
+
+enum ApiMethod {
+	GET
+	POST
+	PUT
+	PATCH
+	DELETE
+}
+
+"""The `Boolean` scalar type represents `true` or `false`."""
+scalar Boolean
+
+input CLICommand {
+	noun: String!
+	verb: String!
+	modifiers: [String!]
+}
+
+input CLIIdentifier {
+	version: String!
+	contextId: String!
+	cloudClientId: String
+}
+
+input CLITelemetry {
+	identifier: CLIIdentifier!
+	command: CLICommand!
+}
+
 input CertificateCustomization {
 	dnsNames: [String!]
 	ttl: Int
@@ -131,33 +175,22 @@ enum CertificateProvider {
 	NONE
 }
 
-input CLICommand {
-	noun: String!
-	verb: String!
-	modifiers: [String!]
-}
-
 type ClientIntentsFileRepresentation {
+	fileName: String!
 	service: Service!
 	rows: [ClientIntentsRow!]!
 	content: String!
+}
+
+type ClientIntentsFiles {
+	files: [ClientIntentsFileRepresentation!]!
+	mergedYAMLFile: MergedYAMLFile
 }
 
 type ClientIntentsRow {
 	text: String!
 	diff: RowDiff
 	calledServerId: ID
-}
-
-input CLIIdentifier {
-	version: String!
-	contextId: String!
-	cloudClientId: String
-}
-
-input CLITelemetry {
-	identifier: CLIIdentifier!
-	command: CLICommand!
 }
 
 type Cluster {
@@ -240,6 +273,21 @@ enum CustomConstraint {
 	ID
 }
 
+enum DBPermissionChange {
+	APPLY
+	DELETE
+}
+
+type DNSIPPair {
+	dnsName: String!
+	ips: [String!]
+}
+
+input DNSIPPairInput {
+	dnsName: String!
+	ips: [String!]
+}
+
 type DatabaseConfig {
 	dbname: String!
 	table: String!
@@ -248,8 +296,13 @@ type DatabaseConfig {
 
 input DatabaseConfigInput {
 	dbname: String!
-	table: String!
-	operations: [DatabaseOperation!]!
+	table: String
+	operations: [DatabaseOperation!]
+}
+
+type DatabaseCredentials {
+	username: String!
+	password: String!
 }
 
 input DatabaseCredentialsInput {
@@ -260,6 +313,7 @@ input DatabaseCredentialsInput {
 type DatabaseInfo {
 	address: String!
 	databaseType: DatabaseType!
+	credentials: DatabaseCredentials!
 }
 
 input DatabaseInfoInput {
@@ -280,24 +334,9 @@ enum DatabaseType {
 	POSTGRESQL
 }
 
-enum DBPermissionChange {
-	APPLY
-	DELETE
-}
-
 input DiscoveredIntentInput {
 	discoveredAt: Time!
 	intent: IntentInput!
-}
-
-type DNSIPPair {
-	dnsName: String!
-	ips: [String!]
-}
-
-input DNSIPPairInput {
-	dnsName: String!
-	ips: [String!]
 }
 
 type EdgeAccessStatus {
@@ -333,6 +372,7 @@ enum EdgeAccessStatusReason {
 	NOT_IN_PROTECTED_SERVICES
 	INTENTS_OPERATOR_NEVER_CONNECTED
 	NETWORK_MAPPER_NEVER_CONNECTED
+	INTERNET_ACCESS_STATUS_UNKNOWN
 	NO_INTENTS_FOUND_OF_RELEVANT_TYPE
 	IGNORED_IN_CALCULATION
 }
@@ -383,11 +423,6 @@ enum EventType {
 	ACTIVE
 }
 
-type ExternalTrafficDiscoveredIntent {
-	discoveredAt: Time!
-	intent: ExternalTrafficIntent!
-}
-
 input ExternalTrafficDiscoveredIntentInput {
 	discoveredAt: Time!
 	intent: ExternalTrafficIntentInput!
@@ -405,6 +440,9 @@ input ExternalTrafficIntentInput {
 	clientName: String!
 	target: DNSIPPairInput!
 }
+
+"""The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
+scalar Float
 
 type HTTPConfig {
 	path: String!
@@ -428,6 +466,9 @@ enum HTTPMethod {
 	ALL
 }
 
+"""The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as "4") or integer (such as 4) input value will be accepted as an ID."""
+scalar ID
+
 input InputAccessGraphFilter {
 	environmentIds: [ID!]
 	clusterIds: [ID!]
@@ -436,6 +477,9 @@ input InputAccessGraphFilter {
 	lastSeenAfter: Time
 	includeServicesWithNoEdges: Boolean
 }
+
+"""The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
+scalar Int
 
 type Integration {
 	id: ID!
@@ -492,6 +536,25 @@ input IntentInput {
 	status: IntentStatusInput
 }
 
+type IntentStatus {
+	serviceAccountName: String!
+	isServiceAccountShared: Boolean!
+	isServerMissingSidecar: Boolean!
+	isClientMissingSidecar: Boolean!
+}
+
+input IntentStatusInput {
+	istioStatus: IstioStatusInput
+}
+
+enum IntentType {
+	HTTP
+	KAFKA
+	DATABASE
+	AWS
+	S3
+}
+
 type IntentsOperatorComponent {
 	type: ComponentType!
 	status: ComponentStatus!
@@ -513,25 +576,6 @@ input IntentsOperatorConfigurationInput {
 	kafkaACLEnforcementEnabled: Boolean
 	istioPolicyEnforcementEnabled: Boolean
 	protectedServicesEnabled: Boolean
-}
-
-type IntentStatus {
-	serviceAccountName: String!
-	isServiceAccountShared: Boolean!
-	isServerMissingSidecar: Boolean!
-	isClientMissingSidecar: Boolean!
-}
-
-input IntentStatusInput {
-	istioStatus: IstioStatusInput
-}
-
-enum IntentType {
-	HTTP
-	KAFKA
-	DATABASE
-	AWS
-	S3
 }
 
 type Invite {
@@ -647,6 +691,12 @@ type MeMutation {
 	registerUser: Me!
 }
 
+type MergedYAMLFile {
+	fileName: String!
+	rows: [ClientIntentsRow!]!
+	content: String!
+}
+
 type Mutation {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
@@ -673,6 +723,10 @@ type Mutation {
 		name: String
 		configuration: ClusterConfigurationInput
 	): Cluster!
+"""Register user-password request for a pod owner, returns the service associated with this pod owner"""
+	registerKubernetesServiceUserAndPasswordRequest(
+		podOwner: NamespacedPodOwner!
+	): Service!
 """Create a new environment"""
 	createEnvironment(
 		name: String!
@@ -736,6 +790,12 @@ type Mutation {
 	updateKubernetesIntegration(
 		id: ID!
 		environmentId: ID
+	): Integration
+"""Update Database integration"""
+	updateDatabaseIntegration(
+		id: ID!
+		name: String
+		databaseInfo: DatabaseInfoInput!
 	): Integration
 """Delete integration"""
 	deleteIntegration(
@@ -814,6 +874,14 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+	notifyQuestLogStepAdvanced(
+		id: ID!
+		step: QuestLogStep!
+	): Boolean!
+	notifyQuestLogStepSeenAdvanced(
+		id: ID!
+		step: QuestLogStep!
+	): Boolean!
 }
 
 type Namespace {
@@ -875,10 +943,6 @@ type Query {
 	oneCluster(
 		name: String!
 	): Cluster
-	serviceUserAndPassword(
-		service: String!
-		namespace: String!
-	): UserAndPassword!
 """Get environment"""
 	environment(
 		id: ID!
@@ -912,6 +976,7 @@ type Query {
 	): Integration!
 	testDatabaseConnection(
 		databaseInfo: DatabaseInfoInput!
+		integrationId: ID
 	): TestDatabaseConnectionResponse!
 """List user invites"""
 	invites(
@@ -975,6 +1040,22 @@ type Query {
 	): User!
 }
 
+enum QuestLogStep {
+"""Connect cluster"""
+	CONNECT_CLUSTER
+"""Get to know your network map"""
+	EXPLORE_NETWORK_MAP_ADD_NS_FILTER
+	EXPLORE_NETWORK_MAP_ADD_SVC_FILTER
+	EXPLORE_NETWORK_MAP_CLEAR_FILTERS
+"""Declare intents"""
+	DECLARE_INTENTS_CLICK_ON_SERVICE
+	DECLARE_INTENTS_DOWNLOAD_YAML
+	DECLARE_INTENTS_DO_APPLY
+"""Enable intents"""
+	ENABLE_ENFORCEMENT_CREATE_PROTECTED_SERVICE
+	COMPLETED
+}
+
 enum RowDiff {
 	ADDED
 	REMOVED
@@ -1006,12 +1087,6 @@ type ServerProtectionStatus {
 	reason: ServerProtectionStatusReason!
 }
 
-type ServerProtectionStatuses {
-	networkPolicies: ServerProtectionStatus!
-	kafkaACLs: ServerProtectionStatus!
-	istioPolicies: ServerProtectionStatus!
-}
-
 enum ServerProtectionStatusReason {
 	INTENTS_OPERATOR_NEVER_CONNECTED
 	INTENTS_OPERATOR_NOT_ENFORCING
@@ -1036,6 +1111,12 @@ enum ServerProtectionStatusVerdict {
 	PROTECTED
 }
 
+type ServerProtectionStatuses {
+	networkPolicies: ServerProtectionStatus!
+	kafkaACLs: ServerProtectionStatus!
+	istioPolicies: ServerProtectionStatus!
+}
+
 type Service {
 	id: ID!
 	name: String!
@@ -1047,6 +1128,7 @@ type Service {
 	serviceAccount: String
 	awsResource: AWSResource
 	tlsKeyPair: KeyPair!
+	userAndPassword: UserAndPassword!
 }
 
 type ServiceAccessGraph {
@@ -1068,8 +1150,8 @@ type ServiceAccessStatus {
 }
 
 type ServiceClientIntents {
-	asClient: [ClientIntentsFileRepresentation!]!
-	asServer: [ClientIntentsFileRepresentation!]!
+	asClient: ClientIntentsFiles
+	asServer: ClientIntentsFiles
 }
 
 enum ServiceType {
@@ -1077,7 +1159,11 @@ enum ServiceType {
 	KAFKA
 	AWS
 	DATABASE
+	INTERNET
 }
+
+"""The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
+scalar String
 
 enum TelemetryComponentType {
 	INTENTS_OPERATOR
@@ -1109,6 +1195,8 @@ type User {
 	name: String!
 	imageURL: String!
 	authProviderUserId: String!
+	questLogStep: QuestLogStep!
+	questLogStepSeen: QuestLogStep!
 }
 
 type UserAndPassword {
@@ -1124,6 +1212,7 @@ enum UserErrorType {
 	FORBIDDEN
 	CONFLICT
 	BAD_USER_INPUT
+	APPLIED_INTENTS_ERROR
 }
 
 
