@@ -224,16 +224,6 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 	return nil
 }
 
-// waitForHandledResults is used in tests as result handling is now async.
-func (r *Resolver) waitForHandledResults(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-r.gotResultsCtx.Done():
-		return nil
-	}
-}
-
 func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model.CaptureResults) error {
 	var newResults int
 	for _, captureItem := range results.Results {

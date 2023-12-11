@@ -74,20 +74,6 @@ func (s *ResolverTestSuite) waitForCaptureResultsProcessed(timeout time.Duration
 	}
 }
 
-func (s *ResolverTestSuite) waitForCaptureResultsCount(count int) {
-	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(), 1*time.Second, 10*time.Second, true, func(ctx context.Context) (done bool, err error) {
-		res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
-		if err != nil {
-			return false, err
-		}
-		if len(res.ServiceIntents) != 0 {
-			return true, nil
-		}
-
-		return false, nil
-	}))
-}
-
 func (s *ResolverTestSuite) TestReportCaptureResults() {
 	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, "10.0.0.16")
 	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"}, "10.0.0.17")
