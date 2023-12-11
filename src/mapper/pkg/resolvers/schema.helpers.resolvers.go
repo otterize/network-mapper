@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	"strings"
 )
 
 type SourceType string
@@ -49,7 +50,7 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func (r *mutationResolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
+func (r *Resolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
 	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
 	if err != nil {
 		return false, err
@@ -64,7 +65,7 @@ func (r *mutationResolver) tryHandleSocketScanDestinationAsService(ctx context.C
 	return true, nil
 }
 
-func (r *mutationResolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
+func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
 		return err
@@ -109,7 +110,7 @@ func (r *mutationResolver) addSocketScanServiceIntent(ctx context.Context, srcSv
 	return nil
 }
 
-func (r *mutationResolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
+func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
 	if destPod.DeletionTimestamp != nil {
 		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
 		return nil
@@ -144,7 +145,7 @@ func (r *mutationResolver) addSocketScanPodIntent(ctx context.Context, srcSvcIde
 	return nil
 }
 
-func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
+func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
 	if !viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		return nil
 	}
@@ -164,7 +165,7 @@ func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Co
 	return nil
 }
 
-func (r *mutationResolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
+func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
 	destAddress := dest.Destination
 	ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 	if err != nil {
@@ -221,4 +222,220 @@ func (r *mutationResolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.C
 	updateTelemetriesCounters(SourceTypeDNSCapture, intent)
 
 	return nil
+}
+
+func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model.CaptureResults) error {
+	var newResults int
+	for _, captureItem := range results.Results {
+		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		if err != nil {
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
+			continue
+		}
+		for _, dest := range captureItem.Destinations {
+			destCopy := dest
+			destAddress := dest.Destination
+			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
+				err := r.handleDNSCaptureResultsAsExternalTraffic(ctx, destCopy, srcSvcIdentity)
+				if err != nil {
+					logrus.WithError(err).Error("could not handle DNS capture result as external traffic")
+					continue
+				}
+				newResults++
+				continue
+			}
+
+			err := r.handleDNSCaptureResultsAsKubernetesPods(ctx, destCopy, srcSvcIdentity)
+			if err != nil {
+				logrus.WithError(err).Error("could not handle DNS capture result as pod")
+				continue
+			}
+			newResults++
+		}
+	}
+
+	prometheus.IncrementDNSCaptureReports(newResults)
+	return nil
+}
+
+func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results model.SocketScanResults) error {
+	for _, socketScanItem := range results.Results {
+		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
+		if err != nil {
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
+			continue
+		}
+		for _, dest := range socketScanItem.Destinations {
+			destCopy := dest
+			isService, err := r.tryHandleSocketScanDestinationAsService(ctx, srcSvcIdentity, destCopy)
+			if err != nil {
+				logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
+				// Log error but don't stop handling other destinations.
+				continue
+			}
+
+			if isService {
+				continue // No need to try to handle IP as Pod, since IP belonged to a service.
+			}
+
+			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destCopy.Destination)
+			if err != nil {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
+				// Log error but don't stop handling other destinations.
+				continue
+			}
+
+			err = r.addSocketScanPodIntent(ctx, srcSvcIdentity, destCopy, destPod)
+			if err != nil {
+				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", dest.Destination)
+				// Log error but don't stop handling other destinations.
+				continue
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) error {
+	var newResults int
+	for _, result := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, result.SrcIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", result.SrcIP)
+			} else {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod", result.SrcIP)
+			}
+			continue
+		}
+
+		if srcPod.DeletionTimestamp != nil {
+			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
+			continue
+		}
+
+		if srcPod.CreationTimestamp.After(result.LastSeen) {
+			logrus.Debugf("Pod %s was created after scan time %s, ignoring", srcPod.Name, result.LastSeen)
+			continue
+		}
+
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+
+		dstPod, err := r.kubeFinder.ResolvePodByName(ctx, result.ServerPodName, result.ServerNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", result.ServerPodName)
+			continue
+		}
+		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
+			continue
+		}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+
+		operation, err := model.KafkaOpFromText(result.Operation)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve kafka operation %s", result.Operation)
+			return err
+		}
+
+		intent := model.Intent{
+			Client: &srcSvcIdentity,
+			Server: &dstSvcIdentity,
+			Type:   lo.ToPtr(model.IntentTypeKafka),
+			KafkaTopics: []model.KafkaConfig{
+				{
+					Name:       result.Topic,
+					Operations: []model.KafkaOperation{operation},
+				},
+			},
+		}
+
+		updateTelemetriesCounters(SourceTypeKafkaMapper, intent)
+		r.intentsHolder.AddIntent(
+			result.LastSeen,
+			intent,
+		)
+		newResults++
+	}
+
+	prometheus.IncrementKafkaReports(newResults)
+	return nil
+}
+
+func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) error {
+	var newResults int
+	for _, result := range results.Results {
+		srcPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.SrcWorkload, result.SrcWorkloadNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			continue
+		}
+		dstPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.DstWorkload, result.DstWorkloadNamespace)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			continue
+		}
+		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
+			continue
+		}
+		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
+		if err != nil {
+			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
+			continue
+		}
+
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+		if srcService.OwnerObject != nil {
+			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+		}
+
+		if dstService.OwnerObject != nil {
+			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+		}
+
+		intent := model.Intent{
+			Client:        &srcSvcIdentity,
+			Server:        &dstSvcIdentity,
+			Type:          lo.ToPtr(model.IntentTypeHTTP),
+			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
+		}
+
+		updateTelemetriesCounters(SourceTypeIstio, intent)
+		r.intentsHolder.AddIntent(result.LastSeen, intent)
+		newResults++
+	}
+
+	prometheus.IncrementIstioReports(newResults)
+	return nil
+}
+
+type Results interface {
+	Length() int
+}
+
+type resultsHandlerFunc[T Results] func(ctx context.Context, results T) error
+
+func runHandleLoop[T Results](ctx context.Context, resultsChan chan T, handleFunc resultsHandlerFunc[T]) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case results := <-resultsChan:
+			err := handleFunc(ctx, results)
+			if err != nil {
+				logrus.WithError(err).Errorf("Failed to handle %d results of type '%T'", results.Length(), results)
+				// Intentionally no return
+			}
+		}
+	}
 }
