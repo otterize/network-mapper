@@ -43,6 +43,7 @@ func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 		err := s.mapperClient.ReportCaptureResults(timeoutCtx, mapperclient.CaptureResults{Results: results})
 		if err != nil {
 			logrus.WithError(err).Error("Failed to report capture results")
+			return
 		}
 		logrus.Infof("Reported captured requests of %d clients to Mapper", len(results))
 		prometheus.IncrementDNSCaptureReports(len(results))
@@ -64,6 +65,7 @@ func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 		err := s.mapperClient.ReportSocketScanResults(timeoutCtx, mapperclient.SocketScanResults{Results: results})
 		if err != nil {
 			logrus.WithError(err).Error("Failed to report socket scan results")
+			return
 		}
 		logrus.Infof("Reported scanned requests of %d clients to Mapper", len(results))
 		prometheus.IncrementSocketScanReports(len(results))
