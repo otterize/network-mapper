@@ -8,9 +8,11 @@ import (
 	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
@@ -32,6 +34,8 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+	componentutils.SetCloudClientId()
+	componentinfo.SetGlobalComponentInstanceId()
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	istioWatcher, err := istiowatcher.NewWatcher(mapperClient)

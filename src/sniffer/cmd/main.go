@@ -7,7 +7,9 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"golang.org/x/sync/errgroup"
 	"net/http"
@@ -36,6 +38,8 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+	componentutils.SetCloudClientId()
+	componentinfo.SetGlobalComponentInstanceId()
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
 
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
@@ -36,6 +38,8 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+	componentutils.SetCloudClientId()
+	componentinfo.SetGlobalComponentInstanceId()
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
