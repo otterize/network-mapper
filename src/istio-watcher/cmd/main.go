@@ -53,16 +53,16 @@ func main() {
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	errgrp.Go(func() error {
-		bugsnag.AutoNotify(errGroupCtx)
+		defer bugsnag.AutoNotify(errGroupCtx)
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
-		bugsnag.AutoNotify(errGroupCtx)
+		defer bugsnag.AutoNotify(errGroupCtx)
 		return healthServer.Start(":9090")
 	})
 
 	errgrp.Go(func() error {
-		bugsnag.AutoNotify(errGroupCtx)
+		defer bugsnag.AutoNotify(errGroupCtx)
 		err := istioWatcher.RunForever(errGroupCtx)
 		return err
 	})
