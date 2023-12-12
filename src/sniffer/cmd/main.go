@@ -79,18 +79,18 @@ func main() {
 
 	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when running server or HTTP server")
+		logrus.WithError(err).Fatal("Error when running server or HTTP server")
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err = healthServer.Shutdown(timeoutCtx)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when shutting down")
+		logrus.WithError(err).Fatal("Error when shutting down")
 	}
 
 	err = metricsServer.Shutdown(timeoutCtx)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when shutting down")
+		logrus.WithError(err).Fatal("Error when shutting down")
 	}
 }

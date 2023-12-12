@@ -59,14 +59,3 @@ func setContextId() (bool, error) {
 	componentinfo.SetGlobalContextId(string(res))
 	return true, nil
 }
-
-func ExitDueToInitFailure(entry *logrus.Entry, message string) {
-	if entry != nil {
-		entry.Error(message)
-	} else {
-		logrus.Error(message)
-	}
-	// Wait to allow error reporter to notify the error
-	time.Sleep(15 * time.Millisecond)
-	os.Exit(1)
-}

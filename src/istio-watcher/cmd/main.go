@@ -40,7 +40,7 @@ func main() {
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 	istioWatcher, err := istiowatcher.NewWatcher(mapperClient)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when creating new watcher")
+		logrus.WithError(err).Panic()
 	}
 
 	healthServer := echo.New()
@@ -78,19 +78,19 @@ func main() {
 
 	err = errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when running server or HTTP server")
+		logrus.WithError(err).Fatal("Error when running server or HTTP server")
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err = healthServer.Shutdown(timeoutCtx)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when shutting down health server")
+		logrus.WithError(err).Fatal("Error when shutting down")
 	}
 
 	err = metricsServer.Shutdown(timeoutCtx)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when shutting down metrics server")
+		logrus.WithError(err).Fatal("Error when shutting down")
 	}
 
 }
