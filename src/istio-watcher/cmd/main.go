@@ -73,7 +73,7 @@ func main() {
 
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGroupCtx)
-		return componentutils.WaitAndSetContextId()
+		return componentutils.WaitAndSetContextId(errGroupCtx)
 	})
 
 	err = errgrp.Wait()

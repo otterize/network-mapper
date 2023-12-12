@@ -1,6 +1,7 @@
 package componentutils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/otterizecloud/otterizecloudclient"
@@ -18,7 +19,7 @@ func SetCloudClientId() {
 	componentinfo.SetGlobalCloudClientId(viper.GetString(otterizecloudclient.ApiClientIdKey))
 }
 
-func WaitAndSetContextId() error {
+func WaitAndSetContextId(ctx context.Context) error {
 	interval := viper.GetDuration(sharedconfig.ReadContextIdIntervalKey)
 
 	for {
@@ -31,7 +32,13 @@ func WaitAndSetContextId() error {
 			return nil
 		}
 
-		time.Sleep(interval)
+		select {
+		case <-ctx.Done():
+			logrus.Info("Context canceled, exiting context id setting loop")
+			return nil
+		case <-time.After(interval):
+			logrus.Info("Context id not set yet, waiting")
+		}
 	}
 }
 
@@ -48,7 +55,6 @@ func setContextId() (bool, error) {
 		return false, nil
 	}
 
-	logrus.Info("Setting context id")
 	componentinfo.SetGlobalContextId(string(res))
 	return true, nil
 }
