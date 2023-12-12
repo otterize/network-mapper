@@ -61,12 +61,15 @@ func setContextId() (bool, error) {
 }
 
 func ExitDueToInitFailure(entry *logrus.Entry, message string) {
-	if entry != nil {
-		entry.Error(message)
-	} else {
-		logrus.Error(message)
+	if entry == nil {
+		panic(message)
 	}
-	// Wait to allow error reporter to notify the error
-	time.Sleep(15 * time.Millisecond)
-	os.Exit(1)
+	msg, err := entry.WithField("message", message).String()
+	if err != nil {
+		// Entry format error, just use the original message
+		msg, _ = logrus.WithField("error formatting message", err).WithField("message", message).String()
+	}
+
+	// Bugsnag panic synchronously, making sure the massage is sent before exiting
+	panic(msg)
 }
