@@ -29,6 +29,7 @@ func WaitAndSetContextId(ctx context.Context) error {
 			return err
 		}
 		if ok {
+			logrus.Info("Context id set successfully")
 			return nil
 		}
 
