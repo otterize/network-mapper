@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
-	errors2 "github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
@@ -59,7 +58,6 @@ func getClusterDomainOrDefault() string {
 
 func main() {
 	errorreporter.Init("network-mapper", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
-	defer bugsnag.AutoNotify(context.Background())
 	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)
@@ -205,14 +203,14 @@ func main() {
 func WriteContextIDToConfigMap(k8sClient client.Client, contextID string) error {
 	namespace, err := kubeutils.GetCurrentNamespace()
 	if err != nil {
-		return errors2.Wrap(err)
+		return err
 	}
 
 	configMapName := viper.GetString(sharedconfig.ComponentMetadataConfigmapNameKey)
 	var configMap corev1.ConfigMap
 	err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: configMapName}, &configMap)
 	if err != nil {
-		return errors2.Wrap(err)
+		return err
 	}
 
 	if configMap.Data == nil {
@@ -223,7 +221,7 @@ func WriteContextIDToConfigMap(k8sClient client.Client, contextID string) error 
 	configMap.Data[contextIdKey] = contextID
 	err = k8sClient.Update(context.Background(), &configMap)
 	if err != nil {
-		return errors2.Wrap(err)
+		return err
 	}
 
 	logrus.Info("Successfully wrote context id to config map")
