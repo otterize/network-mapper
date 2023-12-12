@@ -12,13 +12,13 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/metadata"
 	"net/http"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
@@ -78,15 +78,13 @@ func main() {
 	// start manager with operators
 	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{MetricsBindAddress: "0"})
 	if err != nil {
-		logrus.Errorf("unable to set up overall controller manager: %s", err)
-		os.Exit(1)
+		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Unable to set up overall controller manager")
 	}
 
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	kubeFinder, err := kubefinder.NewKubeFinder(errGroupCtx, mgr)
 	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Failed to initialize kube finder")
 	}
 
 	errgrp.Go(func() error {
@@ -101,11 +99,11 @@ func main() {
 
 	metadataClient, err := metadata.NewForConfig(clientconfig.GetConfigOrDie())
 	if err != nil {
-		logrus.WithError(err).Fatal("unable to create metadata client")
+		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Failed to initialize metadata client")
 	}
 	mapping, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: "", Kind: "Namespace"}, "v1")
 	if err != nil {
-		logrus.WithError(err).Fatal("unable to create Kubernetes API REST mapping")
+		componentutils.ExitDueToInitFailure(logrus.WithError(err), "unable to create Kubernetes API REST mapping")
 	}
 	kubeSystemUID := ""
 	kubeSystemNs, err := metadataClient.Resource(mapping.Resource).Get(context.Background(), "kube-system", metav1.GetOptions{})
@@ -144,7 +142,7 @@ func main() {
 
 	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
 	if err != nil {
-		logrus.WithError(err).Fatal("Failed to initialize cloud client")
+		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Failed to initialize cloud client")
 	}
 
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
@@ -161,7 +159,7 @@ func main() {
 		otelExporter, err := metricexporter.NewMetricExporter(errGroupCtx)
 		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 		if err != nil {
-			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
+			componentutils.ExitDueToInitFailure(logrus.WithError(err), "Failed to initialize otel exporter")
 		}
 	}
 
@@ -197,7 +195,7 @@ func main() {
 
 	err = errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
-		logrus.WithError(err).Fatal("Error when running server or HTTP server")
+		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when running server or HTTP server")
 	}
 
 }
