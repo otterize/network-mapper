@@ -72,6 +72,11 @@ func main() {
 		return snifferInstance.RunForever(errGroupCtx)
 	})
 
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
+		return componentutils.WaitAndSetContextId(errGroupCtx)
+	})
+
 	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logrus.WithError(err).Fatal("Error when running server or HTTP server")
