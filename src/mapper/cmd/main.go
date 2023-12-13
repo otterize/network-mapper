@@ -76,8 +76,7 @@ func main() {
 	// start manager with operators
 	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{MetricsBindAddress: "0"})
 	if err != nil {
-		logrus.Errorf("unable to set up overall controller manager: %s", err)
-		os.Exit(1)
+		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
 
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
@@ -99,11 +98,11 @@ func main() {
 
 	metadataClient, err := metadata.NewForConfig(clientconfig.GetConfigOrDie())
 	if err != nil {
-		logrus.WithError(err).Fatal("unable to create metadata client")
+		logrus.WithError(err).Panic("unable to create metadata client")
 	}
 	mapping, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: "", Kind: "Namespace"}, "v1")
 	if err != nil {
-		logrus.WithError(err).Fatal("unable to create Kubernetes API REST mapping")
+		logrus.WithError(err).Panic("unable to create Kubernetes API REST mapping")
 	}
 	kubeSystemUID := ""
 	kubeSystemNs, err := metadataClient.Resource(mapping.Resource).Get(context.Background(), "kube-system", metav1.GetOptions{})
@@ -137,7 +136,7 @@ func main() {
 
 	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
 	if err != nil {
-		logrus.WithError(err).Fatal("Failed to initialize cloud client")
+		logrus.WithError(err).Panic("Failed to initialize cloud client")
 	}
 
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
@@ -154,7 +153,7 @@ func main() {
 		otelExporter, err := metricexporter.NewMetricExporter(errGroupCtx)
 		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 		if err != nil {
-			logrus.WithError(err).Fatal("Failed to initialize otel exporter")
+			logrus.WithError(err).Panic("Failed to initialize otel exporter")
 		}
 	}
 
@@ -190,7 +189,7 @@ func main() {
 
 	err = errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
-		logrus.WithError(err).Fatal("Error when running server or HTTP server")
+		logrus.WithError(err).Panic("Error when running server or HTTP server")
 	}
 
 }
