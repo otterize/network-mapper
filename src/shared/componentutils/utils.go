@@ -1,13 +1,10 @@
 package componentutils
 
 import (
-	"context"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/otterize/intents-operator/src/shared/otterizecloud/otterizecloudclient"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"os"
 )
 
 func SetCloudClientId() {
@@ -17,23 +14,6 @@ func SetCloudClientId() {
 }
 
 func ExitDueToInitFailure(entry *logrus.Entry, message string) {
-	triggerBugsnagSync(entry, message)
-	if entry != nil {
-		entry.Error(message)
-	} else {
-		logrus.Error(message)
-	}
-	os.Exit(1)
-}
-
-func triggerBugsnagSync(entry *logrus.Entry, message string) {
-	// The only way to trigger a synchronous bugsnag report is to call panic, and catch with AutoNotify
-	// This function triggers a panic and recovers from it to avoid printing the panic stack trace to the user
-	defer func() {
-		_ = recover()
-	}()
-
-	defer bugsnag.AutoNotify(context.Background())
 	if entry == nil {
 		panic(message)
 	}
