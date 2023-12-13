@@ -27,8 +27,6 @@ import (
 
 func main() {
 	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
-	defer bugsnag.AutoNotify(context.Background())
-
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
