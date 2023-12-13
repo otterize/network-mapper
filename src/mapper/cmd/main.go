@@ -13,11 +13,13 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"golang.org/x/sync/errgroup"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -112,7 +114,12 @@ func main() {
 	} else {
 		kubeSystemUID = string(kubeSystemNs.UID)
 	}
-	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
+	contextID := telemetrysender.Anonymize(kubeSystemUID)
+	componentinfo.SetGlobalContextId(contextID)
+	err = WriteContextIDToConfigMap(mgr.GetClient(), contextID)
+	if err != nil {
+		logrus.WithError(err).Error("unable to write context id to config map")
+	}
 
 	// start API server
 	mapperServer.GET("/healthz", func(c echo.Context) error {
@@ -192,4 +199,32 @@ func main() {
 		logrus.WithError(err).Panic("Error when running server or HTTP server")
 	}
 
+}
+
+func WriteContextIDToConfigMap(k8sClient client.Client, contextID string) error {
+	namespace, err := kubeutils.GetCurrentNamespace()
+	if err != nil {
+		return err
+	}
+
+	configMapName := viper.GetString(sharedconfig.ComponentMetadataConfigmapNameKey)
+	var configMap corev1.ConfigMap
+	err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: configMapName}, &configMap)
+	if err != nil {
+		return err
+	}
+
+	if configMap.Data == nil {
+		configMap.Data = make(map[string]string)
+	}
+
+	contextIdKey := viper.GetString(sharedconfig.ComponentMetadataContextIdKeyKey)
+	configMap.Data[contextIdKey] = contextID
+	err = k8sClient.Update(context.Background(), &configMap)
+	if err != nil {
+		return err
+	}
+
+	logrus.Info("Successfully wrote context id to config map")
+	return nil
 }
