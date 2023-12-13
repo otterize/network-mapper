@@ -53,8 +53,8 @@ func main() {
 		logPath := viper.GetString(config.KafkaAuthZLogPathKey)
 
 		if logPath == "" {
-			msg := fmt.Sprintf("Kafka log path is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaAuthZLogPathKey))
-			componentutils.ExitDueToInitFailure(logrus.WithError(errors.New(msg)), msg)
+			logrus.Fatalf("Kafka log path is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaAuthZLogPathKey))
+
 		}
 
 		logrus.Infof("Kafka watcher: reading from filesystem - %s", logPath)
@@ -66,26 +66,24 @@ func main() {
 
 		watcher, err = logwatcher2.NewLogFileWatcher(mapperClient, logPath, serverName)
 		if err != nil {
-			componentutils.ExitDueToInitFailure(logrus.WithError(err), "could not initialize log file watcher")
+			logrus.WithError(err).Fatal("could not initialize log file watcher")
 		}
 	case config.KubernetesLogReadMode:
 		kafkaServers, parseErr := parseKafkaServers(viper.GetStringSlice(config.KafkaServersKey))
 		logrus.Infof("Reading from k8s logs - %d servers", len(kafkaServers))
 
 		if parseErr != nil {
-			componentutils.ExitDueToInitFailure(logrus.WithError(parseErr), "could not parse Kafka servers list")
+			logrus.WithError(err).Fatal("could not parse Kafka servers list")
 		}
 
 		watcher, err = logwatcher2.NewKubernetesLogWatcher(mapperClient, kafkaServers)
 		if err != nil {
-			componentutils.ExitDueToInitFailure(logrus.WithError(err), "could not initialize Kubernetes log watcher")
+			logrus.WithError(err).Fatal("could not initialize Kubernetes log watcher")
 		}
 	case "":
-		msg := fmt.Sprintf("Kafka watcher mode is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaLogReadModeKey))
-		componentutils.ExitDueToInitFailure(logrus.WithError(errors.New(msg)), msg)
+		logrus.Fatalf("Kafka watcher mode is not set - please set %s", sharedconfig.GetEnvVarForKey(config.KafkaLogReadModeKey))
 	default:
-		msg := fmt.Sprintf("Kafka watcher mode (%s) is not set to a valid mode", mode)
-		componentutils.ExitDueToInitFailure(logrus.WithError(errors.New(msg)), msg)
+		logrus.Fatalf("Kafka watcher mode (%s) is not set to a valid mode", mode)
 	}
 
 	healthServer := echo.New()
@@ -118,19 +116,19 @@ func main() {
 
 	err = errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when running server or HTTP server")
+		logrus.WithError(err).Fatal("Error when running server or HTTP server")
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err = healthServer.Shutdown(timeoutCtx)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when shutting down health server")
+		logrus.WithError(err).Fatal("Error when shutting down")
 	}
 
 	err = metricsServer.Shutdown(timeoutCtx)
 	if err != nil {
-		componentutils.ExitDueToInitFailure(logrus.WithError(err), "Error when shutting down metrics server")
+		logrus.WithError(err).Fatal("Error when shutting down")
 	}
 }
 
