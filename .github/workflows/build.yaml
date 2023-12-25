@@ -71,7 +71,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            "VERSION=${{ github.run_id }}"
+            "VERSION=0.0.${{ github.run_id }}"
 
   e2e-test:
     uses: ./.github/workflows/e2e-test.yaml
