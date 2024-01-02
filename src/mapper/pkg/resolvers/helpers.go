@@ -22,6 +22,18 @@ func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
 	return labels
 }
 
+func serviceLabelsToOtterizeLabels(service *corev1.Service) []model.PodLabel {
+	labels := make([]model.PodLabel, 0)
+	for key, value := range service.Labels {
+		labels = append(labels, model.PodLabel{
+			Key:   key,
+			Value: value,
+		})
+	}
+
+	return labels
+}
+
 func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {

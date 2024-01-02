@@ -165,6 +165,26 @@ func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[st
 	return service
 }
 
+func (s *ControllerManagerTestSuiteBase) GetAPIServerService() *corev1.Service {
+	service := &corev1.Service{}
+	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
+		waitForCreationInterval,
+		waitForCreationTimeout,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: "kubernetes", Namespace: "default"}, service)
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		}),
+	)
+	return service
+}
+
 func (s *ControllerManagerTestSuiteBase) AddReplicaSet(name string, podIps []string, podLabels map[string]string) (*appsv1.ReplicaSet, []*corev1.Pod) {
 	replicaSet := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("replicaset-%s", name), Namespace: s.TestNamespace},
