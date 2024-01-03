@@ -827,6 +827,109 @@ func (s *ResolverTestSuite) TestIntents() {
 	s.Require().ElementsMatch(res.Intents, expectedIntents)
 }
 
+func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
+	service := s.GetAPIServerService()
+	s.Require().NotNil(service)
+
+	podServiceName := "client-pod"
+	podIP := "1.1.19.1"
+	s.AddPod(podServiceName, podIP, nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	_, err := test_gql_client.ReportCaptureResults(context.Background(), s.client, test_gql_client.CaptureResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: podIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: fmt.Sprintf("%s.%s.svc.cluster.local", service.GetName(), service.GetNamespace()),
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, true, nil)
+	s.Require().NoError(err)
+	logrus.Info("Report processed")
+	logrus.Infof("Intents: %v", res.Intents)
+
+	expectedIntents := []test_gql_client.IntentsIntentsIntent{
+		{
+			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
+				Name:      podServiceName,
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "",
+					Kind:    "Pod",
+					Version: "v1",
+				},
+			},
+			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
+				Name:              service.GetName(),
+				Namespace:         service.GetNamespace(),
+				KubernetesService: service.GetName(),
+			},
+		},
+	}
+	s.Require().ElementsMatch(res.Intents, expectedIntents)
+}
+
+func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
+	service := s.GetAPIServerService()
+	s.Require().NotNil(service)
+
+	podServiceName := "client-pod"
+	podIP := "1.1.19.1"
+	s.AddPod(podServiceName, podIP, nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	_, err := test_gql_client.ReportSocketScanResults(context.Background(), s.client, test_gql_client.SocketScanResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: podIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: service.Spec.ClusterIP,
+						LastSeen:    time.Now(),
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, true, nil)
+	s.Require().NoError(err)
+	logrus.Info("Report processed")
+	logrus.Infof("Intents: %v", res.Intents)
+
+	expectedIntents := []test_gql_client.IntentsIntentsIntent{
+		{
+			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
+				Name:      podServiceName,
+				Namespace: s.TestNamespace,
+				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   "",
+					Kind:    "Pod",
+					Version: "v1",
+				},
+			},
+			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
+				Name:              service.GetName(),
+				Namespace:         service.GetNamespace(),
+				KubernetesService: service.GetName(),
+			},
+		},
+	}
+	s.Require().ElementsMatch(res.Intents, expectedIntents)
+}
+
 func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 	service1Name := "service1"
 	service1IP := "1.1.18.1"
