@@ -159,10 +159,10 @@ func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload str
 	return &podList.Items[0], nil
 }
 
-func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, string, error) {
+func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, types.NamespacedName, error) {
 	clusterDomain := viper.GetString(config.ClusterDomainKey)
 	if !strings.HasSuffix(fqdn, clusterDomain) {
-		return nil, "", errors.Errorf("address %s is not in the cluster", fqdn)
+		return nil, types.NamespacedName{}, errors.Errorf("address %s is not in the cluster", fqdn)
 	}
 	fqdnWithoutClusterDomain := fqdn[:len(fqdn)-len("."+clusterDomain)]
 	fqdnWithoutClusterDomainParts := strings.Split(fqdnWithoutClusterDomain, ".")
@@ -175,14 +175,15 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 		*/
 		if len(fqdnWithoutClusterDomainParts) < 3 {
 			// expected at least service-name.namespace.svc
-			return nil, "", errors.Errorf("service address %s is too short", fqdn)
+			return nil, types.NamespacedName{}, errors.Errorf("service address %s is too short", fqdn)
 		}
 		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
 		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-3]
 		endpoints := &corev1.Endpoints{}
-		err := k.client.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: namespace}, endpoints)
+		serviceNamespacedName := types.NamespacedName{Name: serviceName, Namespace: namespace}
+		err := k.client.Get(ctx, serviceNamespacedName, endpoints)
 		if err != nil {
-			return nil, "", errors.Wrap(err)
+			return nil, types.NamespacedName{}, errors.Wrap(err)
 		}
 		ips := make([]string, 0)
 		for _, subset := range endpoints.Subsets {
@@ -190,11 +191,11 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 				ips = append(ips, address.IP)
 			}
 		}
-		return ips, serviceName, nil
+		return ips, serviceNamespacedName, nil
 	case "pod":
 		// for address format of pods: 172-17-0-3.default.pod.cluster.local
-		return []string{strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")}, "", nil
+		return []string{strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")}, types.NamespacedName{}, nil
 	default:
-		return nil, "", errors.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
+		return nil, types.NamespacedName{}, errors.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
 	}
 }
