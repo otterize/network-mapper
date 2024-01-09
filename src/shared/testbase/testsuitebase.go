@@ -49,7 +49,7 @@ func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	s.Require().NotNil(s.K8sDirectClient)
 	s.mgrCtx, s.mgrCtxCancelFunc = context.WithCancel(context.Background())
 
-	s.Mgr, err = manager.New(s.cfg, manager.Options{MetricsBindAddress: "0"})
+	s.Mgr, err = manager.New(s.cfg, manager.Options{})
 	s.Require().NoError(err)
 	testName := s.T().Name()[strings.LastIndex(s.T().Name(), "/")+1:]
 	s.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))

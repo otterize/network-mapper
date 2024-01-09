@@ -7,11 +7,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
+	operatorwebhooks "github.com/otterize/intents-operator/src/operator/webhooks"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +22,8 @@ import (
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -76,7 +80,7 @@ func main() {
 	mapperServer.Use(middleware.Logger())
 
 	// start manager with operators
-	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{MetricsBindAddress: "0"})
+	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{})
 	if err != nil {
 		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
@@ -86,6 +90,30 @@ func main() {
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
+	}
+
+	// create webhook server certificate
+	logrus.Infoln("Creating self signing certs")
+	podNamespace, err := kubeutils.GetCurrentNamespace()
+
+	if err != nil {
+		logrus.WithError(err).Panic("unable to get pod namespace")
+	}
+
+	certBundle, err :=
+		operatorwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
+	if err != nil {
+		logrus.WithError(err).Panic("unable to create self signed certs for webhook")
+	}
+	err = operatorwebhooks.WriteCertToFiles(certBundle)
+	if err != nil {
+		logrus.WithError(err).Panic("failed writing certs to file system")
+	}
+
+	err = operatorwebhooks.UpdateMutationWebHookCA(context.Background(),
+		"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
+	if err != nil {
+		logrus.WithError(err).Panic("updating validation webhook certificate failed")
 	}
 
 	errgrp.Go(func() error {
@@ -131,6 +159,16 @@ func main() {
 	initCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
+
+	mgr.GetWebhookServer().Register(
+		"/mutate-v1-pod",
+		&webhook.Admission{
+			Handler: pod_webhook.NewInjectDNSConfigToPodWebhook(
+				mgr.GetClient(),
+				admission.NewDecoder(mgr.GetScheme()),
+			),
+		},
+	)
 
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
