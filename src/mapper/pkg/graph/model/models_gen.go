@@ -146,12 +146,12 @@ func (e HTTPMethod) String() string {
 func (e *HTTPMethod) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return errors.Errorf("enums must be strings")
+		return fmt.Errorf("enums must be strings")
 	}
 
 	*e = HTTPMethod(str)
 	if !e.IsValid() {
-		return errors.Errorf("%s is not a valid HttpMethod", str)
+		return fmt.Errorf("%s is not a valid HttpMethod", str)
 	}
 	return nil
 }
@@ -187,12 +187,12 @@ func (e IntentType) String() string {
 func (e *IntentType) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return errors.Errorf("enums must be strings")
+		return fmt.Errorf("enums must be strings")
 	}
 
 	*e = IntentType(str)
 	if !e.IsValid() {
-		return errors.Errorf("%s is not a valid IntentType", str)
+		return fmt.Errorf("%s is not a valid IntentType", str)
 	}
 	return nil
 }
@@ -246,12 +246,12 @@ func (e KafkaOperation) String() string {
 func (e *KafkaOperation) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return errors.Errorf("enums must be strings")
+		return fmt.Errorf("enums must be strings")
 	}
 
 	*e = KafkaOperation(str)
 	if !e.IsValid() {
-		return errors.Errorf("%s is not a valid KafkaOperation", str)
+		return fmt.Errorf("%s is not a valid KafkaOperation", str)
 	}
 	return nil
 }

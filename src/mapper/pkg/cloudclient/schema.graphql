@@ -106,7 +106,6 @@ type AccessGraphEdge {
 	client: Service!
 	server: Service!
 	discoveredIntents: [Intent!]!
-	externalTrafficDiscoveredIntents: [ExternalTrafficIntent!]!
 	appliedIntents: [Intent!]!
 	accessStatus: EdgeAccessStatus!
 }
@@ -259,6 +258,11 @@ enum ComponentType {
 	NETWORK_MAPPER
 }
 
+type CreateGithubIntegrationResponse {
+	integration: Integration!
+	nextURL: String!
+}
+
 type CredentialsOperatorComponent {
 	type: ComponentType!
 	status: ComponentStatus!
@@ -276,11 +280,6 @@ enum CustomConstraint {
 enum DBPermissionChange {
 	APPLY
 	DELETE
-}
-
-type DNSIPPair {
-	dnsName: String!
-	ips: [String!]
 }
 
 input DNSIPPairInput {
@@ -314,12 +313,14 @@ type DatabaseInfo {
 	address: String!
 	databaseType: DatabaseType!
 	credentials: DatabaseCredentials!
+	visibility: DatabaseVisibilitySettings
 }
 
 input DatabaseInfoInput {
 	address: String!
 	databaseType: DatabaseType!
 	credentials: DatabaseCredentialsInput!
+	visibility: DatabaseVisibilitySettingsInput
 }
 
 enum DatabaseOperation {
@@ -332,6 +333,20 @@ enum DatabaseOperation {
 
 enum DatabaseType {
 	POSTGRESQL
+}
+
+type DatabaseVisibilitySettings {
+	source: DatabaseVisibilitySource
+	gcpPubSub: GCPPubSubLogConsumerSettings
+}
+
+input DatabaseVisibilitySettingsInput {
+	source: DatabaseVisibilitySource
+	gcpPubSub: GCPPubSubLogConsumerSettingsInput
+}
+
+enum DatabaseVisibilitySource {
+	GCP_PUBSUB
 }
 
 input DiscoveredIntentInput {
@@ -353,6 +368,7 @@ enum EdgeAccessStatusReason {
 	ALLOWED_BY_APPLIED_INTENTS_OVERLY_PERMISSIVE
 	ALLOWED_BY_APPLIED_INTENTS_HTTP_OVERLY_PERMISSIVE
 	ALLOWED_BY_APPLIED_INTENTS_KAFKA_OVERLY_PERMISSIVE
+	ALLOWED_BY_APPLIED_INTENTS_DATABASE_OVERLY_PERMISSIVE
 	ALLOWED_BY_EXTERNAL_TRAFFIC_NETWORK_POLICY
 	BLOCKED_BY_APPLIED_INTENTS_UNDER_PERMISSIVE
 	BLOCKED_BY_APPLIED_INTENTS_RESOURCE_MISMATCH
@@ -361,6 +377,9 @@ enum EdgeAccessStatusReason {
 	BLOCKED_BY_APPLIED_INTENTS_KAFKA_UNDER_PERMISSIVE
 	BLOCKED_BY_APPLIED_INTENTS_KAFKA_RESOURCE_MISMATCH
 	BLOCKED_BY_KAFKA_ENFORCEMENT_CONFIG_MISSING_APPLIED_INTENTS
+	BLOCKED_BY_APPLIED_INTENTS_DATABASE_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_DATABASE_RESOURCE_MISMATCH
+	BLOCKED_BY_DATABASE_ENFORCEMENT_CONFIG_MISSING_APPLIED_INTENTS
 	BLOCKED_BY_DEFAULT_DENY
 	SHARED_SERVICE_ACCOUNT
 	CLIENT_ISTIO_SIDECAR_MISSING
@@ -400,6 +419,7 @@ enum EventType {
 	INTENTS_APPLIED_KAFKA
 	INTENTS_APPLIED_HTTP
 	INTENTS_APPLIED_DATABASE
+	INTENTS_APPLIED_INTERNET
 	INTENTS_DISCOVERED
 	INTENTS_DISCOVERED_SOCKET_SCAN
 	INTENTS_DISCOVERED_CAPTURE
@@ -428,13 +448,6 @@ input ExternalTrafficDiscoveredIntentInput {
 	intent: ExternalTrafficIntentInput!
 }
 
-type ExternalTrafficIntent {
-	id: ID!
-	server: Service!
-	client: Service!
-	target: DNSIPPair!
-}
-
 input ExternalTrafficIntentInput {
 	namespace: String!
 	clientName: String!
@@ -443,6 +456,31 @@ input ExternalTrafficIntentInput {
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
 scalar Float
+
+type GCPPubSubLogConsumerSettings {
+	projectId: String!
+	topic: String!
+}
+
+input GCPPubSubLogConsumerSettingsInput {
+	projectId: String!
+	topic: String!
+}
+
+type GithubInfo {
+	repoOwner: String!
+	repoName: String!
+	baseBranch: String!
+	intentsPath: String!
+}
+
+input GithubInfoInput {
+	repoOwner: String!
+	repoName: String!
+	baseBranch: String!
+	intentsPath: String!
+	clusterId: String!
+}
 
 type HTTPConfig {
 	path: String!
@@ -491,6 +529,8 @@ type Integration {
 	cluster: Cluster
 	databaseInfo: DatabaseInfo
 	awsInfo: AWSInfo
+	githubInfo: GithubInfo
+	organizationId: String!
 }
 
 type IntegrationComponents {
@@ -509,6 +549,7 @@ enum IntegrationType {
 	KUBERNETES
 	DATABASE
 	AWS
+	GITHUB
 }
 
 type Intent {
@@ -520,6 +561,7 @@ type Intent {
 	httpResources: [HTTPConfig!]
 	databaseResources: [DatabaseConfig!]
 	awsActions: [String!]
+	internet: InternetConfig
 	status: IntentStatus
 }
 
@@ -533,6 +575,7 @@ input IntentInput {
 	resources: [HTTPConfigInput!]
 	databaseResources: [DatabaseConfigInput!]
 	awsActions: [String!]
+	internet: InternetConfigInput
 	status: IntentStatusInput
 }
 
@@ -553,6 +596,7 @@ enum IntentType {
 	DATABASE
 	AWS
 	S3
+	INTERNET
 }
 
 type IntentsOperatorComponent {
@@ -576,6 +620,17 @@ input IntentsOperatorConfigurationInput {
 	kafkaACLEnforcementEnabled: Boolean
 	istioPolicyEnforcementEnabled: Boolean
 	protectedServicesEnabled: Boolean
+}
+
+type InternetConfig {
+	dnsName: String!
+	ips: [String!]
+	ports: [Int!]
+}
+
+input InternetConfigInput {
+	ips: [String!]!
+	ports: [Int!]
 }
 
 type Invite {
@@ -774,6 +829,17 @@ type Mutation {
 		name: String!
 		awsIntegration: AWSInfoInput!
 	): Integration
+"""Create a new Github integration"""
+	createGithubIntegration(
+		name: String!
+		githubInfo: GithubInfoInput!
+	): CreateGithubIntegrationResponse
+"""Update Github integration"""
+	updateGithubIntegration(
+		id: ID!
+		name: String!
+		githubInfo: GithubInfoInput!
+	): Integration
 """Update AWS integration"""
 	updateAWSIntegration(
 		id: ID!
@@ -882,6 +948,14 @@ type Mutation {
 		id: ID!
 		step: QuestLogStep!
 	): Boolean!
+	saveOnboardingSelection(
+		id: ID!
+		selection: OnboardingSelection!
+	): Boolean!
+	saveOnboardingSelectionOther(
+		id: ID!
+		selection: String!
+	): Boolean!
 }
 
 type Namespace {
@@ -910,6 +984,12 @@ input NetworkPolicyInput {
 	externalNetworkTrafficPolicy: Boolean!
 }
 
+enum OnboardingSelection {
+	DEFAULT
+	AWS_IAM
+	OTHER
+}
+
 type Organization {
 	id: ID!
 	name: String
@@ -929,6 +1009,7 @@ type Query {
 	): AccessGraph!
 	serviceClientIntents(
 		id: ID!
+		asServiceId: ID
 		lastSeenAfter: Time!
 	): ServiceClientIntents!
 """Get cluster"""
@@ -978,6 +1059,10 @@ type Query {
 		databaseInfo: DatabaseInfoInput!
 		integrationId: ID
 	): TestDatabaseConnectionResponse!
+"""Test database visibility connectivity"""
+	testDatabaseVisibilityConnection(
+		databaseInfo: DatabaseInfoInput!
+	): TestDatabaseConnectionResponse!
 """List user invites"""
 	invites(
 		email: String
@@ -1016,6 +1101,8 @@ type Query {
 	organization(
 		id: ID!
 	): Organization!
+"""Checks the availability of the API server"""
+	ping: Boolean!
 """Get service"""
 	service(
 		id: ID!
@@ -1051,8 +1138,6 @@ enum QuestLogStep {
 	DECLARE_INTENTS_CLICK_ON_SERVICE
 	DECLARE_INTENTS_DOWNLOAD_YAML
 	DECLARE_INTENTS_DO_APPLY
-"""Enable intents"""
-	ENABLE_ENFORCEMENT_CREATE_PROTECTED_SERVICE
 	COMPLETED
 }
 
@@ -1103,6 +1188,7 @@ enum ServerProtectionStatusReason {
 	IGNORED_IN_CALCULATION
 	PROTECTED_BY_DATABASE_INTEGRATION
 	PROTECTED_BY_AWS_IAM_INTEGRATION
+	PROTECTED_BY_INTERNET_INTENTS
 }
 
 enum ServerProtectionStatusVerdict {
@@ -1127,6 +1213,7 @@ type Service {
 	certificateInformation: CertificateInformation
 	serviceAccount: String
 	awsResource: AWSResource
+	discoveredByIntegration: Integration
 	tlsKeyPair: KeyPair!
 	userAndPassword: UserAndPassword!
 }
@@ -1160,6 +1247,7 @@ enum ServiceType {
 	AWS
 	DATABASE
 	INTERNET
+	DATABASE_USER
 }
 
 """The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
@@ -1197,6 +1285,8 @@ type User {
 	authProviderUserId: String!
 	questLogStep: QuestLogStep!
 	questLogStepSeen: QuestLogStep!
+	onboardingSelection: OnboardingSelection!
+	onboardingSelectionOther: String!
 }
 
 type UserAndPassword {
