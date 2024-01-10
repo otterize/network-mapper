@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
@@ -46,7 +46,7 @@ func main() {
 	healthServer.GET("/healthz", func(c echo.Context) error {
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		return c.NoContent(http.StatusOK)
 	})
@@ -67,7 +67,7 @@ func main() {
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		err := istioWatcher.RunForever(errGroupCtx)
-		return err
+		return errors.Wrap(err)
 	})
 
 	errgrp.Go(func() error {

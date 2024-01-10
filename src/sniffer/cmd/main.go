@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/shared/componentutils"
@@ -47,7 +47,7 @@ func main() {
 		defer errorreporter.AutoNotify()
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		return c.NoContent(http.StatusOK)
 	})

@@ -3,6 +3,7 @@ package intentsstore
 import (
 	"context"
 	"encoding/json"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"strings"
 	"sync"
 	"time"
@@ -226,7 +227,7 @@ func (i *IntentsHolder) GetIntents(
 		serverFilter)
 
 	if err != nil {
-		return []TimestampedIntent{}, err
+		return []TimestampedIntent{}, errors.Wrap(err)
 	}
 	return result, nil
 }
@@ -273,7 +274,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 	for pair, intent := range store {
 		intentCopy, err := getIntentDeepCopy(intent)
 		if err != nil {
-			return result, err
+			return result, errors.Wrap(err)
 		}
 
 		if len(excludeServiceWithLabels) != 0 && intentCopy.containsExcludedLabels(excludedLabelsMap) {
@@ -323,10 +324,10 @@ func getIntentDeepCopy(intent TimestampedIntent) (TimestampedIntent, error) {
 	intentCopy := TimestampedIntent{}
 	intentJSON, err := json.Marshal(intent)
 	if err != nil {
-		return TimestampedIntent{}, err
+		return TimestampedIntent{}, errors.Wrap(err)
 	}
 	if err = json.Unmarshal(intentJSON, &intentCopy); err != nil {
-		return TimestampedIntent{}, err
+		return TimestampedIntent{}, errors.Wrap(err)
 	}
 	return intentCopy, nil
 }

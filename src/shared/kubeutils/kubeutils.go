@@ -1,7 +1,7 @@
 package kubeutils
 
 import (
-	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/spf13/viper"
 	"os"
@@ -22,7 +22,7 @@ func GetCurrentNamespace() (string, error) {
 
 	data, err := os.ReadFile(namespaceFile)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err)
 	}
 	return strings.TrimSpace(string(data)), nil
 }
@@ -30,11 +30,11 @@ func GetCurrentNamespace() (string, error) {
 func GetClusterDomain() (string, error) {
 	namespace, err := GetCurrentNamespace()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err)
 	}
 	data, err := os.ReadFile(resolvFile)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err)
 	}
 	expectedSearchDomainPrefix := namespace + ".svc."
 	for _, line := range strings.Split(string(data), "\n") {
@@ -49,5 +49,5 @@ func GetClusterDomain() (string, error) {
 			}
 		}
 	}
-	return "", fmt.Errorf("could not deduce cluster domain from %s", resolvFile)
+	return "", errors.Errorf("could not deduce cluster domain from %s", resolvFile)
 }

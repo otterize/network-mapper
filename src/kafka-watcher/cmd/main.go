@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/network-mapper/src/shared/componentutils"
 
@@ -89,7 +89,7 @@ func main() {
 	healthServer.GET("/healthz", func(c echo.Context) error {
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		return c.NoContent(http.StatusOK)
 	})
@@ -110,7 +110,7 @@ func main() {
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		err := watcher.RunForever(errGroupCtx)
-		return err
+		return errors.Wrap(err)
 	})
 
 	errgrp.Go(func() error {
@@ -141,7 +141,7 @@ func parseKafkaServers(serverNames []string) ([]types.NamespacedName, error) {
 	for _, serverName := range serverNames {
 		nameParts := strings.Split(serverName, ".")
 		if len(nameParts) != 2 {
-			return nil, fmt.Errorf("error parsing server pod name %s - should be formatted as 'name.namespace'", serverName)
+			return nil, errors.Errorf("error parsing server pod name %s - should be formatted as 'name.namespace'", serverName)
 		}
 		servers = append(servers, types.NamespacedName{
 			Name:      nameParts[0],

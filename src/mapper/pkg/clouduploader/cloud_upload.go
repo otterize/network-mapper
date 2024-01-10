@@ -2,6 +2,7 @@ package clouduploader
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"time"
 
@@ -60,7 +61,7 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 			err := c.client.ReportDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to report discovered intents chunk %d to cloud, retrying", currentChunk)
-				return err
+				return errors.Wrap(err)
 			}
 			currentChunk += 1
 		}
@@ -104,7 +105,7 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 			err := c.client.ReportExternalTrafficDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to report discovered intents chunk %d to cloud, retrying", currentChunk)
-				return err
+				return errors.Wrap(err)
 			}
 			currentChunk += 1
 		}

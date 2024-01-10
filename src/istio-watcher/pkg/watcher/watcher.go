@@ -5,8 +5,8 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/istio-watcher/config"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/prometheus"
@@ -99,20 +99,20 @@ func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
 	conf, err := rest.InClusterConfig()
 
 	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	// We try building the REST Config from ./kube/config to support running the watcher locally
 	if conf == nil {
 		conf, err = clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err)
 		}
 	}
 
 	clientset, err := kubernetes.NewForConfig(conf)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	m := &IstioWatcher{
@@ -141,7 +141,7 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 
 	podList, err := m.clientset.CoreV1().Pods(namespace).List(ctx, v1.ListOptions{LabelSelector: IstioPodsLabelSelector})
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	for _, pod := range podList.Items {
@@ -159,18 +159,18 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 		// Function call below updates a map which isn't concurrent-safe.
 		// Needs to be taken into consideration if the code should ever change to use multiple goroutines
 		if err := m.convertMetricsToConnections(metricsChan); err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		return nil
 	})
 
 	if err := sendersErrGroup.Wait(); err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	close(metricsChan)
 
 	if err := receiverErrGroup.Wait(); err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	return nil
@@ -191,7 +191,7 @@ func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev
 
 	exec, err := remotecommand.NewSPDYExecutor(m.config, "POST", req.URL())
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, viper.GetDuration(config.MetricFetchTimeoutKey))
@@ -201,12 +201,12 @@ func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev
 	streamOpts := remotecommand.StreamOptions{Stdout: &outBuf}
 	err = exec.StreamWithContext(timeoutCtx, streamOpts)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	metrics := &EnvoyMetrics{}
 	if err := json.NewDecoder(&outBuf).Decode(metrics); err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	metricsWithPath := make([]Metric, 0)
 	for _, metric := range metrics.Stats {
@@ -241,7 +241,7 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 				continue
 			}
 			if err != nil {
-				return err
+				return errors.Wrap(err)
 			}
 			prometheus.IncrementIstioReports(1)
 			m.connections[conn] = time.Now()
@@ -294,7 +294,7 @@ func extractRegexGroups(inputString string, groupNames []string) (*ConnectionWit
 		case "request_method":
 			connection.RequestMethod = groupValue
 		default:
-			return nil, fmt.Errorf("unknown group name: %s", groupName)
+			return nil, errors.Errorf("unknown group name: %s", groupName)
 		}
 	}
 	return connection, nil
@@ -304,7 +304,7 @@ func (m *IstioWatcher) buildConnectionFromMetric(metric Metric) (ConnectionWithP
 	conn, err := extractRegexGroups(metric.Name, GroupNames)
 
 	if err != nil {
-		return ConnectionWithPath{}, err
+		return ConnectionWithPath{}, errors.Wrap(err)
 	}
 
 	if conn.hasMissingInfo() {

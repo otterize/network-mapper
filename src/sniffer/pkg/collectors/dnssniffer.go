@@ -4,6 +4,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/sirupsen/logrus"
@@ -40,11 +41,11 @@ func NewDNSSniffer(resolver ipresolver.IPResolver) *DNSSniffer {
 func (s *DNSSniffer) CreateDNSPacketStream() (chan gopacket.Packet, error) {
 	handle, err := pcap.OpenLive("any", 0, true, pcap.BlockForever)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	err = handle.SetBPFFilter("udp port 53")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
@@ -81,7 +82,7 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 func (s *DNSSniffer) RefreshHostsMapping() error {
 	err := s.resolver.Refresh()
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	for _, p := range s.pending {

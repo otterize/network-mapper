@@ -308,7 +308,7 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 				return false, nil
 			}
 			if err != nil {
-				return false, err
+				return false, errors.Wrap(err)
 			}
 
 			if !slices.Contains(readPod.Finalizers, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test") {

@@ -77,7 +77,7 @@ func (r *Resolver) RunForever(ctx context.Context) error {
 	})
 	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, context.Canceled) {
-		return err
+		return errors.Wrap(err)
 	}
 	return nil
 }

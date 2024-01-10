@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -25,7 +24,7 @@ func KafkaOpFromText(text string) (KafkaOperation, error) {
 
 	apiOp, ok := kafkaOperationToAclOperation[normalized]
 	if !ok {
-		return "", fmt.Errorf("failed parsing op %s", text)
+		return "", errors.Errorf("failed parsing op %s", text)
 	}
 	return apiOp, nil
 }
