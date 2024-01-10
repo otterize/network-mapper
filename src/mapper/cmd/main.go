@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
@@ -89,7 +88,7 @@ func main() {
 	}
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		logrus.Info("Starting operator manager")
 		if err := mgr.Start(errGroupCtx); err != nil {
 			logrus.Error(err, "unable to run manager")
@@ -165,13 +164,13 @@ func main() {
 	}
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 	if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		errgrp.Go(func() error {
-			defer bugsnag.AutoNotify(errGroupCtx)
+			defer errorreporter.AutoNotify()
 			externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 			return nil
 		})
@@ -182,15 +181,15 @@ func main() {
 	telemetrysender.NetworkMapperRunActiveReporter(errGroupCtx)
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return mapperServer.Start(":9090")
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return resolver.RunForever(errGroupCtx)
 	})
 

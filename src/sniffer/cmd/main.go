@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
@@ -45,7 +44,7 @@ func main() {
 
 	healthServer := echo.New()
 	healthServer.GET("/healthz", func(c echo.Context) error {
-		defer bugsnag.AutoNotify(c)
+		defer errorreporter.AutoNotify()
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
 			return err
@@ -58,22 +57,22 @@ func main() {
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return healthServer.Start(":9090")
 	})
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		snifferInstance := sniffer.NewSniffer(mapperClient)
 		return snifferInstance.RunForever(errGroupCtx)
 	})
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return componentutils.WaitAndSetContextId(errGroupCtx)
 	})
 
