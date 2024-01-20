@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"strings"
 )
 

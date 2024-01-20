@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Khan/genqlient/graphql"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
@@ -15,7 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http/httptest"
@@ -304,7 +305,7 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 		func(ctx context.Context) (done bool, err error) {
 			var readPod v1.Pod
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: pod.GetName(), Namespace: pod.GetNamespace()}, &readPod)
-			if errors.IsNotFound(err) {
+			if k8serrors.IsNotFound(err) {
 				return false, nil
 			}
 			if err != nil {

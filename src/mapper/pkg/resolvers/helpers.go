@@ -2,7 +2,7 @@ package resolvers
 
 import (
 	"context"
-	"errors"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
