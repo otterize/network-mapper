@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+type AWSOperation struct {
+	Resource string   `json:"resource"`
+	Actions  []string `json:"actions"`
+	SrcIP    string   `json:"srcIp"`
+}
+
 type CaptureResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
 }
@@ -36,6 +42,7 @@ type Intent struct {
 	Type          *IntentType              `json:"type"`
 	KafkaTopics   []KafkaConfig            `json:"kafkaTopics"`
 	HTTPResources []HTTPResource           `json:"httpResources"`
+	AwsActions    []string                 `json:"awsActions"`
 }
 
 type IstioConnection struct {
@@ -163,18 +170,24 @@ func (e HTTPMethod) MarshalGQL(w io.Writer) {
 type IntentType string
 
 const (
-	IntentTypeKafka IntentType = "KAFKA"
-	IntentTypeHTTP  IntentType = "HTTP"
+	IntentTypeHTTP     IntentType = "HTTP"
+	IntentTypeKafka    IntentType = "KAFKA"
+	IntentTypeDatabase IntentType = "DATABASE"
+	IntentTypeAws      IntentType = "AWS"
+	IntentTypeS3       IntentType = "S3"
 )
 
 var AllIntentType = []IntentType{
-	IntentTypeKafka,
 	IntentTypeHTTP,
+	IntentTypeKafka,
+	IntentTypeDatabase,
+	IntentTypeAws,
+	IntentTypeS3,
 }
 
 func (e IntentType) IsValid() bool {
 	switch e {
-	case IntentTypeKafka, IntentTypeHTTP:
+	case IntentTypeHTTP, IntentTypeKafka, IntentTypeDatabase, IntentTypeAws, IntentTypeS3:
 		return true
 	}
 	return false

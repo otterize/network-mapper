@@ -48,8 +48,11 @@ type OtterizeServiceIdentity {
 }
 
 enum IntentType {
-    KAFKA
     HTTP
+    KAFKA
+    DATABASE
+    AWS
+    S3
 }
 
 enum KafkaOperation {
@@ -94,6 +97,7 @@ type Intent {
     type: IntentType
     kafkaTopics: [KafkaConfig!]
     httpResources: [HttpResource!]
+    awsActions: [String!]
 }
 
 type ServiceIntents {
@@ -126,6 +130,12 @@ input IstioConnection {
 
 input IstioConnectionResults {
     results: [IstioConnection!]!
+}
+
+input AWSOperation {
+    resource: String!
+    actions: [String!]!
+    srcIp: String!
 }
 
 input ServerFilter {
@@ -167,4 +177,5 @@ type Mutation {
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
+    reportAWSOperation(operation: [AWSOperation!]!): Boolean!
 }

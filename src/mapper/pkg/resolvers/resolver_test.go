@@ -6,6 +6,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
@@ -30,6 +31,7 @@ type ResolverTestSuite struct {
 	client                       graphql.Client
 	kubeFinder                   *kubefinder.KubeFinder
 	intentsHolder                *intentsstore.IntentsHolder
+	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	resolverCtx                  context.Context
 	resolverCtxCancel            context.CancelFunc
@@ -45,7 +47,16 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.intentsHolder = intentsstore.NewIntentsHolder()
 	s.externalTrafficIntentsHolder = externaltrafficholder.NewExternalTrafficIntentsHolder()
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder)
+	s.awsIntentsHolder = awsintentsholder.New()
+
+	resolver := NewResolver(
+		s.kubeFinder,
+		serviceidresolver.NewResolver(s.Mgr.GetClient()),
+		s.intentsHolder,
+		s.externalTrafficIntentsHolder,
+		s.awsIntentsHolder,
+	)
+
 	s.resolver = resolver
 	resolver.Register(e)
 	go func() {
