@@ -4,6 +4,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
@@ -19,14 +20,22 @@ type Resolver struct {
 	serviceIdResolver            *serviceidresolver.Resolver
 	intentsHolder                *intentsstore.IntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder, externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder) *Resolver {
+func NewResolver(
+	kubeFinder *kubefinder.KubeFinder,
+	serviceIdResolver *serviceidresolver.Resolver,
+	intentsHolder *intentsstore.IntentsHolder,
+	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
+	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+) *Resolver {
 	return &Resolver{
 		kubeFinder:                   kubeFinder,
 		serviceIdResolver:            serviceIdResolver,
 		intentsHolder:                intentsHolder,
 		externalTrafficIntentsHolder: externalTrafficHolder,
+		awsIntentsHolder:             awsIntentsHolder,
 	}
 }
 

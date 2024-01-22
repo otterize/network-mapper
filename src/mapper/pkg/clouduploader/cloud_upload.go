@@ -2,6 +2,7 @@ package clouduploader
 
 import (
 	"context"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"time"
 
@@ -112,6 +113,36 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 	}, exponentialBackoff)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
+	}
+}
+
+func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsintentsholder.AWSIntent) {
+	if len(intents) == 0 {
+		return
+	}
+
+	logrus.Debugf("Got AWS intents notification, len %d", len(intents))
+	intentType := cloudclient.IntentTypeAws
+	now := time.Now()
+
+	err := c.client.ReportDiscoveredIntents(
+		ctx,
+		lo.Map(intents, func(intent awsintentsholder.AWSIntent, _ int) *cloudclient.DiscoveredIntentInput {
+			return &cloudclient.DiscoveredIntentInput{
+				DiscoveredAt: &now,
+				Intent: &cloudclient.IntentInput{
+					ClientName: &intent.Client.Name,
+					Namespace:  &intent.Client.Namespace,
+					ServerName: &intent.ARN,
+					Type:       &intentType,
+					AwsActions: lo.ToSlicePtr(intent.Actions),
+				},
+			}
+		}),
+	)
+
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report discovered intents to cloud")
 	}
 }
 
