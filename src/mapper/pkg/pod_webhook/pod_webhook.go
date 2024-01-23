@@ -6,7 +6,6 @@ import (
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -15,6 +14,7 @@ import (
 type InjectDNSConfigToPodWebhook struct {
 	client           client.Client
 	decoder          *admission.Decoder
+	currentNamespace string
 	dnsServerAddress string
 }
 
@@ -25,22 +25,17 @@ func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Dec
 		logrus.WithError(err).Panic("unable to get pod namespace")
 	}
 
-	var service corev1.Service
-	err = client.Get(context.Background(), types.NamespacedName{
-		Namespace: podNamespace,
-		Name:      "otterize-dns",
-	}, &service)
+	dnsServerAddress, err := getDNSServerAddress(client, podNamespace)
 
 	if err != nil {
-		logrus.WithError(err).Panic("unable to get otterize-dns service address")
+		logrus.WithError(err).Panic("unable to get DNS server address")
 	}
-
-	logrus.Infof("otterize-dns service address: %s", service.Spec.ClusterIP)
 
 	return &InjectDNSConfigToPodWebhook{
 		client:           client,
 		decoder:          decoder,
-		dnsServerAddress: service.Spec.ClusterIP,
+		currentNamespace: podNamespace,
+		dnsServerAddress: dnsServerAddress,
 	}
 }
 
@@ -66,6 +61,42 @@ func (w *InjectDNSConfigToPodWebhook) Handle(ctx context.Context, req admission.
 	if !labelExists {
 		logger.Debug("pod doesn't have AWS visibility label, skipping")
 		return admission.Allowed("no AWS visibility label - no modifications made")
+	}
+
+	err = copyCA(
+		ctx,
+		w.client,
+		"iamlive-ca",
+		w.currentNamespace,
+		pod.Namespace,
+	)
+
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
+	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+		Name: "iamlive-ca",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "iamlive-ca",
+				},
+			},
+		},
+	})
+
+	for i := range pod.Spec.Containers {
+		pod.Spec.Containers[i].VolumeMounts = append(pod.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{
+			Name:      "iamlive-ca",
+			MountPath: "/tmp/otterize.com/certificates",
+			ReadOnly:  true,
+		})
+
+		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, corev1.EnvVar{
+			Name:  "AWS_CA_BUNDLE",
+			Value: "/tmp/otterize.com/certificates/ca.crt",
+		})
 	}
 
 	pod.Spec.DNSPolicy = corev1.DNSNone
