@@ -183,7 +183,7 @@ func main() {
 	}
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		awsIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
