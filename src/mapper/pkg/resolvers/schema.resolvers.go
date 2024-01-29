@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
-
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
