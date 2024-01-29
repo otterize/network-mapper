@@ -33,6 +33,7 @@ func (c *CloudClientImpl) ReportDiscoveredIntents(ctx context.Context, intents [
 	logrus.Info("Uploading intents to cloud, count: ", len(intents))
 
 	_, err := ReportDiscoveredIntents(ctx, c.client, intents)
+
 	if err != nil {
 		return errors.Wrap(err)
 	}

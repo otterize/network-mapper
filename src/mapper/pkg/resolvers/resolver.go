@@ -7,6 +7,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -24,6 +25,7 @@ type Resolver struct {
 	serviceIdResolver            *serviceidresolver.Resolver
 	intentsHolder                *intentsstore.IntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	dnsCaptureResults            chan model.CaptureResults
 	socketScanResults            chan model.SocketScanResults
 	kafkaMapperResults           chan model.KafkaMapperResults
@@ -32,12 +34,19 @@ type Resolver struct {
 	gotResultsSignal             context.CancelFunc
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder, externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder) *Resolver {
+func NewResolver(
+	kubeFinder *kubefinder.KubeFinder,
+	serviceIdResolver *serviceidresolver.Resolver,
+	intentsHolder *intentsstore.IntentsHolder,
+	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
+	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+) *Resolver {
 	r := &Resolver{
 		kubeFinder:                   kubeFinder,
 		serviceIdResolver:            serviceIdResolver,
 		intentsHolder:                intentsHolder,
 		externalTrafficIntentsHolder: externalTrafficHolder,
+		awsIntentsHolder:             awsIntentsHolder,
 		dnsCaptureResults:            make(chan model.CaptureResults, 200),
 		socketScanResults:            make(chan model.SocketScanResults, 200),
 		kafkaMapperResults:           make(chan model.KafkaMapperResults, 200),

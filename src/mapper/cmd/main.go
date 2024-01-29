@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
@@ -133,8 +134,9 @@ func main() {
 
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
+	awsIntentsHolder := awsintentsholder.New()
 
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder, awsIntentsHolder)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
@@ -148,10 +150,13 @@ func main() {
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
+
 		intentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIntents)
 		if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 			externalTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyExternalTrafficIntents)
 		}
+		awsIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAWSIntents)
+
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 	}
 
@@ -168,6 +173,7 @@ func main() {
 		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
+
 	if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		errgrp.Go(func() error {
 			defer errorreporter.AutoNotify()
@@ -175,6 +181,12 @@ func main() {
 			return nil
 		})
 	}
+
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGroupCtx)
+		awsIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
 
 	componentinfo.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
