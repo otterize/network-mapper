@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
@@ -47,7 +46,7 @@ func main() {
 	healthServer.GET("/healthz", func(c echo.Context) error {
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		return c.NoContent(http.StatusOK)
 	})
@@ -57,22 +56,22 @@ func main() {
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return healthServer.Start(":9090")
 	})
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		err := istioWatcher.RunForever(errGroupCtx)
-		return err
+		return errors.Wrap(err)
 	})
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return componentutils.WaitAndSetContextId(errGroupCtx)
 	})
 

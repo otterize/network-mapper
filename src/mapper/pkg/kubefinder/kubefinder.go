@@ -2,12 +2,12 @@ package kubefinder
 
 import (
 	"context"
-	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -26,14 +26,14 @@ type KubeFinder struct {
 	serviceIdResolver *serviceidresolver.Resolver
 }
 
-var ErrFoundMoreThanOnePod = fmt.Errorf("ip belongs to more than one pod")
-var ErrFoundMoreThanOneService = fmt.Errorf("ip belongs to more than one service")
+var ErrFoundMoreThanOnePod = errors.Errorf("ip belongs to more than one pod")
+var ErrFoundMoreThanOneService = errors.Errorf("ip belongs to more than one service")
 
 func NewKubeFinder(ctx context.Context, mgr manager.Manager) (*KubeFinder, error) {
 	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
 	err := indexer.initIndexes(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	return indexer, nil
 }
@@ -48,7 +48,7 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		return res
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, serviceIPIndexField, func(object client.Object) []string {
@@ -58,7 +58,7 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		return res
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	return nil
 }
@@ -67,7 +67,7 @@ func (k *KubeFinder) ResolvePodByName(ctx context.Context, name string, namespac
 	var pod corev1.Pod
 	err := k.client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &pod)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	return &pod, nil
@@ -77,7 +77,7 @@ func (k *KubeFinder) ResolveIPToService(ctx context.Context, ip string) (*corev1
 	var services corev1.ServiceList
 	err := k.client.List(ctx, &services, client.MatchingFields{serviceIPIndexField: ip})
 	if err != nil {
-		return nil, false, err
+		return nil, false, errors.Wrap(err)
 	}
 	if len(services.Items) == 0 {
 		return nil, false, nil
@@ -96,7 +96,7 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 		Name:      svc.Name,
 	}, &endpoints)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	pods := make([]corev1.Pod, 0)
@@ -114,10 +114,10 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 		var pod corev1.Pod
 		err := k.client.Get(ctx, types.NamespacedName{Name: address.TargetRef.Name, Namespace: address.TargetRef.Namespace}, &pod)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if k8serrors.IsNotFound(err) {
 				continue
 			}
-			return nil, err
+			return nil, errors.Wrap(err)
 		}
 		if pod.DeletionTimestamp != nil {
 			continue
@@ -132,15 +132,15 @@ func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod
 	var pods corev1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIPIndexField: ip})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	if len(pods.Items) == 0 {
-		return nil, errors.NewNotFound(corev1.Resource("pod"), ip)
+		return nil, k8serrors.NewNotFound(corev1.Resource("pod"), ip)
 	}
 
 	if len(pods.Items) != 1 {
-		return nil, ErrFoundMoreThanOnePod
+		return nil, errors.Wrap(ErrFoundMoreThanOnePod)
 	}
 	return &pods.Items[0], nil
 }
@@ -149,11 +149,11 @@ func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload str
 	podList := corev1.PodList{}
 	err := k.client.List(ctx, &podList, client.InNamespace(namespace), client.MatchingLabels{IstioCanonicalNameLabelKey: workload})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 	// Cannot happen theoretically
 	if len(podList.Items) == 0 {
-		return nil, fmt.Errorf("no matching pods for workload %s", workload)
+		return nil, errors.Errorf("no matching pods for workload %s", workload)
 	}
 
 	return &podList.Items[0], nil
@@ -162,7 +162,7 @@ func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload str
 func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, types.NamespacedName, error) {
 	clusterDomain := viper.GetString(config.ClusterDomainKey)
 	if !strings.HasSuffix(fqdn, clusterDomain) {
-		return nil, types.NamespacedName{}, fmt.Errorf("address %s is not in the cluster", fqdn)
+		return nil, types.NamespacedName{}, errors.Errorf("address %s is not in the cluster", fqdn)
 	}
 	fqdnWithoutClusterDomain := fqdn[:len(fqdn)-len("."+clusterDomain)]
 	fqdnWithoutClusterDomainParts := strings.Split(fqdnWithoutClusterDomain, ".")
@@ -175,7 +175,7 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 		*/
 		if len(fqdnWithoutClusterDomainParts) < 3 {
 			// expected at least service-name.namespace.svc
-			return nil, types.NamespacedName{}, fmt.Errorf("service address %s is too short", fqdn)
+			return nil, types.NamespacedName{}, errors.Errorf("service address %s is too short", fqdn)
 		}
 		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
 		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-3]
@@ -183,7 +183,7 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 		serviceNamespacedName := types.NamespacedName{Name: serviceName, Namespace: namespace}
 		err := k.client.Get(ctx, serviceNamespacedName, endpoints)
 		if err != nil {
-			return nil, types.NamespacedName{}, err
+			return nil, types.NamespacedName{}, errors.Wrap(err)
 		}
 		ips := make([]string, 0)
 		for _, subset := range endpoints.Subsets {
@@ -196,6 +196,6 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 		// for address format of pods: 172-17-0-3.default.pod.cluster.local
 		return []string{strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")}, types.NamespacedName{}, nil
 	default:
-		return nil, types.NamespacedName{}, fmt.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
+		return nil, types.NamespacedName{}, errors.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
 	}
 }

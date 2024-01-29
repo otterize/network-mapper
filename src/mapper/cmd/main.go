@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/neko-neko/echo-logrus/v2/log"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
@@ -90,11 +89,11 @@ func main() {
 	}
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		logrus.Info("Starting operator manager")
 		if err := mgr.Start(errGroupCtx); err != nil {
 			logrus.Error(err, "unable to run manager")
-			return err
+			return errors.Wrap(err)
 		}
 		return nil
 	})
@@ -163,28 +162,28 @@ func main() {
 
 	if viper.GetBool(config.OTelEnabledKey) {
 		otelExporter, err := metricexporter.NewMetricExporter(errGroupCtx)
-		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 		if err != nil {
 			logrus.WithError(err).Panic("Failed to initialize otel exporter")
 		}
+		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 	}
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		intentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 
 	if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		errgrp.Go(func() error {
-			defer bugsnag.AutoNotify(errGroupCtx)
+			defer errorreporter.AutoNotify()
 			externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 			return nil
 		})
 	}
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		awsIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
@@ -194,15 +193,15 @@ func main() {
 	telemetrysender.NetworkMapperRunActiveReporter(errGroupCtx)
 
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return mapperServer.Start(":9090")
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return resolver.RunForever(errGroupCtx)
 	})
 
@@ -216,14 +215,14 @@ func main() {
 func WriteContextIDToConfigMap(k8sClient client.Client, contextID string) error {
 	namespace, err := kubeutils.GetCurrentNamespace()
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	configMapName := viper.GetString(sharedconfig.ComponentMetadataConfigmapNameKey)
 	var configMap corev1.ConfigMap
 	err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: configMapName}, &configMap)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	if configMap.Data == nil {
@@ -234,7 +233,7 @@ func WriteContextIDToConfigMap(k8sClient client.Client, contextID string) error 
 	configMap.Data[contextIdKey] = contextID
 	err = k8sClient.Update(context.Background(), &configMap)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	logrus.Info("Successfully wrote context id to config map")

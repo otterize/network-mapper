@@ -3,6 +3,7 @@ package cloudclient
 import (
 	"context"
 	"github.com/Khan/genqlient/graphql"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/otterizecloud/otterizecloudclient"
 	"github.com/sirupsen/logrus"
 )
@@ -22,7 +23,7 @@ func NewClient(ctx context.Context) (*CloudClientImpl, bool, error) {
 	if !ok {
 		return nil, false, nil
 	} else if err != nil {
-		return nil, true, err
+		return nil, true, errors.Wrap(err)
 	}
 
 	return &CloudClientImpl{client: client}, true, nil
@@ -34,7 +35,7 @@ func (c *CloudClientImpl) ReportDiscoveredIntents(ctx context.Context, intents [
 	_, err := ReportDiscoveredIntents(ctx, c.client, intents)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	return nil
@@ -45,7 +46,7 @@ func (c *CloudClientImpl) ReportExternalTrafficDiscoveredIntents(ctx context.Con
 
 	_, err := ReportExternalTrafficDiscoveredIntents(ctx, c.client, intents)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	return nil
@@ -56,7 +57,7 @@ func (c *CloudClientImpl) ReportComponentStatus(ctx context.Context, component C
 
 	_, err := ReportComponentStatus(ctx, c.client, component)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	return nil
 }

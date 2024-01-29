@@ -2,8 +2,8 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -56,14 +56,14 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 func (r *Resolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
 	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err)
 	}
 	if !foundSvc {
 		return false, nil
 	}
 	err = r.addSocketScanServiceIntent(ctx, srcSvcIdentity, dest, destSvc)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err)
 	}
 	return true, nil
 }
@@ -72,7 +72,7 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	lastSeen := dest.LastSeen
 	dstSvcIdentity, err := r.otterizeIdentityForService(ctx, svc, dest.LastSeen)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	intent := model.Intent{
@@ -93,7 +93,7 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, error) {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 	}
 
 	if len(pods) == 0 {
@@ -106,7 +106,7 @@ func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.S
 		}
 
 		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 	}
 
 	// Assume the pods backing the service are identical
@@ -114,12 +114,12 @@ func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.S
 
 	if pod.CreationTimestamp.After(lastSeen) {
 		logrus.Debugf("Pod %s was created after scan time %s, ignoring", pod.Name, lastSeen)
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 	}
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
 	if err != nil {
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 	}
 
 	dstSvcIdentity := model.OtterizeServiceIdentity{
@@ -152,7 +152,7 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
@@ -197,7 +197,7 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
 	dstSvcIdentity, err := r.otterizeIdentityForDestinationAddress(ctx, dest)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	if dstSvcIdentity == nil {
 		return nil
@@ -392,7 +392,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 		operation, err := model.KafkaOpFromText(result.Operation)
 		if err != nil {
 			logrus.WithError(err).Debugf("Could not resolve kafka operation %s", result.Operation)
-			return err
+			return errors.Wrap(err)
 		}
 
 		intent := model.Intent{
