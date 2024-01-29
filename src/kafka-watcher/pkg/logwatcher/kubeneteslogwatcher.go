@@ -3,7 +3,7 @@ package logwatcher
 import (
 	"bufio"
 	"context"
-	"errors"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	"github.com/sirupsen/logrus"
@@ -32,20 +32,20 @@ func NewKubernetesLogWatcher(mapperClient mapperclient.MapperClient, kafkaServer
 	conf, err := rest.InClusterConfig()
 
 	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	// We try building the REST Config from ./kube/config to support running the watcher locally
 	if conf == nil {
 		conf, err = clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err)
 		}
 	}
 
 	cs, err := kubernetes.NewForConfig(conf)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	w := &KubernetesLogWatcher{
@@ -65,7 +65,7 @@ func (w *KubernetesLogWatcher) RunForever(ctx context.Context) error {
 	err := w.validateKafkaServers(ctx)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	for _, kafkaServer := range w.kafkaServers {
@@ -89,7 +89,7 @@ func (w *KubernetesLogWatcher) watchOnce(ctx context.Context, kafkaServer types.
 	req := w.clientset.CoreV1().Pods(kafkaServer.Namespace).GetLogs(kafkaServer.Name, &podLogOpts)
 	reader, err := req.Stream(ctxTimeout)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	defer reader.Close()

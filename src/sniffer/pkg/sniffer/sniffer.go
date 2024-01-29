@@ -2,6 +2,7 @@ package sniffer
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/prometheus"
 	"time"
 
@@ -86,7 +87,7 @@ func (s *Sniffer) getTimeTilNextReport() time.Duration {
 func (s *Sniffer) RunForever(ctx context.Context) error {
 	packetsChan, err := s.dnsSniffer.CreateDNSPacketStream()
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	for {

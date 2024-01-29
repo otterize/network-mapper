@@ -1,7 +1,7 @@
 package model
 
 import (
-	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"strings"
 )
 
@@ -25,7 +25,7 @@ func KafkaOpFromText(text string) (KafkaOperation, error) {
 
 	apiOp, ok := kafkaOperationToAclOperation[normalized]
 	if !ok {
-		return "", fmt.Errorf("failed parsing op %s", text)
+		return "", errors.Errorf("failed parsing op %s", text)
 	}
 	return apiOp, nil
 }

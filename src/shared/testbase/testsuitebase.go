@@ -3,12 +3,13 @@ package testbase
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -84,11 +85,11 @@ func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Obj
 		true,
 		func(ctx context.Context) (done bool, err error) {
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
-			if errors.IsNotFound(err) {
+			if k8serrors.IsNotFound(err) {
 				return false, nil
 			}
 			if err != nil {
-				return false, err
+				return false, errors.Wrap(err)
 			}
 			return true, nil
 		}),

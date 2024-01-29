@@ -2,8 +2,8 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -52,14 +52,14 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 func (r *mutationResolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
 	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err)
 	}
 	if !foundSvc {
 		return false, nil
 	}
 	err = r.addSocketScanServiceIntent(ctx, srcSvcIdentity, dest, destSvc)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err)
 	}
 	return true, nil
 }
@@ -67,7 +67,7 @@ func (r *mutationResolver) tryHandleSocketScanDestinationAsService(ctx context.C
 func (r *mutationResolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	if len(pods) == 0 {
@@ -85,7 +85,7 @@ func (r *mutationResolver) addSocketScanServiceIntent(ctx context.Context, srcSv
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: pod.Namespace, Labels: podLabelsToOtterizeLabels(&pod)}
@@ -122,7 +122,7 @@ func (r *mutationResolver) addSocketScanPodIntent(ctx context.Context, srcSvcIde
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}

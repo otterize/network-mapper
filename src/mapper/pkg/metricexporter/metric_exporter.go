@@ -2,6 +2,7 @@ package metricexporter
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/sirupsen/logrus"
@@ -14,7 +15,7 @@ type MetricExporter struct {
 func NewMetricExporter(ctx context.Context) (*MetricExporter, error) {
 	em, err := NewOtelEdgeMetric(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	return &MetricExporter{

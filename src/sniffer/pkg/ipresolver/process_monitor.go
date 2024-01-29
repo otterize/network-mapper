@@ -1,6 +1,7 @@
 package ipresolver
 
 import (
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -59,7 +60,7 @@ func (pm *ProcessMonitor) Poll() error {
 		// Shouldn't handle again
 		pm.processes.Insert(pid)
 	}); err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	exitedProcesses := processesSeenLastTime.Difference(pm.processes)

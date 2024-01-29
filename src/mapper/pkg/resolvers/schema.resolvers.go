@@ -5,9 +5,7 @@ package resolvers
 
 import (
 	"context"
-	"errors"
-	"strings"
-
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
@@ -266,7 +264,7 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	}
 	discoveredIntents, err := r.intentsHolder.GetIntents(namespaces, includeLabels, []string{}, shouldIncludeAllLabels, nil)
 	if err != nil {
-		return []model.ServiceIntents{}, err
+		return []model.ServiceIntents{}, errors.Wrap(err)
 	}
 	intentsBySource := intentsstore.GroupIntentsBySource(discoveredIntents)
 
@@ -298,7 +296,7 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 		server,
 	)
 	if err != nil {
-		return []model.Intent{}, err
+		return []model.Intent{}, errors.Wrap(err)
 	}
 
 	intents := lo.Map(timestampedIntents, func(timestampedIntent intentsstore.TimestampedIntent, _ int) model.Intent {

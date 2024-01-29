@@ -2,8 +2,8 @@ package componentutils
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/otterizecloud/otterizecloudclient"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
@@ -26,7 +26,7 @@ func WaitAndSetContextId(ctx context.Context) error {
 		ok, err := setContextId()
 		if err != nil {
 			logrus.WithError(err).Error("Error when setting context id")
-			return err
+			return errors.Wrap(err)
 		}
 		if ok {
 			logrus.Info("Context id set successfully")
@@ -49,7 +49,7 @@ func setContextId() (bool, error) {
 	filePath := fmt.Sprintf("%s/%s", dirPath, fileName)
 	res, err := os.ReadFile(filePath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return false, err
+		return false, errors.Wrap(err)
 	}
 
 	if errors.Is(err, os.ErrNotExist) {
