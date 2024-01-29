@@ -3,6 +3,7 @@ package pod_webhook
 import (
 	"context"
 	"encoding/json"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +19,7 @@ type InjectDNSConfigToPodWebhook struct {
 	dnsServerAddress string
 }
 
-func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Decoder) *InjectDNSConfigToPodWebhook {
+func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Decoder) (*InjectDNSConfigToPodWebhook, error) {
 	podNamespace, err := kubeutils.GetCurrentNamespace()
 
 	if err != nil {
@@ -28,7 +29,7 @@ func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Dec
 	dnsServerAddress, err := getDNSServerAddress(client, podNamespace)
 
 	if err != nil {
-		logrus.WithError(err).Panic("unable to get DNS server address")
+		return nil, errors.Errorf("unable to get DNS server address: %w", err)
 	}
 
 	return &InjectDNSConfigToPodWebhook{
@@ -36,7 +37,7 @@ func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Dec
 		decoder:          decoder,
 		currentNamespace: podNamespace,
 		dnsServerAddress: dnsServerAddress,
-	}
+	}, nil
 }
 
 func (w *InjectDNSConfigToPodWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {

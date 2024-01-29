@@ -2,6 +2,7 @@ package pod_webhook
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -16,7 +17,7 @@ func getDNSServerAddress(client client.Client, podNamespace string) (string, err
 	}, &service)
 
 	if err != nil {
-		logrus.WithError(err).Panic("unable to get otterize-dns service address")
+		return "", errors.Errorf("unable to get otterize-dns service: %w", err)
 	}
 
 	logrus.Infof("otterize-dns service address: %s", service.Spec.ClusterIP)

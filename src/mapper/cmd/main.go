@@ -92,28 +92,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create webhook server certificate
-	logrus.Infoln("Creating self signing certs")
-	podNamespace, err := kubeutils.GetCurrentNamespace()
+	if viper.GetBool(config.CreateWebhookCertificateKey) {
+		// create webhook server certificate
+		logrus.Infoln("Creating self signing certs")
+		podNamespace, err := kubeutils.GetCurrentNamespace()
 
-	if err != nil {
-		logrus.WithError(err).Panic("unable to get pod namespace")
-	}
+		if err != nil {
+			logrus.WithError(err).Panic("unable to get pod namespace")
+		}
 
-	certBundle, err :=
-		operatorwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
-	if err != nil {
-		logrus.WithError(err).Panic("unable to create self signed certs for webhook")
-	}
-	err = operatorwebhooks.WriteCertToFiles(certBundle)
-	if err != nil {
-		logrus.WithError(err).Panic("failed writing certs to file system")
-	}
+		certBundle, err :=
+			operatorwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
+		if err != nil {
+			logrus.WithError(err).Panic("unable to create self signed certs for webhook")
+		}
+		err = operatorwebhooks.WriteCertToFiles(certBundle)
+		if err != nil {
+			logrus.WithError(err).Panic("failed writing certs to file system")
+		}
 
-	err = operatorwebhooks.UpdateMutationWebHookCA(context.Background(),
-		"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
-	if err != nil {
-		logrus.WithError(err).Panic("updating validation webhook certificate failed")
+		err = operatorwebhooks.UpdateMutationWebHookCA(context.Background(),
+			"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
+		if err != nil {
+			logrus.WithError(err).Panic("updating validation webhook certificate failed")
+		}
 	}
 
 	errgrp.Go(func() error {
@@ -160,15 +162,23 @@ func main() {
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
-	mgr.GetWebhookServer().Register(
-		"/mutate-v1-pod",
-		&webhook.Admission{
-			Handler: pod_webhook.NewInjectDNSConfigToPodWebhook(
-				mgr.GetClient(),
-				admission.NewDecoder(mgr.GetScheme()),
-			),
-		},
-	)
+	if viper.GetBool(config.EnableAWSVisibilityKeyWebHook) {
+		webhookHandler, err := pod_webhook.NewInjectDNSConfigToPodWebhook(
+			mgr.GetClient(),
+			admission.NewDecoder(mgr.GetScheme()),
+		)
+
+		if err != nil {
+			logrus.WithError(err).Panic("unable to create webhook handler")
+		}
+
+		mgr.GetWebhookServer().Register(
+			"/mutate-v1-pod",
+			&webhook.Admission{
+				Handler: webhookHandler,
+			},
+		)
+	}
 
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()

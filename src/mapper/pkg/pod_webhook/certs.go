@@ -2,7 +2,7 @@ package pod_webhook
 
 import (
 	"context"
-	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -15,9 +15,7 @@ func copyCA(ctx context.Context, client client.Client, secretName, secretNamespa
 	exists, err := checkCAExists(ctx, client, secretName, targetNamespace)
 
 	if err != nil {
-		err = fmt.Errorf("unable to check if configmap %s exists in namespace %s: %w", secretName, targetNamespace, err)
-		logrus.Error(err)
-		return err
+		return errors.Errorf("unable to check if configmap %s exists in namespace %s: %w", secretName, targetNamespace, err)
 	}
 
 	if exists {
@@ -32,9 +30,7 @@ func copyCA(ctx context.Context, client client.Client, secretName, secretNamespa
 	}, &secret)
 
 	if err != nil {
-		err = fmt.Errorf("unable to get certificate authority secret %s in namespace %s: %w", secretName, secretNamespace, err)
-		logrus.Error(err)
-		return err
+		return errors.Errorf("unable to get certificate authority secret %s in namespace %s: %w", secretName, secretNamespace, err)
 	}
 
 	certificate := secret.Data["ca.crt"]
@@ -42,9 +38,7 @@ func copyCA(ctx context.Context, client client.Client, secretName, secretNamespa
 	err = writeCA(ctx, client, secretName, targetNamespace, certificate)
 
 	if err != nil {
-		err = fmt.Errorf("unable to write certificate authority to configmap %s in namespace %s: %w", secretName, targetNamespace, err)
-		logrus.Error(err)
-		return err
+		return errors.Errorf("unable to write certificate authority to configmap %s in namespace %s: %w", secretName, targetNamespace, err)
 	}
 
 	logrus.Infof("copied CA to configmap %s in namespace %s", secretName, targetNamespace)
@@ -58,15 +52,15 @@ func checkCAExists(ctx context.Context, client client.Client, configMapName, con
 		Name:      configMapName,
 	}, &configMap)
 
-	if err == nil {
-		return true, nil
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
 	}
 
-	if k8serrors.IsNotFound(err) {
-		return false, nil
-	}
-
-	return false, err
+	return true, nil
 }
 
 func writeCA(ctx context.Context, client client.Client, configMapName, configMapNamespace string, certificate []byte) error {
@@ -83,7 +77,7 @@ func writeCA(ctx context.Context, client client.Client, configMapName, configMap
 	err := client.Create(ctx, &configMap)
 
 	if err != nil {
-		return fmt.Errorf("unable to create configmap: %w", err)
+		return errors.Errorf("unable to create configmap: %w", err)
 	}
 
 	return nil
