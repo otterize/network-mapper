@@ -3,7 +3,6 @@ package pod_webhook
 import (
 	"context"
 	"encoding/json"
-	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -13,30 +12,14 @@ import (
 )
 
 type InjectDNSConfigToPodWebhook struct {
-	client           client.Client
-	decoder          *admission.Decoder
-	currentNamespace string
-	dnsServerAddress string
+	client  client.Client
+	decoder *admission.Decoder
 }
 
 func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Decoder) (*InjectDNSConfigToPodWebhook, error) {
-	podNamespace, err := kubeutils.GetCurrentNamespace()
-
-	if err != nil {
-		logrus.WithError(err).Panic("unable to get pod namespace")
-	}
-
-	dnsServerAddress, err := getDNSServerAddress(client, podNamespace)
-
-	if err != nil {
-		return nil, errors.Errorf("unable to get DNS server address: %w", err)
-	}
-
 	return &InjectDNSConfigToPodWebhook{
-		client:           client,
-		decoder:          decoder,
-		currentNamespace: podNamespace,
-		dnsServerAddress: dnsServerAddress,
+		client:  client,
+		decoder: decoder,
 	}, nil
 }
 
@@ -64,11 +47,25 @@ func (w *InjectDNSConfigToPodWebhook) Handle(ctx context.Context, req admission.
 		return admission.Allowed("no AWS visibility label - no modifications made")
 	}
 
+	currentNamespace, err := kubeutils.GetCurrentNamespace()
+
+	if err != nil {
+		logger.WithError(err).Error("unable to get pod namespace")
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
+	dnsServerAddress, err := getDNSServerAddress(w.client, currentNamespace)
+
+	if err != nil {
+		logger.WithError(err).Error("unable to get DNS server address")
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
 	err = copyCA(
 		ctx,
 		w.client,
 		"iamlive-ca",
-		w.currentNamespace,
+		currentNamespace,
 		pod.Namespace,
 	)
 
@@ -102,7 +99,7 @@ func (w *InjectDNSConfigToPodWebhook) Handle(ctx context.Context, req admission.
 
 	pod.Spec.DNSPolicy = corev1.DNSNone
 	pod.Spec.DNSConfig = &corev1.PodDNSConfig{
-		Nameservers: []string{w.dnsServerAddress},
+		Nameservers: []string{dnsServerAddress},
 		Searches: []string{
 			"default.svc.cluster.local",
 			"svc.cluster.local",
