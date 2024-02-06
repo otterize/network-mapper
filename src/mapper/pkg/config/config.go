@@ -23,6 +23,10 @@ const (
 	OTelMetricDefault                    = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
 	ExternalTrafficCaptureEnabledKey     = "capture-external-traffic-enabled"
 	ExternalTrafficCaptureEnabledDefault = false
+	CreateWebhookCertificateKey          = "create-webhook-certificate"
+	CreateWebhookCertificateDefault      = false
+	EnableAWSVisibilityKeyWebHook        = "enable-aws-visibility-webhook"
+	EnableAWSVisibilityDefaultWebHook    = false
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -40,5 +44,7 @@ func init() {
 	viper.SetDefault(OTelEnabledKey, OTelEnabledDefault)
 	viper.SetDefault(OTelMetricKey, OTelMetricDefault)
 	viper.SetDefault(ExternalTrafficCaptureEnabledKey, ExternalTrafficCaptureEnabledDefault)
+	viper.SetDefault(CreateWebhookCertificateKey, CreateWebhookCertificateDefault)
+	viper.SetDefault(EnableAWSVisibilityKeyWebHook, EnableAWSVisibilityDefaultWebHook)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
