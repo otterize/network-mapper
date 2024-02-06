@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 	"time"
 )
@@ -49,7 +50,7 @@ func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	s.Require().NotNil(s.K8sDirectClient)
 	s.mgrCtx, s.mgrCtxCancelFunc = context.WithCancel(context.Background())
 
-	s.Mgr, err = manager.New(s.cfg, manager.Options{})
+	s.Mgr, err = manager.New(s.cfg, manager.Options{Metrics: server.Options{BindAddress: "0"}})
 	s.Require().NoError(err)
 	testName := s.T().Name()[strings.LastIndex(s.T().Name(), "/")+1:]
 	s.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))

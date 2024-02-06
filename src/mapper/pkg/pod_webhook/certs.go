@@ -57,7 +57,7 @@ func checkCAExists(ctx context.Context, client client.Client, configMapName, con
 			return false, nil
 		}
 
-		return false, err
+		return false, errors.Wrap(err)
 	}
 
 	return true, nil
