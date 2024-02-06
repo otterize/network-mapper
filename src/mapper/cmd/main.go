@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"time"
@@ -80,7 +81,7 @@ func main() {
 	mapperServer.Use(middleware.Logger())
 
 	// start manager with operators
-	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{})
+	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{Metrics: server.Options{BindAddress: "0"}})
 	if err != nil {
 		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
