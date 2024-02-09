@@ -69,9 +69,13 @@ func (r *mutationResolver) tryHandleSocketScanDestinationAsService(ctx context.C
 
 func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
 	lastSeen := dest.LastSeen
-	dstSvcIdentity, err := r.otterizeIdentityForService(ctx, svc, dest.LastSeen)
+	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, svc, dest.LastSeen)
 	if err != nil {
 		return errors.Wrap(err)
+	}
+
+	if !ok {
+		return nil
 	}
 
 	intent := model.Intent{
@@ -89,10 +93,10 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	return nil
 }
 
-func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, error) {
+func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
-		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 
 	if len(pods) == 0 {
@@ -101,11 +105,11 @@ func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.S
 				Name:              svc.Name,
 				Namespace:         svc.Namespace,
 				KubernetesService: &svc.Name,
-			}, nil
+			}, true, nil
 		}
 
 		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, false, err
 	}
 
 	// Assume the pods backing the service are identical
@@ -113,12 +117,12 @@ func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.S
 
 	if pod.CreationTimestamp.After(lastSeen) {
 		logrus.Debugf("Pod %s was created after scan time %s, ignoring", pod.Name, lastSeen)
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
 	if err != nil {
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 
 	dstSvcIdentity := model.OtterizeServiceIdentity{
@@ -131,7 +135,7 @@ func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.S
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
 	dstSvcIdentity.KubernetesService = lo.ToPtr(svc.Name)
-	return dstSvcIdentity, nil
+	return dstSvcIdentity, true, nil
 }
 
 func serviceIsAPIServer(name string, namespace string) bool {
@@ -194,11 +198,11 @@ func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Co
 }
 
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
-	dstSvcIdentity, err := r.otterizeIdentityForDestinationAddress(ctx, dest)
+	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForDestinationAddress(ctx, dest)
 	if err != nil {
 		return err
 	}
-	if dstSvcIdentity == nil {
+	if !ok {
 		return nil
 	}
 
@@ -216,24 +220,24 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 	return nil
 }
 
-func (r *Resolver) otterizeIdentityForDestinationAddress(ctx context.Context, dest model.Destination) (*model.OtterizeServiceIdentity, error) {
+func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Context, dest model.Destination) (*model.OtterizeServiceIdentity, bool, error) {
 	destAddress := dest.Destination
 	ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 	if err != nil {
 		logrus.WithError(err).Warningf("Could not resolve service address %s", destAddress)
-		return nil, nil
+		return nil, false, nil
 	}
 	if serviceIsAPIServer(serviceName.Name, serviceName.Namespace) {
 		return &model.OtterizeServiceIdentity{
 			Name:              serviceName.Name,
 			Namespace:         serviceName.Namespace,
 			KubernetesService: &serviceName.Name,
-		}, nil
+		}, true, nil
 	}
 
 	if len(ips) == 0 {
 		logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", destAddress)
-		return nil, nil
+		return nil, false, nil
 	}
 	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, ips[0])
 	if err != nil {
@@ -242,23 +246,23 @@ func (r *Resolver) otterizeIdentityForDestinationAddress(ctx context.Context, de
 		} else {
 			logrus.WithError(err).Debugf("Could not resolve %s to pod", ips[0])
 		}
-		return nil, nil
+		return nil, false, nil
 	}
 
 	if destPod.CreationTimestamp.After(dest.LastSeen) {
 		logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
-		return nil, nil
+		return nil, false, nil
 	}
 
 	if destPod.DeletionTimestamp != nil {
 		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
-		return nil, nil
+		return nil, false, nil
 	}
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {
 		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
-		return nil, nil
+		return nil, false, nil
 	}
 
 	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
@@ -268,5 +272,5 @@ func (r *Resolver) otterizeIdentityForDestinationAddress(ctx context.Context, de
 	if serviceName.Name != "" {
 		dstSvcIdentity.KubernetesService = &serviceName.Name
 	}
-	return dstSvcIdentity, nil
+	return dstSvcIdentity, true, nil
 }
