@@ -23,7 +23,7 @@ var (
 		Help: "The total number of Istio-sourced successfully reported connections",
 	})
 	socketScanIncomingReports = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "socketscan_reported_connections",
+		Name: "socketscan_incoming_connections",
 		Help: "The total number of socket scan-sourced incoming connections",
 	})
 	dnsCaptureIncomingReports = promauto.NewCounter(prometheus.CounterOpts{
