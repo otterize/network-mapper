@@ -109,7 +109,7 @@ func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *c
 		}
 
 		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
-		return model.OtterizeServiceIdentity{}, false, err
+		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
 	// Assume the pods backing the service are identical
@@ -200,7 +200,7 @@ func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Co
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
 	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForDestinationAddress(ctx, dest)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 	if !ok {
 		return nil
@@ -225,6 +225,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 	ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
 	if err != nil {
 		logrus.WithError(err).Warningf("Could not resolve service address %s", destAddress)
+		// Intentionally no error return
 		return nil, false, nil
 	}
 	if serviceIsAPIServer(serviceName.Name, serviceName.Namespace) {
