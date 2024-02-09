@@ -8,19 +8,35 @@ import (
 var (
 	socketScanReports = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "socketscan_reported_connections",
-		Help: "The total number of socket scan-sourced reported connections",
+		Help: "The total number of socket scan-sourced successfully reported connections",
 	})
 	dnsCaptureReports = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "dns_reported_connections",
-		Help: "The total number of DNS-sourced reported connections",
+		Help: "The total number of DNS-sourced successfully reported connections",
 	})
 	kafkaReports = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "kafka_reported_topics",
-		Help: "The total number of Kafka-sourced topics",
+		Help: "The total number of Kafka-sourced successfully reported topics",
 	})
 	istioReports = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "istio_reported_connections",
-		Help: "The total number of Istio-sourced connections",
+		Help: "The total number of Istio-sourced successfully reported connections",
+	})
+	socketScanIncomingReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "socketscan_reported_connections",
+		Help: "The total number of socket scan-sourced incoming connections",
+	})
+	dnsCaptureIncomingReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "dns_incoming_connections",
+		Help: "The total number of DNS-sourced incoming connections",
+	})
+	kafkaIncomingReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "kafka_incoming_topics",
+		Help: "The total number of Kafka-sourced incoming topics",
+	})
+	istioIncomingReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "istio_incoming_connections",
+		Help: "The total number of Istio-sourced incoming connections",
 	})
 	socketScanDrops = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "socketscan_dropped_connections",
@@ -54,6 +70,22 @@ func IncrementKafkaReports(count int) {
 
 func IncrementIstioReports(count int) {
 	istioReports.Add(float64(count))
+}
+
+func IncrementSocketScanIncomingReports(count int) {
+	socketScanIncomingReports.Add(float64(count))
+}
+
+func IncrementDNSCaptureIncomingReports(count int) {
+	dnsCaptureIncomingReports.Add(float64(count))
+}
+
+func IncrementKafkaIncomingReports(count int) {
+	kafkaIncomingReports.Add(float64(count))
+}
+
+func IncrementIstioIncomingReports(count int) {
+	istioIncomingReports.Add(float64(count))
 }
 
 func IncrementSocketScanDrops(count int) {
