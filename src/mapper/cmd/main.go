@@ -6,7 +6,6 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
-	"github.com/neko-neko/echo-logrus/v2/log"
 	operatorwebhooks "github.com/otterize/intents-operator/src/operator/webhooks"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
@@ -14,6 +13,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
+	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,7 +77,7 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
-	log.Logger().Logger = logrus.StandardLogger()
+	echologrus.Logger = logrus.StandardLogger()
 	mapperServer.Use(middleware.Logger())
 
 	// start manager with operators
@@ -156,7 +156,8 @@ func main() {
 	mapperServer.GET("/healthz", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
-	mapperServer.Use(middleware.Logger())
+	mapperServer.Logger = echologrus.GetEchoLogger()
+	mapperServer.Use(echologrus.Hook())
 	mapperServer.Use(middleware.CORS())
 	mapperServer.Use(middleware.RemoveTrailingSlash())
 	initCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
