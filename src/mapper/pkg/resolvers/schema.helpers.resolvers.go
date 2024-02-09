@@ -273,6 +273,7 @@ func (r *Resolver) otterizeIdentityForDestinationAddress(ctx context.Context, de
 }
 
 func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model.CaptureResults) error {
+	prometheus.IncrementDNSCaptureIncomingReports(results.Length())
 	var newResults int
 	for _, captureItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
@@ -308,6 +309,7 @@ func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model
 }
 
 func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results model.SocketScanResults) error {
+	prometheus.IncrementSocketScanIncomingReports(results.Length())
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
 		if err != nil {
@@ -347,6 +349,7 @@ func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results mo
 }
 
 func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) error {
+	prometheus.IncrementKafkaIncomingReports(results.Length())
 	var newResults int
 	for _, result := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, result.SrcIP)
@@ -421,6 +424,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 }
 
 func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) error {
+	prometheus.IncrementIstioIncomingReports(results.Length())
 	var newResults int
 	for _, result := range results.Results {
 		srcPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.SrcWorkload, result.SrcWorkloadNamespace)
