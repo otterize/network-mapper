@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
+	"strings"
 )
 
 func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
