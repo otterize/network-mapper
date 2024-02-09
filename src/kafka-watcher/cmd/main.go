@@ -113,11 +113,6 @@ func main() {
 		return errors.Wrap(err)
 	})
 
-	errgrp.Go(func() error {
-		defer errorreporter.AutoNotify()
-		return componentutils.WaitAndSetContextId(errGroupCtx)
-	})
-
 	err = errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logrus.WithError(err).Panic("Error when running server or HTTP server")

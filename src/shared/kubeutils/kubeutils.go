@@ -2,8 +2,6 @@ package kubeutils
 
 import (
 	"github.com/otterize/intents-operator/src/shared/errors"
-	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
-	"github.com/spf13/viper"
 	"os"
 	"strings"
 )
@@ -15,11 +13,6 @@ const (
 )
 
 func GetCurrentNamespace() (string, error) {
-	// For local development only
-	if viper.IsSet(sharedconfig.EnvNamespaceKey) {
-		return viper.GetString(sharedconfig.EnvNamespaceKey), nil
-	}
-
 	data, err := os.ReadFile(namespaceFile)
 	if err != nil {
 		return "", errors.Wrap(err)

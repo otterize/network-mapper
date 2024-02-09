@@ -15,13 +15,11 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -145,12 +143,7 @@ func main() {
 	} else {
 		kubeSystemUID = string(kubeSystemNs.UID)
 	}
-	contextID := telemetrysender.Anonymize(kubeSystemUID)
-	componentinfo.SetGlobalContextId(contextID)
-	err = WriteContextIDToConfigMap(mgr.GetClient(), contextID)
-	if err != nil {
-		logrus.WithError(err).Error("unable to write context id to config map")
-	}
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
 
 	// start API server
 	mapperServer.GET("/healthz", func(c echo.Context) error {
@@ -256,32 +249,4 @@ func main() {
 		logrus.WithError(err).Panic("Error when running server or HTTP server")
 	}
 
-}
-
-func WriteContextIDToConfigMap(k8sClient client.Client, contextID string) error {
-	namespace, err := kubeutils.GetCurrentNamespace()
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	configMapName := viper.GetString(sharedconfig.ComponentMetadataConfigmapNameKey)
-	var configMap corev1.ConfigMap
-	err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: configMapName}, &configMap)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	if configMap.Data == nil {
-		configMap.Data = make(map[string]string)
-	}
-
-	contextIdKey := viper.GetString(sharedconfig.ComponentMetadataContextIdKeyKey)
-	configMap.Data[contextIdKey] = contextID
-	err = k8sClient.Update(context.Background(), &configMap)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	logrus.Info("Successfully wrote context id to config map")
-	return nil
 }
