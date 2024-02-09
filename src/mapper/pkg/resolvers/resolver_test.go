@@ -813,8 +813,6 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 	})
 	s.Require().NoError(err)
 
-	s.waitForCaptureResultsProcessed(10 * time.Second)
-
 	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, true, nil)
 	s.Require().NoError(err)
 	logrus.Info("Report processed")
@@ -864,8 +862,6 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 		},
 	})
 	s.Require().NoError(err)
-
-	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, true, nil)
 	s.Require().NoError(err)

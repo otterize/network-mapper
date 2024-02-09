@@ -15,7 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	"strings"
 	"time"
 )
 
@@ -93,7 +92,7 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 func (r *Resolver) otterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, error) {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
-		return model.OtterizeServiceIdentity{}, err
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 	}
 
 	if len(pods) == 0 {

@@ -175,7 +175,7 @@ func (s *ControllerManagerTestSuiteBase) GetAPIServerService() *corev1.Service {
 		true,
 		func(ctx context.Context) (done bool, err error) {
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: "kubernetes", Namespace: "default"}, service)
-			if errors.IsNotFound(err) {
+			if k8serrors.IsNotFound(err) {
 				return false, nil
 			}
 			if err != nil {
