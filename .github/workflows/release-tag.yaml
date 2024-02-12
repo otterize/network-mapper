@@ -22,7 +22,7 @@ jobs:
       - name: Checkout IAMLive fork
         uses: actions/checkout@v2
         with:
-          repository: orishavit/iamlive
+          repository: otterize/iamlive
           path: iamlive
           ref: main
 
