@@ -13,8 +13,13 @@ type UniqueRequest struct {
 	destIP           string
 }
 
-// For each unique request info, we store the time of the last request (no need to report duplicates)
-type capturesMap map[UniqueRequest]time.Time
+type TimeAndTTL struct {
+	lastSeen time.Time
+	ttl      int
+}
+
+// For each unique request info, we store the time of the last request (no need to report duplicates) and last seen TTL.
+type capturesMap map[UniqueRequest]TimeAndTTL
 
 type NetworkCollector struct {
 	capturedRequests capturesMap
@@ -24,9 +29,9 @@ func (c *NetworkCollector) resetData() {
 	c.capturedRequests = make(capturesMap)
 }
 
-func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time) {
+func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time, ttl int) {
 	req := UniqueRequest{srcIp, srcHost, destNameOrIP, destIP}
-	c.capturedRequests[req] = seenAt
+	c.capturedRequests[req] = TimeAndTTL{seenAt, ttl}
 }
 
 func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsForSrc {
@@ -36,13 +41,19 @@ func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsF
 	}
 	srcToDests := make(map[srcInfo][]mapperclient.Destination)
 
-	for reqInfo, reqLastSeen := range c.capturedRequests {
+	for reqInfo, timeAndTTL := range c.capturedRequests {
 		src := srcInfo{Ip: reqInfo.srcIP, Hostname: reqInfo.srcHostname}
 
 		if _, ok := srcToDests[src]; !ok {
 			srcToDests[src] = make([]mapperclient.Destination, 0)
 		}
-		srcToDests[src] = append(srcToDests[src], mapperclient.Destination{Destination: reqInfo.destHostnameOrIP, DestinationIP: reqInfo.destIP, LastSeen: reqLastSeen})
+		destination := mapperclient.Destination{
+			Destination:   reqInfo.destHostnameOrIP,
+			DestinationIP: reqInfo.destIP,
+			LastSeen:      timeAndTTL.lastSeen,
+			TTL:           timeAndTTL.ttl,
+		}
+		srcToDests[src] = append(srcToDests[src], destination)
 	}
 
 	results := make([]mapperclient.RecordedDestinationsForSrc, 0)

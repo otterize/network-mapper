@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
@@ -21,6 +22,7 @@ type Resolver struct {
 	intentsHolder                *intentsstore.IntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	dnsCache                     *dnscache.DNSCache
 }
 
 func NewResolver(
@@ -29,6 +31,7 @@ func NewResolver(
 	intentsHolder *intentsstore.IntentsHolder,
 	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
 	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+	dnsCache *dnscache.DNSCache,
 ) *Resolver {
 	return &Resolver{
 		kubeFinder:                   kubeFinder,
@@ -36,6 +39,7 @@ func NewResolver(
 		intentsHolder:                intentsHolder,
 		externalTrafficIntentsHolder: externalTrafficHolder,
 		awsIntentsHolder:             awsIntentsHolder,
+		dnsCache:                     dnsCache,
 	}
 }
 

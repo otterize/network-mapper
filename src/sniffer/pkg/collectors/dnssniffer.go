@@ -18,6 +18,7 @@ type pendingCapture struct {
 	destHostnameOrIP string
 	destIPFromDNS    string // The destination IP, if it is known at the time of capture.
 	time             time.Time
+	ttl              int
 }
 
 type DNSSniffer struct {
@@ -71,7 +72,12 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 				} else {
 					// Resolver cache could be outdated, verify same resolving result after next poll
 					s.pending = append(s.pending, pendingCapture{
-						srcIp: ip.DstIP.String(), srcHostname: hostname, destHostnameOrIP: string(answer.Name), destIPFromDNS: answer.IP.String(), time: captureTime,
+						srcIp:            ip.DstIP.String(),
+						srcHostname:      hostname,
+						destHostnameOrIP: string(answer.Name),
+						destIPFromDNS:    answer.IP.String(),
+						time:             captureTime,
+						ttl:              int(answer.TTL),
 					})
 				}
 			}
@@ -95,7 +101,7 @@ func (s *DNSSniffer) RefreshHostsMapping() error {
 			logrus.Debugf("IP %s was resolved to %s, but now resolves to %s. skipping packet", p.srcIp, p.srcHostname, hostname)
 			continue
 		}
-		s.addCapturedRequest(p.srcIp, hostname, p.destHostnameOrIP, p.destIPFromDNS, p.time)
+		s.addCapturedRequest(p.srcIp, hostname, p.destHostnameOrIP, p.destIPFromDNS, p.time, p.ttl)
 	}
 	s.pending = make([]pendingCapture, 0)
 	s.lastRefresh = time.Now()

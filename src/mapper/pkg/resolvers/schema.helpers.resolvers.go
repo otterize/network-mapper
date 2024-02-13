@@ -190,6 +190,7 @@ func (r *mutationResolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Co
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
 		intent.IPs = map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}}
+		r.dnsCache.AddOrUpdateDNSData(dest.Destination, ip, int(lo.FromPtr(dest.TTL)))
 	}
 	logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
 

@@ -19,6 +19,7 @@ func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Re
 type Destination struct {
 	Destination   string    `json:"destination"`
 	DestinationIP string    `json:"destinationIP"`
+	TTL           int       `json:"TTL"`
 	LastSeen      time.Time `json:"lastSeen"`
 }
 
@@ -27,6 +28,9 @@ func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetDestinationIP returns Destination.DestinationIP, and is useful for accessing the field via an interface.
 func (v *Destination) GetDestinationIP() string { return v.DestinationIP }
+
+// GetTTL returns Destination.TTL, and is useful for accessing the field via an interface.
+func (v *Destination) GetTTL() int { return v.TTL }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }

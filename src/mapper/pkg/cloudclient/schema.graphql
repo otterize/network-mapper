@@ -142,6 +142,21 @@ enum ApiMethod {
 	DELETE
 }
 
+enum AwsIamStep {
+	CREATE_CLUSTER
+	CONNECT_CLUSTER
+	DEPLOY_OTTERIZE_FOR_AWS_IAM
+	CREATE_S3_BUCKET
+	DEPLOY_SAMPLE_SERVER
+	VIEW_LOGS
+	LABEL_THE_SERVER_POD
+	SEE_THE_CREATED_ROLE
+	SEE_THE_SERVICE_ACCOUNT
+	APPLY_INTENTS
+	QUERY_S3_BUCKET_CONTENT
+	COMPLETED
+}
+
 """The `Boolean` scalar type represents `true` or `false`."""
 scalar Boolean
 
@@ -794,6 +809,10 @@ type Mutation {
 	createCluster(
 		name: String!
 	): Cluster!
+	createClusterAndUpdateUserTutorial(
+		name: String!
+		userTutorialId: ID!
+	): Cluster!
 """Delete cluster"""
 	deleteCluster(
 		id: ID!
@@ -966,6 +985,33 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+	saveOnboardingFeedback(
+		userEmail: String!
+		feedback: String!
+	): Boolean!
+	createUserTutorial(
+		tutorialName: TutorialName!
+	): Boolean!
+	updateUserTutorialCluster(
+		userTutorialId: ID!
+		clusterId: ID!
+		ifClusterNotExists: Boolean!
+	): Boolean!
+	activateUserTutorial(
+		tutorialName: TutorialName!
+	): Boolean!
+	resetUserTutorial(
+		userTutorialId: ID!
+	): Boolean!
+	notifyUserTutorialEvent(
+		userTutorialId: ID!
+		event: TutorialEvent!
+	): Boolean!
+	notifyUserTutorialStepSeen(
+		userTutorialId: ID!
+		tutorialName: TutorialName!
+		step: String!
+	): Boolean!
 	notifyQuestLogStepAdvanced(
 		id: ID!
 		step: QuestLogStep!
@@ -973,14 +1019,6 @@ type Mutation {
 	notifyQuestLogStepSeenAdvanced(
 		id: ID!
 		step: QuestLogStep!
-	): Boolean!
-	saveOnboardingSelection(
-		id: ID!
-		selection: OnboardingSelection!
-	): Boolean!
-	saveOnboardingSelectionOther(
-		id: ID!
-		selection: String!
 	): Boolean!
 }
 
@@ -1003,17 +1041,26 @@ type NetworkMapperComponent {
 	status: ComponentStatus!
 }
 
+enum NetworkPoliciesStep {
+"""Connect cluster"""
+	CREATE_CLUSTER
+	CONNECT_CLUSTER
+"""Get to know your network map"""
+	EXPLORE_NETWORK_MAP_ADD_NS_FILTER
+	EXPLORE_NETWORK_MAP_ADD_SVC_FILTER
+	EXPLORE_NETWORK_MAP_CLEAR_FILTERS
+"""Declare intents"""
+	DECLARE_INTENTS_CLICK_ON_SERVICE
+	DECLARE_INTENTS_DOWNLOAD_YAML
+	DECLARE_INTENTS_DO_APPLY
+	COMPLETED
+}
+
 input NetworkPolicyInput {
 	namespace: String!
 	name: String!
 	serverName: String!
 	externalNetworkTrafficPolicy: Boolean!
-}
-
-enum OnboardingSelection {
-	DEFAULT
-	AWS_IAM
-	OTHER
 }
 
 type Organization {
@@ -1304,16 +1351,44 @@ type TestDatabaseConnectionResponse {
 
 scalar Time
 
+enum TutorialEvent {
+	CLUSTER_CREATED
+	CLUSTER_CONNECTED
+	NS_FILTER_CLICKED
+	SVC_FILTER_CLICKED
+	FILTER_CLEARED
+	SERVICE_CLICKED
+	YAML_DOWNLOADED
+	INTENTS_APPLIED
+	TUTORIAL_COMPLETED
+	S3_BUCKET_CREATED
+	AWS_IAM_INTEGRATION_CREATED
+	SERVICE_DEPLOYED
+	LOGS_VIEWED
+	SERVER_POD_LABELED
+	AWS_IAM_ROLE_LIST_QUERIED
+	K8S_SERVICE_ACCOUNT_QUERIED
+	AWS_IAM_INTENTS_APPLIED
+	S3_BUCKET_CONTENT_QUERIED
+}
+
+enum TutorialName {
+	NETWORK_POLICIES
+	AWS_IAM
+	POSTGRESQL
+	ISTIO_AUTH_POLICY_AUTOMATION
+	KAFKA_ACCESS_AUTOMATE_OTTERIZE_CLOUD
+}
+
 type User {
 	id: ID!
 	email: String!
 	name: String!
 	imageURL: String!
 	authProviderUserId: String!
+	tutorials: [UserTutorial!]
 	questLogStep: QuestLogStep!
 	questLogStepSeen: QuestLogStep!
-	onboardingSelection: OnboardingSelection!
-	onboardingSelectionOther: String!
 }
 
 type UserAndPassword {
@@ -1330,6 +1405,18 @@ enum UserErrorType {
 	CONFLICT
 	BAD_USER_INPUT
 	APPLIED_INTENTS_ERROR
+}
+
+type UserTutorial {
+	id: ID!
+	userId: ID!
+	clusterId: ID!
+	clusterName: String!
+	name: TutorialName!
+	isActive: Boolean!
+	isCompleted: Boolean!
+	step: String!
+	stepSeen: String!
 }
 
 

@@ -22,6 +22,7 @@ type CaptureResults struct {
 type Destination struct {
 	Destination   string    `json:"destination"`
 	DestinationIP *string   `json:"destinationIP"`
+	TTL           *int64    `json:"TTL"`
 	LastSeen      time.Time `json:"lastSeen"`
 }
 
