@@ -6,7 +6,6 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
-	operatorwebhooks "github.com/otterize/intents-operator/src/operator/webhooks"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
@@ -14,6 +13,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/mapperwebhooks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
@@ -131,16 +131,16 @@ func main() {
 		}
 
 		certBundle, err :=
-			operatorwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
+			mapperwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
 		if err != nil {
 			logrus.WithError(err).Panic("unable to create self signed certs for webhook")
 		}
-		err = operatorwebhooks.WriteCertToFiles(certBundle)
+		err = mapperwebhooks.WriteCertToFiles(certBundle)
 		if err != nil {
 			logrus.WithError(err).Panic("failed writing certs to file system")
 		}
 
-		err = operatorwebhooks.UpdateMutationWebHookCA(context.Background(),
+		err = mapperwebhooks.UpdateMutationWebHookCA(context.Background(),
 			"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
 		if err != nil {
 			logrus.WithError(err).Panic("updating validation webhook certificate failed")
