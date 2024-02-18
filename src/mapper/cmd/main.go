@@ -241,11 +241,13 @@ func main() {
 		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 	}
 
-	errgrp.Go(func() error {
-		defer errorreporter.AutoNotify()
-		dnsPublisher.RunForever(errGroupCtx)
-		return nil
-	})
+	if viper.GetBool(config.DNSClientIntentsUpdateEnabledKey) {
+		errgrp.Go(func() error {
+			defer errorreporter.AutoNotify()
+			dnsPublisher.RunForever(errGroupCtx)
+			return nil
+		})
+	}
 
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()

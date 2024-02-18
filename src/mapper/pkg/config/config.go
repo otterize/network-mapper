@@ -32,6 +32,8 @@ const (
 	DNSCacheItemsMaxCapacityDefault       = 100000
 	DNSClientIntentsUpdateIntervalKey     = "dns-client-intents-update-interval"
 	DNSClientIntentsUpdateIntervalDefault = 1 * time.Second
+	DNSClientIntentsUpdateEnabledKey      = "dns-client-intents-update-enabled"
+	DNSClientIntentsUpdateEnabledDefault  = false
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -53,5 +55,6 @@ func init() {
 	viper.SetDefault(EnableAWSVisibilityKeyWebHook, EnableAWSVisibilityDefaultWebHook)
 	viper.SetDefault(DNSCacheItemsMaxCapacityKey, DNSCacheItemsMaxCapacityDefault)
 	viper.SetDefault(DNSClientIntentsUpdateIntervalKey, DNSClientIntentsUpdateIntervalDefault)
+	viper.SetDefault(DNSClientIntentsUpdateEnabledKey, DNSClientIntentsUpdateEnabledDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
