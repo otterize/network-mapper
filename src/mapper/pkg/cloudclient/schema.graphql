@@ -114,6 +114,7 @@ type AccessGraphEdge {
 	discoveredIntents: [Intent!]!
 	appliedIntents: [Intent!]!
 	accessStatus: EdgeAccessStatus!
+	accessStatuses: EdgeAccessStatuses!
 }
 
 type AccessGraphFilter {
@@ -232,6 +233,8 @@ type ClusterConfiguration {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
 	useKafkaACLsInAccessGraphStates: Boolean!
+	useAWSIAMInAccessGraphStates: Boolean!
+	useDatabaseInAccessGraphStates: Boolean!
 	clusterFormSettings: ClusterFormSettings!
 }
 
@@ -239,8 +242,10 @@ input ClusterConfigurationInput {
 	globalDefaultDeny: Boolean!
 	istioGlobalDefaultDeny: Boolean
 	useNetworkPoliciesInAccessGraphStates: Boolean!
-	useIstioPoliciesInAccessGraphStates: Boolean
-	useKafkaACLsInAccessGraphStates: Boolean
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	useKafkaACLsInAccessGraphStates: Boolean!
+	useAWSIAMInAccessGraphStates: Boolean
+	useDatabaseInAccessGraphStates: Boolean
 	clusterFormSettings: ClusterFormSettingsInput
 }
 
@@ -424,6 +429,14 @@ enum EdgeAccessStatusVerdict {
 	WOULD_BE_BLOCKED
 	BLOCKED
 	UNKNOWN
+}
+
+type EdgeAccessStatuses {
+	networkPolicies: EdgeAccessStatus!
+	kafkaACLs: EdgeAccessStatus!
+	istioPolicies: EdgeAccessStatus!
+	awsIam: EdgeAccessStatus!
+	database: EdgeAccessStatus!
 }
 
 type Environment {
@@ -649,6 +662,8 @@ type IntentsOperatorConfiguration {
 	networkPolicyEnforcementEnabled: Boolean!
 	kafkaACLEnforcementEnabled: Boolean!
 	istioPolicyEnforcementEnabled: Boolean!
+	awsIAMPolicyEnforcementEnabled: Boolean!
+	databaseEnforcementEnabled: Boolean!
 	protectedServicesEnabled: Boolean!
 	protectedServices: [Service!]!
 	egressNetworkPolicyEnforcementEnabled: Boolean!
@@ -661,6 +676,8 @@ input IntentsOperatorConfigurationInput {
 	istioPolicyEnforcementEnabled: Boolean
 	protectedServicesEnabled: Boolean
 	egressNetworkPolicyEnforcementEnabled: Boolean
+	awsIAMPolicyEnforcementEnabled: Boolean
+	databaseEnforcementEnabled: Boolean
 }
 
 type InternetConfig {
@@ -867,7 +884,7 @@ type Mutation {
 """Create a new Kubernetes integration"""
 	createKubernetesIntegration(
 		environmentId: ID
-		clusterId: ID!
+		name: String!
 	): Integration
 """Create a new AWS integration"""
 	createAWSIntegration(
@@ -901,6 +918,7 @@ type Mutation {
 	updateKubernetesIntegration(
 		id: ID!
 		environmentId: ID
+		name: String
 	): Integration
 """Update Database integration"""
 	updateDatabaseIntegration(
@@ -1316,6 +1334,8 @@ type ServiceClientIntents {
 }
 
 enum ServiceType {
+	NODE_GROUP
+	PREFIX_GROUP
 	KUBERNETES
 	KAFKA
 	AWS
