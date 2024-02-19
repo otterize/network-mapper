@@ -65,7 +65,6 @@ func main() {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)
 	}
-	mapperServer := echo.New()
 
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
@@ -76,7 +75,6 @@ func main() {
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	echologrus.Logger = logrus.StandardLogger()
-	mapperServer.Use(middleware.Logger())
 
 	// start manager with operators
 	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{Metrics: server.Options{BindAddress: "0"}})
@@ -85,6 +83,10 @@ func main() {
 	}
 
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+
+	mapperServer := echo.New()
+	mapperServer.Use(middleware.Logger())
+
 	kubeFinder, err := kubefinder.NewKubeFinder(errGroupCtx, mgr)
 	if err != nil {
 		logrus.Error(err)
@@ -119,11 +121,14 @@ func main() {
 
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
+
 		logrus.Info("Starting operator manager")
+
 		if err := mgr.Start(errGroupCtx); err != nil {
-			logrus.Error(err, "unable to run manager")
+			logrus.WithError(err).Error("unable to run manager")
 			return errors.Wrap(err)
 		}
+
 		return nil
 	})
 
@@ -237,16 +242,37 @@ func main() {
 
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
+		go shutdownGracefullyOnCancel(errGroupCtx, metricsServer)
+
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
+		go shutdownGracefullyOnCancel(errGroupCtx, mapperServer)
+
 		return mapperServer.Start(":9090")
 	})
 
 	err = errgrp.Wait()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
-		logrus.WithError(err).Panic("Error when running server or HTTP server")
+	logrus.Infof("Network Mapper stopped")
+
+	if err != nil {
+		if !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
+			logrus.WithError(err).Error("failed to shutdown server")
+		}
+	}
+}
+
+func shutdownGracefullyOnCancel(errGroupCtx context.Context, server *echo.Echo) {
+	<-errGroupCtx.Done()
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	shutdownErr := server.Shutdown(timeoutCtx)
+
+	if shutdownErr != nil {
+		logrus.WithError(shutdownErr).Error("failed to shutdown server")
 	}
 
+	_ = server.Close()
 }
