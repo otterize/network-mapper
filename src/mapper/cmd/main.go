@@ -82,7 +82,6 @@ func main() {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)
 	}
-	mapperServer := echo.New()
 
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
@@ -93,7 +92,6 @@ func main() {
 	})
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	echologrus.Logger = logrus.StandardLogger()
-	mapperServer.Use(middleware.Logger())
 
 	// start manager with operators
 	options := manager.Options{
@@ -115,45 +113,26 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Panic("unable to initialize DNS publisher")
 	}
+
+	mapperServer := echo.New()
+	mapperServer.Use(middleware.Logger())
+
 	kubeFinder, err := kubefinder.NewKubeFinder(errGroupCtx, mgr)
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
 	}
 
-	if viper.GetBool(config.CreateWebhookCertificateKey) {
-		// create webhook server certificate
-		logrus.Infoln("Creating self signing certs")
-		podNamespace, err := kubeutils.GetCurrentNamespace()
-
-		if err != nil {
-			logrus.WithError(err).Panic("unable to get pod namespace")
-		}
-
-		certBundle, err :=
-			mapperwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
-		if err != nil {
-			logrus.WithError(err).Panic("unable to create self signed certs for webhook")
-		}
-		err = mapperwebhooks.WriteCertToFiles(certBundle)
-		if err != nil {
-			logrus.WithError(err).Panic("failed writing certs to file system")
-		}
-
-		err = mapperwebhooks.UpdateMutationWebHookCA(context.Background(),
-			"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
-		if err != nil {
-			logrus.WithError(err).Panic("updating validation webhook certificate failed")
-		}
-	}
-
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
+
 		logrus.Info("Starting operator manager")
+
 		if err := mgr.Start(errGroupCtx); err != nil {
-			logrus.Error(err, "unable to run manager")
+			logrus.WithError(err).Error("unable to run manager")
 			return errors.Wrap(err)
 		}
+
 		return nil
 	})
 
@@ -187,7 +166,9 @@ func main() {
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
-	if viper.GetBool(config.EnableAWSVisibilityKeyWebHook) {
+	if viper.GetBool(config.EnableAWSVisibilityWebHookKey) {
+		logrus.Infoln("Registering AWS visibility mutating webhook")
+
 		webhookHandler, err := pod_webhook.NewInjectDNSConfigToPodWebhook(
 			mgr.GetClient(),
 			admission.NewDecoder(mgr.GetScheme()),
@@ -203,6 +184,32 @@ func main() {
 				Handler: webhookHandler,
 			},
 		)
+
+		if viper.GetBool(config.CreateWebhookCertificateKey) {
+			// create webhook server certificate
+			logrus.Infoln("Creating self signing certs for webhook")
+			podNamespace, err := kubeutils.GetCurrentNamespace()
+
+			if err != nil {
+				logrus.WithError(err).Panic("unable to get pod namespace")
+			}
+
+			certBundle, err :=
+				mapperwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
+			if err != nil {
+				logrus.WithError(err).Panic("unable to create self signed certs for webhook")
+			}
+			err = mapperwebhooks.WriteCertToFiles(certBundle)
+			if err != nil {
+				logrus.WithError(err).Panic("failed writing certs to file system")
+			}
+
+			err = mapperwebhooks.UpdateMutationWebHookCA(context.Background(),
+				"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
+			if err != nil {
+				logrus.WithError(err).Panic("updating validation webhook certificate failed")
+			}
+		}
 	}
 
 	intentsHolder := intentsstore.NewIntentsHolder()
@@ -275,16 +282,37 @@ func main() {
 
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
+		go shutdownGracefullyOnCancel(errGroupCtx, metricsServer)
+
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
+		go shutdownGracefullyOnCancel(errGroupCtx, mapperServer)
+
 		return mapperServer.Start(":9090")
 	})
 
 	err = errgrp.Wait()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
-		logrus.WithError(err).Panic("Error when running server or HTTP server")
-	}
+	logrus.Infof("Network Mapper stopped")
 
+	if err != nil {
+		if !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
+			logrus.WithError(err).Error("failed to shutdown server")
+		}
+	}
+}
+
+func shutdownGracefullyOnCancel(errGroupCtx context.Context, server *echo.Echo) {
+	<-errGroupCtx.Done()
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	shutdownErr := server.Shutdown(timeoutCtx)
+
+	if shutdownErr != nil {
+		logrus.WithError(shutdownErr).Error("failed to shutdown server")
+		_ = server.Close()
+
+	}
 }
