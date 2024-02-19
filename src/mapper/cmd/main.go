@@ -272,7 +272,7 @@ func shutdownGracefullyOnCancel(errGroupCtx context.Context, server *echo.Echo) 
 
 	if shutdownErr != nil {
 		logrus.WithError(shutdownErr).Error("failed to shutdown server")
-	}
+		_ = server.Close()
 
-	_ = server.Close()
+	}
 }
