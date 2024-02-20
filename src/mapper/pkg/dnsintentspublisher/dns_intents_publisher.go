@@ -126,22 +126,25 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev1alpha3.Clien
 		return resolvedIPs.DNS, resolvedIPs.IPs
 	})
 
-	dnsIntents := lo.Filter(clientIntents.GetCallsList(), func(intent otterizev1alpha3.Intent, _ int) bool {
-		return intent.Type == otterizev1alpha3.IntentTypeInternet && len(intent.Internet.Dns) > 0
-	})
+	dnsIntents := lo.Reduce(clientIntents.GetCallsList(), func(names []string, intent otterizev1alpha3.Intent, _ int) []string {
+		if intent.Type != otterizev1alpha3.IntentTypeInternet {
+			return names
+		}
+		names = append(names, intent.Internet.Domains...)
+		return names
+	}, make([]string, 0))
 
 	shouldUpdate := false
-	for _, intent := range dnsIntents {
-		newDnsFound := p.appendResolvedIps(intent.Internet.Dns, resolvedIPsMap)
+	for _, dns := range dnsIntents {
+		newDnsFound := p.appendResolvedIps(dns, resolvedIPsMap)
 		if newDnsFound {
 			shouldUpdate = true
 		}
 	}
 
 	for resolvedDNS := range resolvedIPsMap {
-		if !slices.ContainsFunc(dnsIntents, func(intent otterizev1alpha3.Intent) bool {
-			return intent.Internet.Dns == resolvedDNS
-		}) {
+		notPresentOnAnyIntent := !slices.Contains(dnsIntents, resolvedDNS)
+		if notPresentOnAnyIntent {
 			delete(resolvedIPsMap, resolvedDNS)
 			shouldUpdate = true
 		}

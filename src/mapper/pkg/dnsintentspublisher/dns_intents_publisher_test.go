@@ -50,7 +50,7 @@ func (s *PublisherTestSuite) TestPublisher() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 				{
@@ -69,7 +69,7 @@ func (s *PublisherTestSuite) TestPublisher() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "ottersgram.com",
+						Domains: []string{"ottersgram.com"},
 					},
 				},
 			},
@@ -173,7 +173,7 @@ func (s *PublisherTestSuite) TestIPNeverSeen() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "how-to-cook-kube.com",
+						Domains: []string{"how-to-cook-kube.com"},
 					},
 				},
 			},
@@ -204,7 +204,7 @@ func (s *PublisherTestSuite) TestNothingToUpdate() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 			},
@@ -275,7 +275,7 @@ func (s *PublisherTestSuite) TestAppendToOldIP() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 			},
@@ -329,7 +329,7 @@ func (s *PublisherTestSuite) TestRemoveOldDNSFromStatus_OtherDNSExists() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 			},
@@ -431,7 +431,7 @@ func (s *PublisherTestSuite) TestShouldNotAffectOtherStatusFields() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 			},
@@ -486,7 +486,7 @@ func (s *PublisherTestSuite) TestOnlyLatestIP() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 			},
@@ -532,7 +532,7 @@ func (s *PublisherTestSuite) TestUpdate() {
 				{
 					Type: otterizev1alpha3.IntentTypeInternet,
 					Internet: &otterizev1alpha3.Internet{
-						Dns: "my-blog.de",
+						Domains: []string{"my-blog.de"},
 					},
 				},
 				{
