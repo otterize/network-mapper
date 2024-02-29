@@ -6,17 +6,21 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
-	operatorwebhooks "github.com/otterize/intents-operator/src/operator/webhooks"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/mapperwebhooks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
@@ -27,6 +31,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	otterizev1alpha2 "github.com/otterize/intents-operator/src/operator/api/v1alpha2"
+	otterizev1alpha3 "github.com/otterize/intents-operator/src/operator/api/v1alpha3"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
@@ -42,11 +48,22 @@ import (
 	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
+
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(otterizev1alpha2.AddToScheme(scheme))
+	utilruntime.Must(otterizev1alpha3.AddToScheme(scheme))
+}
 
 func getClusterDomainOrDefault() string {
 	resolvedClusterDomain, err := kubeutils.GetClusterDomain()
@@ -77,12 +94,25 @@ func main() {
 	echologrus.Logger = logrus.StandardLogger()
 
 	// start manager with operators
-	mgr, err := manager.New(clientconfig.GetConfigOrDie(), manager.Options{Metrics: server.Options{BindAddress: "0"}})
+	options := manager.Options{
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: "0",
+		},
+	}
+	mgr, err := manager.New(clientconfig.GetConfigOrDie(), options)
 	if err != nil {
 		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
 
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+
+	dnsCache := dnscache.NewDNSCache()
+	dnsPublisher := dnsintentspublisher.NewPublisher(mgr.GetClient(), dnsCache)
+	err = dnsPublisher.InitIndices(errGroupCtx, mgr)
+	if err != nil {
+		logrus.WithError(err).Panic("unable to initialize DNS publisher")
+	}
 
 	mapperServer := echo.New()
 	mapperServer.Use(middleware.Logger())
@@ -165,16 +195,16 @@ func main() {
 			}
 
 			certBundle, err :=
-				operatorwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
+				mapperwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
 			if err != nil {
 				logrus.WithError(err).Panic("unable to create self signed certs for webhook")
 			}
-			err = operatorwebhooks.WriteCertToFiles(certBundle)
+			err = mapperwebhooks.WriteCertToFiles(certBundle)
 			if err != nil {
 				logrus.WithError(err).Panic("failed writing certs to file system")
 			}
 
-			err = operatorwebhooks.UpdateMutationWebHookCA(context.Background(),
+			err = mapperwebhooks.UpdateMutationWebHookCA(context.Background(),
 				"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
 			if err != nil {
 				logrus.WithError(err).Panic("updating validation webhook certificate failed")
@@ -186,7 +216,7 @@ func main() {
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
 
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder, awsIntentsHolder)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder, awsIntentsHolder, dnsCache)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
@@ -216,6 +246,14 @@ func main() {
 			logrus.WithError(err).Panic("Failed to initialize otel exporter")
 		}
 		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
+	}
+
+	if viper.GetBool(config.DNSClientIntentsUpdateEnabledKey) {
+		errgrp.Go(func() error {
+			defer errorreporter.AutoNotify()
+			dnsPublisher.RunForever(errGroupCtx)
+			return nil
+		})
 	}
 
 	errgrp.Go(func() error {

@@ -455,6 +455,7 @@ input Destination {
     destination: String!
     # If destination is a hostname, this _may_ be the IP it resolves to if it is known, but is not required.
     destinationIP: String
+    TTL: Int
     lastSeen: Time!
 }
 
@@ -3296,6 +3297,14 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 			if err != nil {
 				return it, err
 			}
+		case "TTL":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TTL"))
+			it.TTL, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "lastSeen":
 			var err error
 
@@ -5406,6 +5415,22 @@ func (ec *executionContext) marshalOHttpResource2ᚕgithubᚗcomᚋotterizeᚋne
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt64(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt64(*v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOIntentType2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntentType(ctx context.Context, v interface{}) (*model.IntentType, error) {

@@ -40,6 +40,7 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 					Destination:   "sts.us-east-1.amazonaws.com",
 					DestinationIP: "72.21.206.96",
 					LastSeen:      timestamp,
+					TTL:           60,
 				},
 			},
 		},
