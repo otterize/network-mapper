@@ -93,7 +93,7 @@ func (s *DNSSniffer) CreatePacketChannelForInterface(iface net.Interface) (resul
 		return nil, errors.Errorf("timed out starting capture on interface '%s': %w", iface.Name, doneCtx.Err())
 	}
 	if err != nil {
-		return nil, errors.Errorf("failed to start capture on interface '%s': %w", iface.Name, doneCtx.Err())
+		return nil, errors.Errorf("failed to start capture on interface '%s': %w", iface.Name, err)
 	}
 	return result, nil
 }
