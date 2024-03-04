@@ -73,14 +73,14 @@ func (s *DNSSniffer) CreatePacketChannelForInterface(iface net.Interface) (resul
 	defer cancel()
 	go func() {
 		defer cancel()
-		handle, err := pcap.OpenLive(iface.Name, 0, true, pcap.BlockForever)
-		if err != nil {
-			err = errors.Wrap(err)
+		handle, openLiveErr := pcap.OpenLive(iface.Name, 0, true, pcap.BlockForever)
+		if openLiveErr != nil {
+			err = errors.Wrap(openLiveErr)
 			return
 		}
-		err = handle.SetBPFFilter("udp port 53")
-		if err != nil {
-			err = errors.Wrap(err)
+		bpfErr := handle.SetBPFFilter("udp port 53")
+		if bpfErr != nil {
+			err = errors.Wrap(bpfErr)
 			return
 		}
 
