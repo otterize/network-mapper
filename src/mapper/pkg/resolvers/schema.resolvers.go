@@ -223,7 +223,7 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 
 func (r *mutationResolver) ReportAWSOperation(ctx context.Context, operation []model.AWSOperation) (bool, error) {
 	for _, op := range operation {
-		logrus.Infof("Received AWS operation: %+v", op)
+		logrus.Debugf("Received AWS operation: %+v", op)
 		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, op.SrcIP)
 
 		if err != nil {

@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.31
 	github.com/Khan/genqlient v0.6.0
 	github.com/amit7itz/goset v1.2.1
+	github.com/aws/aws-sdk-go-v2 v1.23.0
 	github.com/bombsimon/logrusr/v3 v3.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/golang/mock v1.6.0
