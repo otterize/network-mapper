@@ -73,22 +73,18 @@ func (s *DNSSniffer) CreatePacketChannelForInterface(iface net.Interface) (resul
 	defer cancel()
 	go func() {
 		defer cancel()
-		logrus.Debug("OpenLive")
 		handle, err := pcap.OpenLive(iface.Name, 0, true, pcap.BlockForever)
 		if err != nil {
 			err = errors.Wrap(err)
 			return
 		}
-		logrus.Debug("SetBPFFilter")
 		err = handle.SetBPFFilter("udp port 53")
 		if err != nil {
 			err = errors.Wrap(err)
 			return
 		}
 
-		logrus.Debug("NewPacketSource")
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-		logrus.Debugf("Packets")
 		result = packetSource.Packets()
 		return
 	}()
