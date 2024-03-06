@@ -23,7 +23,7 @@ const (
 	OTelMetricKey                         = "otel-metric-name"
 	OTelMetricDefault                     = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
 	ExternalTrafficCaptureEnabledKey      = "capture-external-traffic-enabled"
-	ExternalTrafficCaptureEnabledDefault  = false
+	ExternalTrafficCaptureEnabledDefault  = true
 	CreateWebhookCertificateKey           = "create-webhook-certificate"
 	CreateWebhookCertificateDefault       = true
 	EnableAWSVisibilityWebHookKey         = "enable-aws-visibility-webhook"

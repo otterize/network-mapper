@@ -53,7 +53,7 @@ func (c *CloudClientImpl) ReportExternalTrafficDiscoveredIntents(ctx context.Con
 }
 
 func (c *CloudClientImpl) ReportComponentStatus(ctx context.Context, component ComponentType) error {
-	logrus.Info("Uploading component status to cloud")
+	logrus.Debug("Uploading component status to cloud")
 
 	_, err := ReportComponentStatus(ctx, c.client, component)
 	if err != nil {

@@ -115,7 +115,7 @@ func main() {
 	}
 
 	mapperServer := echo.New()
-	mapperServer.Use(middleware.Logger())
+	mapperServer.HideBanner = true
 
 	kubeFinder, err := kubefinder.NewKubeFinder(errGroupCtx, mgr)
 	if err != nil {
@@ -220,6 +220,7 @@ func main() {
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
+	metricsServer.HideBanner = true
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 
 	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)

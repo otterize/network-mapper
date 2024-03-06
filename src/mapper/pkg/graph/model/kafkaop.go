@@ -16,7 +16,7 @@ var (
 		"clusteraction":   KafkaOperationClusterAction,
 		"describeconfigs": KafkaOperationDescribeConfigs,
 		"alterconfigs":    KafkaOperationAlterConfigs,
-		"idempotentwrite": KafkaOperationIDEmpotentWrite,
+		"idempotentwrite": KafkaOperationIdempotentWrite,
 	}
 )
 

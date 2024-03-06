@@ -56,16 +56,23 @@ func main() {
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+	logrus.Debug("Starting metrics server")
 	errgrp.Go(func() error {
+		logrus.Debug("Started metrics server")
 		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
+	logrus.Debug("Starting health server")
 	errgrp.Go(func() error {
+		logrus.Debug("Started health server")
 		defer errorreporter.AutoNotify()
 		return healthServer.Start(":9090")
 	})
 
+	logrus.Debug("Starting sniffer")
+
 	errgrp.Go(func() error {
+		logrus.Debug("Started sniffer")
 		defer errorreporter.AutoNotify()
 		snifferInstance := sniffer.NewSniffer(mapperClient)
 		return snifferInstance.RunForever(errGroupCtx)
