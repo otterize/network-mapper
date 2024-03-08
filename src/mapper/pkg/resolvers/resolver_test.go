@@ -14,6 +14,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
 	"github.com/otterize/network-mapper/src/shared/testbase"
+	"github.com/otterize/nilable"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/exp/slices"
@@ -105,17 +106,17 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("deployment-%s", "service1"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -123,22 +124,22 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("daemonset-%s", "service3"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service1"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service1",
+					KubernetesService: nilable.From("svc-service1"),
 				},
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -146,17 +147,17 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From(""),
 					Kind:    "Pod",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -217,17 +218,17 @@ func (s *ResolverTestSuite) TestReportCaptureResultsHostnameMismatch() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("deployment-%s", "service1"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -235,22 +236,22 @@ func (s *ResolverTestSuite) TestReportCaptureResultsHostnameMismatch() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("daemonset-%s", "service3"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service1"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service1",
+					KubernetesService: nilable.From("svc-service1"),
 				},
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -342,17 +343,17 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("deployment-%s", "service1"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -360,22 +361,22 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("daemonset-%s", "service3"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service1"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service1",
+					KubernetesService: nilable.From("svc-service1"),
 				},
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -447,17 +448,17 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIPReuse() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("deployment-%s", "service1"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -465,22 +466,22 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIPReuse() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("daemonset-%s", "service3"),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service1"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service1",
+					KubernetesService: nilable.From("svc-service1"),
 				},
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -488,17 +489,17 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIPReuse() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From(""),
 					Kind:    "Pod",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              fmt.Sprintf("deployment-%s", "service2"),
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -595,17 +596,17 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "daemonset-service1",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              "deployment-service2",
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -613,22 +614,22 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "deployment-service3",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              "daemonset-service1",
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service1",
+					KubernetesService: nilable.From("svc-service1"),
 				},
 				{
 					Name:              "deployment-service2",
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -636,17 +637,17 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "",
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From(""),
 					Kind:    "Pod",
 					Version: "v1",
-				},
+				}),
 			},
 			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
 				{
 					Name:              "deployment-service2",
 					Namespace:         s.TestNamespace,
-					KubernetesService: "svc-service2",
+					KubernetesService: nilable.From("svc-service2"),
 				},
 			},
 		},
@@ -699,7 +700,7 @@ func (s *ResolverTestSuite) TestIntents() {
 	s.Require().NoError(err)
 
 	logrus.Info("Testing Intents query")
-	res, err := test_gql_client.Intents(context.Background(), s.client, nil, nil, nil, true, nil)
+	res, err := test_gql_client.Intents(context.Background(), s.client, nil, nil, nil, nilable.From(true), nil)
 	s.Require().NoError(err)
 	logrus.Info("Testing Intents query done")
 	logrus.Infof("Intents: %v", res.Intents)
@@ -709,83 +710,83 @@ func (s *ResolverTestSuite) TestIntents() {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      "deployment-service1",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:      "deployment-service2",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
-				KubernetesService: "svc-service2",
+				}),
+				KubernetesService: nilable.From("svc-service2"),
 			},
 		},
 		{
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      "daemonset-service3",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:      "deployment-service1",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
-				KubernetesService: "svc-service1",
+				}),
+				KubernetesService: nilable.From("svc-service1"),
 			},
 		}, {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      "daemonset-service3",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:      "deployment-service2",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
-				KubernetesService: "svc-service2",
+				}),
+				KubernetesService: nilable.From("svc-service2"),
 			},
 		},
 		{
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From(""),
 					Kind:    "Pod",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:      "deployment-service2",
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
-				KubernetesService: "svc-service2",
+				}),
+				KubernetesService: nilable.From("svc-service2"),
 			},
 		},
 	}
@@ -815,7 +816,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 	})
 	s.Require().NoError(err)
 
-	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, true, nil)
+	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, nilable.From(true), nil)
 	s.Require().NoError(err)
 	logrus.Info("Report processed")
 	logrus.Infof("Intents: %v", res.Intents)
@@ -825,16 +826,16 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      podServiceName,
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From(""),
 					Kind:    "Pod",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:              service.GetName(),
 				Namespace:         service.GetNamespace(),
-				KubernetesService: service.GetName(),
+				KubernetesService: nilable.From(service.GetName()),
 			},
 		},
 	}
@@ -865,7 +866,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 	})
 	s.Require().NoError(err)
 
-	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, true, nil)
+	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, nilable.From(true), nil)
 	s.Require().NoError(err)
 	logrus.Info("Report processed")
 	logrus.Infof("Intents: %v", res.Intents)
@@ -875,16 +876,16 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      podServiceName,
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From(""),
 					Kind:    "Pod",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:              service.GetName(),
 				Namespace:         service.GetNamespace(),
-				KubernetesService: service.GetName(),
+				KubernetesService: nilable.From(service.GetName()),
 			},
 		},
 	}
@@ -949,7 +950,7 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 		Name:      fmt.Sprintf("deployment-%s", service1Name),
 		Namespace: s.TestNamespace,
 	}
-	res, err := test_gql_client.Intents(context.Background(), s.client, []string{s.TestNamespace}, nil, nil, true, serverFilter)
+	res, err := test_gql_client.Intents(context.Background(), s.client, []string{s.TestNamespace}, nil, nil, nilable.From(true), serverFilter)
 	s.Require().NoError(err)
 	logrus.Info("Report processed")
 	logrus.Infof("Intents: %v", res.Intents)
@@ -959,41 +960,41 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("daemonset-%s", service3Name),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("deployment-%s", service1Name),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
-				KubernetesService: "svc-service1",
+				}),
+				KubernetesService: nilable.From("svc-service1"),
 			},
 		}, {
 			Client: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("daemonset-%s", service3Name),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "DaemonSet",
 					Version: "v1",
-				},
+				}),
 			},
 			Server: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentity{
 				Name:      fmt.Sprintf("deployment-%s", service2Name),
 				Namespace: s.TestNamespace,
-				PodOwnerKind: test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   "apps",
+				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentServerOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
 					Kind:    "Deployment",
 					Version: "v1",
-				},
-				KubernetesService: "svc-service2",
+				}),
+				KubernetesService: nilable.From("svc-service2"),
 			},
 		},
 	}
