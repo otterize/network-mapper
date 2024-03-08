@@ -35,7 +35,7 @@ func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 		logrus.Debugf("No captured sniffed requests to report")
 		return
 	}
-	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(results))
+	logrus.Debugf("Reporting captured requests of %d clients to Mapper", len(results))
 
 	go func() {
 		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
@@ -57,7 +57,7 @@ func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 		logrus.Debugf("No scanned tcp connections to report")
 		return
 	}
-	logrus.Infof("Reporting scanned requests of %d clients to Mapper", len(results))
+	logrus.Debugf("Reporting scanned requests of %d clients to Mapper", len(results))
 
 	go func() {
 		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
