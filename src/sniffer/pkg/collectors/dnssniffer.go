@@ -172,12 +172,12 @@ func (s *DNSSniffer) RefreshHostsMapping() error {
 		s.addCapturedRequest(p.srcIp, hostname, p.destHostnameOrIP, p.destIPFromDNS, p.time, p.ttl)
 	}
 	s.pending = make([]pendingCapture, 0)
-	s.lastRefresh = time.Now()
 	return nil
 }
 
 func (s *DNSSniffer) GetTimeTilNextRefresh() time.Duration {
 	nextRefreshTime := s.lastRefresh.Add(viper.GetDuration(config.HostsMappingRefreshIntervalKey))
+	s.lastRefresh = time.Now()
 	return time.Until(nextRefreshTime)
 }
 
