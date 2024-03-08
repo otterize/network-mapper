@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -108,11 +109,6 @@ func main() {
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 
 	dnsCache := dnscache.NewDNSCache()
-	dnsPublisher := dnsintentspublisher.NewPublisher(mgr.GetClient(), dnsCache)
-	err = dnsPublisher.InitIndices(errGroupCtx, mgr)
-	if err != nil {
-		logrus.WithError(err).Panic("unable to initialize DNS publisher")
-	}
 
 	mapperServer := echo.New()
 	mapperServer.HideBanner = true
@@ -249,12 +245,9 @@ func main() {
 		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 	}
 
-	if viper.GetBool(config.DNSClientIntentsUpdateEnabledKey) {
-		errgrp.Go(func() error {
-			defer errorreporter.AutoNotify()
-			dnsPublisher.RunForever(errGroupCtx)
-			return nil
-		})
+	err = StartDNSClientIntentsPublisher(mgr, dnsCache, errGroupCtx, errgrp)
+	if err != nil {
+		logrus.WithError(err).Panic("failed to initialize DNS client intents publisher")
 	}
 
 	errgrp.Go(func() error {
@@ -302,6 +295,31 @@ func main() {
 			logrus.WithError(err).Error("failed to shutdown server")
 		}
 	}
+}
+
+func StartDNSClientIntentsPublisher(mgr manager.Manager, dnsCache *dnscache.DNSCache, errGroupCtx context.Context, errgrp *errgroup.Group) error {
+	if viper.GetBool(config.DNSClientIntentsUpdateEnabledKey) {
+		dnsPublisher := dnsintentspublisher.NewPublisher(mgr.GetClient(), dnsCache)
+		err := dnsPublisher.InitIndices(errGroupCtx, mgr)
+		if err != nil {
+			if discoveryErr := (&apiutil.ErrResourceDiscoveryFailed{}); errors.As(err, &discoveryErr) {
+				for gvk := range *discoveryErr {
+					if gvk.Group == "k8s.otterize.com" {
+						logrus.Debugf("DNS client intents publishing is not enabled due to missing CRD %v", gvk)
+						// This can happen if the network mapper is deployed without the intents operator, which is normal.
+						return nil
+					}
+				}
+			}
+			return errors.Wrap(err)
+		}
+		errgrp.Go(func() error {
+			defer errorreporter.AutoNotify()
+			dnsPublisher.RunForever(errGroupCtx)
+			return nil
+		})
+	}
+	return nil
 }
 
 func shutdownGracefullyOnCancel(errGroupCtx context.Context, server *echo.Echo) {
