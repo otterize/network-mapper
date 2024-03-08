@@ -148,7 +148,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   nilable.From(""),
+					Group:   nilable.Nilable[string]{},
 					Kind:    "Pod",
 					Version: "v1",
 				}),
@@ -490,7 +490,7 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIPReuse() {
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   nilable.From(""),
+					Group:   nilable.Nilable[string]{},
 					Kind:    "Pod",
 					Version: "v1",
 				}),
@@ -638,7 +638,7 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   nilable.From(""),
+					Group:   nilable.Nilable[string]{},
 					Kind:    "Pod",
 					Version: "v1",
 				}),
@@ -773,7 +773,7 @@ func (s *ResolverTestSuite) TestIntents() {
 				Name:      "pod4",
 				Namespace: s.TestNamespace,
 				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   nilable.From(""),
+					Group:   nilable.Nilable[string]{},
 					Kind:    "Pod",
 					Version: "v1",
 				}),
@@ -827,7 +827,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 				Name:      podServiceName,
 				Namespace: s.TestNamespace,
 				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   nilable.From(""),
+					Group:   nilable.Nilable[string]{},
 					Kind:    "Pod",
 					Version: "v1",
 				}),
@@ -877,7 +877,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 				Name:      podServiceName,
 				Namespace: s.TestNamespace,
 				PodOwnerKind: nilable.From(test_gql_client.IntentsIntentsIntentClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
-					Group:   nilable.From(""),
+					Group:   nilable.Nilable[string]{},
 					Kind:    "Pod",
 					Version: "v1",
 				}),
