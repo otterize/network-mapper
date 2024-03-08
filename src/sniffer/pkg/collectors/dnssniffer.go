@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
+	"github.com/otterize/nilable"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net"
@@ -21,7 +22,7 @@ type pendingCapture struct {
 	destHostnameOrIP string
 	destIPFromDNS    string // The destination IP, if it is known at the time of capture.
 	time             time.Time
-	ttl              int
+	ttl              nilable.Nilable[int]
 }
 
 type DNSSniffer struct {
@@ -144,7 +145,7 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 						destHostnameOrIP: string(answer.Name),
 						destIPFromDNS:    answer.IP.String(),
 						time:             captureTime,
-						ttl:              int(answer.TTL),
+						ttl:              nilable.From(int(answer.TTL)),
 					})
 				}
 			}

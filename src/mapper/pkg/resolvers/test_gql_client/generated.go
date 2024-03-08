@@ -375,15 +375,15 @@ query Intents ($namespaces: [String!], $includeLabels: [String!], $excludeServic
 `
 
 func Intents(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	namespaces []string,
 	includeLabels []string,
 	excludeServiceWithLabels []string,
 	includeAllLabels bool,
 	server *ServerFilter,
 ) (*IntentsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "Intents",
 		Query:  Intents_Operation,
 		Variables: &__IntentsInput{
@@ -394,18 +394,18 @@ func Intents(
 			Server:                   server,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data IntentsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ IntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportCaptureResults.
@@ -416,29 +416,29 @@ mutation ReportCaptureResults ($results: CaptureResults!) {
 `
 
 func ReportCaptureResults(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	results CaptureResults,
 ) (*ReportCaptureResultsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportCaptureResults",
 		Query:  ReportCaptureResults_Operation,
 		Variables: &__ReportCaptureResultsInput{
 			Results: results,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportCaptureResultsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportCaptureResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportSocketScanResults.
@@ -449,29 +449,29 @@ mutation ReportSocketScanResults ($results: SocketScanResults!) {
 `
 
 func ReportSocketScanResults(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	results SocketScanResults,
 ) (*ReportSocketScanResultsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportSocketScanResults",
 		Query:  ReportSocketScanResults_Operation,
 		Variables: &__ReportSocketScanResultsInput{
 			Results: results,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportSocketScanResultsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportSocketScanResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ServiceIntents.
@@ -497,27 +497,27 @@ query ServiceIntents ($namespaces: [String!]) {
 `
 
 func ServiceIntents(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	namespaces []string,
 ) (*ServiceIntentsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ServiceIntents",
 		Query:  ServiceIntents_Operation,
 		Variables: &__ServiceIntentsInput{
 			Namespaces: namespaces,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ServiceIntentsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ServiceIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

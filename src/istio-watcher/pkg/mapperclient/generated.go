@@ -87,58 +87,64 @@ func (v *reportIstioConnectionsResponse) GetReportIstioConnectionResults() bool 
 	return v.ReportIstioConnectionResults
 }
 
-func Health(
-	ctx context.Context,
-	client graphql.Client,
-) (*HealthResponse, error) {
-	req := &graphql.Request{
-		OpName: "Health",
-		Query: `
+// The query or mutation executed by Health.
+const Health_Operation = `
 query Health {
 	health
 }
-`,
+`
+
+func Health(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*HealthResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "Health",
+		Query:  Health_Operation,
 	}
-	var err error
+	var err_ error
 
-	var data HealthResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ HealthResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func reportIstioConnections(
-	ctx context.Context,
-	client graphql.Client,
-	results IstioConnectionResults,
-) (*reportIstioConnectionsResponse, error) {
-	req := &graphql.Request{
-		OpName: "reportIstioConnections",
-		Query: `
+// The query or mutation executed by reportIstioConnections.
+const reportIstioConnections_Operation = `
 mutation reportIstioConnections ($results: IstioConnectionResults!) {
 	reportIstioConnectionResults(results: $results)
 }
-`,
+`
+
+func reportIstioConnections(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results IstioConnectionResults,
+) (*reportIstioConnectionsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportIstioConnections",
+		Query:  reportIstioConnections_Operation,
 		Variables: &__reportIstioConnectionsInput{
 			Results: results,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data reportIstioConnectionsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ reportIstioConnectionsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

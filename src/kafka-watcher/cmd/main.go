@@ -28,14 +28,14 @@ import (
 )
 
 func main() {
-	errorreporter.Init("kafka-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
-	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errorreporter.Init("kafka-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	logrus.SetLevel(logrus.InfoLevel)
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()

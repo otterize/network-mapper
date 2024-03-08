@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
+	"github.com/otterize/nilable"
 	"github.com/sirupsen/logrus"
 	"time"
 )
@@ -15,7 +16,7 @@ type UniqueRequest struct {
 
 type TimeAndTTL struct {
 	lastSeen time.Time
-	ttl      int
+	ttl      nilable.Nilable[int]
 }
 
 // For each unique request info, we store the time of the last request (no need to report duplicates) and last seen TTL.
@@ -29,7 +30,7 @@ func (c *NetworkCollector) resetData() {
 	c.capturedRequests = make(capturesMap)
 }
 
-func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time, ttl int) {
+func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time, ttl nilable.Nilable[int]) {
 	req := UniqueRequest{srcIp, srcHost, destNameOrIP, destIP}
 	c.capturedRequests[req] = TimeAndTTL{seenAt, ttl}
 }
@@ -49,7 +50,7 @@ func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsF
 		}
 		destination := mapperclient.Destination{
 			Destination:   reqInfo.destHostnameOrIP,
-			DestinationIP: reqInfo.destIP,
+			DestinationIP: nilable.From(reqInfo.destIP),
 			LastSeen:      timeAndTTL.lastSeen,
 			TTL:           timeAndTTL.ttl,
 		}
@@ -61,7 +62,7 @@ func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsF
 		// Debug print the results
 		logrus.Debugf("%s (%s):\n", src.Ip, src.Hostname)
 		for _, dest := range destinations {
-			logrus.Debugf("\t%s, %s\n", dest.Destination, dest.LastSeen)
+			logrus.Debugf("    %s, %s", dest.Destination, dest.LastSeen)
 		}
 
 		results = append(results, mapperclient.RecordedDestinationsForSrc{SrcIp: src.Ip, SrcHostname: src.Hostname, Destinations: destinations})
