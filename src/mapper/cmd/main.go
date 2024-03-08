@@ -245,7 +245,7 @@ func main() {
 		intentsHolder.RegisterNotifyIntents(otelExporter.NotifyIntents)
 	}
 
-	err = StartDNSClientIntentsPublisher(mgr, dnsCache, err, errGroupCtx, errgrp)
+	err = StartDNSClientIntentsPublisher(mgr, dnsCache, errGroupCtx, errgrp)
 	if err != nil {
 		logrus.WithError(err).Panic("failed to initialize DNS client intents publisher")
 	}
@@ -297,10 +297,10 @@ func main() {
 	}
 }
 
-func StartDNSClientIntentsPublisher(mgr manager.Manager, dnsCache *dnscache.DNSCache, err error, errGroupCtx context.Context, errgrp *errgroup.Group) error {
+func StartDNSClientIntentsPublisher(mgr manager.Manager, dnsCache *dnscache.DNSCache, errGroupCtx context.Context, errgrp *errgroup.Group) error {
 	if viper.GetBool(config.DNSClientIntentsUpdateEnabledKey) {
 		dnsPublisher := dnsintentspublisher.NewPublisher(mgr.GetClient(), dnsCache)
-		err = dnsPublisher.InitIndices(errGroupCtx, mgr)
+		err := dnsPublisher.InitIndices(errGroupCtx, mgr)
 		if err != nil {
 			if discoveryErr := (&apiutil.ErrResourceDiscoveryFailed{}); errors.As(err, &discoveryErr) {
 				for gvk := range *discoveryErr {
