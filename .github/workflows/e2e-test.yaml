@@ -123,11 +123,11 @@ jobs:
 
       - name: Deploy Network Mapper
         run: |-
-          MAPPER_FLAGS="--set-string networkMapper.mapper.repository=${{ env.REGISTRY }} --set-string networkMapper.mapper.image=${{ inputs.mapper-image }} --set-string networkMapper.mapper.tag=${{ inputs.mapper-tag }} --set-string networkMapper.mapper.pullPolicy=Never"
-          SNIFFER_FLAGS="--set-string networkMapper.sniffer.repository=${{ env.REGISTRY }} --set-string networkMapper.sniffer.image=${{ inputs.sniffer-image }} --set-string networkMapper.sniffer.tag=${{ inputs.sniffer-tag }} --set-string networkMapper.sniffer.pullPolicy=Never"
+          MAPPER_FLAGS="--set-string mapper.repository=${{ env.REGISTRY }} --set-string mapper.image=${{ inputs.mapper-image }} --set-string mapper.tag=${{ inputs.mapper-tag }} --set-string mapper.pullPolicy=Never"
+          SNIFFER_FLAGS="--set-string sniffer.repository=${{ env.REGISTRY }} --set-string sniffer.image=${{ inputs.sniffer-image }} --set-string sniffer.tag=${{ inputs.sniffer-tag }} --set-string sniffer.pullPolicy=Never"
           TELEMETRY_FLAG="--set global.telemetry.enabled=false"
-          helm dep up ./helm-charts/otterize-kubernetes
-          helm install otterize ./helm-charts/otterize-kubernetes -n otterize-system --create-namespace --set networkMapper.debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
+          helm dep up ./helm-charts/network-mapper
+          helm install otterize ./helm-charts/network-mapper -n otterize-system --create-namespace --set debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
 
       - name: Install CLI
         run: |-
