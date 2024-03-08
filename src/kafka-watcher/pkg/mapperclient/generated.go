@@ -69,58 +69,64 @@ func (v *reportKafkaMapperResultsResponse) GetReportKafkaMapperResults() bool {
 	return v.ReportKafkaMapperResults
 }
 
-func Health(
-	ctx context.Context,
-	client graphql.Client,
-) (*HealthResponse, error) {
-	req := &graphql.Request{
-		OpName: "Health",
-		Query: `
+// The query or mutation executed by Health.
+const Health_Operation = `
 query Health {
 	health
 }
-`,
+`
+
+func Health(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*HealthResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "Health",
+		Query:  Health_Operation,
 	}
-	var err error
+	var err_ error
 
-	var data HealthResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ HealthResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func reportKafkaMapperResults(
-	ctx context.Context,
-	client graphql.Client,
-	results KafkaMapperResults,
-) (*reportKafkaMapperResultsResponse, error) {
-	req := &graphql.Request{
-		OpName: "reportKafkaMapperResults",
-		Query: `
+// The query or mutation executed by reportKafkaMapperResults.
+const reportKafkaMapperResults_Operation = `
 mutation reportKafkaMapperResults ($results: KafkaMapperResults!) {
 	reportKafkaMapperResults(results: $results)
 }
-`,
+`
+
+func reportKafkaMapperResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results KafkaMapperResults,
+) (*reportKafkaMapperResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportKafkaMapperResults",
+		Query:  reportKafkaMapperResults_Operation,
 		Variables: &__reportKafkaMapperResultsInput{
 			Results: results,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data reportKafkaMapperResultsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ reportKafkaMapperResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

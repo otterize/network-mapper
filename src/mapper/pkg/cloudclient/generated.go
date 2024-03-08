@@ -318,29 +318,29 @@ mutation ReportComponentStatus ($component: ComponentType!) {
 `
 
 func ReportComponentStatus(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	component ComponentType,
 ) (*ReportComponentStatusResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportComponentStatus",
 		Query:  ReportComponentStatus_Operation,
 		Variables: &__ReportComponentStatusInput{
 			Component: component,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportComponentStatusResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportComponentStatusResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportDiscoveredIntents.
@@ -351,29 +351,29 @@ mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
 `
 
 func ReportDiscoveredIntents(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	intents []*DiscoveredIntentInput,
 ) (*ReportDiscoveredIntentsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportDiscoveredIntents",
 		Query:  ReportDiscoveredIntents_Operation,
 		Variables: &__ReportDiscoveredIntentsInput{
 			Intents: intents,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportDiscoveredIntentsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportDiscoveredIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportExternalTrafficDiscoveredIntents.
@@ -384,27 +384,27 @@ mutation ReportExternalTrafficDiscoveredIntents ($intents: [ExternalTrafficDisco
 `
 
 func ReportExternalTrafficDiscoveredIntents(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	intents []ExternalTrafficDiscoveredIntentInput,
 ) (*ReportExternalTrafficDiscoveredIntentsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportExternalTrafficDiscoveredIntents",
 		Query:  ReportExternalTrafficDiscoveredIntents_Operation,
 		Variables: &__ReportExternalTrafficDiscoveredIntentsInput{
 			Intents: intents,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportExternalTrafficDiscoveredIntentsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportExternalTrafficDiscoveredIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

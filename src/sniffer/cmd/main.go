@@ -25,17 +25,17 @@ import (
 )
 
 func main() {
-	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	logrus.SetLevel(logrus.InfoLevel)
-	if viper.GetBool(sharedconfig.DebugKey) {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	if viper.GetBool(sharedconfig.DebugKey) {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()
@@ -43,6 +43,7 @@ func main() {
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
 	healthServer := echo.New()
+	healthServer.HideBanner = true
 	healthServer.GET("/healthz", func(c echo.Context) error {
 		defer errorreporter.AutoNotify()
 		err := mapperClient.Health(c.Request().Context())
@@ -53,6 +54,7 @@ func main() {
 	})
 
 	metricsServer := echo.New()
+	metricsServer.HideBanner = true
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())

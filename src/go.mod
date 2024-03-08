@@ -6,7 +6,7 @@ toolchain go1.22.0
 
 require (
 	github.com/99designs/gqlgen v0.17.44
-	github.com/Khan/genqlient v0.6.0
+	github.com/Khan/genqlient v0.7.0
 	github.com/amit7itz/goset v1.2.1
 	github.com/bombsimon/logrusr/v3 v3.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
@@ -22,7 +22,8 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20240305154335-af2b4476977e
+	github.com/otterize/intents-operator/src v0.0.0-20240308103112-b75383875fd3
+	github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9
 	github.com/prometheus/client_golang v1.18.0
 	github.com/samber/lo v1.33.0
 	github.com/sirupsen/logrus v1.9.3

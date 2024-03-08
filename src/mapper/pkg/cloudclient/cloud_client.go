@@ -30,7 +30,7 @@ func NewClient(ctx context.Context) (*CloudClientImpl, bool, error) {
 }
 
 func (c *CloudClientImpl) ReportDiscoveredIntents(ctx context.Context, intents []*DiscoveredIntentInput) error {
-	logrus.Info("Uploading intents to cloud, count: ", len(intents))
+	logrus.Debug("Uploading intents to cloud, count: ", len(intents))
 
 	_, err := ReportDiscoveredIntents(ctx, c.client, intents)
 
@@ -42,7 +42,7 @@ func (c *CloudClientImpl) ReportDiscoveredIntents(ctx context.Context, intents [
 }
 
 func (c *CloudClientImpl) ReportExternalTrafficDiscoveredIntents(ctx context.Context, intents []ExternalTrafficDiscoveredIntentInput) error {
-	logrus.Info("Uploading external traffic intents to cloud, count: ", len(intents))
+	logrus.Debug("Uploading external traffic intents to cloud, count: ", len(intents))
 
 	_, err := ReportExternalTrafficDiscoveredIntents(ctx, c.client, intents)
 	if err != nil {

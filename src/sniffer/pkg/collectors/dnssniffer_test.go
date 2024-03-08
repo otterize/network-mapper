@@ -3,6 +3,7 @@ package collectors
 import (
 	"encoding/hex"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
+	"github.com/otterize/nilable"
 	"testing"
 	"time"
 
@@ -38,9 +39,9 @@ func (s *SnifferTestSuite) TestHandlePacket() {
 			Destinations: []mapperclient.Destination{
 				{
 					Destination:   "sts.us-east-1.amazonaws.com",
-					DestinationIP: "72.21.206.96",
+					DestinationIP: nilable.From("72.21.206.96"),
 					LastSeen:      timestamp,
-					TTL:           60,
+					TTL:           nilable.From(60),
 				},
 			},
 		},

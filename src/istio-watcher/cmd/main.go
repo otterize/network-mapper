@@ -24,7 +24,6 @@ import (
 )
 
 func main() {
-	errorreporter.Init("istio-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -32,6 +31,7 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errorreporter.Init("istio-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()
@@ -43,6 +43,7 @@ func main() {
 	}
 
 	healthServer := echo.New()
+	healthServer.HideBanner = true
 	healthServer.GET("/healthz", func(c echo.Context) error {
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
@@ -52,6 +53,7 @@ func main() {
 	})
 
 	metricsServer := echo.New()
+	metricsServer.HideBanner = true
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())

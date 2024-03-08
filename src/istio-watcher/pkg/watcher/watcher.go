@@ -331,7 +331,7 @@ func (m *IstioWatcher) reportResults(ctx context.Context) error {
 		return nil
 	}
 
-	logrus.Infof("Reporting %d connections", len(connections))
+	logrus.Debugf("Reporting %d connections", len(connections))
 	results := ToGraphQLIstioConnections(connections)
 	return m.mapperClient.ReportIstioConnections(ctx, mapperclient.IstioConnectionResults{Results: results})
 }
@@ -340,11 +340,11 @@ func (m *IstioWatcher) RunForever(ctx context.Context) error {
 	go m.ReportResults(ctx)
 	cooldownPeriod := viper.GetDuration(config.IstioCooldownIntervalKey)
 	for {
-		logrus.Info("Retrieving 'istio_total_requests' metric from Istio sidecars")
+		logrus.Debug("Retrieving 'istio_total_requests' metric from Istio sidecars")
 		if err := m.CollectIstioConnectionMetrics(ctx, viper.GetString(config.NamespaceKey)); err != nil {
 			logrus.WithError(err).Debugf("Failed getting connection metrics from Istio sidecars")
 		}
-		logrus.Infof("Istio mapping stopped, will retry after cool down period (%s)...", cooldownPeriod)
+		logrus.Debugf("Istio mapping stopped, will retry after cool down period (%s)...", cooldownPeriod)
 		time.Sleep(cooldownPeriod)
 	}
 }

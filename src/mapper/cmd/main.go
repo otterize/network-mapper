@@ -77,12 +77,6 @@ func getClusterDomainOrDefault() string {
 }
 
 func main() {
-	errorreporter.Init("network-mapper", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
-	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
-		clusterDomain := getClusterDomainOrDefault()
-		viper.Set(config.ClusterDomainKey, clusterDomain)
-	}
-
 	logrus.SetLevel(logrus.InfoLevel)
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -90,6 +84,12 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errorreporter.Init("network-mapper", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
+		clusterDomain := getClusterDomainOrDefault()
+		viper.Set(config.ClusterDomainKey, clusterDomain)
+	}
+
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	echologrus.Logger = logrus.StandardLogger()
 
