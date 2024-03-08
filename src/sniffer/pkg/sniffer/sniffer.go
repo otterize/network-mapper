@@ -46,7 +46,7 @@ func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 			logrus.WithError(err).Error("Failed to report capture results")
 			return
 		}
-		logrus.Infof("Reported captured requests of %d clients to Mapper", len(results))
+		logrus.Debugf("Reported captured requests of %d clients to Mapper", len(results))
 		prometheus.IncrementDNSCaptureReports(len(results))
 	}()
 }
@@ -68,7 +68,7 @@ func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 			logrus.WithError(err).Error("Failed to report socket scan results")
 			return
 		}
-		logrus.Infof("Reported scanned requests of %d clients to Mapper", len(results))
+		logrus.Debugf("Reported scanned requests of %d clients to Mapper", len(results))
 		prometheus.IncrementSocketScanReports(len(results))
 	}()
 }
