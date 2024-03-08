@@ -43,6 +43,7 @@ func main() {
 	}
 
 	healthServer := echo.New()
+	healthServer.HideBanner = true
 	healthServer.GET("/healthz", func(c echo.Context) error {
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
@@ -52,6 +53,7 @@ func main() {
 	})
 
 	metricsServer := echo.New()
+	metricsServer.HideBanner = true
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
