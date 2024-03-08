@@ -22,13 +22,14 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20240308102113-306b434d2338
+	github.com/otterize/intents-operator/src v0.0.0-20240308103112-b75383875fd3
 	github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9
 	github.com/prometheus/client_golang v1.18.0
 	github.com/samber/lo v1.33.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.4
+	github.com/suessflorian/gqlfetch v0.6.0
 	github.com/vektah/gqlparser/v2 v2.5.11
 	go.opentelemetry.io/otel v1.18.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.41.0
@@ -105,6 +106,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
+	github.com/vektah/gqlparser v1.3.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20231213231151-1d8dd44e695e // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
