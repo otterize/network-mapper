@@ -288,6 +288,10 @@ github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4o
 github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
 github.com/otterize/intents-operator/src v0.0.0-20240308103112-b75383875fd3 h1:Z4ej6HQXDrX7GnJWPsdrXpI2N4/NGhHnuqAEXvw8vMc=
 github.com/otterize/intents-operator/src v0.0.0-20240308103112-b75383875fd3/go.mod h1:3zz247z/nrSI5lW1M/XcOkPwntL9orhm29rpeOS9ju0=
+github.com/otterize/intents-operator/src v0.0.0-20240308223418-085144b89941 h1:trWTPRDs379VXNwYaKYI9Xsoyd1u483+BPpUe2MAp90=
+github.com/otterize/intents-operator/src v0.0.0-20240308223418-085144b89941/go.mod h1:REPHrLQgUR5z1nF/jI/eiUzoRn0CJlQaTPz9D2LcfSk=
+github.com/otterize/intents-operator/src v0.0.0-20240309131026-e4c57ec6e725 h1:Y3c3rlUD9IGT5p2AeVHzYX6uSHE3/7qYQVeDpXIccLw=
+github.com/otterize/intents-operator/src v0.0.0-20240309131026-e4c57ec6e725/go.mod h1:SBn2qGSXajF4HWTe90dyGimCoCfFyACr85NLJwNxKqo=
 github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9 h1:udm0wViwIxP0ex4Z7PzD6ijk5EkYgZ05W/FS9KlLvC0=
 github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9/go.mod h1:0CogLTO0b860xeB9tczr6r+D0a4dC+QlSl4tAZ//XqE=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=

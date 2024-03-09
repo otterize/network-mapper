@@ -22,7 +22,7 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20240308103112-b75383875fd3
+	github.com/otterize/intents-operator/src v0.0.0-20240309131026-e4c57ec6e725
 	github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9
 	github.com/prometheus/client_golang v1.18.0
 	github.com/samber/lo v1.33.0

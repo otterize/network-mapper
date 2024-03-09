@@ -6,7 +6,9 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
+	mutatingwebhookconfiguration "github.com/otterize/intents-operator/src/operator/controllers/mutating_webhook_controller"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/filters"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
@@ -200,10 +202,9 @@ func main() {
 				logrus.WithError(err).Panic("failed writing certs to file system")
 			}
 
-			err = mapperwebhooks.UpdateMutationWebHookCA(context.Background(),
-				"otterize-aws-visibility-mutating-webhook-configuration", certBundle.CertPem)
-			if err != nil {
-				logrus.WithError(err).Panic("updating validation webhook certificate failed")
+			reconciler := mutatingwebhookconfiguration.NewMutatingWebhookConfigsReconciler(mgr.GetClient(), mgr.GetScheme(), certBundle.CertPem, filters.NetworkMapperLabelPredicate())
+			if err = reconciler.SetupWithManager(mgr); err != nil {
+				logrus.WithField("controller", "MutatingWebhookConfigs").WithError(err).Panic("unable to create controller")
 			}
 		}
 	}
