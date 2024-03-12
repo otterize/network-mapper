@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/istio-watcher/config"
-	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
-	"github.com/otterize/network-mapper/src/istio-watcher/pkg/prometheus"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -71,7 +70,7 @@ type ConnectionWithPath struct {
 type IstioWatcher struct {
 	clientset    *kubernetes.Clientset
 	config       *rest.Config
-	mapperClient mapperclient.MapperClient
+	reporter     IstioReporter
 	connections  map[ConnectionWithPath]time.Time
 	metricsCount map[string]int
 }
@@ -95,7 +94,12 @@ type Metric struct {
 	Value int    `json:"value"`
 }
 
-func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
+type IstioReporter interface {
+	ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error)
+}
+
+// NewWatcher The Istio watcher uses this interface because it used to be a standalone component that communicates with the network mapper, and was then integrated into the network mapper.
+func NewWatcher(resolver IstioReporter) (*IstioWatcher, error) {
 	conf, err := rest.InClusterConfig()
 
 	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
@@ -118,7 +122,7 @@ func NewWatcher(mapperClient mapperclient.MapperClient) (*IstioWatcher, error) {
 	m := &IstioWatcher{
 		clientset:    clientset,
 		config:       conf,
-		mapperClient: mapperClient,
+		reporter:     resolver,
 		connections:  map[ConnectionWithPath]time.Time{},
 		metricsCount: map[string]int{},
 	}
@@ -243,7 +247,6 @@ func (m *IstioWatcher) convertMetricsToConnections(metricsChan <-chan *EnvoyMetr
 			if err != nil {
 				return errors.Wrap(err)
 			}
-			prometheus.IncrementIstioReports(1)
 			m.connections[conn] = time.Now()
 		}
 	}
@@ -333,7 +336,11 @@ func (m *IstioWatcher) reportResults(ctx context.Context) error {
 
 	logrus.Debugf("Reporting %d connections", len(connections))
 	results := ToGraphQLIstioConnections(connections)
-	return m.mapperClient.ReportIstioConnections(ctx, mapperclient.IstioConnectionResults{Results: results})
+	_, err := m.reporter.ReportIstioConnectionResults(ctx, model.IstioConnectionResults{Results: results})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	return nil
 }
 
 func (m *IstioWatcher) RunForever(ctx context.Context) error {
