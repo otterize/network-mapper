@@ -348,7 +348,7 @@ func (m *IstioWatcher) RunForever(ctx context.Context) error {
 	cooldownPeriod := viper.GetDuration(config.IstioCooldownIntervalKey)
 	for {
 		logrus.Debug("Retrieving 'istio_total_requests' metric from Istio sidecars")
-		if err := m.CollectIstioConnectionMetrics(ctx, viper.GetString(config.NamespaceKey)); err != nil {
+		if err := m.CollectIstioConnectionMetrics(ctx, viper.GetString(config.IstioRestrictCollectionToNamespace)); err != nil {
 			logrus.WithError(err).Debugf("Failed getting connection metrics from Istio sidecars")
 		}
 		logrus.Debugf("Istio mapping stopped, will retry after cool down period (%s)...", cooldownPeriod)
