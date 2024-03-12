@@ -9,6 +9,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
@@ -223,6 +224,16 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Panic("Failed to initialize cloud client")
 	}
+
+	istioWatcher, err := istiowatcher.NewWatcher(resolver.Mutation())
+	if err != nil {
+		logrus.WithError(err).Panic("failed to initialize istio watcher")
+	}
+
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		return istioWatcher.RunForever(errGroupCtx)
+	})
 
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {

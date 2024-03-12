@@ -1,22 +1,22 @@
 package istiowatcher
 
 import (
-	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
 	"net/http"
 	"time"
 )
 
-var HTTPMethodsToGQLMethods = map[string]mapperclient.HttpMethod{
-	http.MethodGet:     mapperclient.HttpMethodGet,
-	http.MethodPost:    mapperclient.HttpMethodPost,
-	http.MethodPut:     mapperclient.HttpMethodPut,
-	http.MethodDelete:  mapperclient.HttpMethodDelete,
-	http.MethodOptions: mapperclient.HttpMethodOptions,
-	http.MethodTrace:   mapperclient.HttpMethodTrace,
-	http.MethodPatch:   mapperclient.HttpMethodPatch,
-	http.MethodConnect: mapperclient.HttpMethodConnect,
+var HTTPMethodsToGQLMethods = map[string]model.HTTPMethod{
+	http.MethodGet:     model.HTTPMethodGet,
+	http.MethodPost:    model.HTTPMethodPost,
+	http.MethodPut:     model.HTTPMethodPut,
+	http.MethodDelete:  model.HTTPMethodDelete,
+	http.MethodOptions: model.HTTPMethodOptions,
+	http.MethodTrace:   model.HTTPMethodTrace,
+	http.MethodPatch:   model.HTTPMethodPatch,
+	http.MethodConnect: model.HTTPMethodConnect,
 }
 
 type ConnectionPairWithPath struct {
@@ -25,8 +25,8 @@ type ConnectionPairWithPath struct {
 	RequestPath         string `json:"requestPath"`
 }
 
-func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []mapperclient.IstioConnection {
-	connectionPairToGraphQLConnection := map[ConnectionPairWithPath]mapperclient.IstioConnection{}
+func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []model.IstioConnection {
+	connectionPairToGraphQLConnection := map[ConnectionPairWithPath]model.IstioConnection{}
 
 	for connWithPath, timestamp := range connections {
 		connectionPair := ConnectionPairWithPath{
@@ -37,19 +37,18 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 
 		istioConnection, ok := connectionPairToGraphQLConnection[connectionPair]
 		if !ok {
-			istioConnection = mapperclient.IstioConnection{
+			istioConnection = model.IstioConnection{
 				SrcWorkload:          connWithPath.SourceWorkload,
 				SrcWorkloadNamespace: connWithPath.SourceNamespace,
 				DstWorkload:          connWithPath.DestinationWorkload,
 				DstWorkloadNamespace: connWithPath.DestinationNamespace,
 				Path:                 connWithPath.RequestPath,
 				LastSeen:             timestamp,
-				Methods:              []mapperclient.HttpMethod{},
 			}
 
 			method, ok := HTTPMethodsToGQLMethods[connWithPath.RequestMethod]
 			if ok {
-				istioConnection.Methods = []mapperclient.HttpMethod{method}
+				istioConnection.Methods = []model.HTTPMethod{method}
 			}
 
 			connectionPairToGraphQLConnection[connectionPair] = istioConnection
