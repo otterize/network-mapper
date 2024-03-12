@@ -225,15 +225,17 @@ func main() {
 		logrus.WithError(err).Panic("Failed to initialize cloud client")
 	}
 
-	istioWatcher, err := istiowatcher.NewWatcher(resolver.Mutation())
-	if err != nil {
-		logrus.WithError(err).Panic("failed to initialize istio watcher")
-	}
+	if viper.GetBool(config.EnableIstioCollectionKey) {
+		istioWatcher, err := istiowatcher.NewWatcher(resolver.Mutation())
+		if err != nil {
+			logrus.WithError(err).Panic("failed to initialize istio watcher")
+		}
 
-	errgrp.Go(func() error {
-		defer errorreporter.AutoNotify()
-		return istioWatcher.RunForever(errGroupCtx)
-	})
+		errgrp.Go(func() error {
+			defer errorreporter.AutoNotify()
+			return istioWatcher.RunForever(errGroupCtx)
+		})
+	}
 
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
 	if cloudEnabled {

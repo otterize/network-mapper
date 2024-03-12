@@ -35,6 +35,8 @@ const (
 	DNSClientIntentsUpdateEnabledKey      = "dns-client-intents-update-enabled"
 	DNSClientIntentsUpdateEnabledDefault  = false
 
+	EnableIstioCollectionKey           = "enable-istio-collection"
+	EnableIstioCollectionDefault       = false
 	IstioRestrictCollectionToNamespace = "istio-restrict-collection-to-namespace"
 	IstioReportIntervalKey             = "istio-report-interval"
 	IstioReportIntervalDefault         = 30 * time.Second
@@ -68,5 +70,6 @@ func init() {
 	viper.SetDefault(MetricFetchTimeoutKey, MetricFetchTimeoutDefault)
 	viper.SetDefault(IstioCooldownIntervalKey, IstioCooldownIntervalDefault)
 	viper.SetDefault(IstioRestrictCollectionToNamespace, "")
+	viper.SetDefault(EnableIstioCollectionKey, EnableIstioCollectionDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
