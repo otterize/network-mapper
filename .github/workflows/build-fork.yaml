@@ -34,7 +34,6 @@ jobs:
           - mapper
           - sniffer
           - kafka-watcher
-          - istio-watcher
 
     steps:
       - id: registry
