@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/istio-watcher/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
