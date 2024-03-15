@@ -7,6 +7,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/otterize/network-mapper/src)](https://goreportcard.com/report/github.com/otterize/network-mapper/src)
 [![community](https://img.shields.io/badge/slack-Otterize_Slack-purple.svg?logo=slack)](https://joinslack.otterize.com)
 
+Maps pod-to-pod traffic, pod-to-Internet traffic, and even AWS IAM traffic, with zero-config.
 
 * [About](#about)
 * [Try the network mapper](#try-the-network-mapper)
@@ -24,7 +25,7 @@ https://user-images.githubusercontent.com/20886410/205926414-a5fb6755-b5fa-45f3-
 
 
 ## About
-The Otterize network mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. Its goal is to give you insights about traffic in your cluster without a complete overhaul or the need to adapt anything to it.
+The Otterize network mapper is a zero-config tool that aims to be lightweight and doesn't require you to adapt anything in your cluster. Its goal is to give you insights about traffic in your cluster without a complete overhaul or the need to adapt anything to it, unlike other solutions, which may require deploying a new CNI, a service mesh, and so on.
 
 You can use the [Otterize CLI](https://github.com/otterize/otterize-cli) to list the traffic by client, visualize the traffic, export the results as JSON or YAML, or reset the traffic the mapper remembers.
 
@@ -62,7 +63,9 @@ recommendationservice in namespace otterize-ecom-demo calls:
  
 ## Try the network mapper
 
-Try the [quick tutorial guide](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
+Try the [quickstart](https://docs.otterize.com/quick-tutorials/k8s-network-mapper) to get a hands-on experience in 5 minutes.
+
+Looking to map AWS traffic? Check out the [AWS visibility tutorial](https://docs.otterize.com/features/aws-iam/tutorials/aws-visibility).
 
 ## Installation instructions
 ### Install and run the network mapper using Helm
@@ -94,7 +97,8 @@ For more platforms, see [the installation guide](https://docs.otterize.com/insta
 - Mapper - the mapper is deployed once per cluster, and receives traffic information from the sniffer and watchers, and resolves the information to communications between [service identities](https://docs.otterize.com/reference/service-identities).
 - Sniffer - the sniffer is deployed to each node using a DaemonSet, and is responsible for capturing node-local DNS traffic and inspecting open connections.
 - Kafka watcher - the Kafka watcher is deployed once per cluster and is responsible for detecting accesses to Kafka topics, which services perform those accesses and which operations they use.
-- Istio watcher - the Istio watcher is deployed once per cluster and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths. Currently, the Istio watcher has a limitation where it reports all HTTP traffic seen by the sidecar since it was started, regardless of when it was seen.
+- Istio watcher - the Istio watcher is part of the Mapper and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths. Currently, the Istio watcher has a limitation where it reports all HTTP traffic seen by the sidecar since it was started, regardless of when it was seen.
+- AWS IAM visibility - The AWS IAM visibility components are optionally deployed with `--set aws.visibility.enabled=true`. Label pods with `network-mapper.otterize.com/aws-visibility: true`, and if connected to Otterize Cloud, the Cloud will combine the information to put together a map of accesses to AWS resources, which you can export as ClientIntents yamls for use with the (Intents Operator)[https://github.com/otterize/intents-operator].
 
 ### DNS responses
 DNS is a common network protocol used for service discovery. When a pod (`checkoutservice`) tries to connect to a Kubernetes service
@@ -108,8 +112,10 @@ The Kafka watcher periodically examines logs of Kafka servers provided by the us
 The watcher is only able to parse Kafka logs when Kafka servers' Authorizer logger is configured to output logs to `stdout` with `DEBUG` level.
 
 ### Istio sidecar metrics
-The Istio watcher periodically queries for all pods with the `security.istio.io/tlsMode` label, queries each pod's Istio sidecar for metrics about connections, and deduces connections with HTTP paths between pods covered by the Istio service mesh.
+The Istio watcher, part of the Network mapper periodically queries for all pods with the `security.istio.io/tlsMode` label, queries each pod's Istio sidecar for metrics about connections, and deduces connections with HTTP paths between pods covered by the Istio service mesh.
 
+### AWS IAM visibility
+AWS IAM visibility consists of several components: a HTTP proxy that proxies AWS traffic for pods which you opt-in on using the label `network-mapper.otterize.com/aws-visibility: true`, a webhook admission controller that patches Pods with that label as they are admitted to add a certificate for the HTTP proxy and direct DNS traffic for amazonaws.com to a DNS server belonging to the network mapper, and finally said DNS server which responds only to amazonaws.com requests and forwards the rest to the cluster's DNS server.
 
 ### Service name resolution
 Service names are resolved in one of two ways:
