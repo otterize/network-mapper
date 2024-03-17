@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http/httptest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"testing"
 	"time"
@@ -267,7 +268,7 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: pod.GetName(), Namespace: pod.GetNamespace()}, &podToUpdate)
 	s.Require().NoError(err)
 	s.Require().True(controllerutil.AddFinalizer(&podToUpdate, "intents.otterize.com/finalizer-so-that-object-cant-be-deleted-for-this-test"))
-	err = s.Mgr.GetClient().Update(context.Background(), &podToUpdate)
+	err = s.Mgr.GetClient().Patch(context.Background(), &podToUpdate, client.MergeFrom(pod))
 	s.Require().NoError(err)
 
 	interval := 1 * time.Second
