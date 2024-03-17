@@ -2,6 +2,9 @@ package collectors
 
 import (
 	"context"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/smithy-go/logging"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
@@ -27,9 +30,11 @@ type pendingCapture struct {
 
 type DNSSniffer struct {
 	NetworkCollector
-	resolver    ipresolver.IPResolver
-	pending     []pendingCapture
-	lastRefresh time.Time
+	resolver           ipresolver.IPResolver
+	pending            []pendingCapture
+	lastRefresh        time.Time
+	isRunningOnAWS     bool
+	isRunningONAWSOnce sync.Once
 }
 
 func NewDNSSniffer(resolver ipresolver.IPResolver) *DNSSniffer {
@@ -39,6 +44,7 @@ func NewDNSSniffer(resolver ipresolver.IPResolver) *DNSSniffer {
 		pending:          make([]pendingCapture, 0),
 		lastRefresh:      time.Now().Add(-viper.GetDuration(config.HostsMappingRefreshIntervalKey)), // Should refresh immediately
 	}
+	s.initIsRunningOnAWS()
 	s.resetData()
 	return &s
 }
@@ -134,6 +140,10 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
 					continue
 				}
+				if !s.isRunningOnAWS {
+					s.addCapturedRequest(ip.DstIP.String(), "", string(answer.Name), answer.IP.String(), captureTime, nilable.From(int(answer.TTL)))
+					continue
+				}
 				hostname, err := s.resolver.ResolveIP(ip.DstIP.String())
 				if err != nil {
 					logrus.Debugf("Can't resolve IP addr %s, skipping", ip.DstIP.String())
@@ -153,7 +163,34 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 	}
 }
 
+func (s *DNSSniffer) initIsRunningOnAWS() {
+	s.isRunningONAWSOnce.Do(func() {
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		cfg, err := awsconfig.LoadDefaultConfig(ctxTimeout)
+		if err != nil {
+			logrus.Debug("Autodetect AWS (an error here is fine): Failed to load AWS config")
+			return
+		}
+		cfg.Logger = logging.Nop{}
+
+		client := imds.NewFromConfig(cfg)
+
+		result, err := client.GetInstanceIdentityDocument(ctxTimeout, &imds.GetInstanceIdentityDocumentInput{})
+		if err != nil {
+			logrus.Debug("Autodetect AWS (an error here is fine): Failed to get instance identity document")
+			return
+		}
+
+		logrus.WithField("region", result.Region).Debug("Autodetect AWS: Running on AWS")
+		s.isRunningOnAWS = true
+	})
+}
+
 func (s *DNSSniffer) RefreshHostsMapping() error {
+	if !s.isRunningOnAWS {
+		return nil
+	}
 	err := s.resolver.Refresh()
 	if err != nil {
 		return errors.Wrap(err)

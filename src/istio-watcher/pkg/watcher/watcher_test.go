@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
-	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient/mockclient"
+	mock_istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher/mocks"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
@@ -15,15 +15,15 @@ import (
 
 type WatcherTestSuite struct {
 	suite.Suite
-	mockMapperClient *mock_mapperclient.MockMapperClient
-	watcher          *IstioWatcher
+	mockIstioReporter *mock_istiowatcher.MockIstioReporter
+	watcher           *IstioWatcher
 }
 
 func (s *WatcherTestSuite) SetupTest() {
 	controller := gomock.NewController(s.T())
-	s.mockMapperClient = mock_mapperclient.NewMockMapperClient(controller)
+	s.mockIstioReporter = mock_istiowatcher.NewMockIstioReporter(controller)
 	s.watcher = &IstioWatcher{
-		mapperClient: s.mockMapperClient,
+		reporter:     s.mockIstioReporter,
 		connections:  map[ConnectionWithPath]time.Time{},
 		metricsCount: map[string]int{},
 	}
@@ -113,23 +113,23 @@ func (s *WatcherTestSuite) TestReportResults() {
 		},
 	}
 
-	connectionA := mapperclient.IstioConnection{
+	connectionA := model.IstioConnection{
 		SrcWorkload:          "clientA",
 		SrcWorkloadNamespace: "test-ns",
 		DstWorkload:          "server",
 		DstWorkloadNamespace: "test-ns",
 		Path:                 "/a-path",
-		Methods:              []mapperclient.HttpMethod{mapperclient.HttpMethodGet, mapperclient.HttpMethodPost},
+		Methods:              []model.HTTPMethod{model.HTTPMethodGet, model.HTTPMethodPost},
 		LastSeen:             time.Time{},
 	}
 
-	connectionB := mapperclient.IstioConnection{
+	connectionB := model.IstioConnection{
 		SrcWorkload:          "clientB",
 		SrcWorkloadNamespace: "test-ns",
 		DstWorkload:          "server",
 		DstWorkloadNamespace: "test-ns",
 		Path:                 "/b-path",
-		Methods:              []mapperclient.HttpMethod{mapperclient.HttpMethodGet},
+		Methods:              []model.HTTPMethod{model.HTTPMethodGet},
 		LastSeen:             time.Time{},
 	}
 
@@ -142,14 +142,14 @@ func (s *WatcherTestSuite) TestReportResults() {
 	err := s.watcher.convertMetricsToConnections(firstMetricsChannel)
 	s.NoError(err)
 
-	istioConnections := mapperclient.IstioConnectionResults{
-		Results: []mapperclient.IstioConnection{
+	istioConnections := model.IstioConnectionResults{
+		Results: []model.IstioConnection{
 			connectionA,
 			connectionB,
 		},
 	}
 
-	s.mockMapperClient.EXPECT().ReportIstioConnections(gomock.Any(), GetMatcher(istioConnections)).Return(nil)
+	s.mockIstioReporter.EXPECT().ReportIstioConnectionResults(gomock.Any(), GetMatcher(istioConnections)).Return(true, nil)
 	err = s.watcher.reportResults(context.Background())
 	s.NoError(err)
 }

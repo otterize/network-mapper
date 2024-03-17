@@ -83,18 +83,6 @@ jobs:
           docker image load -i kafka-watcher.tar
           minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/kafka-watcher:${{ github.sha }}
 
-      - name: Load images from GitHub Artifacts
-        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ env.REGISTRY }}_${{ github.actor }}_istio-watcher_${{ github.sha }}.tar
-
-      - name: Load Docker image
-        if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
-        run: |-
-          docker image load -i istio-watcher.tar
-          minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/istio-watcher:${{ github.sha }}
-
 
       - name: Login to GCR
         if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
