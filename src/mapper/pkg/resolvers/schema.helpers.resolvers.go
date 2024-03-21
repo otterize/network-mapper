@@ -6,6 +6,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -15,8 +16,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	"time"
 	"strings"
+	"time"
 )
 
 type SourceType string
@@ -197,6 +198,44 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 
 	r.externalTrafficIntentsHolder.AddIntent(intent)
 	return nil
+}
+
+// ReportAWSOperation is the resolver for the reportAWSOperation field.
+func (r *mutationResolver) handleAWSOperationReport(ctx context.Context, operation []model.AWSOperation) (bool, error) {
+	for _, op := range operation {
+		logrus.Debugf("Received AWS operation: %+v", op)
+		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, op.SrcIP)
+
+		if err != nil {
+			logrus.Errorf("could not resolve %s to pod: %s", op.SrcIP, err.Error())
+			continue
+		}
+
+		serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+
+		if err != nil {
+			logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
+			continue
+		}
+
+		r.awsIntentsHolder.AddIntent(awsintentsholder.AWSIntent{
+			Client: model.OtterizeServiceIdentity{
+				Name:      serviceId.Name,
+				Namespace: srcPod.Namespace,
+			},
+			Actions: op.Actions,
+			ARN:     op.Resource,
+		})
+
+		logrus.
+			WithField("client", serviceId.Name).
+			WithField("namespace", srcPod.Namespace).
+			WithField("actions", op.Actions).
+			WithField("arn", op.Resource).
+			Debug("Discovered AWS intent")
+	}
+
+	return true, nil
 }
 
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {

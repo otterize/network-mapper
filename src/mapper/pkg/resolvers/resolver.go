@@ -32,6 +32,7 @@ type Resolver struct {
 	socketScanResults            chan model.SocketScanResults
 	kafkaMapperResults           chan model.KafkaMapperResults
 	istioConnectionResults       chan model.IstioConnectionResults
+	awsOperations                chan []model.AWSOperation
 	gotResultsCtx                context.Context
 	gotResultsSignal             context.CancelFunc
 }
@@ -53,6 +54,7 @@ func NewResolver(
 		socketScanResults:            make(chan model.SocketScanResults, 200),
 		kafkaMapperResults:           make(chan model.KafkaMapperResults, 200),
 		istioConnectionResults:       make(chan model.IstioConnectionResults, 200),
+		awsOperations:                make(chan []model.AWSOperation, 200),
 		awsIntentsHolder:             awsIntentsHolder,
 		dnsCache:                     dnsCache,
 	}

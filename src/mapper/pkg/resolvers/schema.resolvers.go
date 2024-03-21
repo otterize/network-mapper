@@ -7,7 +7,6 @@ package resolvers
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
@@ -82,40 +81,16 @@ func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, res
 
 // ReportAWSOperation is the resolver for the reportAWSOperation field.
 func (r *mutationResolver) ReportAWSOperation(ctx context.Context, operation []model.AWSOperation) (bool, error) {
-	for _, op := range operation {
-		logrus.Debugf("Received AWS operation: %+v", op)
-		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, op.SrcIP)
-
-		if err != nil {
-			logrus.Errorf("could not resolve %s to pod: %s", op.SrcIP, err.Error())
-			continue
-		}
-
-		serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-
-		if err != nil {
-			logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
-			continue
-		}
-
-		r.awsIntentsHolder.AddIntent(awsintentsholder.AWSIntent{
-			Client: model.OtterizeServiceIdentity{
-				Name:      serviceId.Name,
-				Namespace: srcPod.Namespace,
-			},
-			Actions: op.Actions,
-			ARN:     op.Resource,
-		})
-
-		logrus.
-			WithField("client", serviceId.Name).
-			WithField("namespace", srcPod.Namespace).
-			WithField("actions", op.Actions).
-			WithField("arn", op.Resource).
-			Debug("Discovered AWS intent")
+	select {
+	case r.awsOperations <- operation:
+		prometheus.IncrementAWSOperationReports(len(operation))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementAWSOperationDrops(len(operation))
+		return false, nil
 	}
-
-	return true, nil
 }
 
 // ServiceIntents is the resolver for the serviceIntents field.
