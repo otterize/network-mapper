@@ -201,7 +201,7 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 }
 
 // ReportAWSOperation is the resolver for the reportAWSOperation field.
-func (r *mutationResolver) handleAWSOperationReport(ctx context.Context, operation []model.AWSOperation) (bool, error) {
+func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model.AWSOperationResults) error {
 	for _, op := range operation {
 		logrus.Debugf("Received AWS operation: %+v", op)
 		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, op.SrcIP)
@@ -235,7 +235,7 @@ func (r *mutationResolver) handleAWSOperationReport(ctx context.Context, operati
 			Debug("Discovered AWS intent")
 	}
 
-	return true, nil
+	return nil
 }
 
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {

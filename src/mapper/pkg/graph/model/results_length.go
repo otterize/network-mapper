@@ -15,3 +15,9 @@ func (c SocketScanResults) Length() int {
 func (c IstioConnectionResults) Length() int {
 	return len(c.Results)
 }
+
+type AWSOperationResults []AWSOperation
+
+func (c AWSOperationResults) Length() int {
+	return len(c)
+}
