@@ -1,0 +1,13 @@
+# See https://golangci-lint.run/usage/linters/ for linters explanations
+linters:
+  disable-all: true
+  enable:
+    # Enabled by default
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - nilnil
+    - nilerr

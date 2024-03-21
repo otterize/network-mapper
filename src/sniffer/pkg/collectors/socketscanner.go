@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/otterize/go-procnet/procnet"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/utils"
+	"github.com/otterize/nilable"
 
 	"time"
 )
@@ -46,7 +47,7 @@ func (s *SocketScanner) scanTcpFile(hostname string, path string) {
 		// Only report sockets from the client-side by checking if the local port for this socket is the same port as a listen socket.
 		if _, isServersideSocket := listenPorts[sock.LocalAddr.Port]; !isServersideSocket {
 			// The hostname we have here is the hostname for the client.
-			s.addCapturedRequest(sock.LocalAddr.IP.String(), hostname, sock.RemoteAddr.IP.String(), sock.RemoteAddr.IP.String(), time.Now())
+			s.addCapturedRequest(sock.LocalAddr.IP.String(), hostname, sock.RemoteAddr.IP.String(), sock.RemoteAddr.IP.String(), time.Now(), nilable.Nilable[int]{})
 		}
 	}
 }

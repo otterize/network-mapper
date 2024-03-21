@@ -3,12 +3,13 @@ package testbase
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 	"time"
 )
@@ -48,7 +50,7 @@ func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	s.Require().NotNil(s.K8sDirectClient)
 	s.mgrCtx, s.mgrCtxCancelFunc = context.WithCancel(context.Background())
 
-	s.Mgr, err = manager.New(s.cfg, manager.Options{MetricsBindAddress: "0"})
+	s.Mgr, err = manager.New(s.cfg, manager.Options{Metrics: server.Options{BindAddress: "0"}})
 	s.Require().NoError(err)
 	testName := s.T().Name()[strings.LastIndex(s.T().Name(), "/")+1:]
 	s.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
@@ -84,11 +86,11 @@ func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Obj
 		true,
 		func(ctx context.Context) (done bool, err error) {
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
-			if errors.IsNotFound(err) {
+			if k8serrors.IsNotFound(err) {
 				return false, nil
 			}
 			if err != nil {
-				return false, err
+				return false, errors.Wrap(err)
 			}
 			return true, nil
 		}),
@@ -162,6 +164,26 @@ func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[st
 	s.waitForObjectToBeCreated(service)
 
 	s.AddEndpoints(name, pods)
+	return service
+}
+
+func (s *ControllerManagerTestSuiteBase) GetAPIServerService() *corev1.Service {
+	service := &corev1.Service{}
+	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
+		waitForCreationInterval,
+		waitForCreationTimeout,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: "kubernetes", Namespace: "default"}, service)
+			if k8serrors.IsNotFound(err) {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		}),
+	)
 	return service
 }
 

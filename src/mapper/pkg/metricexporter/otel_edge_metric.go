@@ -2,6 +2,7 @@ package metricexporter
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"time"
 
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -38,13 +39,13 @@ func newMeterProvider(ctx context.Context, res *resource.Resource) (*sdk.MeterPr
 	// - OTEL_EXPORTER_OTLP_TIMEOUT (...)
 	metricExporter, err := otlpmetricgrpc.New(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	if viper.GetBool(sharedconfig.DebugKey) {
 		stdOutExporter, err := stdoutmetric.New()
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err)
 		}
 		meterProvider := sdk.NewMeterProvider(
 			sdk.WithResource(res),
@@ -69,12 +70,12 @@ func (o *OtelEdgeMetric) Record(ctx context.Context, from string, to string) {
 func NewOtelEdgeMetric(ctx context.Context) (*OtelEdgeMetric, error) {
 	res, err := newResource()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	meterProvider, err := newMeterProvider(ctx, res)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	var meter = meterProvider.Meter("otelexporter")
@@ -83,7 +84,7 @@ func NewOtelEdgeMetric(ctx context.Context) (*OtelEdgeMetric, error) {
 		metric.WithDescription("Count of edges between two nodes"),
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err)
 	}
 
 	return &OtelEdgeMetric{

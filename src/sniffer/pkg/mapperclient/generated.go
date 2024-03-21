@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/otterize/nilable"
 )
 
 type CaptureResults struct {
@@ -17,16 +18,20 @@ type CaptureResults struct {
 func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 type Destination struct {
-	Destination   string    `json:"destination"`
-	DestinationIP string    `json:"destinationIP"`
-	LastSeen      time.Time `json:"lastSeen"`
+	Destination   string                  `json:"destination"`
+	DestinationIP nilable.Nilable[string] `json:"destinationIP"`
+	TTL           nilable.Nilable[int]    `json:"TTL"`
+	LastSeen      time.Time               `json:"lastSeen"`
 }
 
 // GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
 func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetDestinationIP returns Destination.DestinationIP, and is useful for accessing the field via an interface.
-func (v *Destination) GetDestinationIP() string { return v.DestinationIP }
+func (v *Destination) GetDestinationIP() nilable.Nilable[string] { return v.DestinationIP }
+
+// GetTTL returns Destination.TTL, and is useful for accessing the field via an interface.
+func (v *Destination) GetTTL() nilable.Nilable[int] { return v.TTL }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
@@ -95,88 +100,97 @@ func (v *reportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
 }
 
-func Health(
-	ctx context.Context,
-	client graphql.Client,
-) (*HealthResponse, error) {
-	req := &graphql.Request{
-		OpName: "Health",
-		Query: `
+// The query or mutation executed by Health.
+const Health_Operation = `
 query Health {
 	health
 }
-`,
+`
+
+func Health(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*HealthResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "Health",
+		Query:  Health_Operation,
 	}
-	var err error
+	var err_ error
 
-	var data HealthResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ HealthResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func reportCaptureResults(
-	ctx context.Context,
-	client graphql.Client,
-	results CaptureResults,
-) (*reportCaptureResultsResponse, error) {
-	req := &graphql.Request{
-		OpName: "reportCaptureResults",
-		Query: `
+// The query or mutation executed by reportCaptureResults.
+const reportCaptureResults_Operation = `
 mutation reportCaptureResults ($results: CaptureResults!) {
 	reportCaptureResults(results: $results)
 }
-`,
+`
+
+func reportCaptureResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results CaptureResults,
+) (*reportCaptureResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportCaptureResults",
+		Query:  reportCaptureResults_Operation,
 		Variables: &__reportCaptureResultsInput{
 			Results: results,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data reportCaptureResultsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ reportCaptureResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func reportSocketScanResults(
-	ctx context.Context,
-	client graphql.Client,
-	results SocketScanResults,
-) (*reportSocketScanResultsResponse, error) {
-	req := &graphql.Request{
-		OpName: "reportSocketScanResults",
-		Query: `
+// The query or mutation executed by reportSocketScanResults.
+const reportSocketScanResults_Operation = `
 mutation reportSocketScanResults ($results: SocketScanResults!) {
 	reportSocketScanResults(results: $results)
 }
-`,
+`
+
+func reportSocketScanResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results SocketScanResults,
+) (*reportSocketScanResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportSocketScanResults",
+		Query:  reportSocketScanResults_Operation,
 		Variables: &__reportSocketScanResultsInput{
 			Results: results,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data reportSocketScanResultsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ reportSocketScanResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

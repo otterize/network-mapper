@@ -127,6 +127,9 @@ type IntentInput struct {
 	Resources         []*HTTPConfigInput     `json:"resources"`
 	DatabaseResources []*DatabaseConfigInput `json:"databaseResources"`
 	AwsActions        []*string              `json:"awsActions"`
+	AzureRoles        []*string              `json:"azureRoles"`
+	GcpPermissions    []*string              `json:"gcpPermissions"`
+	Internet          *InternetConfigInput   `json:"internet"`
 	Status            *IntentStatusInput     `json:"status"`
 }
 
@@ -157,6 +160,15 @@ func (v *IntentInput) GetDatabaseResources() []*DatabaseConfigInput { return v.D
 // GetAwsActions returns IntentInput.AwsActions, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetAwsActions() []*string { return v.AwsActions }
 
+// GetAzureRoles returns IntentInput.AzureRoles, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetAzureRoles() []*string { return v.AzureRoles }
+
+// GetGcpPermissions returns IntentInput.GcpPermissions, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetGcpPermissions() []*string { return v.GcpPermissions }
+
+// GetInternet returns IntentInput.Internet, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetInternet() *InternetConfigInput { return v.Internet }
+
 // GetStatus returns IntentInput.Status, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetStatus() *IntentStatusInput { return v.Status }
 
@@ -174,8 +186,26 @@ const (
 	IntentTypeKafka    IntentType = "KAFKA"
 	IntentTypeDatabase IntentType = "DATABASE"
 	IntentTypeAws      IntentType = "AWS"
+	IntentTypeGcp      IntentType = "GCP"
+	IntentTypeAzure    IntentType = "AZURE"
 	IntentTypeS3       IntentType = "S3"
+	IntentTypeInternet IntentType = "INTERNET"
 )
+
+type InternetConfigInput struct {
+	Domains []*string `json:"domains"`
+	Ips     []*string `json:"ips"`
+	Ports   []*int    `json:"ports"`
+}
+
+// GetDomains returns InternetConfigInput.Domains, and is useful for accessing the field via an interface.
+func (v *InternetConfigInput) GetDomains() []*string { return v.Domains }
+
+// GetIps returns InternetConfigInput.Ips, and is useful for accessing the field via an interface.
+func (v *InternetConfigInput) GetIps() []*string { return v.Ips }
+
+// GetPorts returns InternetConfigInput.Ports, and is useful for accessing the field via an interface.
+func (v *InternetConfigInput) GetPorts() []*int { return v.Ports }
 
 type IstioStatusInput struct {
 	ServiceAccountName     *string `json:"serviceAccountName"`
@@ -288,29 +318,29 @@ mutation ReportComponentStatus ($component: ComponentType!) {
 `
 
 func ReportComponentStatus(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	component ComponentType,
 ) (*ReportComponentStatusResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportComponentStatus",
 		Query:  ReportComponentStatus_Operation,
 		Variables: &__ReportComponentStatusInput{
 			Component: component,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportComponentStatusResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportComponentStatusResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportDiscoveredIntents.
@@ -321,29 +351,29 @@ mutation ReportDiscoveredIntents ($intents: [DiscoveredIntentInput!]!) {
 `
 
 func ReportDiscoveredIntents(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	intents []*DiscoveredIntentInput,
 ) (*ReportDiscoveredIntentsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportDiscoveredIntents",
 		Query:  ReportDiscoveredIntents_Operation,
 		Variables: &__ReportDiscoveredIntentsInput{
 			Intents: intents,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportDiscoveredIntentsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportDiscoveredIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportExternalTrafficDiscoveredIntents.
@@ -354,27 +384,27 @@ mutation ReportExternalTrafficDiscoveredIntents ($intents: [ExternalTrafficDisco
 `
 
 func ReportExternalTrafficDiscoveredIntents(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	intents []ExternalTrafficDiscoveredIntentInput,
 ) (*ReportExternalTrafficDiscoveredIntentsResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "ReportExternalTrafficDiscoveredIntents",
 		Query:  ReportExternalTrafficDiscoveredIntents_Operation,
 		Variables: &__ReportExternalTrafficDiscoveredIntentsInput{
 			Intents: intents,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data ReportExternalTrafficDiscoveredIntentsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ ReportExternalTrafficDiscoveredIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

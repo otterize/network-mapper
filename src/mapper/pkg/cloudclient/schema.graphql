@@ -7,6 +7,12 @@ directive @constraint(
 	example: String!
 ) on ENUM_VALUE
 
+"""The @defer directive may be specified on a fragment spread to imply de-prioritization, that causes the fragment to be omitted in the initial response, and delivered as a subsequent response afterward. A query with @defer directive will cause the request to potentially return multiple responses, where non-deferred data is delivered in the initial response and data deferred delivered in a subsequent response. @include and @skip take precedence over @defer."""
+directive @defer(
+	if: Boolean
+	label: String
+) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
 """The @deprecated built-in directive is used within the type system definition language to indicate deprecated portions of a GraphQL service's schema, such as deprecated fields on a type, arguments on a field, input fields on an input type, or values of an enum type."""
 directive @deprecated(
 	reason: String
@@ -106,9 +112,9 @@ type AccessGraphEdge {
 	client: Service!
 	server: Service!
 	discoveredIntents: [Intent!]!
-	externalTrafficDiscoveredIntents: [ExternalTrafficIntent!]!
 	appliedIntents: [Intent!]!
 	accessStatus: EdgeAccessStatus!
+	accessStatuses: EdgeAccessStatuses!
 }
 
 type AccessGraphFilter {
@@ -135,6 +141,42 @@ enum ApiMethod {
 	PUT
 	PATCH
 	DELETE
+}
+
+enum AwsIamStep {
+	CREATE_CLUSTER
+	CONNECT_CLUSTER
+	DEPLOY_OTTERIZE_FOR_AWS_IAM
+	CREATE_S3_BUCKET
+	DEPLOY_SAMPLE_SERVER
+	VIEW_LOGS
+	LABEL_THE_SERVER_POD
+	SEE_THE_CREATED_ROLE
+	SEE_THE_SERVICE_ACCOUNT
+	APPLY_INTENTS
+	QUERY_S3_BUCKET_CONTENT
+	COMPLETED
+}
+
+type AzureInfo {
+	tenantId: String!
+	subscriptionId: String!
+	resourceGroup: String!
+	aksClusterName: String!
+	namespace: String!
+}
+
+input AzureInfoInput {
+	clusterId: ID!
+	tenantId: String!
+	subscriptionId: String!
+	resourceGroup: String!
+	aksClusterName: String!
+	namespace: String!
+}
+
+type AzureResource {
+	resource: String!
 }
 
 """The `Boolean` scalar type represents `true` or `false`."""
@@ -212,6 +254,10 @@ type ClusterConfiguration {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
 	useKafkaACLsInAccessGraphStates: Boolean!
+	useAWSIAMInAccessGraphStates: Boolean!
+	useGCPIAMInAccessGraphStates: Boolean!
+	useAzureIAMInAccessGraphStates: Boolean!
+	useDatabaseInAccessGraphStates: Boolean!
 	clusterFormSettings: ClusterFormSettings!
 }
 
@@ -219,8 +265,12 @@ input ClusterConfigurationInput {
 	globalDefaultDeny: Boolean!
 	istioGlobalDefaultDeny: Boolean
 	useNetworkPoliciesInAccessGraphStates: Boolean!
-	useIstioPoliciesInAccessGraphStates: Boolean
-	useKafkaACLsInAccessGraphStates: Boolean
+	useIstioPoliciesInAccessGraphStates: Boolean!
+	useKafkaACLsInAccessGraphStates: Boolean!
+	useAWSIAMInAccessGraphStates: Boolean
+	useGCPIAMInAccessGraphStates: Boolean
+	useAzureIAMInAccessGraphStates: Boolean
+	useDatabaseInAccessGraphStates: Boolean
 	clusterFormSettings: ClusterFormSettingsInput
 }
 
@@ -259,6 +309,11 @@ enum ComponentType {
 	NETWORK_MAPPER
 }
 
+type CreateGithubIntegrationResponse {
+	integration: Integration!
+	nextURL: String!
+}
+
 type CredentialsOperatorComponent {
 	type: ComponentType!
 	status: ComponentStatus!
@@ -276,11 +331,6 @@ enum CustomConstraint {
 enum DBPermissionChange {
 	APPLY
 	DELETE
-}
-
-type DNSIPPair {
-	dnsName: String!
-	ips: [String!]
 }
 
 input DNSIPPairInput {
@@ -314,12 +364,14 @@ type DatabaseInfo {
 	address: String!
 	databaseType: DatabaseType!
 	credentials: DatabaseCredentials!
+	visibility: DatabaseVisibilitySettings
 }
 
 input DatabaseInfoInput {
 	address: String!
 	databaseType: DatabaseType!
 	credentials: DatabaseCredentialsInput!
+	visibility: DatabaseVisibilitySettingsInput
 }
 
 enum DatabaseOperation {
@@ -332,6 +384,20 @@ enum DatabaseOperation {
 
 enum DatabaseType {
 	POSTGRESQL
+}
+
+type DatabaseVisibilitySettings {
+	source: DatabaseVisibilitySource
+	gcpPubSub: GCPPubSubLogConsumerSettings
+}
+
+input DatabaseVisibilitySettingsInput {
+	source: DatabaseVisibilitySource
+	gcpPubSub: GCPPubSubLogConsumerSettingsInput
+}
+
+enum DatabaseVisibilitySource {
+	GCP_PUBSUB
 }
 
 input DiscoveredIntentInput {
@@ -353,6 +419,7 @@ enum EdgeAccessStatusReason {
 	ALLOWED_BY_APPLIED_INTENTS_OVERLY_PERMISSIVE
 	ALLOWED_BY_APPLIED_INTENTS_HTTP_OVERLY_PERMISSIVE
 	ALLOWED_BY_APPLIED_INTENTS_KAFKA_OVERLY_PERMISSIVE
+	ALLOWED_BY_APPLIED_INTENTS_DATABASE_OVERLY_PERMISSIVE
 	ALLOWED_BY_EXTERNAL_TRAFFIC_NETWORK_POLICY
 	BLOCKED_BY_APPLIED_INTENTS_UNDER_PERMISSIVE
 	BLOCKED_BY_APPLIED_INTENTS_RESOURCE_MISMATCH
@@ -361,6 +428,9 @@ enum EdgeAccessStatusReason {
 	BLOCKED_BY_APPLIED_INTENTS_KAFKA_UNDER_PERMISSIVE
 	BLOCKED_BY_APPLIED_INTENTS_KAFKA_RESOURCE_MISMATCH
 	BLOCKED_BY_KAFKA_ENFORCEMENT_CONFIG_MISSING_APPLIED_INTENTS
+	BLOCKED_BY_APPLIED_INTENTS_DATABASE_UNDER_PERMISSIVE
+	BLOCKED_BY_APPLIED_INTENTS_DATABASE_RESOURCE_MISMATCH
+	BLOCKED_BY_DATABASE_ENFORCEMENT_CONFIG_MISSING_APPLIED_INTENTS
 	BLOCKED_BY_DEFAULT_DENY
 	SHARED_SERVICE_ACCOUNT
 	CLIENT_ISTIO_SIDECAR_MISSING
@@ -375,6 +445,7 @@ enum EdgeAccessStatusReason {
 	INTERNET_ACCESS_STATUS_UNKNOWN
 	NO_INTENTS_FOUND_OF_RELEVANT_TYPE
 	IGNORED_IN_CALCULATION
+	INTERNET_INTENTS_ENFORCEMENT_DISABLED
 }
 
 enum EdgeAccessStatusVerdict {
@@ -383,6 +454,16 @@ enum EdgeAccessStatusVerdict {
 	WOULD_BE_BLOCKED
 	BLOCKED
 	UNKNOWN
+}
+
+type EdgeAccessStatuses {
+	networkPolicies: EdgeAccessStatus!
+	kafkaACLs: EdgeAccessStatus!
+	istioPolicies: EdgeAccessStatus!
+	awsIam: EdgeAccessStatus!
+	gcpIam: EdgeAccessStatus!
+	azureIAM: EdgeAccessStatus!
+	database: EdgeAccessStatus!
 }
 
 type Environment {
@@ -400,6 +481,7 @@ enum EventType {
 	INTENTS_APPLIED_KAFKA
 	INTENTS_APPLIED_HTTP
 	INTENTS_APPLIED_DATABASE
+	INTENTS_APPLIED_INTERNET
 	INTENTS_DISCOVERED
 	INTENTS_DISCOVERED_SOCKET_SCAN
 	INTENTS_DISCOVERED_CAPTURE
@@ -428,13 +510,6 @@ input ExternalTrafficDiscoveredIntentInput {
 	intent: ExternalTrafficIntentInput!
 }
 
-type ExternalTrafficIntent {
-	id: ID!
-	server: Service!
-	client: Service!
-	target: DNSIPPair!
-}
-
 input ExternalTrafficIntentInput {
 	namespace: String!
 	clientName: String!
@@ -443,6 +518,75 @@ input ExternalTrafficIntentInput {
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
 scalar Float
+
+type GCPInfo {
+	region: String!
+	namespace: String!
+	gcpProjectName: String!
+	gkeClusterName: String!
+}
+
+input GCPInfoInput {
+	region: String!
+	namespace: String!
+	clusterId: String!
+	gcpProjectName: String!
+	gkeClusterName: String!
+}
+
+type GCPPubSubLogConsumerSettings {
+	projectId: String!
+	topic: String!
+}
+
+input GCPPubSubLogConsumerSettingsInput {
+	projectId: String!
+	topic: String!
+}
+
+type GCPResource {
+	resource: String!
+}
+
+type GitHubAccessGraphFilter {
+	environmentIds: [ID!]
+	clusterIds: [ID!]
+	namespaceIds: [ID!]
+	serviceIds: [ID!]
+	lastSeenAfter: Time
+}
+
+type GitHubRepoFilterPair {
+	filter: GitHubAccessGraphFilter!
+	repoInfo: GitHubRepoInfo!
+}
+
+input GitHubRepoFilterPairInput {
+	filter: InputGitHubAccessGraphFilter!
+	repoInfo: GitHubRepoInfoInput!
+}
+
+type GitHubRepoInfo {
+	repository: String!
+	baseBranch: String!
+	intentsPath: String!
+}
+
+input GitHubRepoInfoInput {
+	repository: String!
+	baseBranch: String!
+	intentsPath: String!
+}
+
+type GitHubSettings {
+	isActive: Boolean!
+	repoFilterPairs: [GitHubRepoFilterPair!]!
+}
+
+input GitHubSettingsInput {
+	isActive: Boolean!
+	repoFilterPairs: [GitHubRepoFilterPairInput!]!
+}
 
 type HTTPConfig {
 	path: String!
@@ -478,6 +622,13 @@ input InputAccessGraphFilter {
 	includeServicesWithNoEdges: Boolean
 }
 
+input InputGitHubAccessGraphFilter {
+	environmentIds: [ID!]
+	clusterIds: [ID!]
+	serviceIds: [ID!]
+	namespaceIds: [ID!]
+}
+
 """The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
 scalar Int
 
@@ -491,6 +642,10 @@ type Integration {
 	cluster: Cluster
 	databaseInfo: DatabaseInfo
 	awsInfo: AWSInfo
+	gcpInfo: GCPInfo
+	azureInfo: AzureInfo
+	githubSettings: GitHubSettings
+	organizationId: String!
 }
 
 type IntegrationComponents {
@@ -509,6 +664,9 @@ enum IntegrationType {
 	KUBERNETES
 	DATABASE
 	AWS
+	GCP
+	GITHUB
+	AZURE
 }
 
 type Intent {
@@ -520,6 +678,9 @@ type Intent {
 	httpResources: [HTTPConfig!]
 	databaseResources: [DatabaseConfig!]
 	awsActions: [String!]
+	azureRoles: [String!]
+	gcpPermissions: [String!]
+	internet: InternetConfig
 	status: IntentStatus
 }
 
@@ -533,6 +694,9 @@ input IntentInput {
 	resources: [HTTPConfigInput!]
 	databaseResources: [DatabaseConfigInput!]
 	awsActions: [String!]
+	azureRoles: [String!]
+	gcpPermissions: [String!]
+	internet: InternetConfigInput
 	status: IntentStatusInput
 }
 
@@ -552,7 +716,10 @@ enum IntentType {
 	KAFKA
 	DATABASE
 	AWS
+	GCP
+	AZURE
 	S3
+	INTERNET
 }
 
 type IntentsOperatorComponent {
@@ -566,8 +733,13 @@ type IntentsOperatorConfiguration {
 	networkPolicyEnforcementEnabled: Boolean!
 	kafkaACLEnforcementEnabled: Boolean!
 	istioPolicyEnforcementEnabled: Boolean!
+	awsIAMPolicyEnforcementEnabled: Boolean!
+	gcpIAMPolicyEnforcementEnabled: Boolean!
+	azureIAMPolicyEnforcementEnabled: Boolean!
+	databaseEnforcementEnabled: Boolean!
 	protectedServicesEnabled: Boolean!
 	protectedServices: [Service!]!
+	egressNetworkPolicyEnforcementEnabled: Boolean!
 }
 
 input IntentsOperatorConfigurationInput {
@@ -576,6 +748,23 @@ input IntentsOperatorConfigurationInput {
 	kafkaACLEnforcementEnabled: Boolean
 	istioPolicyEnforcementEnabled: Boolean
 	protectedServicesEnabled: Boolean
+	egressNetworkPolicyEnforcementEnabled: Boolean
+	awsIAMPolicyEnforcementEnabled: Boolean
+	gcpIAMPolicyEnforcementEnabled: Boolean
+	azureIAMPolicyEnforcementEnabled: Boolean
+	databaseEnforcementEnabled: Boolean
+}
+
+type InternetConfig {
+	dnsName: String!
+	ips: [String!]
+	ports: [Int!]
+}
+
+input InternetConfigInput {
+	domains: [String!]
+	ips: [String!]
+	ports: [Int!]
 }
 
 type Invite {
@@ -766,13 +955,40 @@ type Mutation {
 	): Boolean!
 """Create a new Kubernetes integration"""
 	createKubernetesIntegration(
-		environmentId: ID
-		clusterId: ID!
+		environmentId: ID!
+		name: String!
 	): Integration
 """Create a new AWS integration"""
 	createAWSIntegration(
 		name: String!
 		awsIntegration: AWSInfoInput!
+	): Integration
+"""Create a new Azure integration"""
+	createAzureIntegration(
+		name: String!
+		azureIntegration: AzureInfoInput!
+	): Integration
+"""Update Azure integration"""
+	updateAzureIntegration(
+		id: ID!
+		name: String
+		azureIntegration: AzureInfoInput
+	): Integration
+"""Create a new Github integration"""
+	createGithubIntegration(
+		name: String!
+		githubSettings: GitHubSettingsInput!
+	): CreateGithubIntegrationResponse
+"""Create a new GCP integration"""
+	createGCPIntegration(
+		name: String!
+		gcpIntegration: GCPInfoInput!
+	): Integration
+"""Update Github integration"""
+	updateGithubIntegration(
+		id: ID!
+		name: String!
+		githubSettings: GitHubSettingsInput!
 	): Integration
 """Update AWS integration"""
 	updateAWSIntegration(
@@ -780,6 +996,12 @@ type Mutation {
 		name: String
 		environmentId: ID
 		awsIntegration: AWSInfoInput
+	): Integration
+"""Update GCP integration"""
+	updateGCPIntegration(
+		id: ID!
+		name: String
+		gcpIntegration: GCPInfoInput
 	): Integration
 """Update Generic integration"""
 	updateGenericIntegration(
@@ -790,12 +1012,13 @@ type Mutation {
 	updateKubernetesIntegration(
 		id: ID!
 		environmentId: ID
+		name: String
 	): Integration
 """Update Database integration"""
 	updateDatabaseIntegration(
 		id: ID!
 		name: String
-		databaseInfo: DatabaseInfoInput!
+		databaseInfo: DatabaseInfoInput
 	): Integration
 """Delete integration"""
 	deleteIntegration(
@@ -874,13 +1097,28 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
-	notifyQuestLogStepAdvanced(
-		id: ID!
-		step: QuestLogStep!
+	saveOnboardingFeedback(
+		userEmail: String!
+		feedback: String!
 	): Boolean!
-	notifyQuestLogStepSeenAdvanced(
-		id: ID!
-		step: QuestLogStep!
+	createOrActivateTutorial(
+		tutorialName: TutorialName!
+	): Boolean!
+	updateUserTutorialCluster(
+		clusterId: ID!
+		ifClusterNotExists: Boolean!
+	): Boolean!
+	resetUserTutorial(
+		userTutorialId: ID!
+	): Boolean!
+	notifyUserTutorialEvent(
+		userTutorialId: ID!
+		event: TutorialEvent!
+	): Boolean!
+	notifyUserTutorialStepSeen(
+		userTutorialId: ID!
+		tutorialName: TutorialName!
+		step: String!
 	): Boolean!
 }
 
@@ -901,6 +1139,21 @@ input NamespacedPodOwner {
 type NetworkMapperComponent {
 	type: ComponentType!
 	status: ComponentStatus!
+}
+
+enum NetworkPoliciesStep {
+"""Connect cluster"""
+	CREATE_CLUSTER
+	CONNECT_CLUSTER
+"""Get to know your network map"""
+	EXPLORE_NETWORK_MAP_ADD_NS_FILTER
+	EXPLORE_NETWORK_MAP_ADD_SVC_FILTER
+	EXPLORE_NETWORK_MAP_CLEAR_FILTERS
+"""Declare intents"""
+	DECLARE_INTENTS_CLICK_ON_SERVICE
+	DECLARE_INTENTS_DOWNLOAD_YAML
+	DECLARE_INTENTS_DO_APPLY
+	COMPLETED
 }
 
 input NetworkPolicyInput {
@@ -929,7 +1182,9 @@ type Query {
 	): AccessGraph!
 	serviceClientIntents(
 		id: ID!
+		asServiceId: ID
 		lastSeenAfter: Time!
+		clusterIds: [ID!]
 	): ServiceClientIntents!
 """Get cluster"""
 	cluster(
@@ -978,6 +1233,10 @@ type Query {
 		databaseInfo: DatabaseInfoInput!
 		integrationId: ID
 	): TestDatabaseConnectionResponse!
+"""Test database visibility connectivity"""
+	testDatabaseVisibilityConnection(
+		databaseInfo: DatabaseInfoInput!
+	): TestDatabaseConnectionResponse!
 """List user invites"""
 	invites(
 		email: String
@@ -1016,6 +1275,8 @@ type Query {
 	organization(
 		id: ID!
 	): Organization!
+"""Checks the availability of the API server"""
+	ping: Boolean!
 """Get service"""
 	service(
 		id: ID!
@@ -1038,22 +1299,6 @@ type Query {
 	user(
 		id: ID!
 	): User!
-}
-
-enum QuestLogStep {
-"""Connect cluster"""
-	CONNECT_CLUSTER
-"""Get to know your network map"""
-	EXPLORE_NETWORK_MAP_ADD_NS_FILTER
-	EXPLORE_NETWORK_MAP_ADD_SVC_FILTER
-	EXPLORE_NETWORK_MAP_CLEAR_FILTERS
-"""Declare intents"""
-	DECLARE_INTENTS_CLICK_ON_SERVICE
-	DECLARE_INTENTS_DOWNLOAD_YAML
-	DECLARE_INTENTS_DO_APPLY
-"""Enable intents"""
-	ENABLE_ENFORCEMENT_CREATE_PROTECTED_SERVICE
-	COMPLETED
 }
 
 enum RowDiff {
@@ -1103,6 +1348,7 @@ enum ServerProtectionStatusReason {
 	IGNORED_IN_CALCULATION
 	PROTECTED_BY_DATABASE_INTEGRATION
 	PROTECTED_BY_AWS_IAM_INTEGRATION
+	PROTECTED_BY_INTERNET_INTENTS
 }
 
 enum ServerProtectionStatusVerdict {
@@ -1127,6 +1373,9 @@ type Service {
 	certificateInformation: CertificateInformation
 	serviceAccount: String
 	awsResource: AWSResource
+	gcpResource: GCPResource
+	azureResource: AzureResource
+	discoveredByIntegration: Integration
 	tlsKeyPair: KeyPair!
 	userAndPassword: UserAndPassword!
 }
@@ -1155,11 +1404,16 @@ type ServiceClientIntents {
 }
 
 enum ServiceType {
+	NODE_GROUP
+	PREFIX_GROUP
 	KUBERNETES
 	KAFKA
 	AWS
+	GCP
+	AZURE
 	DATABASE
 	INTERNET
+	DATABASE_USER
 }
 
 """The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
@@ -1189,14 +1443,43 @@ type TestDatabaseConnectionResponse {
 
 scalar Time
 
+enum TutorialEvent {
+	CLUSTER_CREATED
+	CLUSTER_CONNECTED
+	NS_FILTER_CLICKED
+	SVC_FILTER_CLICKED
+	FILTER_CLEARED
+	SERVICE_CLICKED
+	YAML_DOWNLOADED
+	INTENTS_APPLIED
+	TUTORIAL_COMPLETED
+	S3_BUCKET_CREATED
+	AWS_IAM_INTEGRATION_CREATED
+	SERVICE_DEPLOYED
+	LOGS_VIEWED
+	SERVER_POD_LABELED
+	AWS_IAM_ROLE_LIST_QUERIED
+	K8S_SERVICE_ACCOUNT_QUERIED
+	AWS_IAM_INTENTS_APPLIED
+	S3_BUCKET_CONTENT_QUERIED
+}
+
+enum TutorialName {
+	NETWORK_POLICIES
+	AWS_IAM
+	POSTGRESQL
+	ISTIO_AUTH_POLICY_AUTOMATION
+	KAFKA_ACCESS_AUTOMATE_OTTERIZE_CLOUD
+}
+
 type User {
 	id: ID!
 	email: String!
 	name: String!
 	imageURL: String!
 	authProviderUserId: String!
-	questLogStep: QuestLogStep!
-	questLogStepSeen: QuestLogStep!
+	tutorials: [UserTutorial!]
+	activeTutorial: UserTutorial!
 }
 
 type UserAndPassword {
@@ -1213,6 +1496,18 @@ enum UserErrorType {
 	CONFLICT
 	BAD_USER_INPUT
 	APPLIED_INTENTS_ERROR
+}
+
+type UserTutorial {
+	id: ID!
+	userId: ID!
+	clusterId: ID!
+	clusterName: String!
+	name: TutorialName!
+	isActive: Boolean!
+	isCompleted: Boolean!
+	step: String!
+	stepSeen: String!
 }
 
 

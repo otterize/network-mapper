@@ -2,6 +2,7 @@ package sniffer
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/prometheus"
 	"time"
 
@@ -34,7 +35,7 @@ func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 		logrus.Debugf("No captured sniffed requests to report")
 		return
 	}
-	logrus.Infof("Reporting captured requests of %d clients to Mapper", len(results))
+	logrus.Debugf("Reporting captured requests of %d clients to Mapper", len(results))
 
 	go func() {
 		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
@@ -45,7 +46,7 @@ func (s *Sniffer) reportCaptureResults(ctx context.Context) {
 			logrus.WithError(err).Error("Failed to report capture results")
 			return
 		}
-		logrus.Infof("Reported captured requests of %d clients to Mapper", len(results))
+		logrus.Debugf("Reported captured requests of %d clients to Mapper", len(results))
 		prometheus.IncrementDNSCaptureReports(len(results))
 	}()
 }
@@ -56,7 +57,7 @@ func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 		logrus.Debugf("No scanned tcp connections to report")
 		return
 	}
-	logrus.Infof("Reporting scanned requests of %d clients to Mapper", len(results))
+	logrus.Debugf("Reporting scanned requests of %d clients to Mapper", len(results))
 
 	go func() {
 		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
@@ -67,7 +68,7 @@ func (s *Sniffer) reportSocketScanResults(ctx context.Context) {
 			logrus.WithError(err).Error("Failed to report socket scan results")
 			return
 		}
-		logrus.Infof("Reported scanned requests of %d clients to Mapper", len(results))
+		logrus.Debugf("Reported scanned requests of %d clients to Mapper", len(results))
 		prometheus.IncrementSocketScanReports(len(results))
 	}()
 }
@@ -86,7 +87,7 @@ func (s *Sniffer) getTimeTilNextReport() time.Duration {
 func (s *Sniffer) RunForever(ctx context.Context) error {
 	packetsChan, err := s.dnsSniffer.CreateDNSPacketStream()
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	for {

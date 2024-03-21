@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/shared/componentutils"
@@ -26,17 +25,17 @@ import (
 )
 
 func main() {
-	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	logrus.SetLevel(logrus.InfoLevel)
-	if viper.GetBool(sharedconfig.DebugKey) {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
 	if viper.GetBool(sharedconfig.DebugKey) {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	if viper.GetBool(sharedconfig.DebugKey) {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()
@@ -44,48 +43,57 @@ func main() {
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
 	healthServer := echo.New()
+	healthServer.HideBanner = true
 	healthServer.GET("/healthz", func(c echo.Context) error {
-		defer bugsnag.AutoNotify(c)
+		defer errorreporter.AutoNotify()
 		err := mapperClient.Health(c.Request().Context())
 		if err != nil {
-			return err
+			return errors.Wrap(err)
 		}
 		return c.NoContent(http.StatusOK)
 	})
 
 	metricsServer := echo.New()
+	metricsServer.HideBanner = true
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+	logrus.Debug("Starting metrics server")
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		logrus.Debug("Started metrics server")
+		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
 	})
+	logrus.Debug("Starting health server")
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		logrus.Debug("Started health server")
+		defer errorreporter.AutoNotify()
 		return healthServer.Start(":9090")
 	})
 
+	logrus.Debug("Starting sniffer")
+
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		logrus.Debug("Started sniffer")
+		defer errorreporter.AutoNotify()
 		snifferInstance := sniffer.NewSniffer(mapperClient)
 		return snifferInstance.RunForever(errGroupCtx)
 	})
 
 	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logrus.WithError(err).Fatal("Error when running server or HTTP server")
+		logrus.WithError(err).Panic("Error when running server or HTTP server")
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err = healthServer.Shutdown(timeoutCtx)
 	if err != nil {
-		logrus.WithError(err).Fatal("Error when shutting down")
+		logrus.WithError(err).Panic("Error when shutting down")
 	}
 
 	err = metricsServer.Shutdown(timeoutCtx)
 	if err != nil {
-		logrus.WithError(err).Fatal("Error when shutting down")
+		logrus.WithError(err).Panic("Error when shutting down")
 	}
 }

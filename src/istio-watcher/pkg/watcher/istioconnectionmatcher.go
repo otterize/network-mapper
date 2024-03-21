@@ -2,18 +2,18 @@ package istiowatcher
 
 import (
 	"fmt"
-	"github.com/otterize/network-mapper/src/istio-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
 )
 
-// IstioConnectionResultMatcher Implement gomock.Matcher interface for []mapperclient.IstioConnectionResults
+// IstioConnectionResultMatcher Implement gomock.Matcher interface for []model.IstioConnectionResults
 type IstioConnectionResultMatcher struct {
-	mapperclient.IstioConnectionResults
+	model.IstioConnectionResults
 }
 
 func (m *IstioConnectionResultMatcher) Matches(x interface{}) bool {
-	actual, ok := x.(mapperclient.IstioConnectionResults)
+	actual, ok := x.(model.IstioConnectionResults)
 	if !ok {
 		return false
 	}
@@ -23,7 +23,7 @@ func (m *IstioConnectionResultMatcher) Matches(x interface{}) bool {
 	}
 
 	for _, actualResult := range actual.Results {
-		anyResultsEqual := lo.SomeBy(m.Results, func(expectedResult mapperclient.IstioConnection) bool {
+		anyResultsEqual := lo.SomeBy(m.Results, func(expectedResult model.IstioConnection) bool {
 			return compareConnections(actualResult, expectedResult)
 		})
 		if !anyResultsEqual {
@@ -34,7 +34,7 @@ func (m *IstioConnectionResultMatcher) Matches(x interface{}) bool {
 	return true
 }
 
-func compareConnections(actualResult mapperclient.IstioConnection, expectedResult mapperclient.IstioConnection) bool {
+func compareConnections(actualResult model.IstioConnection, expectedResult model.IstioConnection) bool {
 	if actualResult.SrcWorkload != expectedResult.SrcWorkload {
 		return false
 	}
@@ -70,6 +70,6 @@ func (m *IstioConnectionResultMatcher) String() string {
 	return fmt.Sprintf("%v", m.Results)
 }
 
-func GetMatcher(results mapperclient.IstioConnectionResults) *IstioConnectionResultMatcher {
+func GetMatcher(results model.IstioConnectionResults) *IstioConnectionResultMatcher {
 	return &IstioConnectionResultMatcher{results}
 }

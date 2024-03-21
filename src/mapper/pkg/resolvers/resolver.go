@@ -7,6 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -24,6 +26,8 @@ type Resolver struct {
 	serviceIdResolver            *serviceidresolver.Resolver
 	intentsHolder                *intentsstore.IntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	dnsCache                     *dnscache.DNSCache
 	dnsCaptureResults            chan model.CaptureResults
 	socketScanResults            chan model.SocketScanResults
 	kafkaMapperResults           chan model.KafkaMapperResults
@@ -32,7 +36,14 @@ type Resolver struct {
 	gotResultsSignal             context.CancelFunc
 }
 
-func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceidresolver.Resolver, intentsHolder *intentsstore.IntentsHolder, externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder) *Resolver {
+func NewResolver(
+	kubeFinder *kubefinder.KubeFinder,
+	serviceIdResolver *serviceidresolver.Resolver,
+	intentsHolder *intentsstore.IntentsHolder,
+	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
+	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+	dnsCache *dnscache.DNSCache,
+) *Resolver {
 	r := &Resolver{
 		kubeFinder:                   kubeFinder,
 		serviceIdResolver:            serviceIdResolver,
@@ -42,6 +53,8 @@ func NewResolver(kubeFinder *kubefinder.KubeFinder, serviceIdResolver *serviceid
 		socketScanResults:            make(chan model.SocketScanResults, 200),
 		kafkaMapperResults:           make(chan model.KafkaMapperResults, 200),
 		istioConnectionResults:       make(chan model.IstioConnectionResults, 200),
+		awsIntentsHolder:             awsIntentsHolder,
+		dnsCache:                     dnsCache,
 	}
 	r.gotResultsCtx, r.gotResultsSignal = context.WithCancel(context.Background())
 
