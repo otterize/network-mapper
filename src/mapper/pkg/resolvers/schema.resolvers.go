@@ -7,18 +7,13 @@ package resolvers
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
-	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
-	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-	"strings"
 )
 
 // ResetCapture is the resolver for the resetCapture field.
@@ -30,239 +25,72 @@ func (r *mutationResolver) ResetCapture(ctx context.Context) (bool, error) {
 
 // ReportCaptureResults is the resolver for the reportCaptureResults field.
 func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error) {
-	var newResults int
-	for _, captureItem := range results.Results {
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
-		if err != nil {
-			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
-			continue
-		}
-		for _, dest := range captureItem.Destinations {
-			destCopy := dest
-			destAddress := dest.Destination
-			if !strings.HasSuffix(destAddress, viper.GetString(config.ClusterDomainKey)) {
-				err := r.handleDNSCaptureResultsAsExternalTraffic(ctx, destCopy, srcSvcIdentity)
-				if err != nil {
-					logrus.WithError(err).Error("could not handle DNS capture result as external traffic")
-					continue
-				}
-				newResults++
-				continue
-			}
-
-			err := r.handleDNSCaptureResultsAsKubernetesPods(ctx, destCopy, srcSvcIdentity)
-			if err != nil {
-				logrus.WithError(err).Error("could not handle DNS capture result as pod")
-				continue
-			}
-			newResults++
-		}
+	select {
+	case r.dnsCaptureResults <- results:
+		prometheus.IncrementDNSCaptureReports(len(results.Results))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementDNSCaptureDrops(len(results.Results))
+		return false, nil
 	}
-
-	prometheus.IncrementDNSCaptureReports(newResults)
-	return true, nil
 }
 
 // ReportSocketScanResults is the resolver for the reportSocketScanResults field.
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
-	for _, socketScanItem := range results.Results {
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
-		if err != nil {
-			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
-			continue
-		}
-		for _, dest := range socketScanItem.Destinations {
-			destCopy := dest
-			isService, err := r.tryHandleSocketScanDestinationAsService(ctx, srcSvcIdentity, destCopy)
-			if err != nil {
-				logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
-				// Log error but don't stop handling other destinations.
-				continue
-			}
-
-			if isService {
-				continue // No need to try to handle IP as Pod, since IP belonged to a service.
-			}
-
-			destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destCopy.Destination)
-			if err != nil {
-				logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
-				// Log error but don't stop handling other destinations.
-				continue
-			}
-
-			err = r.addSocketScanPodIntent(ctx, srcSvcIdentity, destCopy, destPod)
-			if err != nil {
-				logrus.WithError(err).Errorf("failed to resolve IP '%s' to pod", dest.Destination)
-				// Log error but don't stop handling other destinations.
-				continue
-			}
-		}
+	select {
+	case r.socketScanResults <- results:
+		prometheus.IncrementSocketScanReports(len(results.Results))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementSocketScanDrops(len(results.Results))
+		return false, nil
 	}
-	return true, nil
 }
 
 // ReportKafkaMapperResults is the resolver for the reportKafkaMapperResults field.
 func (r *mutationResolver) ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error) {
-	var newResults int
-	for _, result := range results.Results {
-		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, result.SrcIP)
-		if err != nil {
-			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", result.SrcIP)
-			} else {
-				logrus.WithError(err).Debugf("Could not resolve %s to pod", result.SrcIP)
-			}
-			continue
-		}
-
-		if srcPod.DeletionTimestamp != nil {
-			logrus.Debugf("Pod %s is being deleted, ignoring", srcPod.Name)
-			continue
-		}
-
-		if srcPod.CreationTimestamp.After(result.LastSeen) {
-			logrus.Debugf("Pod %s was created after scan time %s, ignoring", srcPod.Name, result.LastSeen)
-			continue
-		}
-
-		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
-			continue
-		}
-
-		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
-
-		dstPod, err := r.kubeFinder.ResolvePodByName(ctx, result.ServerPodName, result.ServerNamespace)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", result.ServerPodName)
-			continue
-		}
-		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
-			continue
-		}
-		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
-
-		operation, err := model.KafkaOpFromText(result.Operation)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve kafka operation %s", result.Operation)
-			return false, err
-		}
-
-		intent := model.Intent{
-			Client: &srcSvcIdentity,
-			Server: &dstSvcIdentity,
-			Type:   lo.ToPtr(model.IntentTypeKafka),
-			KafkaTopics: []model.KafkaConfig{
-				{
-					Name:       result.Topic,
-					Operations: []model.KafkaOperation{operation},
-				},
-			},
-		}
-
-		updateTelemetriesCounters(SourceTypeKafkaMapper, intent)
-		r.intentsHolder.AddIntent(
-			result.LastSeen,
-			intent,
-		)
-		newResults++
+	select {
+	case r.kafkaMapperResults <- results:
+		prometheus.IncrementKafkaReports(len(results.Results))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementKafkaDrops(len(results.Results))
+		return false, nil
 	}
-
-	prometheus.IncrementKafkaReports(newResults)
-	return true, nil
 }
 
 // ReportIstioConnectionResults is the resolver for the reportIstioConnectionResults field.
 func (r *mutationResolver) ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error) {
-	var newResults int
-	for _, result := range results.Results {
-		srcPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.SrcWorkload, result.SrcWorkloadNamespace)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
-			continue
-		}
-		dstPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.DstWorkload, result.DstWorkloadNamespace)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
-			continue
-		}
-		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", srcPod.Name)
-			continue
-		}
-		dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, dstPod)
-		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
-			continue
-		}
-
-		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
-		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
-		if srcService.OwnerObject != nil {
-			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
-		}
-
-		if dstService.OwnerObject != nil {
-			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
-		}
-
-		intent := model.Intent{
-			Client:        &srcSvcIdentity,
-			Server:        &dstSvcIdentity,
-			Type:          lo.ToPtr(model.IntentTypeHTTP),
-			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
-		}
-
-		updateTelemetriesCounters(SourceTypeIstio, intent)
-		r.intentsHolder.AddIntent(result.LastSeen, intent)
-		newResults++
+	select {
+	case r.istioConnectionResults <- results:
+		prometheus.IncrementIstioReports(len(results.Results))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementIstioDrops(len(results.Results))
+		return false, nil
 	}
-
-	prometheus.IncrementIstioReports(newResults)
-	return true, nil
 }
 
 // ReportAWSOperation is the resolver for the reportAWSOperation field.
 func (r *mutationResolver) ReportAWSOperation(ctx context.Context, operation []model.AWSOperation) (bool, error) {
-	for _, op := range operation {
-		logrus.Debugf("Received AWS operation: %+v", op)
-		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, op.SrcIP)
-
-		if err != nil {
-			logrus.Errorf("could not resolve %s to pod: %s", op.SrcIP, err.Error())
-			continue
-		}
-
-		serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-
-		if err != nil {
-			logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
-			continue
-		}
-
-		r.awsIntentsHolder.AddIntent(awsintentsholder.AWSIntent{
-			Client: model.OtterizeServiceIdentity{
-				Name:      serviceId.Name,
-				Namespace: srcPod.Namespace,
-			},
-			Actions: op.Actions,
-			ARN:     op.Resource,
-		})
-
-		logrus.
-			WithField("client", serviceId.Name).
-			WithField("namespace", srcPod.Namespace).
-			WithField("actions", op.Actions).
-			WithField("arn", op.Resource).
-			Debug("Discovered AWS intent")
+	select {
+	case r.awsOperations <- operation:
+		prometheus.IncrementAWSOperationReports(len(operation))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementAWSOperationDrops(len(operation))
+		return false, nil
 	}
-
-	return true, nil
 }
 
 // ServiceIntents is the resolver for the serviceIntents field.

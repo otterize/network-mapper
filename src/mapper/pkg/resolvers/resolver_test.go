@@ -37,10 +37,14 @@ type ResolverTestSuite struct {
 	intentsHolder                *intentsstore.IntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	resolverCtx                  context.Context
+	resolverCtxCancel            context.CancelFunc
+	resolver                     *Resolver
 }
 
 func (s *ResolverTestSuite) SetupTest() {
 	s.ControllerManagerTestSuiteBase.SetupTest()
+	s.resolverCtx, s.resolverCtxCancel = context.WithCancel(context.Background())
 	e := echo.New()
 	var err error
 	s.kubeFinder, err = kubefinder.NewKubeFinder(context.Background(), s.Mgr)
@@ -51,8 +55,31 @@ func (s *ResolverTestSuite) SetupTest() {
 	dnsCache := dnscache.NewDNSCache()
 	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder, s.awsIntentsHolder, dnsCache)
 	resolver.Register(e)
+	s.resolver = resolver
+	go func() {
+		err := resolver.RunForever(s.resolverCtx)
+		if err != nil {
+			logrus.WithError(err).Panic("failed to run resolver")
+		}
+	}()
 	s.server = httptest.NewServer(e)
 	s.client = graphql.NewClient(s.server.URL+"/query", s.server.Client())
+}
+
+func (s *ResolverTestSuite) TearDownTest() {
+	s.ControllerManagerTestSuiteBase.TearDownTest()
+	s.resolverCtxCancel()
+}
+
+func (s *ResolverTestSuite) waitForCaptureResultsProcessed(timeout time.Duration) {
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	select {
+	case <-ctxTimeout.Done():
+		s.Require().Fail("Timed out waiting for capture results to be processed")
+	case <-s.resolver.gotResultsCtx.Done():
+		return
+	}
 }
 
 func (s *ResolverTestSuite) TestReportCaptureResults() {
@@ -99,6 +126,8 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 		},
 	})
 	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().NoError(err)
@@ -211,6 +240,8 @@ func (s *ResolverTestSuite) TestReportCaptureResultsHostnameMismatch() {
 		},
 	})
 	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().NoError(err)
@@ -337,6 +368,8 @@ func (s *ResolverTestSuite) TestReportCaptureResultsPodDeletion() {
 	})
 	s.Require().NoError(err)
 
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().NoError(err)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
@@ -442,6 +475,8 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIPReuse() {
 	})
 	s.Require().NoError(err)
 
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().NoError(err)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{
@@ -530,6 +565,8 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIgnoreOldPacket() {
 	})
 	s.Require().NoError(err)
 
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().NoError(err)
 	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{})
@@ -589,6 +626,8 @@ func (s *ResolverTestSuite) TestSocketScanResults() {
 		},
 	})
 	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
 	s.Require().NoError(err)
@@ -699,6 +738,8 @@ func (s *ResolverTestSuite) TestIntents() {
 		},
 	})
 	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	logrus.Info("Testing Intents query")
 	res, err := test_gql_client.Intents(context.Background(), s.client, nil, nil, nil, nilable.From(true), nil)
@@ -817,6 +858,8 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 	})
 	s.Require().NoError(err)
 
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
 	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, nilable.From(true), nil)
 	s.Require().NoError(err)
 	logrus.Info("Report processed")
@@ -866,6 +909,8 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 		},
 	})
 	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	res, err := test_gql_client.Intents(context.Background(), s.client, []string{}, nil, nil, nilable.From(true), nil)
 	s.Require().NoError(err)
@@ -945,6 +990,8 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 		},
 	})
 	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	logrus.Info("Waiting for report to be processed")
 	serverFilter := &test_gql_client.ServerFilter{

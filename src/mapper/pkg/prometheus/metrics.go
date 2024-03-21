@@ -22,6 +22,31 @@ var (
 		Name: "istio_reported_connections",
 		Help: "The total number of Istio-sourced connections",
 	})
+	awsReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "aws_reports",
+		Help: "The total number of AWS operations reported",
+	})
+	socketScanDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "socketscan_dropped_connections",
+		Help: "The total number of socket scan-sourced reported connections that were dropped for performance",
+	})
+	dnsCaptureDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "dns_dropped_connections",
+		Help: "The total number of DNS-sourced reported connections that were dropped for performance",
+	})
+	kafkaReportsDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "kafka_dropped_topics",
+		Help: "The total number of Kafka-sourced reported topics that were dropped for performance",
+	})
+	istioReportsDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "istio_dropped_connections",
+		Help: "The total number of Istio-sourced reported connections that were dropped for performance",
+	})
+
+	awsReportsDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "aws_dropped_reports",
+		Help: "The total number of AWS operations reported that were dropped for performance",
+	})
 )
 
 func IncrementSocketScanReports(count int) {
@@ -38,4 +63,28 @@ func IncrementKafkaReports(count int) {
 
 func IncrementIstioReports(count int) {
 	istioReports.Add(float64(count))
+}
+
+func IncrementAWSOperationReports(count int) {
+	awsReports.Add(float64(count))
+}
+
+func IncrementSocketScanDrops(count int) {
+	socketScanDrops.Add(float64(count))
+}
+
+func IncrementDNSCaptureDrops(count int) {
+	dnsCaptureDrops.Add(float64(count))
+}
+
+func IncrementKafkaDrops(count int) {
+	kafkaReportsDrops.Add(float64(count))
+}
+
+func IncrementIstioDrops(count int) {
+	istioReportsDrops.Add(float64(count))
+}
+
+func IncrementAWSOperationDrops(count int) {
+	awsReportsDrops.Add(float64(count))
 }

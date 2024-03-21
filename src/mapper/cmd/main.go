@@ -306,13 +306,17 @@ func main() {
 
 		return mapperServer.Start(":9090")
 	})
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		return resolver.RunForever(errGroupCtx)
+	})
 
 	err = errgrp.Wait()
 	logrus.Infof("Network Mapper stopped")
 
 	if err != nil {
 		if !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, context.Canceled) {
-			logrus.WithError(err).Error("failed to shutdown server")
+			logrus.WithError(err).Fatal("failed to shutdown server")
 		}
 	}
 }
