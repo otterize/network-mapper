@@ -307,7 +307,7 @@ func main() {
 		return mapperServer.Start(":9090")
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGroupCtx)
+		defer errorreporter.AutoNotify()
 		return resolver.RunForever(errGroupCtx)
 	})
 
