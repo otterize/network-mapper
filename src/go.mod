@@ -26,7 +26,7 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20240321110154-fff5a36c8535
+	github.com/otterize/intents-operator/src v0.0.0-20240324150435-7dce68c3126f
 	github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9
 	github.com/prometheus/client_golang v1.18.0
 	github.com/samber/lo v1.33.0
@@ -60,12 +60,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.152.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/eks v1.41.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/iam v1.31.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/rolesanywhere v1.9.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.5 // indirect
