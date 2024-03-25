@@ -11,7 +11,7 @@ COPY . .
 
 FROM buildenv as test
 # install dependencies for "envtest" package
-RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest && \
+RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230216140739-c98506dc3b8e && \
     source <(setup-envtest use -p env) && \
     mkdir -p /usr/local/kubebuilder && \
     ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
