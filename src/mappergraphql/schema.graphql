@@ -19,6 +19,10 @@ input CaptureResults {
     results: [RecordedDestinationsForSrc!]!
 }
 
+input CaptureTCPResults {
+    results: [RecordedDestinationsForSrc!]!
+}
+
 input SocketScanResults {
     results: [RecordedDestinationsForSrc!]!
 }
@@ -175,6 +179,7 @@ type Query {
 type Mutation {
     resetCapture: Boolean!
     reportCaptureResults(results: CaptureResults!): Boolean!
+    reportTCPCaptureResults(results: CaptureTCPResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!

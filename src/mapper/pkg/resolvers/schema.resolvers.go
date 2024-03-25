@@ -37,6 +37,20 @@ func (r *mutationResolver) ReportCaptureResults(ctx context.Context, results mod
 	}
 }
 
+// ReportTCPCaptureResults is the resolver for the reportTCPCaptureResults field.
+func (r *mutationResolver) ReportTCPCaptureResults(ctx context.Context, results model.CaptureTCPResults) (bool, error) {
+	select {
+	case r.tcpCaptureResults <- results:
+		prometheus.IncrementTCPCaptureReports(len(results.Results))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementTCPCaptureDrops(len(results.Results))
+		return false, nil
+	}
+}
+
 // ReportSocketScanResults is the resolver for the reportSocketScanResults field.
 func (r *mutationResolver) ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error) {
 	select {

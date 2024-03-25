@@ -542,6 +542,129 @@ func (s *ResolverTestSuite) TestReportCaptureResultsIPReuse() {
 	})
 }
 
+func (s *ResolverTestSuite) TestReportTCPCaptureResults() {
+	const (
+		service1IP    = "10.0.0.16"
+		service2IP    = "10.0.0.17"
+		service3IP    = "10.0.0.18"
+		service1PodIP = "1.1.1.1"
+		service2PodIP = "1.1.1.2"
+		service3PodIP = "1.1.1.3"
+		service4PodIP = "1.1.1.4"
+	)
+
+	s.AddDaemonSetWithService("service1", []string{service1PodIP}, map[string]string{"app": "service1"}, service1IP)
+	s.AddDeploymentWithService("service2", []string{service2PodIP}, map[string]string{"app": "service2"}, service2IP)
+	s.AddDeploymentWithService("service3", []string{service3PodIP}, map[string]string{"app": "service3"}, service3IP)
+	s.AddPod("pod4", service4PodIP, nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: service1PodIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: service2IP,
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			{
+				SrcIp: service3PodIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: service1IP,
+						LastSeen:    packetTime,
+					},
+					{
+						Destination: service2IP,
+						LastSeen:    packetTime,
+					},
+				},
+			},
+			{
+				SrcIp: service4PodIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination: service2IP,
+						LastSeen:    packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
+	expectedIntents := []test_gql_client.ServiceIntentsServiceIntents{
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "daemonset-service1",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
+					Kind:    "DaemonSet",
+					Version: "v1",
+				}),
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              "deployment-service2",
+					Namespace:         s.TestNamespace,
+					KubernetesService: nilable.From("svc-service2"),
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "deployment-service3",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.From("apps"),
+					Kind:    "Deployment",
+					Version: "v1",
+				}),
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              "daemonset-service1",
+					Namespace:         s.TestNamespace,
+					KubernetesService: nilable.From("svc-service1"),
+				},
+				{
+					Name:              "deployment-service2",
+					Namespace:         s.TestNamespace,
+					KubernetesService: nilable.From("svc-service2"),
+				},
+			},
+		},
+		{
+			Client: test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentity{
+				Name:      "pod4",
+				Namespace: s.TestNamespace,
+				PodOwnerKind: nilable.From(test_gql_client.ServiceIntentsServiceIntentsClientOtterizeServiceIdentityPodOwnerKindGroupVersionKind{
+					Group:   nilable.Nilable[string]{},
+					Kind:    "Pod",
+					Version: "v1",
+				}),
+			},
+			Intents: []test_gql_client.ServiceIntentsServiceIntentsIntentsOtterizeServiceIdentity{
+				{
+					Name:              "deployment-service2",
+					Namespace:         s.TestNamespace,
+					KubernetesService: nilable.From("svc-service2"),
+				},
+			},
+		},
+	}
+	s.Require().ElementsMatch(res.ServiceIntents, expectedIntents)
+}
+
 func (s *ResolverTestSuite) TestReportCaptureResultsIgnoreOldPacket() {
 	s.AddDeploymentWithService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, "10.0.0.19")
 	s.AddDeploymentWithService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service2"}, "10.0.0.20")

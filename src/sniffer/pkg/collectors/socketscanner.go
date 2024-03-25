@@ -3,8 +3,10 @@ package collectors
 import (
 	"fmt"
 	"github.com/otterize/go-procnet/procnet"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/utils"
 	"github.com/otterize/nilable"
+	"github.com/spf13/viper"
 
 	"time"
 )
@@ -22,6 +24,9 @@ func NewSocketScanner() *SocketScanner {
 }
 
 func (s *SocketScanner) scanTcpFile(hostname string, path string) {
+	if !viper.GetBool(sharedconfig.EnableSocketScannerKey) {
+		return
+	}
 	socks, err := procnet.SocksFromPath(path)
 	if err != nil {
 		// it's likely that some files will be deleted during our iteration, so we ignore errors reading the file.

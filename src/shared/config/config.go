@@ -19,6 +19,12 @@ const (
 	PrometheusMetricsPortDefault = 2112
 	TelemetryErrorsAPIKeyKey     = "telemetry-errors-api-key"
 	TelemetryErrorsAPIKeyDefault = "d86195588a41fa03aa6711993bb1c765"
+	EnableTCPKey                 = "enable-tcp"
+	EnableTCPSnifferDefault      = true
+	EnableSocketScannerKey       = "enable-socket-scanner"
+	EnableSocketScannerDefault   = true
+	EnableDNSKey                 = "enable-dns"
+	EnableDNSSnifferDefault      = true
 
 	EnvPodKey       = "pod"
 	EnvNamespaceKey = "namespace"
@@ -37,6 +43,9 @@ func init() {
 	viper.SetDefault(DebugKey, DebugDefault)
 	viper.SetDefault(PrometheusMetricsPortKey, PrometheusMetricsPortDefault)
 	viper.SetDefault(TelemetryErrorsAPIKeyKey, TelemetryErrorsAPIKeyDefault)
+	viper.SetDefault(EnableTCPKey, EnableTCPSnifferDefault)
+	viper.SetDefault(EnableSocketScannerKey, EnableSocketScannerDefault)
+	viper.SetDefault(EnableDNSKey, EnableDNSSnifferDefault)
 	viper.SetEnvPrefix(envPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()

@@ -175,6 +175,20 @@ input AzureInfoInput {
 	namespace: String!
 }
 
+type AzureKeyVaultPolicy {
+	certificatePermissions: [String!]
+	keyPermissions: [String!]
+	secretPermissions: [String!]
+	storagePermissions: [String!]
+}
+
+input AzureKeyVaultPolicyInput {
+	certificatePermissions: [String!]
+	keyPermissions: [String!]
+	secretPermissions: [String!]
+	storagePermissions: [String!]
+}
+
 type AzureResource {
 	resource: String!
 }
@@ -516,6 +530,13 @@ input ExternalTrafficIntentInput {
 	target: DNSIPPairInput!
 }
 
+input ExternallyAccessibleServiceInput {
+	namespace: String!
+	serverName: String!
+	referredByIngress: Boolean!
+	serviceType: KubernetesServiceType!
+}
+
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
 scalar Float
 
@@ -646,6 +667,7 @@ type Integration {
 	azureInfo: AzureInfo
 	githubSettings: GitHubSettings
 	organizationId: String!
+	status: IntegrationStatus
 }
 
 type IntegrationComponents {
@@ -657,6 +679,17 @@ type IntegrationComponents {
 type IntegrationCredentials {
 	clientId: String!
 	clientSecret: String!
+}
+
+enum IntegrationState {
+	SUCCESS
+	FAILURE
+	PENDING
+}
+
+type IntegrationStatus {
+	state: IntegrationState!
+	errorMessage: String
 }
 
 enum IntegrationType {
@@ -679,6 +712,7 @@ type Intent {
 	databaseResources: [DatabaseConfig!]
 	awsActions: [String!]
 	azureRoles: [String!]
+	azureKeyVaultPolicy: AzureKeyVaultPolicy
 	gcpPermissions: [String!]
 	internet: InternetConfig
 	status: IntentStatus
@@ -695,6 +729,7 @@ input IntentInput {
 	databaseResources: [DatabaseConfigInput!]
 	awsActions: [String!]
 	azureRoles: [String!]
+	azureKeyVaultPolicy: AzureKeyVaultPolicyInput
 	gcpPermissions: [String!]
 	internet: InternetConfigInput
 	status: IntentStatusInput
@@ -756,6 +791,7 @@ input IntentsOperatorConfigurationInput {
 }
 
 type InternetConfig {
+	appliedDomains: [String!]
 	dnsName: String!
 	ips: [String!]
 	ports: [Int!]
@@ -850,6 +886,13 @@ type KeyPair {
 	certPEM: String!
 	rootCAPEM: String!
 	expiresAt: Int!
+}
+
+enum KubernetesServiceType {
+	LOAD_BALANCER
+	NODE_PORT
+	CLUSTER_IP
+	EXTERNAL_NAME
 }
 
 type Label {
@@ -1048,6 +1091,10 @@ type Mutation {
 	reportNetworkPolicies(
 		namespace: String!
 		policies: [NetworkPolicyInput!]!
+	): Boolean!
+	reportExternallyAccessibleServices(
+		namespace: String!
+		services: [ExternallyAccessibleServiceInput!]!
 	): Boolean!
 """Create user invite"""
 	createInvite(
@@ -1467,6 +1514,8 @@ enum TutorialEvent {
 enum TutorialName {
 	NETWORK_POLICIES
 	AWS_IAM
+	GCP_IAM
+	AZURE_IAM
 	POSTGRESQL
 	ISTIO_AUTH_POLICY_AUTOMATION
 	KAFKA_ACCESS_AUTOMATE_OTTERIZE_CLOUD

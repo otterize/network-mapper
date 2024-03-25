@@ -29,6 +29,7 @@ type Resolver struct {
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	dnsCache                     *dnscache.DNSCache
 	dnsCaptureResults            chan model.CaptureResults
+	tcpCaptureResults            chan model.CaptureTCPResults
 	socketScanResults            chan model.SocketScanResults
 	kafkaMapperResults           chan model.KafkaMapperResults
 	istioConnectionResults       chan model.IstioConnectionResults
@@ -51,6 +52,7 @@ func NewResolver(
 		intentsHolder:                intentsHolder,
 		externalTrafficIntentsHolder: externalTrafficHolder,
 		dnsCaptureResults:            make(chan model.CaptureResults, 200),
+		tcpCaptureResults:            make(chan model.CaptureTCPResults, 200),
 		socketScanResults:            make(chan model.SocketScanResults, 200),
 		kafkaMapperResults:           make(chan model.KafkaMapperResults, 200),
 		istioConnectionResults:       make(chan model.IstioConnectionResults, 200),
@@ -77,6 +79,10 @@ func (r *Resolver) RunForever(ctx context.Context) error {
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGrpCtx)
 		return runHandleLoop(errGrpCtx, r.dnsCaptureResults, r.handleReportCaptureResults)
+	})
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGrpCtx)
+		return runHandleLoop(errGrpCtx, r.tcpCaptureResults, r.handleReportTCPCaptureResults)
 	})
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGrpCtx)

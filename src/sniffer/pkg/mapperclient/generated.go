@@ -17,6 +17,13 @@ type CaptureResults struct {
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
 func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
+type CaptureTCPResults struct {
+	Results []RecordedDestinationsForSrc `json:"results"`
+}
+
+// GetResults returns CaptureTCPResults.Results, and is useful for accessing the field via an interface.
+func (v *CaptureTCPResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
+
 type Destination struct {
 	Destination   string                  `json:"destination"`
 	DestinationIP nilable.Nilable[string] `json:"destinationIP"`
@@ -82,6 +89,14 @@ type __reportSocketScanResultsInput struct {
 // GetResults returns __reportSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportSocketScanResultsInput) GetResults() SocketScanResults { return v.Results }
 
+// __reportTCPCaptureResultsInput is used internally by genqlient
+type __reportTCPCaptureResultsInput struct {
+	Results CaptureTCPResults `json:"results"`
+}
+
+// GetResults returns __reportTCPCaptureResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportTCPCaptureResultsInput) GetResults() CaptureTCPResults { return v.Results }
+
 // reportCaptureResultsResponse is returned by reportCaptureResults on success.
 type reportCaptureResultsResponse struct {
 	ReportCaptureResults bool `json:"reportCaptureResults"`
@@ -98,6 +113,16 @@ type reportSocketScanResultsResponse struct {
 // GetReportSocketScanResults returns reportSocketScanResultsResponse.ReportSocketScanResults, and is useful for accessing the field via an interface.
 func (v *reportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
+}
+
+// reportTCPCaptureResultsResponse is returned by reportTCPCaptureResults on success.
+type reportTCPCaptureResultsResponse struct {
+	ReportTCPCaptureResults bool `json:"reportTCPCaptureResults"`
+}
+
+// GetReportTCPCaptureResults returns reportTCPCaptureResultsResponse.ReportTCPCaptureResults, and is useful for accessing the field via an interface.
+func (v *reportTCPCaptureResultsResponse) GetReportTCPCaptureResults() bool {
+	return v.ReportTCPCaptureResults
 }
 
 // The query or mutation executed by Health.
@@ -184,6 +209,39 @@ func reportSocketScanResults(
 	var err_ error
 
 	var data_ reportSocketScanResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by reportTCPCaptureResults.
+const reportTCPCaptureResults_Operation = `
+mutation reportTCPCaptureResults ($results: CaptureTCPResults!) {
+	reportTCPCaptureResults(results: $results)
+}
+`
+
+func reportTCPCaptureResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results CaptureTCPResults,
+) (*reportTCPCaptureResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportTCPCaptureResults",
+		Query:  reportTCPCaptureResults_Operation,
+		Variables: &__reportTCPCaptureResultsInput{
+			Results: results,
+		},
+	}
+	var err_ error
+
+	var data_ reportTCPCaptureResultsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
