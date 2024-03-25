@@ -43,6 +43,9 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		res := make([]string, 0)
 		pod := object.(*corev1.Pod)
 		for _, ip := range pod.Status.PodIPs {
+			if pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+				continue
+			}
 			res = append(res, ip.IP)
 		}
 		return res
