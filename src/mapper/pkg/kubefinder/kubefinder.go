@@ -5,7 +5,6 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
-	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +43,9 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		res := make([]string, 0)
 		pod := object.(*corev1.Pod)
 		for _, ip := range pod.Status.PodIPs {
+			if pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+				continue
+			}
 			res = append(res, ip.IP)
 		}
 		return res
@@ -135,10 +137,6 @@ func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-
-	pods.Items = lo.Filter(pods.Items, func(pod corev1.Pod, _ int) bool {
-		return pod.DeletionTimestamp == nil && pod.Status.Phase == corev1.PodRunning
-	})
 
 	if len(pods.Items) == 0 {
 		return nil, k8serrors.NewNotFound(corev1.Resource("pod"), ip)
