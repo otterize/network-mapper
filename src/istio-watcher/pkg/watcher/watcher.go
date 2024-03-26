@@ -181,10 +181,14 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 	return nil
 }
 
-func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev1.Pod, metricsChan chan<- *EnvoyMetrics) error {
-	if !lo.ContainsBy(pod.Spec.Containers, func(item corev1.Container) bool {
+func podHasIstioSidecar(pod corev1.Pod) bool {
+	return lo.ContainsBy(pod.Spec.Containers, func(item corev1.Container) bool {
 		return item.Name == IstioSidecarContainerName
-	}) {
+	})
+}
+
+func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev1.Pod, metricsChan chan<- *EnvoyMetrics) error {
+	if !podHasIstioSidecar(pod) {
 		return nil
 	}
 
