@@ -78,7 +78,7 @@ func (mr *MockMapperClientMockRecorder) ReportSocketScanResults(ctx, results int
 }
 
 // ReportTCPCaptureResults mocks base method.
-func (m *MockMapperClient) ReportTCPCaptureResults(ctx context.Context, results mapperclient.CaptureResults) error {
+func (m *MockMapperClient) ReportTCPCaptureResults(ctx context.Context, results mapperclient.CaptureTCPResults) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportTCPCaptureResults", ctx, results)
 	ret0, _ := ret[0].(error)

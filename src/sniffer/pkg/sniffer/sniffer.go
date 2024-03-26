@@ -60,13 +60,13 @@ func (s *Sniffer) reportTCPCaptureResults(ctx context.Context) {
 		logrus.Debugf("No TCP captured sniffed requests to report")
 		return
 	}
-	logrus.Infof("Reporting TCP captured requests of %d clients to Mapper", len(results))
+	logrus.Debugf("Reporting TCP captured requests of %d clients to Mapper", len(results))
 
 	go func() {
 		timeoutCtx, cancelFunc := context.WithTimeout(ctx, viper.GetDuration(config.CallsTimeoutKey))
 		defer cancelFunc()
 
-		logrus.Infof("Reporting TCP captured requests of %d clients to Mapper", len(results))
+		logrus.Debugf("Reporting TCP captured requests of %d clients to Mapper", len(results))
 		err := s.mapperClient.ReportTCPCaptureResults(timeoutCtx, mapperclient.CaptureTCPResults{Results: results})
 		if err != nil {
 			logrus.WithError(err).Error("Failed to report capture results")
