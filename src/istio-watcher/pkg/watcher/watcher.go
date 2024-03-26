@@ -9,6 +9,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -181,6 +182,12 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 }
 
 func (m *IstioWatcher) getEnvoyMetricsFromSidecar(ctx context.Context, pod corev1.Pod, metricsChan chan<- *EnvoyMetrics) error {
+	if !lo.ContainsBy(pod.Spec.Containers, func(item corev1.Container) bool {
+		return item.Name == IstioSidecarContainerName
+	}) {
+		return nil
+	}
+
 	req := m.clientset.CoreV1().
 		RESTClient().
 		Post().
