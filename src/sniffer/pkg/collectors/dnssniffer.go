@@ -28,11 +28,10 @@ type pendingCapture struct {
 
 type DNSSniffer struct {
 	NetworkCollector
-	resolver           ipresolver.IPResolver
-	pending            []pendingCapture
-	lastRefresh        time.Time
-	isRunningOnAWS     bool
-	isRunningONAWSOnce sync.Once
+	resolver       ipresolver.IPResolver
+	pending        []pendingCapture
+	lastRefresh    time.Time
+	isRunningOnAWS bool
 }
 
 func NewDNSSniffer(resolver ipresolver.IPResolver, isRunningOnAWS bool) *DNSSniffer {
