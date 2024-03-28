@@ -16,9 +16,10 @@ import (
 
 type TCPSniffer struct {
 	NetworkCollector
-	resolver    ipresolver.IPResolver
-	pending     []pendingTCPCapture
-	lastRefresh time.Time
+	resolver       ipresolver.IPResolver
+	pending        []pendingTCPCapture
+	lastRefresh    time.Time
+	isRunningOnAWS bool
 }
 
 type pendingTCPCapture struct {
@@ -29,12 +30,13 @@ type pendingTCPCapture struct {
 	ttl         nilable.Nilable[int]
 }
 
-func NewTCPSniffer(resolver ipresolver.IPResolver) *TCPSniffer {
+func NewTCPSniffer(resolver ipresolver.IPResolver, isRunningOnAWS bool) *TCPSniffer {
 	s := TCPSniffer{
 		NetworkCollector: NetworkCollector{},
 		resolver:         resolver,
 		pending:          make([]pendingTCPCapture, 0),
 		lastRefresh:      time.Now().Add(-viper.GetDuration(config.HostsMappingRefreshIntervalKey)), // Should refresh immediately
+		isRunningOnAWS:   isRunningOnAWS,
 	}
 	s.resetData()
 	return &s
@@ -82,6 +84,10 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 
 		srcIP := ip.SrcIP.String()
 		dstIP := ip.DstIP.String()
+		if !s.isRunningOnAWS {
+			s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil))
+			return
+		}
 		localHostname, err := s.resolver.ResolveIP(srcIP)
 		if err != nil {
 			logrus.Debugf("Can't resolve IP addr %s, skipping", srcIP)
@@ -97,6 +103,9 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 }
 
 func (s *TCPSniffer) RefreshHostsMapping() error {
+	if !s.isRunningOnAWS {
+		return nil
+	}
 	err := s.resolver.Refresh()
 	if err != nil {
 		return errors.Wrap(err)
