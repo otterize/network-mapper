@@ -3,6 +3,10 @@ mutation reportCaptureResults($results: CaptureResults!) {
     reportCaptureResults(results: $results)
 }
 
+mutation reportTCPCaptureResults($results: CaptureTCPResults!) {
+    reportTCPCaptureResults(results: $results)
+}
+
 mutation reportSocketScanResults($results: SocketScanResults!) {
     reportSocketScanResults(results: $results)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/nilable"
@@ -128,6 +129,10 @@ func (s *DNSSniffer) CreateDNSPacketStream() (chan gopacket.Packet, error) {
 }
 
 func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
+	if !viper.GetBool(sharedconfig.EnableDNSKey) {
+		return
+	}
+
 	captureTime := detectCaptureTime(packet)
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS)

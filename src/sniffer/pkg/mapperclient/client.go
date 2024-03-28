@@ -24,6 +24,11 @@ func (c *MapperClientImpl) ReportCaptureResults(ctx context.Context, results Cap
 	return errors.Wrap(err)
 }
 
+func (c *MapperClientImpl) ReportTCPCaptureResults(ctx context.Context, results CaptureTCPResults) error {
+	_, err := reportTCPCaptureResults(ctx, c.gqlClient, results)
+	return err
+}
+
 func (c *MapperClientImpl) ReportSocketScanResults(ctx context.Context, results SocketScanResults) error {
 	_, err := reportSocketScanResults(ctx, c.gqlClient, results)
 	return errors.Wrap(err)
@@ -36,6 +41,7 @@ func (c *MapperClientImpl) Health(ctx context.Context) error {
 
 type MapperClient interface {
 	ReportCaptureResults(ctx context.Context, results CaptureResults) error
+	ReportTCPCaptureResults(ctx context.Context, results CaptureTCPResults) error
 	ReportSocketScanResults(ctx context.Context, results SocketScanResults) error
 	Health(ctx context.Context) error
 }

@@ -78,6 +78,7 @@ type ComplexityRoot struct {
 		ReportIstioConnectionResults func(childComplexity int, results model.IstioConnectionResults) int
 		ReportKafkaMapperResults     func(childComplexity int, results model.KafkaMapperResults) int
 		ReportSocketScanResults      func(childComplexity int, results model.SocketScanResults) int
+		ReportTCPCaptureResults      func(childComplexity int, results model.CaptureTCPResults) int
 		ResetCapture                 func(childComplexity int) int
 	}
 
@@ -109,6 +110,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	ResetCapture(ctx context.Context) (bool, error)
 	ReportCaptureResults(ctx context.Context, results model.CaptureResults) (bool, error)
+	ReportTCPCaptureResults(ctx context.Context, results model.CaptureTCPResults) (bool, error)
 	ReportSocketScanResults(ctx context.Context, results model.SocketScanResults) (bool, error)
 	ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error)
 	ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error)
@@ -290,6 +292,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ReportSocketScanResults(childComplexity, args["results"].(model.SocketScanResults)), true
 
+	case "Mutation.reportTCPCaptureResults":
+		if e.complexity.Mutation.ReportTCPCaptureResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportTCPCaptureResults_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportTCPCaptureResults(childComplexity, args["results"].(model.CaptureTCPResults)), true
+
 	case "Mutation.resetCapture":
 		if e.complexity.Mutation.ResetCapture == nil {
 			break
@@ -401,6 +415,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAWSOperation,
 		ec.unmarshalInputCaptureResults,
+		ec.unmarshalInputCaptureTCPResults,
 		ec.unmarshalInputDestination,
 		ec.unmarshalInputIstioConnection,
 		ec.unmarshalInputIstioConnectionResults,
@@ -524,6 +539,10 @@ input RecordedDestinationsForSrc {
 }
 
 input CaptureResults {
+    results: [RecordedDestinationsForSrc!]!
+}
+
+input CaptureTCPResults {
     results: [RecordedDestinationsForSrc!]!
 }
 
@@ -683,6 +702,7 @@ type Query {
 type Mutation {
     resetCapture: Boolean!
     reportCaptureResults(results: CaptureResults!): Boolean!
+    reportTCPCaptureResults(results: CaptureTCPResults!): Boolean!
     reportSocketScanResults(results: SocketScanResults!): Boolean!
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
@@ -762,6 +782,21 @@ func (ec *executionContext) field_Mutation_reportSocketScanResults_args(ctx cont
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
 		arg0, err = ec.unmarshalNSocketScanResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐSocketScanResults(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["results"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportTCPCaptureResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CaptureTCPResults
+	if tmp, ok := rawArgs["results"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+		arg0, err = ec.unmarshalNCaptureTCPResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureTCPResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1587,6 +1622,61 @@ func (ec *executionContext) fieldContext_Mutation_reportCaptureResults(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_reportCaptureResults_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reportTCPCaptureResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_reportTCPCaptureResults(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportTCPCaptureResults(rctx, fc.Args["results"].(model.CaptureTCPResults))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reportTCPCaptureResults(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reportTCPCaptureResults_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4382,6 +4472,33 @@ func (ec *executionContext) unmarshalInputCaptureResults(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCaptureTCPResults(ctx context.Context, obj interface{}) (model.CaptureTCPResults, error) {
+	var it model.CaptureTCPResults
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"results"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "results":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+			data, err := ec.unmarshalNRecordedDestinationsForSrc2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐRecordedDestinationsForSrcᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Results = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj interface{}) (model.Destination, error) {
 	var it model.Destination
 	asMap := map[string]interface{}{}
@@ -4934,6 +5051,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "reportCaptureResults":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reportCaptureResults(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reportTCPCaptureResults":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportTCPCaptureResults(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5608,6 +5732,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 
 func (ec *executionContext) unmarshalNCaptureResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureResults(ctx context.Context, v interface{}) (model.CaptureResults, error) {
 	res, err := ec.unmarshalInputCaptureResults(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCaptureTCPResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureTCPResults(ctx context.Context, v interface{}) (model.CaptureTCPResults, error) {
+	res, err := ec.unmarshalInputCaptureTCPResults(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

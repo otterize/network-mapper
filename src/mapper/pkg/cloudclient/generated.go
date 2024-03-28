@@ -9,6 +9,27 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+type AzureKeyVaultPolicyInput struct {
+	CertificatePermissions []*string `json:"certificatePermissions"`
+	KeyPermissions         []*string `json:"keyPermissions"`
+	SecretPermissions      []*string `json:"secretPermissions"`
+	StoragePermissions     []*string `json:"storagePermissions"`
+}
+
+// GetCertificatePermissions returns AzureKeyVaultPolicyInput.CertificatePermissions, and is useful for accessing the field via an interface.
+func (v *AzureKeyVaultPolicyInput) GetCertificatePermissions() []*string {
+	return v.CertificatePermissions
+}
+
+// GetKeyPermissions returns AzureKeyVaultPolicyInput.KeyPermissions, and is useful for accessing the field via an interface.
+func (v *AzureKeyVaultPolicyInput) GetKeyPermissions() []*string { return v.KeyPermissions }
+
+// GetSecretPermissions returns AzureKeyVaultPolicyInput.SecretPermissions, and is useful for accessing the field via an interface.
+func (v *AzureKeyVaultPolicyInput) GetSecretPermissions() []*string { return v.SecretPermissions }
+
+// GetStoragePermissions returns AzureKeyVaultPolicyInput.StoragePermissions, and is useful for accessing the field via an interface.
+func (v *AzureKeyVaultPolicyInput) GetStoragePermissions() []*string { return v.StoragePermissions }
+
 type ComponentType string
 
 const (
@@ -118,19 +139,20 @@ const (
 )
 
 type IntentInput struct {
-	Namespace         *string                `json:"namespace"`
-	ClientName        *string                `json:"clientName"`
-	ServerName        *string                `json:"serverName"`
-	ServerNamespace   *string                `json:"serverNamespace"`
-	Type              *IntentType            `json:"type"`
-	Topics            []*KafkaConfigInput    `json:"topics"`
-	Resources         []*HTTPConfigInput     `json:"resources"`
-	DatabaseResources []*DatabaseConfigInput `json:"databaseResources"`
-	AwsActions        []*string              `json:"awsActions"`
-	AzureRoles        []*string              `json:"azureRoles"`
-	GcpPermissions    []*string              `json:"gcpPermissions"`
-	Internet          *InternetConfigInput   `json:"internet"`
-	Status            *IntentStatusInput     `json:"status"`
+	Namespace           *string                   `json:"namespace"`
+	ClientName          *string                   `json:"clientName"`
+	ServerName          *string                   `json:"serverName"`
+	ServerNamespace     *string                   `json:"serverNamespace"`
+	Type                *IntentType               `json:"type"`
+	Topics              []*KafkaConfigInput       `json:"topics"`
+	Resources           []*HTTPConfigInput        `json:"resources"`
+	DatabaseResources   []*DatabaseConfigInput    `json:"databaseResources"`
+	AwsActions          []*string                 `json:"awsActions"`
+	AzureRoles          []*string                 `json:"azureRoles"`
+	AzureKeyVaultPolicy *AzureKeyVaultPolicyInput `json:"azureKeyVaultPolicy"`
+	GcpPermissions      []*string                 `json:"gcpPermissions"`
+	Internet            *InternetConfigInput      `json:"internet"`
+	Status              *IntentStatusInput        `json:"status"`
 }
 
 // GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -162,6 +184,11 @@ func (v *IntentInput) GetAwsActions() []*string { return v.AwsActions }
 
 // GetAzureRoles returns IntentInput.AzureRoles, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetAzureRoles() []*string { return v.AzureRoles }
+
+// GetAzureKeyVaultPolicy returns IntentInput.AzureKeyVaultPolicy, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetAzureKeyVaultPolicy() *AzureKeyVaultPolicyInput {
+	return v.AzureKeyVaultPolicy
+}
 
 // GetGcpPermissions returns IntentInput.GcpPermissions, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetGcpPermissions() []*string { return v.GcpPermissions }

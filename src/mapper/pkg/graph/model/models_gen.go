@@ -19,6 +19,10 @@ type CaptureResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
+type CaptureTCPResults struct {
+	Results []RecordedDestinationsForSrc `json:"results"`
+}
+
 type Destination struct {
 	Destination   string    `json:"destination"`
 	DestinationIP *string   `json:"destinationIP,omitempty"`

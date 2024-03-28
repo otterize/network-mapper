@@ -17,6 +17,13 @@ type CaptureResults struct {
 // GetResults returns CaptureResults.Results, and is useful for accessing the field via an interface.
 func (v *CaptureResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
+type CaptureTCPResults struct {
+	Results []RecordedDestinationsForSrc `json:"results"`
+}
+
+// GetResults returns CaptureTCPResults.Results, and is useful for accessing the field via an interface.
+func (v *CaptureTCPResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
+
 type Destination struct {
 	Destination   string                  `json:"destination"`
 	DestinationIP nilable.Nilable[string] `json:"destinationIP"`
@@ -187,6 +194,16 @@ func (v *ReportSocketScanResultsResponse) GetReportSocketScanResults() bool {
 	return v.ReportSocketScanResults
 }
 
+// ReportTCPCaptureResultsResponse is returned by ReportTCPCaptureResults on success.
+type ReportTCPCaptureResultsResponse struct {
+	ReportTCPCaptureResults bool `json:"reportTCPCaptureResults"`
+}
+
+// GetReportTCPCaptureResults returns ReportTCPCaptureResultsResponse.ReportTCPCaptureResults, and is useful for accessing the field via an interface.
+func (v *ReportTCPCaptureResultsResponse) GetReportTCPCaptureResults() bool {
+	return v.ReportTCPCaptureResults
+}
+
 type ServerFilter struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
@@ -340,6 +357,14 @@ type __ReportSocketScanResultsInput struct {
 // GetResults returns __ReportSocketScanResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__ReportSocketScanResultsInput) GetResults() SocketScanResults { return v.Results }
 
+// __ReportTCPCaptureResultsInput is used internally by genqlient
+type __ReportTCPCaptureResultsInput struct {
+	Results CaptureTCPResults `json:"results"`
+}
+
+// GetResults returns __ReportTCPCaptureResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__ReportTCPCaptureResultsInput) GetResults() CaptureTCPResults { return v.Results }
+
 // __ServiceIntentsInput is used internally by genqlient
 type __ServiceIntentsInput struct {
 	Namespaces []string `json:"namespaces"`
@@ -464,6 +489,39 @@ func ReportSocketScanResults(
 	var err_ error
 
 	var data_ ReportSocketScanResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportTCPCaptureResults.
+const ReportTCPCaptureResults_Operation = `
+mutation ReportTCPCaptureResults ($results: CaptureTCPResults!) {
+	reportTCPCaptureResults(results: $results)
+}
+`
+
+func ReportTCPCaptureResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results CaptureTCPResults,
+) (*ReportTCPCaptureResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportTCPCaptureResults",
+		Query:  ReportTCPCaptureResults_Operation,
+		Variables: &__ReportTCPCaptureResultsInput{
+			Results: results,
+		},
+	}
+	var err_ error
+
+	var data_ ReportTCPCaptureResultsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

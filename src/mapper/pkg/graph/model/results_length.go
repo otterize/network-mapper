@@ -21,3 +21,7 @@ type AWSOperationResults []AWSOperation
 func (c AWSOperationResults) Length() int {
 	return len(c)
 }
+
+func (c CaptureTCPResults) Length() int {
+	return len(c.Results)
+}

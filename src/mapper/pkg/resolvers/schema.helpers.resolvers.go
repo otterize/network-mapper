@@ -12,6 +12,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -24,6 +25,7 @@ type SourceType string
 
 const (
 	SourceTypeDNSCapture  SourceType = "Capture"
+	SourceTypeTCPScan     SourceType = "TCPScan"
 	SourceTypeSocketScan  SourceType = "SocketScan"
 	SourceTypeKafkaMapper SourceType = "KafkaMapper"
 	SourceTypeIstio       SourceType = "Istio"
@@ -52,6 +54,37 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	} else if sourceType == SourceTypeIstio {
 		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, intentKey)
 	}
+}
+
+func (r *Resolver) tryHandleTCPDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
+	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+	if !foundSvc {
+		return false, nil
+	}
+	lastSeen := dest.LastSeen
+	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, destSvc, dest.LastSeen)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	if !ok {
+		return false, nil
+	}
+
+	intent := model.Intent{
+		Client: &srcSvcIdentity,
+		Server: &dstSvcIdentity,
+	}
+
+	r.intentsHolder.AddIntent(
+		lastSeen,
+		intent,
+	)
+
+	return true, nil
 }
 
 func (r *Resolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
@@ -317,7 +350,88 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 	return dstSvcIdentity, true, nil
 }
 
+func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results model.CaptureTCPResults) error {
+	if !viper.GetBool(sharedconfig.EnableTCPKey) {
+		return nil
+	}
+	logrus.Infof("Handling TCP capture results len: %d", len(results.Results))
+	for _, captureItem := range results.Results {
+		logrus.Debugf("Handling TCP capture result: %+v", captureItem)
+		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		if err != nil {
+			continue
+		}
+
+		for _, dest := range captureItem.Destinations {
+			r.handleTCPResult(ctx, srcSvcIdentity, dest)
+		}
+	}
+	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
+	r.gotResultsSignal()
+	return nil
+}
+
+func (r *Resolver) handleTCPResult(ctx context.Context, src model.OtterizeServiceIdentity, dest model.Destination) {
+	isService, err := r.tryHandleTCPDestinationAsService(ctx, src, dest)
+	if err != nil {
+		logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
+		return
+	}
+	if isService {
+		return
+	}
+
+	r.tryHandleTCPDestinationAsPod(ctx, src, dest)
+}
+
+func (r *Resolver) tryHandleTCPDestinationAsPod(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
+	if err != nil {
+		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", dest.Destination)
+		} else {
+			logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
+		}
+		return
+	}
+
+	if destPod.CreationTimestamp.After(dest.LastSeen) {
+		logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
+		return
+	}
+
+	if destPod.DeletionTimestamp != nil {
+		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
+		return
+	}
+
+	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+	if err != nil {
+		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+		return
+	}
+
+	dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+	if dstService.OwnerObject != nil {
+		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+	}
+
+	intent := model.Intent{
+		Client: &srcSvcIdentity,
+		Server: &dstSvcIdentity,
+	}
+
+	r.intentsHolder.AddIntent(
+		dest.LastSeen,
+		intent,
+	)
+}
+
 func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model.CaptureResults) error {
+	if !viper.GetBool(sharedconfig.EnableDNSKey) {
+		return nil
+	}
+
 	var newResults int
 	for _, captureItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
@@ -353,6 +467,9 @@ func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model
 }
 
 func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results model.SocketScanResults) error {
+	if !viper.GetBool(sharedconfig.EnableSocketScannerKey) {
+		return nil
+	}
 	for _, socketScanItem := range results.Results {
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
 		if err != nil {
