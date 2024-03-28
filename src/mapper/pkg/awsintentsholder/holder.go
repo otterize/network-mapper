@@ -50,7 +50,7 @@ func (h *AWSIntentsHolder) AddIntent(intent AWSIntent) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	logrus.Warnf("Adding intent: %+v", intent)
+	logrus.Debugf("Adding intent: %+v", intent)
 
 	key := AWSIntentKey{
 		ClientName:      intent.Client.Name,
@@ -105,6 +105,8 @@ func (h *AWSIntentsHolder) getNewIntentsSinceLastGet() []AWSIntent {
 	for _, intent := range h.intents {
 		intents = append(intents, intent.AWSIntent)
 	}
+
+	h.intents = make(map[AWSIntentKey]TimestampedAWSIntent)
 
 	return intents
 }
