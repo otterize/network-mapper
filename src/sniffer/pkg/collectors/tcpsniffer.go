@@ -74,7 +74,12 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 	captureTime := detectCaptureTime(packet)
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
 	if ipLayer != nil {
-		ip, _ := ipLayer.(*layers.IPv4)
+		ip, ok := ipLayer.(*layers.IPv4)
+		if !ok {
+			logrus.Debugf("Failed to parse IP layer")
+			return
+		}
+
 		srcIP := ip.SrcIP.String()
 		dstIP := ip.DstIP.String()
 		localHostname, err := s.resolver.ResolveIP(srcIP)
