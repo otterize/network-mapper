@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
@@ -37,6 +38,7 @@ type ResolverTestSuite struct {
 	intentsHolder                *intentsstore.IntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	incomingTrafficIntentsHolder *incomingtrafficholder.IncomingTrafficIntentsHolder
 	resolverCtx                  context.Context
 	resolverCtxCancel            context.CancelFunc
 	resolver                     *Resolver
@@ -53,7 +55,7 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.externalTrafficIntentsHolder = externaltrafficholder.NewExternalTrafficIntentsHolder()
 	s.awsIntentsHolder = awsintentsholder.New()
 	dnsCache := dnscache.NewDNSCache()
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder, s.awsIntentsHolder, dnsCache)
+	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder, s.awsIntentsHolder, dnsCache, s.incomingTrafficIntentsHolder)
 	resolver.Register(e)
 	s.resolver = resolver
 	go func() {

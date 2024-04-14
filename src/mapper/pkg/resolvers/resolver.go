@@ -12,6 +12,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"golang.org/x/sync/errgroup"
@@ -26,6 +27,7 @@ type Resolver struct {
 	serviceIdResolver            *serviceidresolver.Resolver
 	intentsHolder                *intentsstore.IntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	incomingTrafficHolder        *incomingtrafficholder.IncomingTrafficIntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	dnsCache                     *dnscache.DNSCache
 	dnsCaptureResults            chan model.CaptureResults
@@ -45,12 +47,14 @@ func NewResolver(
 	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
 	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
 	dnsCache *dnscache.DNSCache,
+	incomingTrafficHolder *incomingtrafficholder.IncomingTrafficIntentsHolder,
 ) *Resolver {
 	r := &Resolver{
 		kubeFinder:                   kubeFinder,
 		serviceIdResolver:            serviceIdResolver,
 		intentsHolder:                intentsHolder,
 		externalTrafficIntentsHolder: externalTrafficHolder,
+		incomingTrafficHolder:        incomingTrafficHolder,
 		dnsCaptureResults:            make(chan model.CaptureResults, 200),
 		tcpCaptureResults:            make(chan model.CaptureTCPResults, 200),
 		socketScanResults:            make(chan model.SocketScanResults, 200),

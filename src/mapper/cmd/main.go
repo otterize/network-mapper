@@ -16,6 +16,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/mapperwebhooks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
@@ -215,9 +216,10 @@ func main() {
 
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
+	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
 
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder, awsIntentsHolder, dnsCache)
+	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder, awsIntentsHolder, dnsCache, incomingTrafficIntentsHolder)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
@@ -248,6 +250,7 @@ func main() {
 		intentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIntents)
 		if viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 			externalTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyExternalTrafficIntents)
+			incomingTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIncomingTrafficIntents)
 		}
 		awsIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAWSIntents)
 
@@ -280,6 +283,12 @@ func main() {
 		errgrp.Go(func() error {
 			defer errorreporter.AutoNotify()
 			externalTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+			return nil
+		})
+		errgrp.Go(func() error {
+			defer errorreporter.AutoNotify()
+			logrus.Info("Starting incoming traffic intents uploader")
+			incomingTrafficIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 			return nil
 		})
 	}

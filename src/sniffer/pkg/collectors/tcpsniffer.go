@@ -74,32 +74,39 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 		return
 	}
 	captureTime := detectCaptureTime(packet)
+
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
-	if ipLayer != nil {
-		ip, ok := ipLayer.(*layers.IPv4)
-		if !ok {
-			logrus.Debugf("Failed to parse IP layer")
-			return
-		}
-
-		srcIP := ip.SrcIP.String()
-		dstIP := ip.DstIP.String()
-		if !s.isRunningOnAWS {
-			s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil))
-			return
-		}
-		localHostname, err := s.resolver.ResolveIP(srcIP)
-		if err != nil {
-			logrus.Debugf("Can't resolve IP addr %s, skipping", srcIP)
-		} else {
-			logrus.Debugf("Captured TCP SYN from %s to %s", srcIP, dstIP)
-
-			// Resolver cache could be outdated, verify same resolving result after next poll
-			s.pending = append(s.pending, pendingTCPCapture{
-				srcIp: srcIP, srcHostname: localHostname, destIp: dstIP, time: captureTime,
-			})
-		}
+	if ipLayer == nil {
+		return
 	}
+
+	ip, ok := ipLayer.(*layers.IPv4)
+	if !ok {
+		logrus.Debugf("Failed to parse IP layer")
+		return
+	}
+
+	logrus.Debugf("TCP SYN: %s to %s", ip.SrcIP, ip.DstIP)
+	srcIP := ip.SrcIP.String()
+	dstIP := ip.DstIP.String()
+	if !s.isRunningOnAWS {
+		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil))
+		return
+	}
+
+	localHostname, err := s.resolver.ResolveIP(srcIP)
+	if err != nil {
+		logrus.Debugf("Can't resolve IP addr %s, sending IP only", srcIP)
+		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil))
+		return
+	}
+
+	logrus.Debugf("Captured TCP SYN from %s to %s", srcIP, dstIP)
+
+	// Resolver cache could be outdated, verify same resolving result after next poll
+	s.pending = append(s.pending, pendingTCPCapture{
+		srcIp: srcIP, srcHostname: localHostname, destIp: dstIP, time: captureTime,
+	})
 }
 
 func (s *TCPSniffer) RefreshHostsMapping() error {

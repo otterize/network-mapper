@@ -12,6 +12,7 @@ type CloudClient interface {
 	ReportDiscoveredIntents(ctx context.Context, intents []*DiscoveredIntentInput) error
 	ReportComponentStatus(ctx context.Context, component ComponentType) error
 	ReportExternalTrafficDiscoveredIntents(ctx context.Context, intents []ExternalTrafficDiscoveredIntentInput) error
+	ReportIncomingTrafficDiscoveredIntents(ctx context.Context, intents []IncomingTrafficDiscoveredIntentInput) error
 }
 
 type CloudClientImpl struct {
@@ -59,5 +60,16 @@ func (c *CloudClientImpl) ReportComponentStatus(ctx context.Context, component C
 	if err != nil {
 		return errors.Wrap(err)
 	}
+	return nil
+}
+
+func (c *CloudClientImpl) ReportIncomingTrafficDiscoveredIntents(ctx context.Context, intents []IncomingTrafficDiscoveredIntentInput) error {
+	logrus.Debug("Uploading incoming traffic intents to cloud, count: ", len(intents))
+
+	_, err := ReportIncomingTrafficDiscoveredIntents(ctx, c.client, intents)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	return nil
 }

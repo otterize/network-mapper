@@ -5,10 +5,13 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"inet.af/netaddr"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"strings"
@@ -17,6 +20,7 @@ import (
 const (
 	podIPIndexField            = "ip"
 	serviceIPIndexField        = "spec.ip"
+	externalIPIndexField       = "spec.externalIPs"
 	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
 )
 
@@ -26,6 +30,7 @@ type KubeFinder struct {
 	serviceIdResolver *serviceidresolver.Resolver
 }
 
+var ErrNoPodFound = errors.Errorf("no pod found")
 var ErrFoundMoreThanOnePod = errors.Errorf("ip belongs to more than one pod")
 var ErrFoundMoreThanOneService = errors.Errorf("ip belongs to more than one service")
 
@@ -59,6 +64,22 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		svc := object.(*corev1.Service)
 		res = append(res, svc.Spec.ClusterIPs...)
 		return res
+	})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, externalIPIndexField, func(object client.Object) []string {
+		ips := sets.New[string]()
+		svc := object.(*corev1.Service)
+		if svc.DeletionTimestamp != nil {
+			return nil
+		}
+		ips.Insert(svc.Spec.ExternalIPs...)
+		for _, ingress := range svc.Status.LoadBalancer.Ingress {
+			ips.Insert(ingress.IP)
+		}
+		return ips.UnsortedList()
 	})
 	if err != nil {
 		return errors.Wrap(err)
@@ -131,6 +152,43 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 	return pods, nil
 }
 
+func (k *KubeFinder) IsExternalIP(ctx context.Context, ip string) (bool, error) {
+	var nodes corev1.NodeList
+	err := k.client.List(ctx, &nodes)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	cidrBuilder := netaddr.IPSetBuilder{}
+	for _, node := range nodes.Items {
+		nodeCidr := node.Spec.PodCIDR
+		if nodeCidr == "" {
+			logrus.Errorf("node %s has no podCIDR", node.Name)
+			continue
+		}
+
+		logrus.Debugf("node %s has podCIDR %s", node.Name, nodeCidr)
+		cidr, err := netaddr.ParseIPPrefix(nodeCidr)
+		if err != nil {
+			return false, errors.Wrap(err)
+		}
+
+		cidrBuilder.AddPrefix(cidr)
+	}
+
+	cidrSet, err := cidrBuilder.IPSet()
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	ipAddr, err := netaddr.ParseIP(ip)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	return !cidrSet.Contains(ipAddr), nil
+}
+
 func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod, error) {
 	var pods corev1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIPIndexField: ip})
@@ -139,13 +197,28 @@ func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod
 	}
 
 	if len(pods.Items) == 0 {
-		return nil, k8serrors.NewNotFound(corev1.Resource("pod"), ip)
+		return nil, errors.Wrap(ErrNoPodFound)
 	}
 
 	if len(pods.Items) != 1 {
 		return nil, errors.Wrap(ErrFoundMoreThanOnePod)
 	}
 	return &pods.Items[0], nil
+}
+
+func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string) (*corev1.Service, bool, error) {
+	var services corev1.ServiceList
+	err := k.client.List(ctx, &services, client.MatchingFields{externalIPIndexField: ip})
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+	if len(services.Items) == 0 {
+		return nil, false, nil
+	}
+	if len(services.Items) != 1 {
+		return nil, false, errors.Wrap(ErrFoundMoreThanOneService)
+	}
+	return &services.Items[0], true, nil
 }
 
 func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload string, namespace string) (*corev1.Pod, error) {
