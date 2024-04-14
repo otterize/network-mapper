@@ -150,6 +150,10 @@ func (m *IstioWatcher) CollectIstioConnectionMetrics(ctx context.Context, namesp
 	}
 
 	for _, pod := range podList.Items {
+		if pod.Status.Phase != corev1.PodRunning {
+			logrus.Debugf("Skipping pod %s as it is not running", pod.Name)
+			continue
+		}
 		// Known for loop gotcha with goroutines
 		curr := pod
 		sendersErrGroup.Go(func() error {
