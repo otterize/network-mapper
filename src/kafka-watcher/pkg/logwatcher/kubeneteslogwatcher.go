@@ -86,7 +86,7 @@ func (w *KubernetesLogWatcher) watchOnce(ctx context.Context, kafkaServer types.
 		return errors.Wrap(err)
 	}
 	if pod.Status.Phase != corev1.PodRunning {
-		logrus.Debugf("Kafka server %s is not running, skipping logs for this itteration", kafkaServer.String())
+		logrus.Debugf("Kafka server %s is not running, skipping logs for this iteration", kafkaServer.String())
 		return nil
 	}
 	podLogOpts := corev1.PodLogOptions{
