@@ -81,6 +81,14 @@ func (w *KubernetesLogWatcher) RunForever(ctx context.Context) error {
 }
 
 func (w *KubernetesLogWatcher) watchOnce(ctx context.Context, kafkaServer types.NamespacedName, startTime time.Time) error {
+	pod, err := w.clientset.CoreV1().Pods(kafkaServer.Namespace).Get(ctx, kafkaServer.Name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	if pod.Status.Phase != corev1.PodRunning {
+		logrus.Debugf("Kafka server %s is not running, skipping logs for this iteration", kafkaServer.String())
+		return nil
+	}
 	podLogOpts := corev1.PodLogOptions{
 		SinceTime: &metav1.Time{Time: startTime},
 	}
