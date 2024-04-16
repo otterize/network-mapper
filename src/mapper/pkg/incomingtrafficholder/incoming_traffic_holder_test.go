@@ -3,6 +3,7 @@ package incomingtrafficholder
 import (
 	"context"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
@@ -88,12 +89,21 @@ func (s *IncomingTrafficHolderSuite) TestIncomingTrafficHolder() {
 	s.holder.PeriodicIntentsUpload(anotherContext, testUploadInterval)
 	s.Require().True(called)
 	s.Require().Len(uploaded, 2)
-	s.Require().Equal(incomingB.Server.Name, uploaded[0].Intent.Server.Name)
-	s.Require().Equal(incomingB.Server.Namespace, uploaded[0].Intent.Server.Namespace)
-	s.Require().Equal(incomingB.IP, uploaded[0].Intent.IP)
-	s.Require().Equal(incomingC.Server.Name, uploaded[1].Intent.Server.Name)
-	s.Require().Equal(incomingC.Server.Namespace, uploaded[1].Intent.Server.Namespace)
-	s.Require().Equal(incomingC.IP, uploaded[1].Intent.IP)
+	uploadedB, found := lo.Find(uploaded, func(intent TimestampedIncomingTrafficIntent) bool {
+		return intent.Intent.IP == ipAddressB
+	})
+	s.Require().True(found)
+	s.Require().Equal(incomingB.Server.Name, uploadedB.Intent.Server.Name)
+	s.Require().Equal(incomingB.Server.Namespace, uploadedB.Intent.Server.Namespace)
+	s.Require().Equal(incomingB.IP, uploadedB.Intent.IP)
+
+	uploadedC, found := lo.Find(uploaded, func(intent TimestampedIncomingTrafficIntent) bool {
+		return intent.Intent.IP == ipAddressC
+	})
+	s.Require().True(found)
+	s.Require().Equal(incomingC.Server.Name, uploadedC.Intent.Server.Name)
+	s.Require().Equal(incomingC.Server.Namespace, uploadedC.Intent.Server.Namespace)
+	s.Require().Equal(incomingC.IP, uploadedC.Intent.IP)
 }
 
 func (s *IncomingTrafficHolderSuite) TestReportOnlyLatest() {
