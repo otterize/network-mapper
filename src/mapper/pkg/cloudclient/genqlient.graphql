@@ -10,3 +10,7 @@ mutation ReportExternalTrafficDiscoveredIntents($intents: [ExternalTrafficDiscov
 mutation ReportComponentStatus($component: ComponentType!) {
     reportIntegrationComponentStatus(component: $component)
 }
+
+mutation ReportIncomingTrafficDiscoveredIntents($intents: [IncomingTrafficDiscoveredIntentInput!]!) {
+    reportIncomingTrafficDiscoveredIntents(intents: $intents)
+}

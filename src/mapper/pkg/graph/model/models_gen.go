@@ -24,10 +24,11 @@ type CaptureTCPResults struct {
 }
 
 type Destination struct {
-	Destination   string    `json:"destination"`
-	DestinationIP *string   `json:"destinationIP,omitempty"`
-	TTL           *int64    `json:"TTL,omitempty"`
-	LastSeen      time.Time `json:"lastSeen"`
+	Destination     string    `json:"destination"`
+	DestinationIP   *string   `json:"destinationIP,omitempty"`
+	DestinationPort *int64    `json:"destinationPort,omitempty"`
+	TTL             *int64    `json:"TTL,omitempty"`
+	LastSeen        time.Time `json:"lastSeen"`
 }
 
 type GroupVersionKind struct {

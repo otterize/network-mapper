@@ -5,6 +5,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -114,6 +115,47 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 	}, exponentialBackoff)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report discovered intents to cloud, giving up after 10 retries")
+	}
+}
+
+func (c *CloudUploader) NotifyIncomingTrafficIntents(ctx context.Context, intents []incomingtrafficholder.TimestampedIncomingTrafficIntent) {
+	if len(intents) == 0 {
+		return
+	}
+
+	logrus.Debugf("Got incoming traffic notification, len %d", len(intents))
+
+	discoveredIntents := lo.Map(intents, func(intent incomingtrafficholder.TimestampedIncomingTrafficIntent, _ int) cloudclient.IncomingTrafficDiscoveredIntentInput {
+		output := cloudclient.IncomingTrafficDiscoveredIntentInput{
+			DiscoveredAt: intent.Timestamp,
+			Intent: cloudclient.IncomingTrafficIntentInput{
+				ServerName: intent.Intent.Server.Name,
+				Namespace:  intent.Intent.Server.Namespace,
+				Source: cloudclient.IncomingInternetSourceInput{
+					Ip: intent.Intent.IP,
+				},
+			},
+		}
+		return output
+	})
+
+	exponentialBackoff := backoff.NewExponentialBackOff()
+
+	discoveredIntentsChunks := lo.Chunk(discoveredIntents, c.config.UploadBatchSize)
+	currentChunk := 0
+	err := backoff.Retry(func() error {
+		for currentChunk < len(discoveredIntentsChunks) {
+			err := c.client.ReportIncomingTrafficDiscoveredIntents(ctx, discoveredIntentsChunks[currentChunk])
+			if err != nil {
+				logrus.WithError(err).Errorf("Failed to report incoming traffic intents chunk %d to cloud, retrying", currentChunk)
+				return errors.Wrap(err)
+			}
+			currentChunk += 1
+		}
+		return nil
+	}, exponentialBackoff)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report incoming traffic intents to cloud, giving up after 10 retries")
 	}
 }
 

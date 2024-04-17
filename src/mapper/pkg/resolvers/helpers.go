@@ -27,6 +27,9 @@ func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDe
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			return model.OtterizeServiceIdentity{}, errors.Errorf("IP %s belongs to more than one pod, ignoring", src.SrcIP)
 		}
+		if errors.Is(err, kubefinder.ErrNoPodFound) {
+			return model.OtterizeServiceIdentity{}, errors.Wrap(err)
+		}
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to pod: %w", src.SrcIP, err)
 	}
 	if src.SrcHostname != "" && srcPod.Name != src.SrcHostname {

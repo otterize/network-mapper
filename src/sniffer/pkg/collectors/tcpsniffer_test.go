@@ -38,9 +38,10 @@ func TestTCPSniffer_TestHandlePacketAWS(t *testing.T) {
 			SrcHostname: "client-1",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination:   "10.244.120.78",
-					DestinationIP: nilable.From("10.244.120.78"),
-					LastSeen:      timestamp,
+					Destination:     "10.244.120.78",
+					DestinationIP:   nilable.From("10.244.120.78"),
+					DestinationPort: nilable.From(8000),
+					LastSeen:        timestamp,
 				},
 			},
 		},
@@ -69,9 +70,10 @@ func TestTCPSniffer_TestHandlePacketNonAWS(t *testing.T) {
 			SrcHostname: "",
 			Destinations: []mapperclient.Destination{
 				{
-					Destination:   "10.244.120.78",
-					DestinationIP: nilable.From("10.244.120.78"),
-					LastSeen:      timestamp,
+					Destination:     "10.244.120.78",
+					DestinationIP:   nilable.From("10.244.120.78"),
+					DestinationPort: nilable.From(8000),
+					LastSeen:        timestamp,
 				},
 			},
 		},

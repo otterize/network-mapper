@@ -528,6 +528,7 @@ input Destination {
     destination: String!
     # If destination is a hostname, this _may_ be the IP it resolves to if it is known, but is not required.
     destinationIP: String
+    destinationPort: Int
     TTL: Int
     lastSeen: Time!
 }
@@ -4506,7 +4507,7 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"destination", "destinationIP", "TTL", "lastSeen"}
+	fieldsInOrder := [...]string{"destination", "destinationIP", "destinationPort", "TTL", "lastSeen"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4527,6 +4528,13 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 				return it, err
 			}
 			it.DestinationIP = data
+		case "destinationPort":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("destinationPort"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DestinationPort = data
 		case "TTL":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TTL"))
 			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)

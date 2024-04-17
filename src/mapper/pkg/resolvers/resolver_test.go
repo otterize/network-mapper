@@ -10,11 +10,13 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resolvers/test_gql_client"
 	"github.com/otterize/network-mapper/src/shared/testbase"
 	"github.com/otterize/nilable"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/exp/slices"
@@ -37,6 +39,7 @@ type ResolverTestSuite struct {
 	intentsHolder                *intentsstore.IntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
+	incomingTrafficIntentsHolder *incomingtrafficholder.IncomingTrafficIntentsHolder
 	resolverCtx                  context.Context
 	resolverCtxCancel            context.CancelFunc
 	resolver                     *Resolver
@@ -51,9 +54,11 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.intentsHolder = intentsstore.NewIntentsHolder()
 	s.externalTrafficIntentsHolder = externaltrafficholder.NewExternalTrafficIntentsHolder()
+	s.incomingTrafficIntentsHolder = incomingtrafficholder.NewIncomingTrafficIntentsHolder()
+
 	s.awsIntentsHolder = awsintentsholder.New()
 	dnsCache := dnscache.NewDNSCache()
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder, s.awsIntentsHolder, dnsCache)
+	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder, s.awsIntentsHolder, dnsCache, s.incomingTrafficIntentsHolder)
 	resolver.Register(e)
 	s.resolver = resolver
 	go func() {
@@ -192,6 +197,41 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 			},
 		},
 	})
+}
+
+func (s *ResolverTestSuite) TestReportIncomingTraffic() {
+	serviceIp := "10.0.0.16"
+	serviceExternalIP := "34.10.0.12"
+	s.AddDeploymentWithIngressService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, serviceIp, serviceExternalIP, 9090)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+	externalInternetServerIP := "142.198.10.38"
+
+	packetTime := time.Now().Add(time.Minute)
+	tcpResults := test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: externalInternetServerIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						DestinationIP:   nilable.From(serviceExternalIP),
+						DestinationPort: nilable.From(9090),
+						LastSeen:        packetTime,
+					},
+				},
+			},
+		},
+	}
+
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, tcpResults)
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
+	s.Require().Len(intents, 1)
+	s.Require().Equal(externalInternetServerIP, intents[0].Intent.IP)
+	s.Require().Equal("deployment-service1", intents[0].Intent.Server.Name)
+	s.Require().Equal(lo.ToPtr("svc-service1"), intents[0].Intent.Server.KubernetesService)
+	s.Require().Equal(s.TestNamespace, intents[0].Intent.Server.Namespace)
 }
 
 func (s *ResolverTestSuite) TestReportCaptureResultsHostnameMismatch() {

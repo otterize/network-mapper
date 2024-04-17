@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
@@ -56,35 +57,54 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func (r *Resolver) tryHandleTCPDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
+func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destination, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
 	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
 	if err != nil {
-		return false, errors.Wrap(err)
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 	if !foundSvc {
-		return false, nil
+		return model.OtterizeServiceIdentity{}, false, nil
 	}
-	lastSeen := dest.LastSeen
-	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, destSvc, dest.LastSeen)
+	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
 	if err != nil {
-		return false, errors.Wrap(err)
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+	}
+	if ok {
+		return dstSvcIdentity, true, nil
 	}
 
-	if !ok {
-		return false, nil
+	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
+	if err != nil {
+		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", dest.Destination)
+		} else {
+			logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
+		}
+		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	intent := model.Intent{
-		Client: &srcSvcIdentity,
-		Server: &dstSvcIdentity,
+	if destPod.CreationTimestamp.After(dest.LastSeen) {
+		logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
+		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	r.intentsHolder.AddIntent(
-		lastSeen,
-		intent,
-	)
+	if destPod.DeletionTimestamp != nil {
+		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
 
-	return true, nil
+	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
+	if err != nil {
+		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
+	dstSvcIdentity = model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+	if dstService.OwnerObject != nil {
+		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+	}
+
+	return dstSvcIdentity, true, nil
 }
 
 func (r *Resolver) tryHandleSocketScanDestinationAsService(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) (bool, error) {
@@ -350,15 +370,54 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 	return dstSvcIdentity, true, nil
 }
 
+func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx context.Context, dest model.Destination) (model.OtterizeServiceIdentity, bool, error) {
+	destIP := lo.FromPtr(dest.DestinationIP)
+	if dest.DestinationIP == nil || len(destIP) == 0 {
+		return model.OtterizeServiceIdentity{}, false, errors.New("invalid TCP destination, IP is empty")
+	}
+	if dest.DestinationPort == nil {
+		return model.OtterizeServiceIdentity{}, false, errors.New("invalid TCP destination, port is empty")
+	}
+
+	destPort := int(*dest.DestinationPort)
+	destService, ok, err := r.kubeFinder.ResolveIPToExternalAccessService(ctx, destIP, destPort)
+	if err != nil {
+		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIP)
+		} else {
+			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+		}
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+	if !ok {
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
+	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
+	if err != nil {
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+	}
+	if !ok {
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
+	return dstSvcIdentity, true, nil
+}
+
 func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results model.CaptureTCPResults) error {
 	if !viper.GetBool(sharedconfig.EnableTCPKey) {
 		return nil
 	}
 	logrus.Infof("Handling TCP capture results len: %d", len(results.Results))
 	for _, captureItem := range results.Results {
-		logrus.Debugf("Handling TCP capture result: %+v", captureItem)
+		logrus.Infof("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, captureItem.Destinations[0].DestinationPort)
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
 		if err != nil {
+			if errors.Is(err, kubefinder.ErrNoPodFound) {
+				r.tryReportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
+				continue
+			}
+			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
 		}
 
@@ -371,54 +430,50 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	return nil
 }
 
-func (r *Resolver) handleTCPResult(ctx context.Context, src model.OtterizeServiceIdentity, dest model.Destination) {
-	isService, err := r.tryHandleTCPDestinationAsService(ctx, src, dest)
+func (r *Resolver) tryReportIncomingInternetTraffic(ctx context.Context, srcIP string, destinations []model.Destination) {
+	isExternal, err := r.kubeFinder.IsExternalIP(ctx, srcIP)
 	if err != nil {
-		logrus.WithError(err).Errorf("failed to handle IP '%s' as service, it may or may not be a service. This error only occurs if something failed; not if the IP does not belong to a service.", dest.Destination)
+		logrus.WithError(err).Errorf("could not determine if IP %s is external", srcIP)
 		return
 	}
-	if isService {
+	if !isExternal {
+		logrus.Debugf("IP %s is not external, ignoring", srcIP)
 		return
 	}
 
-	r.tryHandleTCPDestinationAsPod(ctx, src, dest)
+	for _, dest := range destinations {
+		destSvcIdentity, ok, err := r.resolveOtterizeIdentityForExternalAccessDestination(ctx, dest)
+		if err != nil {
+			logrus.WithError(err).Error("could not resolve incoming destination identity")
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		intent := incomingtrafficholder.IncomingTrafficIntent{
+			LastSeen: dest.LastSeen,
+			Server:   destSvcIdentity,
+			IP:       srcIP,
+		}
+		r.incomingTrafficHolder.AddIntent(intent)
+	}
 }
 
-func (r *Resolver) tryHandleTCPDestinationAsPod(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
-	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
+func (r *Resolver) handleTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+	lastSeen := dest.LastSeen
+	destIdentity, ok, err := r.resolveDestIdentity(ctx, dest, lastSeen)
 	if err != nil {
-		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", dest.Destination)
-		} else {
-			logrus.WithError(err).Debugf("Could not resolve %s to pod", dest.Destination)
-		}
+		logrus.WithError(err).Error("could not resolve destination identity")
 		return
 	}
-
-	if destPod.CreationTimestamp.After(dest.LastSeen) {
-		logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
+	if !ok {
 		return
-	}
-
-	if destPod.DeletionTimestamp != nil {
-		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
-		return
-	}
-
-	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
-	if err != nil {
-		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
-		return
-	}
-
-	dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
-	if dstService.OwnerObject != nil {
-		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
 
 	intent := model.Intent{
-		Client: &srcSvcIdentity,
-		Server: &dstSvcIdentity,
+		Client: &srcIdentity,
+		Server: &destIdentity,
 	}
 
 	r.intentsHolder.AddIntent(

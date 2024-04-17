@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -131,14 +132,18 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 	return podCopy
 }
 
-func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod) *corev1.Endpoints {
+func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod, port *int) *corev1.Endpoints {
 	addresses := lo.Map(pods, func(pod *corev1.Pod, _ int) corev1.EndpointAddress {
 		return corev1.EndpointAddress{IP: pod.Status.PodIP, TargetRef: &corev1.ObjectReference{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace}}
 	})
 
+	endpointPort := 8080
+	if port != nil {
+		endpointPort = *port
+	}
 	endpoints := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("svc-%s", name), Namespace: s.TestNamespace},
-		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}}}},
+		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: int32(endpointPort), Protocol: corev1.ProtocolTCP}}}},
 	}
 
 	s.Require().NotEmpty(addresses[0].IP)
@@ -164,10 +169,80 @@ func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[st
 
 	s.waitForObjectToBeCreated(service)
 
-	s.AddEndpoints(name, pods)
+	s.AddEndpoints(name, pods, nil)
 	return service
 }
 
+func (s *ControllerManagerTestSuiteBase) AddServiceWithIngress(name string, selector map[string]string, serviceIp string, externalIP string, pods []*corev1.Pod, port int) *corev1.Service {
+	serviceName := fmt.Sprintf("svc-%s", name)
+	status := corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{{IP: externalIP}},
+		},
+	}
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: serviceName, Namespace: s.TestNamespace},
+		Spec: corev1.ServiceSpec{Selector: selector,
+			Ports:      []corev1.ServicePort{{Name: "someport", Port: int32(port), Protocol: corev1.ProtocolTCP}},
+			Type:       corev1.ServiceTypeLoadBalancer,
+			ClusterIP:  serviceIp,
+			ClusterIPs: []string{serviceIp},
+		},
+	}
+	err := s.Mgr.GetClient().Create(context.Background(), service)
+	s.Require().NoError(err)
+
+	service.Status = status
+	err = s.Mgr.GetClient().Status().Update(context.Background(), service)
+	s.Require().NoError(err)
+
+	s.waitForObjectToBeCreated(service)
+	s.AddIngress(name, serviceName, s.TestNamespace, externalIP, port)
+	s.AddEndpoints(name, pods, &port)
+	return service
+}
+
+func (s *ControllerManagerTestSuiteBase) AddIngress(name string, serviceName string, serviceNamespace, externalIP string, port int) *networkingv1.Ingress {
+	ingress := &networkingv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("ingress-%s", name), Namespace: s.TestNamespace},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace),
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									PathType: lo.ToPtr(networkingv1.PathTypeExact),
+									Path:     "/",
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: serviceName,
+											Port: networkingv1.ServiceBackendPort{
+												Number: int32(port),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Status: networkingv1.IngressStatus{
+			LoadBalancer: networkingv1.IngressLoadBalancerStatus{
+				Ingress: []networkingv1.IngressLoadBalancerIngress{{IP: externalIP}},
+			},
+		},
+	}
+
+	err := s.Mgr.GetClient().Create(context.Background(), ingress)
+	s.Require().NoError(err)
+
+	s.waitForObjectToBeCreated(ingress)
+	return ingress
+}
 func (s *ControllerManagerTestSuiteBase) GetAPIServerService() *corev1.Service {
 	service := &corev1.Service{}
 	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
@@ -274,6 +349,12 @@ func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []str
 func (s *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, podIps []string, podLabels map[string]string, serviceIp string) (*appsv1.Deployment, *corev1.Service, []*corev1.Pod) {
 	deployment, pods := s.AddDeployment(name, podIps, podLabels)
 	service := s.AddService(name, podLabels, serviceIp, pods)
+	return deployment, service, pods
+}
+
+func (s *ControllerManagerTestSuiteBase) AddDeploymentWithIngressService(name string, podIps []string, podLabels map[string]string, serviceIp string, externalIP string, port int) (*appsv1.Deployment, *corev1.Service, []*corev1.Pod) {
+	deployment, pods := s.AddDeployment(name, podIps, podLabels)
+	service := s.AddServiceWithIngress(name, podLabels, serviceIp, externalIP, pods, port)
 	return deployment, service, pods
 }
 

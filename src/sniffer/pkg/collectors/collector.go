@@ -12,6 +12,7 @@ type UniqueRequest struct {
 	srcHostname      string
 	destHostnameOrIP string // IP or hostname
 	destIP           string
+	destPort         nilable.Nilable[int]
 }
 
 type TimeAndTTL struct {
@@ -30,8 +31,8 @@ func (c *NetworkCollector) resetData() {
 	c.capturedRequests = make(capturesMap)
 }
 
-func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time, ttl nilable.Nilable[int]) {
-	req := UniqueRequest{srcIp, srcHost, destNameOrIP, destIP}
+func (c *NetworkCollector) addCapturedRequest(srcIp string, srcHost string, destNameOrIP string, destIP string, seenAt time.Time, ttl nilable.Nilable[int], destPort *int) {
+	req := UniqueRequest{srcIp, srcHost, destNameOrIP, destIP, nilable.FromPtr(destPort)}
 	c.capturedRequests[req] = TimeAndTTL{seenAt, ttl}
 }
 
@@ -49,10 +50,11 @@ func (c *NetworkCollector) CollectResults() []mapperclient.RecordedDestinationsF
 			srcToDests[src] = make([]mapperclient.Destination, 0)
 		}
 		destination := mapperclient.Destination{
-			Destination:   reqInfo.destHostnameOrIP,
-			DestinationIP: nilable.From(reqInfo.destIP),
-			LastSeen:      timeAndTTL.lastSeen,
-			TTL:           timeAndTTL.ttl,
+			Destination:     reqInfo.destHostnameOrIP,
+			DestinationIP:   nilable.From(reqInfo.destIP),
+			DestinationPort: reqInfo.destPort,
+			LastSeen:        timeAndTTL.lastSeen,
+			TTL:             timeAndTTL.ttl,
 		}
 		srcToDests[src] = append(srcToDests[src], destination)
 	}

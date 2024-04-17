@@ -138,6 +138,41 @@ const (
 	HTTPMethodAll     HTTPMethod = "ALL"
 )
 
+type IncomingInternetSourceInput struct {
+	Ip string `json:"ip"`
+}
+
+// GetIp returns IncomingInternetSourceInput.Ip, and is useful for accessing the field via an interface.
+func (v *IncomingInternetSourceInput) GetIp() string { return v.Ip }
+
+type IncomingTrafficDiscoveredIntentInput struct {
+	DiscoveredAt time.Time                  `json:"discoveredAt"`
+	Intent       IncomingTrafficIntentInput `json:"intent"`
+}
+
+// GetDiscoveredAt returns IncomingTrafficDiscoveredIntentInput.DiscoveredAt, and is useful for accessing the field via an interface.
+func (v *IncomingTrafficDiscoveredIntentInput) GetDiscoveredAt() time.Time { return v.DiscoveredAt }
+
+// GetIntent returns IncomingTrafficDiscoveredIntentInput.Intent, and is useful for accessing the field via an interface.
+func (v *IncomingTrafficDiscoveredIntentInput) GetIntent() IncomingTrafficIntentInput {
+	return v.Intent
+}
+
+type IncomingTrafficIntentInput struct {
+	ServerName string                      `json:"serverName"`
+	Namespace  string                      `json:"namespace"`
+	Source     IncomingInternetSourceInput `json:"source"`
+}
+
+// GetServerName returns IncomingTrafficIntentInput.ServerName, and is useful for accessing the field via an interface.
+func (v *IncomingTrafficIntentInput) GetServerName() string { return v.ServerName }
+
+// GetNamespace returns IncomingTrafficIntentInput.Namespace, and is useful for accessing the field via an interface.
+func (v *IncomingTrafficIntentInput) GetNamespace() string { return v.Namespace }
+
+// GetSource returns IncomingTrafficIntentInput.Source, and is useful for accessing the field via an interface.
+func (v *IncomingTrafficIntentInput) GetSource() IncomingInternetSourceInput { return v.Source }
+
 type IntentInput struct {
 	Namespace           *string                   `json:"namespace"`
 	ClientName          *string                   `json:"clientName"`
@@ -311,6 +346,16 @@ func (v *ReportExternalTrafficDiscoveredIntentsResponse) GetReportExternalTraffi
 	return v.ReportExternalTrafficDiscoveredIntents
 }
 
+// ReportIncomingTrafficDiscoveredIntentsResponse is returned by ReportIncomingTrafficDiscoveredIntents on success.
+type ReportIncomingTrafficDiscoveredIntentsResponse struct {
+	ReportIncomingTrafficDiscoveredIntents bool `json:"reportIncomingTrafficDiscoveredIntents"`
+}
+
+// GetReportIncomingTrafficDiscoveredIntents returns ReportIncomingTrafficDiscoveredIntentsResponse.ReportIncomingTrafficDiscoveredIntents, and is useful for accessing the field via an interface.
+func (v *ReportIncomingTrafficDiscoveredIntentsResponse) GetReportIncomingTrafficDiscoveredIntents() bool {
+	return v.ReportIncomingTrafficDiscoveredIntents
+}
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -334,6 +379,16 @@ type __ReportExternalTrafficDiscoveredIntentsInput struct {
 
 // GetIntents returns __ReportExternalTrafficDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
 func (v *__ReportExternalTrafficDiscoveredIntentsInput) GetIntents() []ExternalTrafficDiscoveredIntentInput {
+	return v.Intents
+}
+
+// __ReportIncomingTrafficDiscoveredIntentsInput is used internally by genqlient
+type __ReportIncomingTrafficDiscoveredIntentsInput struct {
+	Intents []IncomingTrafficDiscoveredIntentInput `json:"intents"`
+}
+
+// GetIntents returns __ReportIncomingTrafficDiscoveredIntentsInput.Intents, and is useful for accessing the field via an interface.
+func (v *__ReportIncomingTrafficDiscoveredIntentsInput) GetIntents() []IncomingTrafficDiscoveredIntentInput {
 	return v.Intents
 }
 
@@ -425,6 +480,39 @@ func ReportExternalTrafficDiscoveredIntents(
 	var err_ error
 
 	var data_ ReportExternalTrafficDiscoveredIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportIncomingTrafficDiscoveredIntents.
+const ReportIncomingTrafficDiscoveredIntents_Operation = `
+mutation ReportIncomingTrafficDiscoveredIntents ($intents: [IncomingTrafficDiscoveredIntentInput!]!) {
+	reportIncomingTrafficDiscoveredIntents(intents: $intents)
+}
+`
+
+func ReportIncomingTrafficDiscoveredIntents(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	intents []IncomingTrafficDiscoveredIntentInput,
+) (*ReportIncomingTrafficDiscoveredIntentsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportIncomingTrafficDiscoveredIntents",
+		Query:  ReportIncomingTrafficDiscoveredIntents_Operation,
+		Variables: &__ReportIncomingTrafficDiscoveredIntentsInput{
+			Intents: intents,
+		},
+	}
+	var err_ error
+
+	var data_ ReportIncomingTrafficDiscoveredIntentsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

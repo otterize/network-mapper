@@ -117,13 +117,13 @@ type AccessGraphEdge {
 	accessStatuses: EdgeAccessStatuses!
 }
 
+"""Access graph filter"""
 type AccessGraphFilter {
-	environmentIds: [ID!]
-	clusterIds: [ID!]
-	namespaceIds: [ID!]
-	serviceIds: [ID!]
-	lastSeenAfter: Time
-	includeServicesWithNoEdges: Boolean
+	clusterIds: IDFilterValue
+	serviceIds: IDFilterValue
+	namespaceIds: IDFilterValue
+	environmentIds: IDFilterValue
+	lastSeen: TimeFilterValue
 }
 
 enum ApiFieldAction {
@@ -342,11 +342,6 @@ enum CustomConstraint {
 	ID
 }
 
-enum DBPermissionChange {
-	APPLY
-	DELETE
-}
-
 input DNSIPPairInput {
 	dnsName: String!
 	ips: [String!]
@@ -364,27 +359,13 @@ input DatabaseConfigInput {
 	operations: [DatabaseOperation!]
 }
 
-type DatabaseCredentials {
-	username: String!
-	password: String!
-}
-
-input DatabaseCredentialsInput {
-	username: String!
-	password: String!
-}
-
 type DatabaseInfo {
-	address: String!
 	databaseType: DatabaseType!
-	credentials: DatabaseCredentials!
 	visibility: DatabaseVisibilitySettings
 }
 
 input DatabaseInfoInput {
-	address: String!
 	databaseType: DatabaseType!
-	credentials: DatabaseCredentialsInput!
 	visibility: DatabaseVisibilitySettingsInput
 }
 
@@ -574,6 +555,7 @@ type GitHubAccessGraphFilter {
 	clusterIds: [ID!]
 	namespaceIds: [ID!]
 	serviceIds: [ID!]
+	serviceFilterType: IDFilterOperators
 	lastSeenAfter: Time
 }
 
@@ -634,20 +616,56 @@ enum HTTPMethod {
 """The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as "4") or integer (such as 4) input value will be accepted as an ID."""
 scalar ID
 
+"""ID filters"""
+enum IDFilterOperators {
+	INCLUDE
+	EXCLUDE
+}
+
+type IDFilterValue {
+	value: [ID!]!
+	operator: IDFilterOperators!
+}
+
+input IncomingInternetSourceInput {
+	ip: String!
+}
+
+input IncomingTrafficDiscoveredIntentInput {
+	discoveredAt: Time!
+	intent: IncomingTrafficIntentInput!
+}
+
+input IncomingTrafficIntentInput {
+	serverName: String!
+	namespace: String!
+	source: IncomingInternetSourceInput!
+}
+
 input InputAccessGraphFilter {
-	environmentIds: [ID!]
-	clusterIds: [ID!]
-	serviceIds: [ID!]
-	namespaceIds: [ID!]
-	lastSeenAfter: Time
-	includeServicesWithNoEdges: Boolean
+	clusterIds: InputIDFilterValue
+	serviceIds: InputIDFilterValue
+	namespaceIds: InputIDFilterValue
+	environmentIds: InputIDFilterValue
+	lastSeen: InputTimeFilterValue
 }
 
 input InputGitHubAccessGraphFilter {
 	environmentIds: [ID!]
 	clusterIds: [ID!]
 	serviceIds: [ID!]
+	serviceFilterType: IDFilterOperators
 	namespaceIds: [ID!]
+}
+
+input InputIDFilterValue {
+	value: [ID!]!
+	operator: IDFilterOperators!
+}
+
+input InputTimeFilterValue {
+	value: Time!
+	operator: TimeFilterOperators!
 }
 
 """The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
@@ -685,11 +703,19 @@ enum IntegrationState {
 	SUCCESS
 	FAILURE
 	PENDING
+	WARNING
 }
 
 type IntegrationStatus {
 	state: IntegrationState!
-	errorMessage: String
+	message: String
+	metadata: [IntegrationStatusMetadataItem!]
+	lastSeen: Time
+}
+
+type IntegrationStatusMetadataItem {
+	message: String!
+	extra: [LabelValueTuple!]
 }
 
 enum IntegrationType {
@@ -775,6 +801,7 @@ type IntentsOperatorConfiguration {
 	protectedServicesEnabled: Boolean!
 	protectedServices: [Service!]!
 	egressNetworkPolicyEnforcementEnabled: Boolean!
+	enforcedNamespaces: [String!]
 }
 
 input IntentsOperatorConfigurationInput {
@@ -788,6 +815,7 @@ input IntentsOperatorConfigurationInput {
 	gcpIAMPolicyEnforcementEnabled: Boolean
 	azureIAMPolicyEnforcementEnabled: Boolean
 	databaseEnforcementEnabled: Boolean
+	enforcedNamespaces: [String!]
 }
 
 type InternetConfig {
@@ -905,6 +933,11 @@ input LabelInput {
 	value: String
 }
 
+type LabelValueTuple {
+	label: String!
+	value: String!
+}
+
 type Me {
 """The logged-in user details."""
 	user: User!
@@ -992,10 +1025,6 @@ type Mutation {
 		name: String!
 		databaseInfo: DatabaseInfoInput!
 	): Integration
-	updateDatabaseIntegrationCredentials(
-		integrationId: ID!
-		credentials: DatabaseCredentialsInput!
-	): Boolean!
 """Create a new Kubernetes integration"""
 	createKubernetesIntegration(
 		environmentId: ID!
@@ -1080,13 +1109,13 @@ type Mutation {
 	reportExternalTrafficDiscoveredIntents(
 		intents: [ExternalTrafficDiscoveredIntentInput!]!
 	): Boolean!
+	reportIncomingTrafficDiscoveredIntents(
+		intents: [IncomingTrafficDiscoveredIntentInput!]!
+	): Boolean!
 	reportAppliedKubernetesIntents(
 		namespace: String!
 		intents: [IntentInput!]!
-	): Boolean!
-	handleDatabaseIntents(
-		intents: [IntentInput!]!
-		action: DBPermissionChange!
+		ossClusterId: String
 	): Boolean!
 	reportNetworkPolicies(
 		namespace: String!
@@ -1276,10 +1305,6 @@ type Query {
 		clusterId: ID
 		name: String
 	): Integration!
-	testDatabaseConnection(
-		databaseInfo: DatabaseInfoInput!
-		integrationId: ID
-	): TestDatabaseConnectionResponse!
 """Test database visibility connectivity"""
 	testDatabaseVisibilityConnection(
 		databaseInfo: DatabaseInfoInput!
@@ -1424,7 +1449,6 @@ type Service {
 	azureResource: AzureResource
 	discoveredByIntegration: Integration
 	tlsKeyPair: KeyPair!
-	userAndPassword: UserAndPassword!
 }
 
 type ServiceAccessGraph {
@@ -1490,6 +1514,16 @@ type TestDatabaseConnectionResponse {
 
 scalar Time
 
+"""Time filters"""
+enum TimeFilterOperators {
+	AFTER
+}
+
+type TimeFilterValue {
+	value: Time!
+	operator: TimeFilterOperators!
+}
+
 enum TutorialEvent {
 	CLUSTER_CREATED
 	CLUSTER_CONNECTED
@@ -1529,11 +1563,6 @@ type User {
 	authProviderUserId: String!
 	tutorials: [UserTutorial!]
 	activeTutorial: UserTutorial!
-}
-
-type UserAndPassword {
-	username: String!
-	password: String!
 }
 
 enum UserErrorType {

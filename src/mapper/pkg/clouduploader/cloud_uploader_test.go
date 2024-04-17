@@ -3,6 +3,7 @@ package clouduploader
 import (
 	"context"
 	"errors"
+	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"testing"
 	"time"
 
@@ -22,15 +23,17 @@ var (
 
 type CloudUploaderTestSuite struct {
 	suite.Suite
-	testNamespace string
-	intentsHolder *intentsstore.IntentsHolder
-	cloudUploader *CloudUploader
-	clientMock    *cloudclientmocks.MockCloudClient
+	testNamespace  string
+	intentsHolder  *intentsstore.IntentsHolder
+	incomingHolder *incomingtrafficholder.IncomingTrafficIntentsHolder
+	cloudUploader  *CloudUploader
+	clientMock     *cloudclientmocks.MockCloudClient
 }
 
 func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
 	s.intentsHolder = intentsstore.NewIntentsHolder()
+	s.incomingHolder = incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 }
 
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
@@ -89,6 +92,36 @@ func (s *CloudUploaderTestSuite) TestUploadIntents() {
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents2)).Return(nil).Times(1)
 
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
+}
+
+func (s *CloudUploaderTestSuite) TestUploadIncomingTrafficIntents() {
+	sourceIP := "34.13.0.22"
+	incomingIntent := incomingtrafficholder.IncomingTrafficIntent{
+		Server:   model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace},
+		LastSeen: testTimestamp,
+		IP:       sourceIP,
+	}
+	s.incomingHolder.AddIntent(incomingIntent)
+
+	intents1 := []cloudclient.IncomingTrafficDiscoveredIntentInput{
+		{
+			DiscoveredAt: testTimestamp,
+			Intent: cloudclient.IncomingTrafficIntentInput{
+				ServerName: "server1",
+				Namespace:  s.testNamespace,
+				Source: cloudclient.IncomingInternetSourceInput{
+					Ip: sourceIP,
+				},
+			},
+		},
+	}
+
+	s.clientMock.EXPECT().ReportIncomingTrafficDiscoveredIntents(gomock.Any(), intents1).Return(nil).Times(1)
+
+	s.cloudUploader.NotifyIncomingTrafficIntents(context.Background(), s.incomingHolder.GetNewIntentsSinceLastGet())
+
+	// Expect no new intents to be uploaded
+	s.cloudUploader.NotifyIncomingTrafficIntents(context.Background(), s.incomingHolder.GetNewIntentsSinceLastGet())
 }
 
 func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {

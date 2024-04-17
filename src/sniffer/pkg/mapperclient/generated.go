@@ -25,10 +25,11 @@ type CaptureTCPResults struct {
 func (v *CaptureTCPResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
 type Destination struct {
-	Destination   string                  `json:"destination"`
-	DestinationIP nilable.Nilable[string] `json:"destinationIP"`
-	TTL           nilable.Nilable[int]    `json:"TTL"`
-	LastSeen      time.Time               `json:"lastSeen"`
+	Destination     string                  `json:"destination"`
+	DestinationIP   nilable.Nilable[string] `json:"destinationIP"`
+	DestinationPort nilable.Nilable[int]    `json:"destinationPort"`
+	TTL             nilable.Nilable[int]    `json:"TTL"`
+	LastSeen        time.Time               `json:"lastSeen"`
 }
 
 // GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
@@ -36,6 +37,9 @@ func (v *Destination) GetDestination() string { return v.Destination }
 
 // GetDestinationIP returns Destination.DestinationIP, and is useful for accessing the field via an interface.
 func (v *Destination) GetDestinationIP() nilable.Nilable[string] { return v.DestinationIP }
+
+// GetDestinationPort returns Destination.DestinationPort, and is useful for accessing the field via an interface.
+func (v *Destination) GetDestinationPort() nilable.Nilable[int] { return v.DestinationPort }
 
 // GetTTL returns Destination.TTL, and is useful for accessing the field via an interface.
 func (v *Destination) GetTTL() nilable.Nilable[int] { return v.TTL }

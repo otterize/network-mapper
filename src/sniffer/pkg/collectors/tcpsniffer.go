@@ -26,6 +26,7 @@ type pendingTCPCapture struct {
 	srcIp       string
 	srcHostname string
 	destIp      string
+	destPort    int
 	time        time.Time
 	ttl         nilable.Nilable[int]
 }
@@ -74,32 +75,79 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 		return
 	}
 	captureTime := detectCaptureTime(packet)
+
 	ipLayer := packet.Layer(layers.LayerTypeIPv4)
-	if ipLayer != nil {
-		ip, ok := ipLayer.(*layers.IPv4)
-		if !ok {
-			logrus.Debugf("Failed to parse IP layer")
-			return
-		}
-
-		srcIP := ip.SrcIP.String()
-		dstIP := ip.DstIP.String()
-		if !s.isRunningOnAWS {
-			s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil))
-			return
-		}
-		localHostname, err := s.resolver.ResolveIP(srcIP)
-		if err != nil {
-			logrus.Debugf("Can't resolve IP addr %s, skipping", srcIP)
-		} else {
-			logrus.Debugf("Captured TCP SYN from %s to %s", srcIP, dstIP)
-
-			// Resolver cache could be outdated, verify same resolving result after next poll
-			s.pending = append(s.pending, pendingTCPCapture{
-				srcIp: srcIP, srcHostname: localHostname, destIp: dstIP, time: captureTime,
-			})
-		}
+	if ipLayer == nil {
+		return
 	}
+
+	ip, ok := ipLayer.(*layers.IPv4)
+	if !ok {
+		logrus.Debugf("Failed to parse IP layer")
+		return
+	}
+
+	dstPort, portFound, err := s.getDestPort(packet, ip)
+	if err != nil {
+		logrus.Debugf("Failed to parse TCP/UDP port: %s", err)
+		return
+	}
+	if !portFound {
+		logrus.Debugf("Port not found, skipping packet")
+		return
+	}
+
+	logrus.Debugf("TCP SYN: %s to %s:%d", ip.SrcIP, ip.DstIP, dstPort)
+	srcIP := ip.SrcIP.String()
+	dstIP := ip.DstIP.String()
+	if !s.isRunningOnAWS {
+		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort)
+		return
+	}
+
+	localHostname, err := s.resolver.ResolveIP(srcIP)
+	if err != nil {
+		logrus.Debugf("Can't resolve IP addr %s, sending IP only", srcIP)
+		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort)
+		return
+	}
+
+	logrus.Debugf("Captured TCP SYN from %s to %s", srcIP, dstIP)
+
+	// Resolver cache could be outdated, verify same resolving result after next poll
+	s.pending = append(s.pending, pendingTCPCapture{
+		srcIp:       srcIP,
+		srcHostname: localHostname,
+		destIp:      dstIP,
+		destPort:    dstPort,
+		time:        captureTime,
+	})
+}
+
+func (s *TCPSniffer) getDestPort(packet gopacket.Packet, ip *layers.IPv4) (int, bool, error) {
+	layerType := ip.NextLayerType()
+	var portName string
+	var port int
+	switch layerType {
+	case layers.LayerTypeTCP:
+		tcpLayer := packet.Layer(layers.LayerTypeTCP)
+		if tcpLayer == nil {
+			return 0, false, errors.New("Failed to parse TCP layer")
+		}
+
+		tcp, ok := tcpLayer.(*layers.TCP)
+		if !ok {
+			return 0, false, errors.New("Failed to parse TCP layer")
+		}
+
+		port = int(tcp.DstPort)
+		portName = tcp.DstPort.String()
+	default:
+		return 0, false, errors.New("Unknown transport layer")
+	}
+
+	logrus.Debugf("Detected ip port %s: %s", ip.DstIP.String(), portName)
+	return port, true, nil
 }
 
 func (s *TCPSniffer) RefreshHostsMapping() error {
@@ -121,7 +169,7 @@ func (s *TCPSniffer) RefreshHostsMapping() error {
 			logrus.Debugf("IP %s was resolved to %s, but now resolves to %s. skipping packet", p.srcIp, p.srcHostname, hostname)
 			continue
 		}
-		s.addCapturedRequest(p.srcIp, hostname, p.destIp, p.destIp, p.time, p.ttl)
+		s.addCapturedRequest(p.srcIp, hostname, p.destIp, p.destIp, p.time, p.ttl, &p.destPort)
 	}
 	s.pending = make([]pendingTCPCapture, 0)
 	return nil
