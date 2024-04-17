@@ -202,7 +202,7 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 func (s *ResolverTestSuite) TestReportIncomingTraffic() {
 	serviceIp := "10.0.0.16"
 	serviceExternalIP := "34.10.0.12"
-	s.AddDeploymentWithIngressService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, serviceIp, serviceExternalIP)
+	s.AddDeploymentWithIngressService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, serviceIp, serviceExternalIP, 9090)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 	externalInternetServerIP := "142.198.10.38"
 
@@ -213,8 +213,9 @@ func (s *ResolverTestSuite) TestReportIncomingTraffic() {
 				SrcIp: externalInternetServerIP,
 				Destinations: []test_gql_client.Destination{
 					{
-						DestinationIP: nilable.From(serviceExternalIP),
-						LastSeen:      packetTime,
+						DestinationIP:   nilable.From(serviceExternalIP),
+						DestinationPort: nilable.From(9090),
+						LastSeen:        packetTime,
 					},
 				},
 			},

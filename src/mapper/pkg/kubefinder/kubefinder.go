@@ -75,7 +75,10 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		if svc.DeletionTimestamp != nil {
 			return nil
 		}
-		ips.Insert(svc.Spec.ExternalIPs...)
+		if svc.Spec.Type == corev1.ServiceTypeNodePort {
+			return nil
+		}
+
 		for _, ingress := range svc.Status.LoadBalancer.Ingress {
 			ips.Insert(ingress.IP)
 		}

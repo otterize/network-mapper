@@ -132,14 +132,18 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 	return podCopy
 }
 
-func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod) *corev1.Endpoints {
+func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod, port *int) *corev1.Endpoints {
 	addresses := lo.Map(pods, func(pod *corev1.Pod, _ int) corev1.EndpointAddress {
 		return corev1.EndpointAddress{IP: pod.Status.PodIP, TargetRef: &corev1.ObjectReference{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace}}
 	})
 
+	endpointPort := 8080
+	if port != nil {
+		endpointPort = *port
+	}
 	endpoints := &corev1.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("svc-%s", name), Namespace: s.TestNamespace},
-		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}}}},
+		Subsets:    []corev1.EndpointSubset{{Addresses: addresses, Ports: []corev1.EndpointPort{{Name: "someport", Port: int32(endpointPort), Protocol: corev1.ProtocolTCP}}}},
 	}
 
 	s.Require().NotEmpty(addresses[0].IP)
@@ -165,17 +169,11 @@ func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[st
 
 	s.waitForObjectToBeCreated(service)
 
-	s.AddEndpoints(name, pods)
+	s.AddEndpoints(name, pods, nil)
 	return service
 }
 
-func (s *ControllerManagerTestSuiteBase) AddServiceWithIngress(
-	name string,
-	selector map[string]string,
-	serviceIp string,
-	externalIP string,
-	pods []*corev1.Pod,
-) *corev1.Service {
+func (s *ControllerManagerTestSuiteBase) AddServiceWithIngress(name string, selector map[string]string, serviceIp string, externalIP string, pods []*corev1.Pod, port int) *corev1.Service {
 	serviceName := fmt.Sprintf("svc-%s", name)
 	status := corev1.ServiceStatus{
 		LoadBalancer: corev1.LoadBalancerStatus{
@@ -185,7 +183,7 @@ func (s *ControllerManagerTestSuiteBase) AddServiceWithIngress(
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: serviceName, Namespace: s.TestNamespace},
 		Spec: corev1.ServiceSpec{Selector: selector,
-			Ports:      []corev1.ServicePort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}},
+			Ports:      []corev1.ServicePort{{Name: "someport", Port: int32(port), Protocol: corev1.ProtocolTCP}},
 			Type:       corev1.ServiceTypeLoadBalancer,
 			ClusterIP:  serviceIp,
 			ClusterIPs: []string{serviceIp},
@@ -199,12 +197,12 @@ func (s *ControllerManagerTestSuiteBase) AddServiceWithIngress(
 	s.Require().NoError(err)
 
 	s.waitForObjectToBeCreated(service)
-	s.AddIngress(name, serviceName, s.TestNamespace, externalIP)
-	s.AddEndpoints(name, pods)
+	s.AddIngress(name, serviceName, s.TestNamespace, externalIP, port)
+	s.AddEndpoints(name, pods, &port)
 	return service
 }
 
-func (s *ControllerManagerTestSuiteBase) AddIngress(name string, serviceName string, serviceNamespace, externalIP string) *networkingv1.Ingress {
+func (s *ControllerManagerTestSuiteBase) AddIngress(name string, serviceName string, serviceNamespace, externalIP string, port int) *networkingv1.Ingress {
 	ingress := &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("ingress-%s", name), Namespace: s.TestNamespace},
 		Spec: networkingv1.IngressSpec{
@@ -221,7 +219,7 @@ func (s *ControllerManagerTestSuiteBase) AddIngress(name string, serviceName str
 										Service: &networkingv1.IngressServiceBackend{
 											Name: serviceName,
 											Port: networkingv1.ServiceBackendPort{
-												Number: 8080,
+												Number: int32(port),
 											},
 										},
 									},
@@ -354,9 +352,9 @@ func (s *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, p
 	return deployment, service, pods
 }
 
-func (s *ControllerManagerTestSuiteBase) AddDeploymentWithIngressService(name string, podIps []string, podLabels map[string]string, serviceIp string, externalIP string) (*appsv1.Deployment, *corev1.Service, []*corev1.Pod) {
+func (s *ControllerManagerTestSuiteBase) AddDeploymentWithIngressService(name string, podIps []string, podLabels map[string]string, serviceIp string, externalIP string, port int) (*appsv1.Deployment, *corev1.Service, []*corev1.Pod) {
 	deployment, pods := s.AddDeployment(name, podIps, podLabels)
-	service := s.AddServiceWithIngress(name, podLabels, serviceIp, externalIP, pods)
+	service := s.AddServiceWithIngress(name, podLabels, serviceIp, externalIP, pods, port)
 	return deployment, service, pods
 }
 

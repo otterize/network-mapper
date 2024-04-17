@@ -375,8 +375,17 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 	if dest.DestinationIP == nil || len(destIP) == 0 {
 		return model.OtterizeServiceIdentity{}, false, errors.New("invalid TCP destination, IP is empty")
 	}
+	if dest.DestinationPort == nil {
+		return model.OtterizeServiceIdentity{}, false, errors.New("invalid TCP destination, port is empty")
+	}
 
-	destService, ok, err := r.kubeFinder.ResolveIPToExternalAccessService(ctx, destIP)
+	destPort := int(*dest.DestinationPort)
+	if destPort == 10256 {
+		// Ignore kubelet port
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
+	destService, ok, err := r.kubeFinder.ResolveIPToExternalAccessService(ctx, destIP, destPort)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIP)
@@ -406,11 +415,12 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	}
 	logrus.Infof("Handling TCP capture results len: %d", len(results.Results))
 	for _, captureItem := range results.Results {
-		logrus.Debugf("Handling TCP capture result: %+v", captureItem)
+		logrus.Infof("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, captureItem.Destinations[0].DestinationPort)
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
 		if err != nil {
 			if errors.Is(err, kubefinder.ErrNoPodFound) {
 				r.tryReportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
+				continue
 			}
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
