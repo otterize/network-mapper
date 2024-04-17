@@ -428,7 +428,7 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 func (r *Resolver) tryReportIncomingInternetTraffic(ctx context.Context, srcIP string, destinations []model.Destination) {
 	isExternal, err := r.kubeFinder.IsExternalIP(ctx, srcIP)
 	if err != nil {
-		logrus.WithError(err).Error("could not determine if IP is external")
+		logrus.WithError(err).Errorf("could not determine if IP %s is external", srcIP)
 		return
 	}
 	if !isExternal {
