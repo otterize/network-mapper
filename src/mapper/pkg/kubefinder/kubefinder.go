@@ -5,6 +5,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"inet.af/netaddr"
@@ -209,7 +210,7 @@ func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod
 	return &pods.Items[0], nil
 }
 
-func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string) (*corev1.Service, bool, error) {
+func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
 	var services corev1.ServiceList
 	err := k.client.List(ctx, &services, client.MatchingFields{externalIPIndexField: ip})
 	if err != nil {
@@ -221,6 +222,16 @@ func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip st
 	if len(services.Items) != 1 {
 		return nil, false, errors.Wrap(ErrFoundMoreThanOneService)
 	}
+	service := services.Items[0]
+	_, isServicePort := lo.Find(service.Spec.Ports, func(p corev1.ServicePort) bool {
+		return p.Port == int32(port)
+	})
+
+	if !isServicePort {
+		logrus.Debugf("service %s does not have port %d, ignoring", service.Name, port)
+		return nil, false, nil
+	}
+
 	return &services.Items[0], true, nil
 }
 

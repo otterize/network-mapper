@@ -380,11 +380,6 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 	}
 
 	destPort := int(*dest.DestinationPort)
-	if destPort == 10256 {
-		// Ignore kubelet port
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-
 	destService, ok, err := r.kubeFinder.ResolveIPToExternalAccessService(ctx, destIP, destPort)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
