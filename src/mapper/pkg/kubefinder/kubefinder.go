@@ -2,6 +2,7 @@ package kubefinder
 
 import (
 	"context"
+	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -22,6 +23,8 @@ const (
 	podIPIndexField            = "ip"
 	serviceIPIndexField        = "spec.ip"
 	externalIPIndexField       = "spec.externalIPs"
+	portNumberIndexField       = "service.spec.ports.nodePort"
+	nodeIPIndexField           = "node.status.Addresses.ExternalIP"
 	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
 )
 
@@ -82,6 +85,43 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 
 		for _, ingress := range svc.Status.LoadBalancer.Ingress {
 			ips.Insert(ingress.IP)
+		}
+		return ips.UnsortedList()
+	})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, portNumberIndexField, func(object client.Object) []string {
+		ports := sets.New[string]()
+		svc := object.(*corev1.Service)
+		if svc.DeletionTimestamp != nil {
+			return nil
+		}
+		if svc.Spec.Type != corev1.ServiceTypeNodePort {
+			return nil
+		}
+
+		for _, nodePort := range svc.Spec.Ports {
+			ports.Insert(fmt.Sprintf("%d", nodePort.NodePort))
+		}
+		return ports.UnsortedList()
+	})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	err = k.mgr.GetCache().IndexField(ctx, &corev1.Node{}, nodeIPIndexField, func(object client.Object) []string {
+		ips := sets.New[string]()
+		node := object.(*corev1.Node)
+		if node.DeletionTimestamp != nil {
+			return nil
+		}
+
+		for _, address := range node.Status.Addresses {
+			if address.Type == corev1.NodeInternalIP || address.Type == corev1.NodeExternalIP {
+				ips.Insert(address.Address)
+			}
 		}
 		return ips.UnsortedList()
 	})
@@ -211,6 +251,22 @@ func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod
 }
 
 func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
+	nodePortService, ok, err := k.resolveNodePortService(ctx, ip, port)
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+	if ok {
+		return nodePortService, true, nil
+	}
+
+	loadBalancerService, ok, err := k.resolveLoadBalancerService(ctx, ip, port)
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+	return loadBalancerService, ok, nil
+}
+
+func (k *KubeFinder) resolveLoadBalancerService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
 	var services corev1.ServiceList
 	err := k.client.List(ctx, &services, client.MatchingFields{externalIPIndexField: ip})
 	if err != nil {
@@ -222,6 +278,7 @@ func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip st
 	if len(services.Items) != 1 {
 		return nil, false, errors.Wrap(ErrFoundMoreThanOneService)
 	}
+
 	service := services.Items[0]
 	_, isServicePort := lo.Find(service.Spec.Ports, func(p corev1.ServicePort) bool {
 		return p.Port == int32(port)
@@ -230,6 +287,36 @@ func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip st
 	if !isServicePort {
 		logrus.Debugf("service %s does not have port %d, ignoring", service.Name, port)
 		return nil, false, nil
+	}
+
+	return &service, true, nil
+}
+
+func (k *KubeFinder) resolveNodePortService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
+	var nodes corev1.NodeList
+	err := k.client.List(ctx, &nodes, client.MatchingFields{nodeIPIndexField: ip})
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+	if len(nodes.Items) == 0 {
+		return nil, false, nil
+	}
+	if len(nodes.Items) != 1 {
+		// Should not happen
+		return nil, false, errors.New(fmt.Sprintf("found more than one node with ip %s", ip))
+	}
+
+	portString := fmt.Sprintf("%d", port)
+	var services corev1.ServiceList
+	err = k.client.List(ctx, &services, client.MatchingFields{portNumberIndexField: portString})
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+	if len(services.Items) == 0 {
+		return nil, false, nil
+	}
+	if len(services.Items) != 1 {
+		return nil, false, errors.Wrap(ErrFoundMoreThanOneService)
 	}
 
 	return &services.Items[0], true, nil
