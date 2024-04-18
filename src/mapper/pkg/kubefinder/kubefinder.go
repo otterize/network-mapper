@@ -93,7 +93,7 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 	}
 
 	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, portNumberIndexField, func(object client.Object) []string {
-		ips := sets.New[string]()
+		ports := sets.New[string]()
 		svc := object.(*corev1.Service)
 		if svc.DeletionTimestamp != nil {
 			return nil
@@ -103,9 +103,9 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		}
 
 		for _, nodePort := range svc.Spec.Ports {
-			ips.Insert(fmt.Sprintf("%d", nodePort.NodePort))
+			ports.Insert(fmt.Sprintf("%d", nodePort.NodePort))
 		}
-		return ips.UnsortedList()
+		return ports.UnsortedList()
 	})
 	if err != nil {
 		return errors.Wrap(err)
