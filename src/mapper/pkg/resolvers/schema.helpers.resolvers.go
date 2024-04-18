@@ -410,7 +410,7 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	}
 	logrus.Infof("Handling TCP capture results len: %d", len(results.Results))
 	for _, captureItem := range results.Results {
-		logrus.Infof("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, captureItem.Destinations[0].DestinationPort)
+		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
 		if err != nil {
 			if errors.Is(err, kubefinder.ErrNoPodFound) {
@@ -451,6 +451,7 @@ func (r *Resolver) tryReportIncomingInternetTraffic(ctx context.Context, srcIP s
 			continue
 		}
 
+		logrus.Debugf("Saw incoming traffic from '%s' to '%s/%s'", srcIP, destSvcIdentity.Name, destSvcIdentity.Namespace)
 		intent := incomingtrafficholder.IncomingTrafficIntent{
 			LastSeen: dest.LastSeen,
 			Server:   destSvcIdentity,
