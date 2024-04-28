@@ -1,8 +1,6 @@
 module github.com/otterize/network-mapper/src
 
-go 1.21.5
-
-toolchain go1.22.0
+go 1.22.1
 
 require (
 	github.com/99designs/gqlgen v0.17.44
@@ -26,8 +24,8 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/intents-operator/src v0.0.0-20240415224106-28365bb34bb2
-	github.com/otterize/nilable v0.0.0-20230421170720-4a38614e35a9
+	github.com/otterize/intents-operator/src v0.0.0-20240428093949-7597a22e6e39
+	github.com/otterize/nilable v0.0.0-20240410132629-f242bb6f056f
 	github.com/prometheus/client_golang v1.18.0
 	github.com/samber/lo v1.33.0
 	github.com/sirupsen/logrus v1.9.3
