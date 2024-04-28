@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
+	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	mutatingwebhookconfiguration "github.com/otterize/intents-operator/src/operator/controllers/mutating_webhook_controller"
-	"github.com/otterize/intents-operator/src/shared/clusterutils"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/filters"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
@@ -21,8 +21,11 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/metadata"
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -53,6 +56,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (
@@ -104,9 +108,8 @@ func main() {
 	if err != nil {
 		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
-	signalHandlerCtx := ctrl.SetupSignalHandler()
 
-	errgrp, errGroupCtx := errgroup.WithContext(signalHandlerCtx)
+	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 
 	dnsCache := dnscache.NewDNSCache()
 	dnsPublisher, dnsPublisherEnabled, err := dnsintentspublisher.InitWithManager(errGroupCtx, mgr, dnsCache)
@@ -136,12 +139,23 @@ func main() {
 		return nil
 	})
 
-	clusterUID, err := clusterutils.GetOrCreateClusterUID(signalHandlerCtx)
+	metadataClient, err := metadata.NewForConfig(clientconfig.GetConfigOrDie())
 	if err != nil {
-		logrus.WithError(err).Panic("Failed fetching cluster UID")
+		logrus.WithError(err).Panic("unable to create metadata client")
 	}
-
-	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
+	mapping, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: "", Kind: "Namespace"}, "v1")
+	if err != nil {
+		logrus.WithError(err).Panic("unable to create Kubernetes API REST mapping")
+	}
+	kubeSystemUID := ""
+	kubeSystemNs, err := metadataClient.Resource(mapping.Resource).Get(context.Background(), "kube-system", metav1.GetOptions{})
+	if err != nil || kubeSystemNs == nil {
+		logrus.Warningf("failed getting kubesystem UID: %s", err)
+		kubeSystemUID = fmt.Sprintf("rand-%s", uuid.New().String())
+	} else {
+		kubeSystemUID = string(kubeSystemNs.UID)
+	}
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(kubeSystemUID))
 
 	// start API server
 	mapperServer.GET("/healthz", func(c echo.Context) error {
