@@ -196,7 +196,7 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 	return pods, nil
 }
 
-func (k *KubeFinder) IsExternalIP(ctx context.Context, ip string) (bool, error) {
+func (k *KubeFinder) IsIPNotInNodePodCIDR(ctx context.Context, ip string) (bool, error) {
 	var nodes corev1.NodeList
 	err := k.client.List(ctx, &nodes)
 	if err != nil {

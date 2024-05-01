@@ -21,6 +21,23 @@ func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
 	return labels
 }
 
+// isExternalOrAssumeExternalIfError returns true if the IP is external or if an error occurred while determining if the IP is external.
+func (r *Resolver) isExternalOrAssumeExternalIfError(ctx context.Context, srcIP string) (bool, error) {
+	_, err := r.kubeFinder.ResolveIPToPod(ctx, srcIP)
+	// If the IP is not found, it may be external
+	if err != nil && !errors.Is(err, kubefinder.ErrNoPodFound) {
+		return false, errors.Wrap(err)
+	}
+
+	// if the IP is not in any node's pod CIDR, it is external.
+	isExternal, err := r.kubeFinder.IsIPNotInNodePodCIDR(ctx, srcIP)
+	if err != nil {
+		logrus.WithError(err).WithField("ip", srcIP).Debug("could not determine if IP is external, assuming it is")
+		return true, nil
+	}
+	return isExternal, nil
+}
+
 func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {
