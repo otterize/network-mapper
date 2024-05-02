@@ -408,7 +408,7 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	if !viper.GetBool(sharedconfig.EnableTCPKey) {
 		return nil
 	}
-	logrus.Infof("Handling TCP capture results len: %d", len(results.Results))
+
 	for _, captureItem := range results.Results {
 		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
 		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
