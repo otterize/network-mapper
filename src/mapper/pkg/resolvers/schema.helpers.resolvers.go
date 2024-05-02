@@ -411,12 +411,21 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 
 	for _, captureItem := range results.Results {
 		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		isExternal, err := r.isExternalOrAssumeExternalIfError(ctx, captureItem.SrcIP)
 		if err != nil {
-			if errors.Is(err, kubefinder.ErrNoPodFound) {
-				r.tryReportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
+			logrus.WithError(err).Error("could not determine if IP is external")
+			continue
+		}
+		if isExternal {
+			err := r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
+			if err != nil {
+				logrus.WithError(err).Error("could not report incoming internet traffic")
 				continue
 			}
+		}
+
+		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
 		}
@@ -430,17 +439,7 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	return nil
 }
 
-func (r *Resolver) tryReportIncomingInternetTraffic(ctx context.Context, srcIP string, destinations []model.Destination) {
-	isExternal, err := r.kubeFinder.IsExternalIP(ctx, srcIP)
-	if err != nil {
-		logrus.WithError(err).Errorf("could not determine if IP %s is external", srcIP)
-		return
-	}
-	if !isExternal {
-		logrus.Debugf("IP %s is not external, ignoring", srcIP)
-		return
-	}
-
+func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP string, destinations []model.Destination) error {
 	for _, dest := range destinations {
 		destSvcIdentity, ok, err := r.resolveOtterizeIdentityForExternalAccessDestination(ctx, dest)
 		if err != nil {
@@ -459,6 +458,7 @@ func (r *Resolver) tryReportIncomingInternetTraffic(ctx context.Context, srcIP s
 		}
 		r.incomingTrafficHolder.AddIntent(intent)
 	}
+	return nil
 }
 
 func (r *Resolver) handleTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
