@@ -152,7 +152,7 @@ func (k *KubeFinder) ResolveIPToService(ctx context.Context, ip string) (*corev1
 	}
 
 	if len(services.Items) != 1 {
-		return nil, false, ErrFoundMoreThanOneService
+		return nil, false, errors.Wrap(ErrFoundMoreThanOneService)
 	}
 	return &services.Items[0], true, nil
 }
