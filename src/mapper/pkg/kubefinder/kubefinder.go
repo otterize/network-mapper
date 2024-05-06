@@ -207,7 +207,7 @@ func (k *KubeFinder) IsIPNotInNodePodCIDR(ctx context.Context, ip string) (bool,
 	for _, node := range nodes.Items {
 		nodeCidr := node.Spec.PodCIDR
 		if nodeCidr == "" {
-			logrus.Errorf("node %s has no podCIDR", node.Name)
+			logrus.Debugf("node %s has no podCIDR", node.Name)
 			continue
 		}
 
