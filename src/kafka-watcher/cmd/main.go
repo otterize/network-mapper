@@ -36,6 +36,7 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	errorreporter.Init("kafka-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	defer errorreporter.AutoNotify()
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()
