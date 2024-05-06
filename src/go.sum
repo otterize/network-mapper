@@ -345,6 +345,8 @@ github.com/otterize/go-procnet v0.1.1 h1:5vRwX35VrsWcy2uP05sA4PmwpRoAu2L4vMJou4o
 github.com/otterize/go-procnet v0.1.1/go.mod h1:WEm282HzrSVBZg6DX2fNB4dpVHBPTCjzHWvqOfauV+Q=
 github.com/otterize/intents-operator/src v0.0.0-20240504191834-4ae8823f2eae h1:OYVdcKWRAyUmHWsEjr6602fZn+hR98NFR5LSGHnFJSE=
 github.com/otterize/intents-operator/src v0.0.0-20240504191834-4ae8823f2eae/go.mod h1:z34LAb2EwBKl5jQiMCksFkfXhRtVLrHJFYAt6nnMT/0=
+github.com/otterize/intents-operator/src v0.0.0-20240506095310-f166840f7e9f h1:wcNe4IdbKOkk/QBoF54+hwVaSZyI2y2B27NCGuc/OGI=
+github.com/otterize/intents-operator/src v0.0.0-20240506095310-f166840f7e9f/go.mod h1:z34LAb2EwBKl5jQiMCksFkfXhRtVLrHJFYAt6nnMT/0=
 github.com/otterize/lox v0.0.0-20220525164329-9ca2bf91c3dd h1:7Sb95VrtAPb9m2ewtqLnX1oeKQy03dt7yr6F/hP7Htg=
 github.com/otterize/lox v0.0.0-20220525164329-9ca2bf91c3dd/go.mod h1:RXvgymN8MxiELFkmGHzJ23KJU2ObVsNsNSM80/HO8qQ=
 github.com/otterize/nilable v0.0.0-20240410132629-f242bb6f056f h1:gv92189CW53A+Y0UQ550zr6RfCBYqvYJ8oq6Jll1YqQ=
