@@ -23,7 +23,7 @@ WORKDIR /src
 # restore dependencies
 COPY . .
 RUN go mod download
-RUN go build -o /main ./sniffer/cmd
+RUN go build -trimpath -o /main ./sniffer/cmd
 
 # add version file
 ARG VERSION

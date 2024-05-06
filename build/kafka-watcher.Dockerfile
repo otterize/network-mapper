@@ -15,7 +15,7 @@ RUN go test ./kafka-watcher/...
 FROM test as builder
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /main ./kafka-watcher/cmd
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /main ./kafka-watcher/cmd
 
 # add version file
 ARG VERSION

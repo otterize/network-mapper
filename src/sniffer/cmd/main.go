@@ -33,9 +33,7 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
-	if viper.GetBool(sharedconfig.DebugKey) {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
+	defer errorreporter.AutoNotify()
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()

@@ -85,6 +85,7 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	errorreporter.Init("network-mapper", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	defer errorreporter.AutoNotify()
 	if !viper.IsSet(config.ClusterDomainKey) || viper.GetString(config.ClusterDomainKey) == "" {
 		clusterDomain := getClusterDomainOrDefault()
 		viper.Set(config.ClusterDomainKey, clusterDomain)
