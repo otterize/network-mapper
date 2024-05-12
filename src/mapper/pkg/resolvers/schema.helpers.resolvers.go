@@ -151,6 +151,9 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
 	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
 	if err != nil {
+		if errors.Is(err, kubefinder.ErrServiceNotFound) {
+			return model.OtterizeServiceIdentity{}, false, nil
+		}
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 
