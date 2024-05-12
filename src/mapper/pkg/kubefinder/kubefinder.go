@@ -34,9 +34,10 @@ type KubeFinder struct {
 	serviceIdResolver *serviceidresolver.Resolver
 }
 
-var ErrNoPodFound = errors.Errorf("no pod found")
-var ErrFoundMoreThanOnePod = errors.Errorf("ip belongs to more than one pod")
-var ErrFoundMoreThanOneService = errors.Errorf("ip belongs to more than one service")
+var ErrNoPodFound = errors.NewSentinelError("no pod found")
+var ErrFoundMoreThanOnePod = errors.NewSentinelError("ip belongs to more than one pod")
+var ErrFoundMoreThanOneService = errors.NewSentinelError("ip belongs to more than one service")
+var ErrServiceNotFound = errors.NewSentinelError("service not found")
 
 func NewKubeFinder(ctx context.Context, mgr manager.Manager) (*KubeFinder, error) {
 	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
@@ -164,6 +165,9 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 		Name:      svc.Name,
 	}, &endpoints)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, ErrServiceNotFound
+		}
 		return nil, errors.Wrap(err)
 	}
 
