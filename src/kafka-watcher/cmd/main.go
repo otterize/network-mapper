@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/network-mapper/src/shared/componentutils"
@@ -37,6 +38,8 @@ func main() {
 	})
 	errorreporter.Init("kafka-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	defer errorreporter.AutoNotify()
+	shared.RegisterPanicHandlers()
+
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()

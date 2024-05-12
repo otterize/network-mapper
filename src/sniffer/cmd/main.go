@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
@@ -34,6 +35,8 @@ func main() {
 	})
 	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
 	defer errorreporter.AutoNotify()
+	shared.RegisterPanicHandlers()
+
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 	componentutils.SetCloudClientId()
 	componentinfo.SetGlobalComponentInstanceId()
