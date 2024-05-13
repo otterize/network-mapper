@@ -23,7 +23,7 @@ func InitWithManager(ctx context.Context, mgr manager.Manager, dnsCache *dnscach
 		return nil, false, nil
 	}
 
-	installed, err := IsClientIntentsInstalled(ctx, mgr.GetClient())
+	installed, err := IsClientIntentsInstalled(ctx, mgr)
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
@@ -42,9 +42,15 @@ func InitWithManager(ctx context.Context, mgr manager.Manager, dnsCache *dnscach
 	return dnsPublisher, true, nil
 }
 
-func IsClientIntentsInstalled(ctx context.Context, client client.Client) (bool, error) {
+func IsClientIntentsInstalled(ctx context.Context, mgr manager.Manager) (bool, error) {
+	directClient, err := client.New(mgr.GetConfig(), client.Options{Scheme: mgr.GetScheme()})
+	if err != nil {
+		logrus.WithError(err).Error("unable to create kubernetes API client")
+		return false, errors.Wrap(err)
+	}
+
 	crd := apiextensionsv1.CustomResourceDefinition{}
-	err := client.Get(ctx, types.NamespacedName{Name: clientIntentsCRDName}, &crd)
+	err = directClient.Get(ctx, types.NamespacedName{Name: clientIntentsCRDName}, &crd)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return false, errors.Wrap(err)
 	}
