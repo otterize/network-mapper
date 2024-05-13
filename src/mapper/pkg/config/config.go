@@ -33,7 +33,7 @@ const (
 	DNSClientIntentsUpdateIntervalKey     = "dns-client-intents-update-interval"
 	DNSClientIntentsUpdateIntervalDefault = 1 * time.Second
 	DNSClientIntentsUpdateEnabledKey      = "dns-client-intents-update-enabled"
-	DNSClientIntentsUpdateEnabledDefault  = false
+	DNSClientIntentsUpdateEnabledDefault  = true
 
 	EnableIstioCollectionKey           = "enable-istio-collection"
 	EnableIstioCollectionDefault       = false
