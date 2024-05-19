@@ -323,7 +323,12 @@ enum ComponentType {
 	NETWORK_MAPPER
 }
 
-type CreateGithubIntegrationResponse {
+type CreateGitHubIntegrationResponse {
+	integration: Integration!
+	nextURL: String!
+}
+
+type CreateGitLabIntegrationResponse {
 	integration: Integration!
 	nextURL: String!
 }
@@ -482,6 +487,7 @@ enum EventType {
 	INTENTS_DISCOVERED_CAPTURE
 	INTENTS_DISCOVERED_KAFKA
 	INTENTS_DISCOVERED_ISTIO
+	INTENTS_DISCOVERED_TCP
 	MAPPER_EXPORT
 	MAPPER_VISUALIZE
 	KAFKA_SERVER_CONFIG_APPLIED
@@ -550,22 +556,13 @@ type GCPResource {
 	resource: String!
 }
 
-type GitHubAccessGraphFilter {
-	environmentIds: [ID!]
-	clusterIds: [ID!]
-	namespaceIds: [ID!]
-	serviceIds: [ID!]
-	serviceFilterType: IDFilterOperators
-	lastSeenAfter: Time
-}
-
 type GitHubRepoFilterPair {
-	filter: GitHubAccessGraphFilter!
+	filter: IntegrationAccessGraphFilter!
 	repoInfo: GitHubRepoInfo!
 }
 
 input GitHubRepoFilterPairInput {
-	filter: InputGitHubAccessGraphFilter!
+	filter: InputIntegrationAccessGraphFilter!
 	repoInfo: GitHubRepoInfoInput!
 }
 
@@ -589,6 +586,38 @@ type GitHubSettings {
 input GitHubSettingsInput {
 	isActive: Boolean!
 	repoFilterPairs: [GitHubRepoFilterPairInput!]!
+}
+
+type GitLabRepoFilterPair {
+	filter: IntegrationAccessGraphFilter!
+	repoInfo: GitLabRepoInfo!
+}
+
+input GitLabRepoFilterPairInput {
+	filter: InputIntegrationAccessGraphFilter!
+	repoInfo: GitLabRepoInfoInput!
+}
+
+type GitLabRepoInfo {
+	projectPath: String!
+	baseBranch: String!
+	intentsPath: String!
+}
+
+input GitLabRepoInfoInput {
+	projectPath: String!
+	baseBranch: String!
+	intentsPath: String!
+}
+
+type GitLabSettings {
+	isActive: Boolean!
+	repoFilterPairs: [GitLabRepoFilterPair!]!
+}
+
+input GitLabSettingsInput {
+	isActive: Boolean!
+	repoFilterPairs: [GitLabRepoFilterPairInput!]!
 }
 
 type HTTPConfig {
@@ -650,17 +679,17 @@ input InputAccessGraphFilter {
 	lastSeen: InputTimeFilterValue
 }
 
-input InputGitHubAccessGraphFilter {
+input InputIDFilterValue {
+	value: [ID!]!
+	operator: IDFilterOperators!
+}
+
+input InputIntegrationAccessGraphFilter {
 	environmentIds: [ID!]
 	clusterIds: [ID!]
 	serviceIds: [ID!]
 	serviceFilterType: IDFilterOperators
 	namespaceIds: [ID!]
-}
-
-input InputIDFilterValue {
-	value: [ID!]!
-	operator: IDFilterOperators!
 }
 
 input InputTimeFilterValue {
@@ -683,9 +712,19 @@ type Integration {
 	awsInfo: AWSInfo
 	gcpInfo: GCPInfo
 	azureInfo: AzureInfo
-	githubSettings: GitHubSettings
+	gitHubSettings: GitHubSettings
+	gitLabSettings: GitLabSettings
 	organizationId: String!
 	status: IntegrationStatus
+}
+
+type IntegrationAccessGraphFilter {
+	environmentIds: [ID!]
+	clusterIds: [ID!]
+	namespaceIds: [ID!]
+	serviceIds: [ID!]
+	serviceFilterType: IDFilterOperators
+	lastSeenAfter: Time
 }
 
 type IntegrationComponents {
@@ -725,6 +764,7 @@ enum IntegrationType {
 	AWS
 	GCP
 	GITHUB
+	GITLAB
 	AZURE
 }
 
@@ -844,6 +884,11 @@ type Invite {
 enum InviteStatus {
 	PENDING
 	ACCEPTED
+}
+
+input IpBlockInput {
+	cidr: String!
+	except: [String!]
 }
 
 input IstioStatusInput {
@@ -1046,21 +1091,32 @@ type Mutation {
 		name: String
 		azureIntegration: AzureInfoInput
 	): Integration
-"""Create a new Github integration"""
-	createGithubIntegration(
+"""Create a new GitHub integration"""
+	createGitHubIntegration(
 		name: String!
-		githubSettings: GitHubSettingsInput!
-	): CreateGithubIntegrationResponse
+		gitHubSettings: GitHubSettingsInput!
+	): CreateGitHubIntegrationResponse
+"""Create a new GitLab integration"""
+	createGitLabIntegration(
+		name: String!
+		gitLabSettings: GitLabSettingsInput!
+	): CreateGitLabIntegrationResponse
 """Create a new GCP integration"""
 	createGCPIntegration(
 		name: String!
 		gcpIntegration: GCPInfoInput!
 	): Integration
-"""Update Github integration"""
-	updateGithubIntegration(
+"""Update GitHub integration"""
+	updateGitHubIntegration(
 		id: ID!
 		name: String!
-		githubSettings: GitHubSettingsInput!
+		gitHubSettings: GitHubSettingsInput!
+	): Integration
+"""Update GitLab integration"""
+	updateGitLabIntegration(
+		id: ID!
+		name: String!
+		gitLabSettings: GitLabSettingsInput!
 	): Integration
 """Update AWS integration"""
 	updateAWSIntegration(
@@ -1157,6 +1213,7 @@ type Mutation {
 		id: ID!
 		name: String
 		imageURL: String
+		settings: OrganizationSettingsInput
 	): Organization!
 """Remove user from organization"""
 	removeUserFromOrganization(
@@ -1167,6 +1224,11 @@ type Mutation {
 		namespace: String!
 		services: [ProtectedServiceInput!]!
 	): Boolean!
+"""Update service"""
+	updateService(
+		id: ID!
+		tags: [String!]
+	): Service!
 	sendTelemetries(
 		telemetries: [TelemetryInput!]!
 	): Boolean!
@@ -1232,17 +1294,40 @@ enum NetworkPoliciesStep {
 	COMPLETED
 }
 
+input NetworkPolicyEgressRuleInput {
+	to: [PeerInput!]!
+}
+
 input NetworkPolicyInput {
 	namespace: String!
 	name: String!
 	serverName: String!
 	externalNetworkTrafficPolicy: Boolean!
+	spec: NetworkPolicySpecInput
+}
+
+input NetworkPolicySpecInput {
+	egress: [NetworkPolicyEgressRuleInput!]!
 }
 
 type Organization {
 	id: ID!
-	name: String
+	name: String!
 	imageURL: String
+	settings: OrganizationSettings
+	created: Time!
+}
+
+type OrganizationSettings {
+	domains: [String]
+}
+
+input OrganizationSettingsInput {
+	domains: [String]
+}
+
+input PeerInput {
+	ipBlock: IpBlockInput!
 }
 
 input ProtectedServiceInput {
@@ -1438,6 +1523,7 @@ type ServerProtectionStatuses {
 type Service {
 	id: ID!
 	name: String!
+	tags: [String!]
 	namespace: Namespace
 	environment: Environment!
 """If service is Kafka, its KafkaServerConfig."""
@@ -1472,6 +1558,13 @@ type ServiceAccessStatus {
 type ServiceClientIntents {
 	asClient: ClientIntentsFiles
 	asServer: ClientIntentsFiles
+}
+
+enum ServiceTags {
+	PCI
+	PII
+	HIPAA
+	SENSITIVE
 }
 
 enum ServiceType {
