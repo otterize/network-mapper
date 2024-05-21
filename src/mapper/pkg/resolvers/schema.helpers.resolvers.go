@@ -54,6 +54,8 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredKafka, intentKey)
 	} else if sourceType == SourceTypeIstio {
 		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, intentKey)
+	} else if sourceType == SourceTypeTCPScan {
+		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredTcp, intentKey)
 	}
 }
 
@@ -484,6 +486,7 @@ func (r *Resolver) handleTCPResult(ctx context.Context, srcIdentity model.Otteri
 		dest.LastSeen,
 		intent,
 	)
+	updateTelemetriesCounters(SourceTypeTCPScan, intent)
 }
 
 func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model.CaptureResults) error {
