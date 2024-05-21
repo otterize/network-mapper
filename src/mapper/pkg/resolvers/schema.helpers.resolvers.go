@@ -55,7 +55,7 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	} else if sourceType == SourceTypeIstio {
 		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredIstio, intentKey)
 	} else if sourceType == SourceTypeTCPScan {
-		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredTCP, intentKey)
+		telemetrysender.IncrementUniqueCounterNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredTcp, intentKey)
 	}
 }
 
