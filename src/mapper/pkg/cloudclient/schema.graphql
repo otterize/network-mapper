@@ -124,6 +124,7 @@ type AccessGraphFilter {
 	namespaceIds: IDFilterValue
 	environmentIds: IDFilterValue
 	lastSeen: TimeFilterValue
+	featureFlags: FeatureFlags
 }
 
 enum ApiFieldAction {
@@ -475,6 +476,14 @@ type Environment {
 	appliedIntentsCount: Int!
 }
 
+input Error {
+	message: String!
+	errorClass: String!
+	cause: Error
+	stack: [StackFrame]
+	metadata: [MetadataEntry!]
+}
+
 enum EventType {
 	INTENTS_DELETED
 	INTENTS_APPLIED
@@ -522,6 +531,10 @@ input ExternallyAccessibleServiceInput {
 	serverName: String!
 	referredByIngress: Boolean!
 	serviceType: KubernetesServiceType!
+}
+
+type FeatureFlags {
+	isCloudServicesDetectionEnabled: Boolean
 }
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
@@ -677,6 +690,11 @@ input InputAccessGraphFilter {
 	namespaceIds: InputIDFilterValue
 	environmentIds: InputIDFilterValue
 	lastSeen: InputTimeFilterValue
+	featureFlags: InputFeatureFlags
+}
+
+input InputFeatureFlags {
+	isCloudServicesDetectionEnabled: Boolean
 }
 
 input InputIDFilterValue {
@@ -1007,6 +1025,11 @@ type MergedYAMLFile {
 	content: String!
 }
 
+input MetadataEntry {
+	key: String!
+	value: String!
+}
+
 type Mutation {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
@@ -1062,6 +1085,10 @@ type Mutation {
 		id: ID!
 		key: String!
 	): Environment!
+	sendErrors(
+		component: Component
+		errors: [Error!]!
+	): Boolean!
 """Create a new generic integration"""
 	createGenericIntegration(
 		name: String!
@@ -1307,7 +1334,7 @@ input NetworkPolicyInput {
 }
 
 input NetworkPolicySpecInput {
-	egress: [NetworkPolicyEgressRuleInput!]!
+	egress: [NetworkPolicyEgressRuleInput!]
 }
 
 type Organization {
@@ -1346,6 +1373,8 @@ type Query {
 		asServiceId: ID
 		lastSeenAfter: Time!
 		clusterIds: [ID!]
+		enableInternetIntents: Boolean
+		featureFlags: InputFeatureFlags
 	): ServiceClientIntents!
 """Get cluster"""
 	cluster(
@@ -1580,6 +1609,13 @@ enum ServiceType {
 	DATABASE_USER
 }
 
+input StackFrame {
+	file: String!
+	lineNumber: Int!
+	name: String!
+	package: String!
+}
+
 """The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
 scalar String
 
@@ -1644,6 +1680,7 @@ enum TutorialName {
 	GCP_IAM
 	AZURE_IAM
 	POSTGRESQL
+	MYSQL
 	ISTIO_AUTH_POLICY_AUTOMATION
 	KAFKA_ACCESS_AUTOMATE_OTTERIZE_CLOUD
 }
