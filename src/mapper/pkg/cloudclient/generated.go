@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/otterize/nilable"
 )
 
 type AzureKeyVaultPolicyInput struct {
@@ -29,6 +30,13 @@ func (v *AzureKeyVaultPolicyInput) GetSecretPermissions() []*string { return v.S
 
 // GetStoragePermissions returns AzureKeyVaultPolicyInput.StoragePermissions, and is useful for accessing the field via an interface.
 func (v *AzureKeyVaultPolicyInput) GetStoragePermissions() []*string { return v.StoragePermissions }
+
+type ClientIPConfig struct {
+	TimeoutSeconds nilable.Nilable[int] `json:"timeoutSeconds"`
+}
+
+// GetTimeoutSeconds returns ClientIPConfig.TimeoutSeconds, and is useful for accessing the field via an interface.
+func (v *ClientIPConfig) GetTimeoutSeconds() nilable.Nilable[int] { return v.TimeoutSeconds }
 
 type ComponentType string
 
@@ -138,6 +146,14 @@ const (
 	HTTPMethodAll     HTTPMethod = "ALL"
 )
 
+type IPFamily string
+
+const (
+	IPFamilyIpv4    IPFamily = "IPV4"
+	IPFamilyIpv6    IPFamily = "IPV6"
+	IPFamilyUnknown IPFamily = "UNKNOWN"
+)
+
 type IncomingInternetSourceInput struct {
 	Ip string `json:"ip"`
 }
@@ -172,6 +188,21 @@ func (v *IncomingTrafficIntentInput) GetNamespace() string { return v.Namespace 
 
 // GetSource returns IncomingTrafficIntentInput.Source, and is useful for accessing the field via an interface.
 func (v *IncomingTrafficIntentInput) GetSource() IncomingInternetSourceInput { return v.Source }
+
+type IntOrStringInput struct {
+	IsInt  bool                    `json:"isInt"`
+	IntVal nilable.Nilable[int]    `json:"intVal"`
+	StrVal nilable.Nilable[string] `json:"strVal"`
+}
+
+// GetIsInt returns IntOrStringInput.IsInt, and is useful for accessing the field via an interface.
+func (v *IntOrStringInput) GetIsInt() bool { return v.IsInt }
+
+// GetIntVal returns IntOrStringInput.IntVal, and is useful for accessing the field via an interface.
+func (v *IntOrStringInput) GetIntVal() nilable.Nilable[int] { return v.IntVal }
+
+// GetStrVal returns IntOrStringInput.StrVal, and is useful for accessing the field via an interface.
+func (v *IntOrStringInput) GetStrVal() nilable.Nilable[string] { return v.StrVal }
 
 type IntentInput struct {
 	Namespace           *string                   `json:"namespace"`
@@ -269,6 +300,14 @@ func (v *InternetConfigInput) GetIps() []*string { return v.Ips }
 // GetPorts returns InternetConfigInput.Ports, and is useful for accessing the field via an interface.
 func (v *InternetConfigInput) GetPorts() []*int { return v.Ports }
 
+type IpFamilyPolicy string
+
+const (
+	IpFamilyPolicySingleStack      IpFamilyPolicy = "SINGLE_STACK"
+	IpFamilyPolicyPreferDualStack  IpFamilyPolicy = "PREFER_DUAL_STACK"
+	IpFamilyPolicyRequireDualStack IpFamilyPolicy = "REQUIRE_DUAL_STACK"
+)
+
 type IstioStatusInput struct {
 	ServiceAccountName     *string `json:"serviceAccountName"`
 	IsServiceAccountShared *bool   `json:"isServiceAccountShared"`
@@ -287,6 +326,360 @@ func (v *IstioStatusInput) GetIsServerMissingSidecar() *bool { return v.IsServer
 
 // GetIsClientMissingSidecar returns IstioStatusInput.IsClientMissingSidecar, and is useful for accessing the field via an interface.
 func (v *IstioStatusInput) GetIsClientMissingSidecar() *bool { return v.IsClientMissingSidecar }
+
+type K8sIngressBackendInput struct {
+	Service  nilable.Nilable[K8sIngressServiceBackendInput]  `json:"service"`
+	Resource nilable.Nilable[K8sIngressResourceBackendInput] `json:"resource"`
+}
+
+// GetService returns K8sIngressBackendInput.Service, and is useful for accessing the field via an interface.
+func (v *K8sIngressBackendInput) GetService() nilable.Nilable[K8sIngressServiceBackendInput] {
+	return v.Service
+}
+
+// GetResource returns K8sIngressBackendInput.Resource, and is useful for accessing the field via an interface.
+func (v *K8sIngressBackendInput) GetResource() nilable.Nilable[K8sIngressResourceBackendInput] {
+	return v.Resource
+}
+
+type K8sIngressHttpPathInput struct {
+	Path     nilable.Nilable[string] `json:"path"`
+	PathType PathType                `json:"pathType"`
+	Backend  K8sIngressBackendInput  `json:"backend"`
+}
+
+// GetPath returns K8sIngressHttpPathInput.Path, and is useful for accessing the field via an interface.
+func (v *K8sIngressHttpPathInput) GetPath() nilable.Nilable[string] { return v.Path }
+
+// GetPathType returns K8sIngressHttpPathInput.PathType, and is useful for accessing the field via an interface.
+func (v *K8sIngressHttpPathInput) GetPathType() PathType { return v.PathType }
+
+// GetBackend returns K8sIngressHttpPathInput.Backend, and is useful for accessing the field via an interface.
+func (v *K8sIngressHttpPathInput) GetBackend() K8sIngressBackendInput { return v.Backend }
+
+type K8sIngressInput struct {
+	Namespace      string                  `json:"namespace"`
+	OtterizeServer nilable.Nilable[string] `json:"otterizeServer"`
+	Ingress        K8sResourceIngressInput `json:"ingress"`
+}
+
+// GetNamespace returns K8sIngressInput.Namespace, and is useful for accessing the field via an interface.
+func (v *K8sIngressInput) GetNamespace() string { return v.Namespace }
+
+// GetOtterizeServer returns K8sIngressInput.OtterizeServer, and is useful for accessing the field via an interface.
+func (v *K8sIngressInput) GetOtterizeServer() nilable.Nilable[string] { return v.OtterizeServer }
+
+// GetIngress returns K8sIngressInput.Ingress, and is useful for accessing the field via an interface.
+func (v *K8sIngressInput) GetIngress() K8sResourceIngressInput { return v.Ingress }
+
+type K8sIngressResourceBackendInput struct {
+	ApiGroup nilable.Nilable[string] `json:"apiGroup"`
+	Kind     string                  `json:"kind"`
+	Name     string                  `json:"name"`
+}
+
+// GetApiGroup returns K8sIngressResourceBackendInput.ApiGroup, and is useful for accessing the field via an interface.
+func (v *K8sIngressResourceBackendInput) GetApiGroup() nilable.Nilable[string] { return v.ApiGroup }
+
+// GetKind returns K8sIngressResourceBackendInput.Kind, and is useful for accessing the field via an interface.
+func (v *K8sIngressResourceBackendInput) GetKind() string { return v.Kind }
+
+// GetName returns K8sIngressResourceBackendInput.Name, and is useful for accessing the field via an interface.
+func (v *K8sIngressResourceBackendInput) GetName() string { return v.Name }
+
+type K8sIngressRuleInput struct {
+	Host      nilable.Nilable[string]   `json:"host"`
+	HttpPaths []K8sIngressHttpPathInput `json:"httpPaths"`
+}
+
+// GetHost returns K8sIngressRuleInput.Host, and is useful for accessing the field via an interface.
+func (v *K8sIngressRuleInput) GetHost() nilable.Nilable[string] { return v.Host }
+
+// GetHttpPaths returns K8sIngressRuleInput.HttpPaths, and is useful for accessing the field via an interface.
+func (v *K8sIngressRuleInput) GetHttpPaths() []K8sIngressHttpPathInput { return v.HttpPaths }
+
+type K8sIngressServiceBackendInput struct {
+	Name string                  `json:"name"`
+	Port ServiceBackendPortInput `json:"port"`
+}
+
+// GetName returns K8sIngressServiceBackendInput.Name, and is useful for accessing the field via an interface.
+func (v *K8sIngressServiceBackendInput) GetName() string { return v.Name }
+
+// GetPort returns K8sIngressServiceBackendInput.Port, and is useful for accessing the field via an interface.
+func (v *K8sIngressServiceBackendInput) GetPort() ServiceBackendPortInput { return v.Port }
+
+type K8sIngressTLSInput struct {
+	Hosts      []string                `json:"hosts"`
+	SecretName nilable.Nilable[string] `json:"secretName"`
+}
+
+// GetHosts returns K8sIngressTLSInput.Hosts, and is useful for accessing the field via an interface.
+func (v *K8sIngressTLSInput) GetHosts() []string { return v.Hosts }
+
+// GetSecretName returns K8sIngressTLSInput.SecretName, and is useful for accessing the field via an interface.
+func (v *K8sIngressTLSInput) GetSecretName() nilable.Nilable[string] { return v.SecretName }
+
+type K8sPortProtocol string
+
+const (
+	K8sPortProtocolTcp  K8sPortProtocol = "TCP"
+	K8sPortProtocolUdp  K8sPortProtocol = "UDP"
+	K8sPortProtocolSctp K8sPortProtocol = "SCTP"
+)
+
+type K8sResourceIngressInput struct {
+	Spec   K8sResourceIngressSpecInput                    `json:"spec"`
+	Status nilable.Nilable[K8sResourceIngressStatusInput] `json:"status"`
+}
+
+// GetSpec returns K8sResourceIngressInput.Spec, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressInput) GetSpec() K8sResourceIngressSpecInput { return v.Spec }
+
+// GetStatus returns K8sResourceIngressInput.Status, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressInput) GetStatus() nilable.Nilable[K8sResourceIngressStatusInput] {
+	return v.Status
+}
+
+type K8sResourceIngressSpecInput struct {
+	IngressClassName nilable.Nilable[string]                 `json:"ingressClassName"`
+	DefaultBackend   nilable.Nilable[K8sIngressBackendInput] `json:"defaultBackend"`
+	Tls              []K8sIngressTLSInput                    `json:"tls"`
+	Rules            []K8sIngressRuleInput                   `json:"rules"`
+}
+
+// GetIngressClassName returns K8sResourceIngressSpecInput.IngressClassName, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressSpecInput) GetIngressClassName() nilable.Nilable[string] {
+	return v.IngressClassName
+}
+
+// GetDefaultBackend returns K8sResourceIngressSpecInput.DefaultBackend, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressSpecInput) GetDefaultBackend() nilable.Nilable[K8sIngressBackendInput] {
+	return v.DefaultBackend
+}
+
+// GetTls returns K8sResourceIngressSpecInput.Tls, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressSpecInput) GetTls() []K8sIngressTLSInput { return v.Tls }
+
+// GetRules returns K8sResourceIngressSpecInput.Rules, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressSpecInput) GetRules() []K8sIngressRuleInput { return v.Rules }
+
+type K8sResourceIngressStatusInput struct {
+	LoadBalancer nilable.Nilable[K8sResourceLoadBalancerStatusInput] `json:"loadBalancer"`
+}
+
+// GetLoadBalancer returns K8sResourceIngressStatusInput.LoadBalancer, and is useful for accessing the field via an interface.
+func (v *K8sResourceIngressStatusInput) GetLoadBalancer() nilable.Nilable[K8sResourceLoadBalancerStatusInput] {
+	return v.LoadBalancer
+}
+
+type K8sResourceLoadBalancerIngressInput struct {
+	Ip       nilable.Nilable[string]             `json:"ip"`
+	Hostname nilable.Nilable[string]             `json:"hostname"`
+	IpMode   nilable.Nilable[LoadBalancerIPMode] `json:"ipMode"`
+	Ports    []PortStatusInput                   `json:"ports"`
+}
+
+// GetIp returns K8sResourceLoadBalancerIngressInput.Ip, and is useful for accessing the field via an interface.
+func (v *K8sResourceLoadBalancerIngressInput) GetIp() nilable.Nilable[string] { return v.Ip }
+
+// GetHostname returns K8sResourceLoadBalancerIngressInput.Hostname, and is useful for accessing the field via an interface.
+func (v *K8sResourceLoadBalancerIngressInput) GetHostname() nilable.Nilable[string] {
+	return v.Hostname
+}
+
+// GetIpMode returns K8sResourceLoadBalancerIngressInput.IpMode, and is useful for accessing the field via an interface.
+func (v *K8sResourceLoadBalancerIngressInput) GetIpMode() nilable.Nilable[LoadBalancerIPMode] {
+	return v.IpMode
+}
+
+// GetPorts returns K8sResourceLoadBalancerIngressInput.Ports, and is useful for accessing the field via an interface.
+func (v *K8sResourceLoadBalancerIngressInput) GetPorts() []PortStatusInput { return v.Ports }
+
+type K8sResourceLoadBalancerStatusInput struct {
+	Ingress []K8sResourceLoadBalancerIngressInput `json:"ingress"`
+}
+
+// GetIngress returns K8sResourceLoadBalancerStatusInput.Ingress, and is useful for accessing the field via an interface.
+func (v *K8sResourceLoadBalancerStatusInput) GetIngress() []K8sResourceLoadBalancerIngressInput {
+	return v.Ingress
+}
+
+type K8sResourceServiceInput struct {
+	Spec   K8sResourceServiceSpecInput                    `json:"spec"`
+	Status nilable.Nilable[K8sResourceServiceStatusInput] `json:"status"`
+}
+
+// GetSpec returns K8sResourceServiceInput.Spec, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceInput) GetSpec() K8sResourceServiceSpecInput { return v.Spec }
+
+// GetStatus returns K8sResourceServiceInput.Status, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceInput) GetStatus() nilable.Nilable[K8sResourceServiceStatusInput] {
+	return v.Status
+}
+
+type K8sResourceServiceSpecInput struct {
+	Ports                         []K8sServicePort                              `json:"ports"`
+	Selector                      []SelectorKeyValueInput                       `json:"selector"`
+	ClusterIP                     nilable.Nilable[string]                       `json:"clusterIP"`
+	ClusterIPs                    []string                                      `json:"clusterIPs"`
+	Type                          nilable.Nilable[K8sServiceType]               `json:"type"`
+	ExternalIPs                   []string                                      `json:"externalIPs"`
+	SessionAffinity               nilable.Nilable[SessionAffinity]              `json:"sessionAffinity"`
+	LoadBalancerIP                nilable.Nilable[string]                       `json:"loadBalancerIP"`
+	LoadBalancerSourceRanges      []string                                      `json:"loadBalancerSourceRanges"`
+	ExternalName                  nilable.Nilable[string]                       `json:"externalName"`
+	ExternalTrafficPolicy         nilable.Nilable[ServiceExternalTrafficPolicy] `json:"externalTrafficPolicy"`
+	HealthCheckNodePort           nilable.Nilable[int]                          `json:"healthCheckNodePort"`
+	PublishNotReadyAddresses      nilable.Nilable[bool]                         `json:"publishNotReadyAddresses"`
+	SessionAffinityConfig         nilable.Nilable[SessionAffinityConfig]        `json:"sessionAffinityConfig"`
+	IpFamilies                    []IPFamily                                    `json:"ipFamilies"`
+	IpFamilyPolicy                nilable.Nilable[IpFamilyPolicy]               `json:"ipFamilyPolicy"`
+	AllocateLoadBalancerNodePorts nilable.Nilable[bool]                         `json:"allocateLoadBalancerNodePorts"`
+	LoadBalancerClass             nilable.Nilable[string]                       `json:"loadBalancerClass"`
+	InternalTrafficPolicy         nilable.Nilable[ServiceInternalTrafficPolicy] `json:"internalTrafficPolicy"`
+}
+
+// GetPorts returns K8sResourceServiceSpecInput.Ports, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetPorts() []K8sServicePort { return v.Ports }
+
+// GetSelector returns K8sResourceServiceSpecInput.Selector, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetSelector() []SelectorKeyValueInput { return v.Selector }
+
+// GetClusterIP returns K8sResourceServiceSpecInput.ClusterIP, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetClusterIP() nilable.Nilable[string] { return v.ClusterIP }
+
+// GetClusterIPs returns K8sResourceServiceSpecInput.ClusterIPs, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetClusterIPs() []string { return v.ClusterIPs }
+
+// GetType returns K8sResourceServiceSpecInput.Type, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetType() nilable.Nilable[K8sServiceType] { return v.Type }
+
+// GetExternalIPs returns K8sResourceServiceSpecInput.ExternalIPs, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetExternalIPs() []string { return v.ExternalIPs }
+
+// GetSessionAffinity returns K8sResourceServiceSpecInput.SessionAffinity, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetSessionAffinity() nilable.Nilable[SessionAffinity] {
+	return v.SessionAffinity
+}
+
+// GetLoadBalancerIP returns K8sResourceServiceSpecInput.LoadBalancerIP, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetLoadBalancerIP() nilable.Nilable[string] {
+	return v.LoadBalancerIP
+}
+
+// GetLoadBalancerSourceRanges returns K8sResourceServiceSpecInput.LoadBalancerSourceRanges, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetLoadBalancerSourceRanges() []string {
+	return v.LoadBalancerSourceRanges
+}
+
+// GetExternalName returns K8sResourceServiceSpecInput.ExternalName, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetExternalName() nilable.Nilable[string] {
+	return v.ExternalName
+}
+
+// GetExternalTrafficPolicy returns K8sResourceServiceSpecInput.ExternalTrafficPolicy, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetExternalTrafficPolicy() nilable.Nilable[ServiceExternalTrafficPolicy] {
+	return v.ExternalTrafficPolicy
+}
+
+// GetHealthCheckNodePort returns K8sResourceServiceSpecInput.HealthCheckNodePort, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetHealthCheckNodePort() nilable.Nilable[int] {
+	return v.HealthCheckNodePort
+}
+
+// GetPublishNotReadyAddresses returns K8sResourceServiceSpecInput.PublishNotReadyAddresses, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetPublishNotReadyAddresses() nilable.Nilable[bool] {
+	return v.PublishNotReadyAddresses
+}
+
+// GetSessionAffinityConfig returns K8sResourceServiceSpecInput.SessionAffinityConfig, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetSessionAffinityConfig() nilable.Nilable[SessionAffinityConfig] {
+	return v.SessionAffinityConfig
+}
+
+// GetIpFamilies returns K8sResourceServiceSpecInput.IpFamilies, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetIpFamilies() []IPFamily { return v.IpFamilies }
+
+// GetIpFamilyPolicy returns K8sResourceServiceSpecInput.IpFamilyPolicy, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetIpFamilyPolicy() nilable.Nilable[IpFamilyPolicy] {
+	return v.IpFamilyPolicy
+}
+
+// GetAllocateLoadBalancerNodePorts returns K8sResourceServiceSpecInput.AllocateLoadBalancerNodePorts, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetAllocateLoadBalancerNodePorts() nilable.Nilable[bool] {
+	return v.AllocateLoadBalancerNodePorts
+}
+
+// GetLoadBalancerClass returns K8sResourceServiceSpecInput.LoadBalancerClass, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetLoadBalancerClass() nilable.Nilable[string] {
+	return v.LoadBalancerClass
+}
+
+// GetInternalTrafficPolicy returns K8sResourceServiceSpecInput.InternalTrafficPolicy, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceSpecInput) GetInternalTrafficPolicy() nilable.Nilable[ServiceInternalTrafficPolicy] {
+	return v.InternalTrafficPolicy
+}
+
+type K8sResourceServiceStatusInput struct {
+	LoadBalancer nilable.Nilable[K8sResourceLoadBalancerStatusInput] `json:"loadBalancer"`
+}
+
+// GetLoadBalancer returns K8sResourceServiceStatusInput.LoadBalancer, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceStatusInput) GetLoadBalancer() nilable.Nilable[K8sResourceLoadBalancerStatusInput] {
+	return v.LoadBalancer
+}
+
+type K8sServiceInput struct {
+	Namespace      string                  `json:"namespace"`
+	OtterizeServer string                  `json:"otterizeServer"`
+	Service        K8sResourceServiceInput `json:"service"`
+}
+
+// GetNamespace returns K8sServiceInput.Namespace, and is useful for accessing the field via an interface.
+func (v *K8sServiceInput) GetNamespace() string { return v.Namespace }
+
+// GetOtterizeServer returns K8sServiceInput.OtterizeServer, and is useful for accessing the field via an interface.
+func (v *K8sServiceInput) GetOtterizeServer() string { return v.OtterizeServer }
+
+// GetService returns K8sServiceInput.Service, and is useful for accessing the field via an interface.
+func (v *K8sServiceInput) GetService() K8sResourceServiceInput { return v.Service }
+
+type K8sServicePort struct {
+	Name        nilable.Nilable[string]           `json:"name"`
+	Protocol    nilable.Nilable[K8sPortProtocol]  `json:"protocol"`
+	AppProtocol nilable.Nilable[string]           `json:"appProtocol"`
+	Port        int                               `json:"port"`
+	TargetPort  nilable.Nilable[IntOrStringInput] `json:"targetPort"`
+	NodePort    nilable.Nilable[int]              `json:"nodePort"`
+}
+
+// GetName returns K8sServicePort.Name, and is useful for accessing the field via an interface.
+func (v *K8sServicePort) GetName() nilable.Nilable[string] { return v.Name }
+
+// GetProtocol returns K8sServicePort.Protocol, and is useful for accessing the field via an interface.
+func (v *K8sServicePort) GetProtocol() nilable.Nilable[K8sPortProtocol] { return v.Protocol }
+
+// GetAppProtocol returns K8sServicePort.AppProtocol, and is useful for accessing the field via an interface.
+func (v *K8sServicePort) GetAppProtocol() nilable.Nilable[string] { return v.AppProtocol }
+
+// GetPort returns K8sServicePort.Port, and is useful for accessing the field via an interface.
+func (v *K8sServicePort) GetPort() int { return v.Port }
+
+// GetTargetPort returns K8sServicePort.TargetPort, and is useful for accessing the field via an interface.
+func (v *K8sServicePort) GetTargetPort() nilable.Nilable[IntOrStringInput] { return v.TargetPort }
+
+// GetNodePort returns K8sServicePort.NodePort, and is useful for accessing the field via an interface.
+func (v *K8sServicePort) GetNodePort() nilable.Nilable[int] { return v.NodePort }
+
+type K8sServiceType string
+
+const (
+	K8sServiceTypeClusterIp    K8sServiceType = "CLUSTER_IP"
+	K8sServiceTypeNodePort     K8sServiceType = "NODE_PORT"
+	K8sServiceTypeLoadBalancer K8sServiceType = "LOAD_BALANCER"
+	K8sServiceTypeExternalName K8sServiceType = "EXTERNAL_NAME"
+)
 
 type KafkaConfigInput struct {
 	Name       *string           `json:"name"`
@@ -314,6 +707,36 @@ const (
 	KafkaOperationAlterConfigs    KafkaOperation = "ALTER_CONFIGS"
 	KafkaOperationIdempotentWrite KafkaOperation = "IDEMPOTENT_WRITE"
 )
+
+type LoadBalancerIPMode string
+
+const (
+	LoadBalancerIPModeVip   LoadBalancerIPMode = "VIP"
+	LoadBalancerIPModeProxy LoadBalancerIPMode = "PROXY"
+)
+
+type PathType string
+
+const (
+	PathTypeImplementationSpecific PathType = "IMPLEMENTATION_SPECIFIC"
+	PathTypePrefix                 PathType = "PREFIX"
+	PathTypeExact                  PathType = "EXACT"
+)
+
+type PortStatusInput struct {
+	Port     int                     `json:"port"`
+	Protocol K8sPortProtocol         `json:"protocol"`
+	Error    nilable.Nilable[string] `json:"error"`
+}
+
+// GetPort returns PortStatusInput.Port, and is useful for accessing the field via an interface.
+func (v *PortStatusInput) GetPort() int { return v.Port }
+
+// GetProtocol returns PortStatusInput.Protocol, and is useful for accessing the field via an interface.
+func (v *PortStatusInput) GetProtocol() K8sPortProtocol { return v.Protocol }
+
+// GetError returns PortStatusInput.Error, and is useful for accessing the field via an interface.
+func (v *PortStatusInput) GetError() nilable.Nilable[string] { return v.Error }
 
 // ReportComponentStatusResponse is returned by ReportComponentStatus on success.
 type ReportComponentStatusResponse struct {
@@ -356,6 +779,72 @@ func (v *ReportIncomingTrafficDiscoveredIntentsResponse) GetReportIncomingTraffi
 	return v.ReportIncomingTrafficDiscoveredIntents
 }
 
+// ReportK8sIngressesResponse is returned by ReportK8sIngresses on success.
+type ReportK8sIngressesResponse struct {
+	ReportK8sIngresses bool `json:"reportK8sIngresses"`
+}
+
+// GetReportK8sIngresses returns ReportK8sIngressesResponse.ReportK8sIngresses, and is useful for accessing the field via an interface.
+func (v *ReportK8sIngressesResponse) GetReportK8sIngresses() bool { return v.ReportK8sIngresses }
+
+// ReportK8sServicesResponse is returned by ReportK8sServices on success.
+type ReportK8sServicesResponse struct {
+	ReportK8sServices bool `json:"reportK8sServices"`
+}
+
+// GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
+func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
+
+type SelectorKeyValueInput struct {
+	Key   nilable.Nilable[string] `json:"key"`
+	Value nilable.Nilable[string] `json:"value"`
+}
+
+// GetKey returns SelectorKeyValueInput.Key, and is useful for accessing the field via an interface.
+func (v *SelectorKeyValueInput) GetKey() nilable.Nilable[string] { return v.Key }
+
+// GetValue returns SelectorKeyValueInput.Value, and is useful for accessing the field via an interface.
+func (v *SelectorKeyValueInput) GetValue() nilable.Nilable[string] { return v.Value }
+
+type ServiceBackendPortInput struct {
+	Name   nilable.Nilable[string] `json:"name"`
+	Number nilable.Nilable[int]    `json:"number"`
+}
+
+// GetName returns ServiceBackendPortInput.Name, and is useful for accessing the field via an interface.
+func (v *ServiceBackendPortInput) GetName() nilable.Nilable[string] { return v.Name }
+
+// GetNumber returns ServiceBackendPortInput.Number, and is useful for accessing the field via an interface.
+func (v *ServiceBackendPortInput) GetNumber() nilable.Nilable[int] { return v.Number }
+
+type ServiceExternalTrafficPolicy string
+
+const (
+	ServiceExternalTrafficPolicyCluster ServiceExternalTrafficPolicy = "CLUSTER"
+	ServiceExternalTrafficPolicyLocal   ServiceExternalTrafficPolicy = "LOCAL"
+)
+
+type ServiceInternalTrafficPolicy string
+
+const (
+	ServiceInternalTrafficPolicyCluster ServiceInternalTrafficPolicy = "CLUSTER"
+	ServiceInternalTrafficPolicyLocal   ServiceInternalTrafficPolicy = "LOCAL"
+)
+
+type SessionAffinity string
+
+const (
+	SessionAffinityClientIp SessionAffinity = "CLIENT_IP"
+	SessionAffinityNone     SessionAffinity = "NONE"
+)
+
+type SessionAffinityConfig struct {
+	ClientIP nilable.Nilable[ClientIPConfig] `json:"clientIP"`
+}
+
+// GetClientIP returns SessionAffinityConfig.ClientIP, and is useful for accessing the field via an interface.
+func (v *SessionAffinityConfig) GetClientIP() nilable.Nilable[ClientIPConfig] { return v.ClientIP }
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -391,6 +880,30 @@ type __ReportIncomingTrafficDiscoveredIntentsInput struct {
 func (v *__ReportIncomingTrafficDiscoveredIntentsInput) GetIntents() []IncomingTrafficDiscoveredIntentInput {
 	return v.Intents
 }
+
+// __ReportK8sIngressesInput is used internally by genqlient
+type __ReportK8sIngressesInput struct {
+	Namespace string            `json:"namespace"`
+	Ingresses []K8sIngressInput `json:"ingresses"`
+}
+
+// GetNamespace returns __ReportK8sIngressesInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportK8sIngressesInput) GetNamespace() string { return v.Namespace }
+
+// GetIngresses returns __ReportK8sIngressesInput.Ingresses, and is useful for accessing the field via an interface.
+func (v *__ReportK8sIngressesInput) GetIngresses() []K8sIngressInput { return v.Ingresses }
+
+// __ReportK8sServicesInput is used internally by genqlient
+type __ReportK8sServicesInput struct {
+	Namespace string            `json:"namespace"`
+	Services  []K8sServiceInput `json:"services"`
+}
+
+// GetNamespace returns __ReportK8sServicesInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
+
+// GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
+func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
 
 // The query or mutation executed by ReportComponentStatus.
 const ReportComponentStatus_Operation = `
@@ -513,6 +1026,76 @@ func ReportIncomingTrafficDiscoveredIntents(
 	var err_ error
 
 	var data_ ReportIncomingTrafficDiscoveredIntentsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportK8sIngresses.
+const ReportK8sIngresses_Operation = `
+mutation ReportK8sIngresses ($namespace: String!, $ingresses: [K8sIngressInput!]!) {
+	reportK8sIngresses(namespace: $namespace, ingresses: $ingresses)
+}
+`
+
+func ReportK8sIngresses(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	namespace string,
+	ingresses []K8sIngressInput,
+) (*ReportK8sIngressesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportK8sIngresses",
+		Query:  ReportK8sIngresses_Operation,
+		Variables: &__ReportK8sIngressesInput{
+			Namespace: namespace,
+			Ingresses: ingresses,
+		},
+	}
+	var err_ error
+
+	var data_ ReportK8sIngressesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportK8sServices.
+const ReportK8sServices_Operation = `
+mutation ReportK8sServices ($namespace: String!, $services: [K8sServiceInput!]!) {
+	reportK8sServices(namespace: $namespace, services: $services)
+}
+`
+
+func ReportK8sServices(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	namespace string,
+	services []K8sServiceInput,
+) (*ReportK8sServicesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportK8sServices",
+		Query:  ReportK8sServices_Operation,
+		Variables: &__ReportK8sServicesInput{
+			Namespace: namespace,
+			Services:  services,
+		},
+	}
+	var err_ error
+
+	var data_ ReportK8sServicesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

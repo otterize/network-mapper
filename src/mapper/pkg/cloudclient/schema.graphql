@@ -232,6 +232,10 @@ enum CertificateProvider {
 	NONE
 }
 
+input ClientIPConfig {
+	timeoutSeconds: Int
+}
+
 type ClientIntentsFileRepresentation {
 	fileName: String!
 	service: Service!
@@ -669,6 +673,12 @@ type IDFilterValue {
 	operator: IDFilterOperators!
 }
 
+enum IPFamily {
+	IPV4
+	IPV6
+	UNKNOWN
+}
+
 input IncomingInternetSourceInput {
 	ip: String!
 }
@@ -717,6 +727,12 @@ input InputTimeFilterValue {
 
 """The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
 scalar Int
+
+input IntOrStringInput {
+	isInt: Boolean!
+	intVal: Int
+	strVal: String
+}
 
 type Integration {
 	id: ID!
@@ -909,11 +925,141 @@ input IpBlockInput {
 	except: [String!]
 }
 
+enum IpFamilyPolicy {
+	SINGLE_STACK
+	PREFER_DUAL_STACK
+	REQUIRE_DUAL_STACK
+}
+
 input IstioStatusInput {
 	serviceAccountName: String!
 	isServiceAccountShared: Boolean!
 	isServerMissingSidecar: Boolean!
 	isClientMissingSidecar: Boolean!
+}
+
+input K8sIngressBackendInput {
+	service: K8sIngressServiceBackendInput
+	resource: K8sIngressResourceBackendInput
+}
+
+input K8sIngressHttpPathInput {
+	path: String
+	pathType: PathType!
+	backend: K8sIngressBackendInput!
+}
+
+input K8sIngressInput {
+	namespace: String!
+	otterizeServer: String
+	ingress: K8sResourceIngressInput!
+}
+
+input K8sIngressResourceBackendInput {
+	apiGroup: String
+	kind: String!
+	name: String!
+}
+
+input K8sIngressRuleInput {
+	host: String
+	httpPaths: [K8sIngressHttpPathInput!]
+}
+
+input K8sIngressServiceBackendInput {
+	name: String!
+	port: ServiceBackendPortInput!
+}
+
+input K8sIngressTLSInput {
+	hosts: [String!]
+	secretName: String
+}
+
+enum K8sPortProtocol {
+	TCP
+	UDP
+	SCTP
+}
+
+input K8sResourceIngressInput {
+	spec: K8sResourceIngressSpecInput!
+	status: K8sResourceIngressStatusInput
+}
+
+input K8sResourceIngressSpecInput {
+	ingressClassName: String
+	defaultBackend: K8sIngressBackendInput
+	tls: [K8sIngressTLSInput!]
+	rules: [K8sIngressRuleInput!]
+}
+
+input K8sResourceIngressStatusInput {
+	loadBalancer: K8sResourceLoadBalancerStatusInput
+}
+
+input K8sResourceLoadBalancerIngressInput {
+	ip: String
+	hostname: String
+	ipMode: LoadBalancerIPMode
+	ports: [PortStatusInput!]
+}
+
+input K8sResourceLoadBalancerStatusInput {
+	ingress: [K8sResourceLoadBalancerIngressInput!]
+}
+
+input K8sResourceServiceInput {
+	spec: K8sResourceServiceSpecInput!
+	status: K8sResourceServiceStatusInput
+}
+
+input K8sResourceServiceSpecInput {
+	ports: [K8sServicePort!]!
+	selector: [SelectorKeyValueInput!]!
+	clusterIP: String
+	clusterIPs: [String!]
+	type: K8sServiceType
+	externalIPs: [String!]
+	sessionAffinity: SessionAffinity
+	loadBalancerIP: String
+	loadBalancerSourceRanges: [String!]
+	externalName: String
+	externalTrafficPolicy: ServiceExternalTrafficPolicy
+	healthCheckNodePort: Int
+	publishNotReadyAddresses: Boolean
+	sessionAffinityConfig: SessionAffinityConfig
+	ipFamilies: [IPFamily!]
+	ipFamilyPolicy: IpFamilyPolicy
+	allocateLoadBalancerNodePorts: Boolean
+	loadBalancerClass: String
+	internalTrafficPolicy: ServiceInternalTrafficPolicy
+}
+
+input K8sResourceServiceStatusInput {
+	loadBalancer: K8sResourceLoadBalancerStatusInput
+}
+
+input K8sServiceInput {
+	namespace: String!
+	otterizeServer: String!
+	service: K8sResourceServiceInput!
+}
+
+input K8sServicePort {
+	name: String
+	protocol: K8sPortProtocol
+	appProtocol: String
+	port: Int!
+	targetPort: IntOrStringInput
+	nodePort: Int
+}
+
+enum K8sServiceType {
+	CLUSTER_IP
+	NODE_PORT
+	LOAD_BALANCER
+	EXTERNAL_NAME
 }
 
 type KafkaConfig {
@@ -999,6 +1145,11 @@ input LabelInput {
 type LabelValueTuple {
 	label: String!
 	value: String!
+}
+
+enum LoadBalancerIPMode {
+	VIP
+	PROXY
 }
 
 type Me {
@@ -1220,6 +1371,14 @@ type Mutation {
 	acceptInvite(
 		id: ID!
 	): Invite!
+	reportK8sServices(
+		namespace: String!
+		services: [K8sServiceInput!]!
+	): Boolean!
+	reportK8sIngresses(
+		namespace: String!
+		ingresses: [K8sIngressInput!]!
+	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
@@ -1353,8 +1512,20 @@ input OrganizationSettingsInput {
 	domains: [String]
 }
 
+enum PathType {
+	IMPLEMENTATION_SPECIFIC
+	PREFIX
+	EXACT
+}
+
 input PeerInput {
 	ipBlock: IpBlockInput!
+}
+
+input PortStatusInput {
+	port: Int!
+	protocol: K8sPortProtocol!
+	error: String
 }
 
 input ProtectedServiceInput {
@@ -1492,6 +1663,11 @@ enum RowDiff {
 	REMOVED
 }
 
+input SelectorKeyValueInput {
+	key: String
+	value: String
+}
+
 type ServerBlockingStatus {
 	verdict: ServerBlockingStatusVerdict!
 	reason: ServerBlockingStatusReason!
@@ -1584,9 +1760,24 @@ type ServiceAccessStatus {
 	hasAppliedIntents: Boolean!
 }
 
+input ServiceBackendPortInput {
+	name: String
+	number: Int
+}
+
 type ServiceClientIntents {
 	asClient: ClientIntentsFiles
 	asServer: ClientIntentsFiles
+}
+
+enum ServiceExternalTrafficPolicy {
+	CLUSTER
+	LOCAL
+}
+
+enum ServiceInternalTrafficPolicy {
+	CLUSTER
+	LOCAL
 }
 
 enum ServiceTags {
@@ -1607,6 +1798,15 @@ enum ServiceType {
 	DATABASE
 	INTERNET
 	DATABASE_USER
+}
+
+enum SessionAffinity {
+	CLIENT_IP
+	NONE
+}
+
+input SessionAffinityConfig {
+	clientIP: ClientIPConfig
 }
 
 input StackFrame {
