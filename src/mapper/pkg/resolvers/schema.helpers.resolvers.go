@@ -30,8 +30,6 @@ const (
 	SourceTypeSocketScan  SourceType = "SocketScan"
 	SourceTypeKafkaMapper SourceType = "KafkaMapper"
 	SourceTypeIstio       SourceType = "Istio"
-	apiServerName                    = "kubernetes"
-	apiServerNamespace               = "default"
 )
 
 func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
@@ -101,7 +99,7 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	dstSvcIdentity = model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity = model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -151,55 +149,7 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 }
 
 func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
-	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
-	if err != nil {
-		if errors.Is(err, kubefinder.ErrServiceNotFound) {
-			return model.OtterizeServiceIdentity{}, false, nil
-		}
-		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
-	}
-
-	if len(pods) == 0 {
-		if serviceIsAPIServer(svc.Name, svc.Namespace) {
-			return model.OtterizeServiceIdentity{
-				Name:              svc.Name,
-				Namespace:         svc.Namespace,
-				KubernetesService: &svc.Name,
-			}, true, nil
-		}
-
-		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-
-	// Assume the pods backing the service are identical
-	pod := pods[0]
-
-	if pod.CreationTimestamp.After(lastSeen) {
-		logrus.Debugf("Pod %s was created after scan time %s, ignoring", pod.Name, lastSeen)
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-
-	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
-	if err != nil {
-		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
-	}
-
-	dstSvcIdentity := model.OtterizeServiceIdentity{
-		Name:      dstService.Name,
-		Namespace: pod.Namespace,
-		Labels:    podLabelsToOtterizeLabels(&pod),
-	}
-
-	if dstService.OwnerObject != nil {
-		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
-	}
-	dstSvcIdentity.KubernetesService = lo.ToPtr(svc.Name)
-	return dstSvcIdentity, true, nil
-}
-
-func serviceIsAPIServer(name string, namespace string) bool {
-	return name == apiServerName && namespace == apiServerNamespace
+	return r.kubeFinder.ResolveOtterizeIdentityForService(ctx, svc, lastSeen)
 }
 
 func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
@@ -218,7 +168,7 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 		return errors.Wrap(err)
 	}
 
-	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -327,7 +277,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 		// Intentionally no error return
 		return nil, false, nil
 	}
-	if serviceIsAPIServer(serviceName.Name, serviceName.Namespace) {
+	if kubefinder.ServiceIsAPIServer(serviceName.Name, serviceName.Namespace) {
 		return &model.OtterizeServiceIdentity{
 			Name:              serviceName.Name,
 			Namespace:         serviceName.Namespace,
@@ -365,7 +315,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 		return nil, false, nil
 	}
 
-	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: podLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -599,7 +549,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 			continue
 		}
 
-		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(srcPod)}
 
 		dstPod, err := r.kubeFinder.ResolvePodByName(ctx, result.ServerPodName, result.ServerNamespace)
 		if err != nil {
@@ -611,7 +561,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 			logrus.WithError(err).Debugf("Could not resolve pod %s to identity", dstPod.Name)
 			continue
 		}
-		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(dstPod)}
 
 		operation, err := model.KafkaOpFromText(result.Operation)
 		if err != nil {
@@ -668,8 +618,8 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 			continue
 		}
 
-		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
-		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(srcPod)}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(dstPod)}
 		if srcService.OwnerObject != nil {
 			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}

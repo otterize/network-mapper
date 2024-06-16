@@ -2,6 +2,7 @@ package resourcevisiablity
 
 import (
 	"context"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/injectablerecorder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/samber/lo"
@@ -40,6 +41,38 @@ func (r *IngressReconciler) InjectRecorder(recorder record.EventRecorder) {
 }
 
 func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	namespace := req.Namespace
+	var IngressList networkingv1.IngressList
+	err := r.List(ctx, &IngressList, client.InNamespace(namespace))
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err)
+	}
 
+	ingressesToReport, err := r.convertToCloudIngresses(IngressList.Items)
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err)
+	}
+
+	err = r.otterizeCloud.ReportK8sIngresses(ctx, namespace, ingressesToReport)
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err)
+	}
 	return ctrl.Result{}, nil
+}
+
+func (r *IngressReconciler) convertToCloudIngresses(ingresses []networkingv1.Ingress) ([]cloudclient.K8sIngressInput, error) {
+	ingressesToReport := make([]cloudclient.K8sIngressInput, 0)
+	for _, ingress := range ingresses {
+		ingressInput, err := convertIngressResource(ingress)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+
+		ingressesToReport = append(ingressesToReport, cloudclient.K8sIngressInput{
+			Namespace: ingress.Namespace,
+			Name:      ingress.Name,
+			Ingress:   ingressInput,
+		})
+	}
+	return ingressesToReport, nil
 }

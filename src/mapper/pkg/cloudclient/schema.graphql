@@ -901,6 +901,7 @@ type InternetConfig {
 
 input InternetConfigInput {
 	domains: [String!]
+	discoveredTarget: DNSIPPairInput
 	ips: [String!]
 	ports: [Int!]
 }
@@ -945,13 +946,13 @@ input K8sIngressBackendInput {
 
 input K8sIngressHttpPathInput {
 	path: String
-	pathType: PathType!
+	pathType: PathType
 	backend: K8sIngressBackendInput!
 }
 
 input K8sIngressInput {
 	namespace: String!
-	otterizeServer: String
+	name: String!
 	ingress: K8sResourceIngressInput!
 }
 
@@ -995,23 +996,29 @@ input K8sResourceIngressSpecInput {
 }
 
 input K8sResourceIngressStatusInput {
-	loadBalancer: K8sResourceLoadBalancerStatusInput
+	loadBalancer: [K8sResourceLoadBalancerIngressInput!]
 }
 
 input K8sResourceLoadBalancerIngressInput {
+	ip: String
+	hostname: String
+	ports: [PortStatusInput!]
+}
+
+input K8sResourceServiceInput {
+	spec: K8sResourceServiceSpecInput!
+	status: K8sResourceServiceStatusInput
+}
+
+input K8sResourceServiceLoadBalancerIngressInput {
 	ip: String
 	hostname: String
 	ipMode: LoadBalancerIPMode
 	ports: [PortStatusInput!]
 }
 
-input K8sResourceLoadBalancerStatusInput {
-	ingress: [K8sResourceLoadBalancerIngressInput!]
-}
-
-input K8sResourceServiceInput {
-	spec: K8sResourceServiceSpecInput!
-	status: K8sResourceServiceStatusInput
+input K8sResourceServiceLoadBalancerStatusInput {
+	ingress: [K8sResourceServiceLoadBalancerIngressInput!]
 }
 
 input K8sResourceServiceSpecInput {
@@ -1037,12 +1044,13 @@ input K8sResourceServiceSpecInput {
 }
 
 input K8sResourceServiceStatusInput {
-	loadBalancer: K8sResourceLoadBalancerStatusInput
+	loadBalancer: K8sResourceServiceLoadBalancerStatusInput
 }
 
 input K8sServiceInput {
 	namespace: String!
 	otterizeServer: String!
+	resourceName: String!
 	service: K8sResourceServiceInput!
 }
 
