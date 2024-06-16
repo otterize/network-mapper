@@ -82,6 +82,10 @@ func (r *ServiceReconciler) convertToCloudServices(ctx context.Context, services
 }
 
 func (r *ServiceReconciler) convertToCloudService(ctx context.Context, service corev1.Service) (cloudclient.K8sServiceInput, bool, error) {
+	if !service.DeletionTimestamp.IsZero() {
+		return cloudclient.K8sServiceInput{}, false, nil
+	}
+
 	identity, found, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, &service, time.Now())
 	if err != nil {
 		return cloudclient.K8sServiceInput{}, false, errors.Wrap(err)

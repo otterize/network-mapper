@@ -63,9 +63,12 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *IngressReconciler) convertToCloudIngresses(ingresses []networkingv1.Ingress) ([]cloudclient.K8sIngressInput, error) {
 	ingressesToReport := make([]cloudclient.K8sIngressInput, 0)
 	for _, ingress := range ingresses {
-		ingressInput, err := convertIngressResource(ingress)
+		ingressInput, ok, err := convertIngressResource(ingress)
 		if err != nil {
 			return nil, errors.Wrap(err)
+		}
+		if !ok {
+			continue
 		}
 
 		ingressesToReport = append(ingressesToReport, cloudclient.K8sIngressInput{

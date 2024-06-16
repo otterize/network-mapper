@@ -496,20 +496,24 @@ func convertIngressRules(rules []networkingv1.IngressRule) ([]cloudclient.K8sIng
 	return result, nil
 }
 
-func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResourceIngressInput, error) {
+func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResourceIngressInput, bool, error) {
+	if !ingress.DeletionTimestamp.IsZero() {
+		return cloudclient.K8sResourceIngressInput{}, false, nil
+	}
+
 	defaultBackend, err := convertIngressBackend(ingress.Spec.DefaultBackend)
 	if err != nil {
-		return cloudclient.K8sResourceIngressInput{}, errors.Wrap(err)
+		return cloudclient.K8sResourceIngressInput{}, false, errors.Wrap(err)
 	}
 
 	tls, err := convertIngressTLS(ingress.Spec.TLS)
 	if err != nil {
-		return cloudclient.K8sResourceIngressInput{}, errors.Wrap(err)
+		return cloudclient.K8sResourceIngressInput{}, false, errors.Wrap(err)
 	}
 
 	rules, err := convertIngressRules(ingress.Spec.Rules)
 	if err != nil {
-		return cloudclient.K8sResourceIngressInput{}, errors.Wrap(err)
+		return cloudclient.K8sResourceIngressInput{}, false, errors.Wrap(err)
 	}
 
 	spec := cloudclient.K8sResourceIngressSpecInput{
@@ -521,7 +525,7 @@ func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResour
 
 	status, err := convertIngressLoadBalancerStatus(ingress.Status)
 	if err != nil {
-		return cloudclient.K8sResourceIngressInput{}, errors.Wrap(err)
+		return cloudclient.K8sResourceIngressInput{}, false, errors.Wrap(err)
 	}
 
 	input := cloudclient.K8sResourceIngressInput{
@@ -529,5 +533,5 @@ func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResour
 		Status: status,
 	}
 
-	return input, nil
+	return input, true, nil
 }
