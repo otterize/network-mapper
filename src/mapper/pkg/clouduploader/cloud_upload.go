@@ -88,12 +88,12 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 				ClientName: intent.Intent.Client.Name,
 				Namespace:  intent.Intent.Client.Namespace,
 				Target: cloudclient.DNSIPPairInput{
-					DnsName: lo.ToPtr(intent.Intent.DNSName),
+					DnsName: intent.Intent.DNSName,
 				},
 			},
 		}
 		for ip := range intent.Intent.IPs {
-			output.Intent.Target.Ips = append(output.Intent.Target.Ips, lo.ToPtr(string(ip)))
+			output.Intent.Target.Ips = append(output.Intent.Target.Ips, string(ip))
 		}
 		return output
 	})
