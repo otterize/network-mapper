@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -15,6 +14,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 var (

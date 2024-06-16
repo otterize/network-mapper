@@ -20,7 +20,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/mapperwebhooks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
-	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisiablity"
+	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -249,12 +249,12 @@ func main() {
 
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 
-		ingressReconciler := resourcevisiablity.NewIngressReconciler(mgr.GetClient(), cloudClient)
+		ingressReconciler := resourcevisibility.NewIngressReconciler(mgr.GetClient(), cloudClient)
 		if err := ingressReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create ingress reconciler")
 		}
 
-		serviceReconciler := resourcevisiablity.NewServiceReconciler(mgr.GetClient(), cloudClient, kubeFinder)
+		serviceReconciler := resourcevisibility.NewServiceReconciler(mgr.GetClient(), cloudClient, kubeFinder)
 		if err := serviceReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create service reconciler")
 		}

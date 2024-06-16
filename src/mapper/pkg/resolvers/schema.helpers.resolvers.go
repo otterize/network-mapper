@@ -65,7 +65,7 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 	if !foundSvc {
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
-	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
+	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
@@ -124,7 +124,7 @@ func (r *Resolver) tryHandleSocketScanDestinationAsService(ctx context.Context, 
 
 func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
 	lastSeen := dest.LastSeen
-	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, svc, dest.LastSeen)
+	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, svc, lastSeen)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -348,7 +348,7 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
+	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}

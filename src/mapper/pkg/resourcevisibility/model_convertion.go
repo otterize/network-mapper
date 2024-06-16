@@ -1,4 +1,4 @@
-package resourcevisiablity
+package resourcevisibility
 
 import (
 	"github.com/otterize/intents-operator/src/shared/errors"

@@ -1,4 +1,4 @@
-package resourcevisiablity
+package resourcevisibility
 
 import (
 	"context"
