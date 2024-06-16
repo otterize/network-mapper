@@ -70,9 +70,12 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *ServiceReconciler) convertToCloudServices(ctx context.Context, services []corev1.Service) ([]cloudclient.K8sServiceInput, error) {
 	cloudServices := make([]cloudclient.K8sServiceInput, 0)
 	for _, service := range services {
-		cloudService, _, err := r.convertToCloudService(ctx, service)
+		cloudService, ok, err := r.convertToCloudService(ctx, service)
 		if err != nil {
 			return nil, errors.Wrap(err)
+		}
+		if !ok {
+			continue
 		}
 
 		cloudServices = append(cloudServices, cloudService)
@@ -90,7 +93,6 @@ func (r *ServiceReconciler) convertToCloudService(ctx context.Context, service c
 	if err != nil {
 		return cloudclient.K8sServiceInput{}, false, errors.Wrap(err)
 	}
-
 	if !found {
 		return cloudclient.K8sServiceInput{}, false, nil
 	}
@@ -107,5 +109,5 @@ func (r *ServiceReconciler) convertToCloudService(ctx context.Context, service c
 		Service:        serviceInput,
 	}
 
-	return cloudService, false, nil
+	return cloudService, true, nil
 }
