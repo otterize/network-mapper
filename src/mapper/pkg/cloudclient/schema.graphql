@@ -901,7 +901,6 @@ type InternetConfig {
 
 input InternetConfigInput {
 	domains: [String!]
-	discoveredTarget: DNSIPPairInput
 	ips: [String!]
 	ports: [Int!]
 }
@@ -1463,6 +1462,12 @@ type Namespace {
 	serviceCount: Int!
 }
 
+input NamespaceFilterInput {
+	name: String
+	clusterIds: [ID!]
+	environmentIds: [ID!]
+}
+
 input NamespacedPodOwner {
 	name: String!
 	namespace: String!
@@ -1627,6 +1632,7 @@ type Query {
 		environmentId: ID
 		clusterId: ID
 		name: String
+		filter: NamespaceFilterInput
 	): [Namespace!]!
 """Get one namespace"""
 	oneNamespace(

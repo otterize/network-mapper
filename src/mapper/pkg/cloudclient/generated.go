@@ -47,15 +47,15 @@ const (
 )
 
 type DNSIPPairInput struct {
-	DnsName *string   `json:"dnsName"`
-	Ips     []*string `json:"ips"`
+	DnsName string   `json:"dnsName"`
+	Ips     []string `json:"ips"`
 }
 
 // GetDnsName returns DNSIPPairInput.DnsName, and is useful for accessing the field via an interface.
-func (v *DNSIPPairInput) GetDnsName() *string { return v.DnsName }
+func (v *DNSIPPairInput) GetDnsName() string { return v.DnsName }
 
 // GetIps returns DNSIPPairInput.Ips, and is useful for accessing the field via an interface.
-func (v *DNSIPPairInput) GetIps() []*string { return v.Ips }
+func (v *DNSIPPairInput) GetIps() []string { return v.Ips }
 
 type DatabaseConfigInput struct {
 	Dbname     *string              `json:"dbname"`
@@ -286,17 +286,13 @@ const (
 )
 
 type InternetConfigInput struct {
-	Domains          []*string       `json:"domains"`
-	DiscoveredTarget *DNSIPPairInput `json:"discoveredTarget"`
-	Ips              []*string       `json:"ips"`
-	Ports            []*int          `json:"ports"`
+	Domains []*string `json:"domains"`
+	Ips     []*string `json:"ips"`
+	Ports   []*int    `json:"ports"`
 }
 
 // GetDomains returns InternetConfigInput.Domains, and is useful for accessing the field via an interface.
 func (v *InternetConfigInput) GetDomains() []*string { return v.Domains }
-
-// GetDiscoveredTarget returns InternetConfigInput.DiscoveredTarget, and is useful for accessing the field via an interface.
-func (v *InternetConfigInput) GetDiscoveredTarget() *DNSIPPairInput { return v.DiscoveredTarget }
 
 // GetIps returns InternetConfigInput.Ips, and is useful for accessing the field via an interface.
 func (v *InternetConfigInput) GetIps() []*string { return v.Ips }
