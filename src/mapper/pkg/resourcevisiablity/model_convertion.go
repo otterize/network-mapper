@@ -13,7 +13,7 @@ import (
 
 func convertPortProtocol(protocol corev1.Protocol) (*cloudclient.K8sPortProtocol, error) {
 	if protocol == "" {
-		return nil, nil
+		return nil, errors.New("port protocol is empty")
 	}
 	var result cloudclient.K8sPortProtocol
 	switch protocol {
