@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	"go.uber.org/mock/gomock"
 	model "github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockIstioReporter is a mock of IstioReporter interface.

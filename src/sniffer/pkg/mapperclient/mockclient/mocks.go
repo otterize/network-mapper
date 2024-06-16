@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	"go.uber.org/mock/gomock"
 	mapperclient "github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockMapperClient is a mock of MapperClient interface.

@@ -901,6 +901,7 @@ type InternetConfig {
 
 input InternetConfigInput {
 	domains: [String!]
+	discoveredTarget: DNSIPPairInput
 	ips: [String!]
 	ports: [Int!]
 }
@@ -1812,6 +1813,7 @@ enum ServiceType {
 	DATABASE
 	INTERNET
 	DATABASE_USER
+	KUBERNETES_LOAD_BALANCER
 }
 
 enum SessionAffinity {

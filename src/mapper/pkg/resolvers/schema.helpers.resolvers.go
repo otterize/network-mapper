@@ -148,10 +148,6 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	return nil
 }
 
-func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
-	return r.kubeFinder.ResolveOtterizeIdentityForService(ctx, svc, lastSeen)
-}
-
 func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
 	if destPod.DeletionTimestamp != nil {
 		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
