@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	mapperclient "github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockMapperClient is a mock of MapperClient interface.

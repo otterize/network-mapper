@@ -3,10 +3,10 @@ package istiowatcher
 import (
 	"context"
 	"fmt"
-	"github.com/golang/mock/gomock"
 	mock_istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher/mocks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 )

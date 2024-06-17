@@ -124,6 +124,7 @@ type AccessGraphFilter {
 	namespaceIds: IDFilterValue
 	environmentIds: IDFilterValue
 	lastSeen: TimeFilterValue
+	featureFlags: FeatureFlags
 }
 
 enum ApiFieldAction {
@@ -229,6 +230,10 @@ enum CertificateProvider {
 	CERT_MANAGER
 	CLOUD
 	NONE
+}
+
+input ClientIPConfig {
+	timeoutSeconds: Int
 }
 
 type ClientIntentsFileRepresentation {
@@ -475,6 +480,14 @@ type Environment {
 	appliedIntentsCount: Int!
 }
 
+input Error {
+	message: String!
+	errorClass: String!
+	cause: Error
+	stack: [StackFrame]
+	metadata: [MetadataEntry!]
+}
+
 enum EventType {
 	INTENTS_DELETED
 	INTENTS_APPLIED
@@ -522,6 +535,10 @@ input ExternallyAccessibleServiceInput {
 	serverName: String!
 	referredByIngress: Boolean!
 	serviceType: KubernetesServiceType!
+}
+
+type FeatureFlags {
+	isCloudServicesDetectionEnabled: Boolean
 }
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
@@ -656,6 +673,12 @@ type IDFilterValue {
 	operator: IDFilterOperators!
 }
 
+enum IPFamily {
+	IPV4
+	IPV6
+	UNKNOWN
+}
+
 input IncomingInternetSourceInput {
 	ip: String!
 }
@@ -677,6 +700,11 @@ input InputAccessGraphFilter {
 	namespaceIds: InputIDFilterValue
 	environmentIds: InputIDFilterValue
 	lastSeen: InputTimeFilterValue
+	featureFlags: InputFeatureFlags
+}
+
+input InputFeatureFlags {
+	isCloudServicesDetectionEnabled: Boolean
 }
 
 input InputIDFilterValue {
@@ -699,6 +727,12 @@ input InputTimeFilterValue {
 
 """The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
 scalar Int
+
+input IntOrStringInput {
+	isInt: Boolean!
+	intVal: Int
+	strVal: String
+}
 
 type Integration {
 	id: ID!
@@ -867,6 +901,7 @@ type InternetConfig {
 
 input InternetConfigInput {
 	domains: [String!]
+	discoveredTarget: DNSIPPairInput
 	ips: [String!]
 	ports: [Int!]
 }
@@ -891,11 +926,148 @@ input IpBlockInput {
 	except: [String!]
 }
 
+enum IpFamilyPolicy {
+	SINGLE_STACK
+	PREFER_DUAL_STACK
+	REQUIRE_DUAL_STACK
+}
+
 input IstioStatusInput {
 	serviceAccountName: String!
 	isServiceAccountShared: Boolean!
 	isServerMissingSidecar: Boolean!
 	isClientMissingSidecar: Boolean!
+}
+
+input K8sIngressBackendInput {
+	service: K8sIngressServiceBackendInput
+	resource: K8sIngressResourceBackendInput
+}
+
+input K8sIngressHttpPathInput {
+	path: String
+	pathType: PathType
+	backend: K8sIngressBackendInput!
+}
+
+input K8sIngressInput {
+	namespace: String!
+	name: String!
+	ingress: K8sResourceIngressInput!
+}
+
+input K8sIngressResourceBackendInput {
+	apiGroup: String
+	kind: String!
+	name: String!
+}
+
+input K8sIngressRuleInput {
+	host: String
+	httpPaths: [K8sIngressHttpPathInput!]
+}
+
+input K8sIngressServiceBackendInput {
+	name: String!
+	port: ServiceBackendPortInput!
+}
+
+input K8sIngressTLSInput {
+	hosts: [String!]
+	secretName: String
+}
+
+enum K8sPortProtocol {
+	TCP
+	UDP
+	SCTP
+}
+
+input K8sResourceIngressInput {
+	spec: K8sResourceIngressSpecInput!
+	status: K8sResourceIngressStatusInput
+}
+
+input K8sResourceIngressSpecInput {
+	ingressClassName: String
+	defaultBackend: K8sIngressBackendInput
+	tls: [K8sIngressTLSInput!]
+	rules: [K8sIngressRuleInput!]
+}
+
+input K8sResourceIngressStatusInput {
+	loadBalancer: [K8sResourceLoadBalancerIngressInput!]
+}
+
+input K8sResourceLoadBalancerIngressInput {
+	ip: String
+	hostname: String
+	ports: [PortStatusInput!]
+}
+
+input K8sResourceServiceInput {
+	spec: K8sResourceServiceSpecInput!
+	status: K8sResourceServiceStatusInput
+}
+
+input K8sResourceServiceLoadBalancerIngressInput {
+	ip: String
+	hostname: String
+	ipMode: LoadBalancerIPMode
+	ports: [PortStatusInput!]
+}
+
+input K8sResourceServiceLoadBalancerStatusInput {
+	ingress: [K8sResourceServiceLoadBalancerIngressInput!]
+}
+
+input K8sResourceServiceSpecInput {
+	ports: [K8sServicePort!]!
+	selector: [SelectorKeyValueInput!]!
+	clusterIP: String
+	clusterIPs: [String!]
+	type: K8sServiceType
+	externalIPs: [String!]
+	sessionAffinity: SessionAffinity
+	loadBalancerIP: String
+	loadBalancerSourceRanges: [String!]
+	externalName: String
+	externalTrafficPolicy: ServiceExternalTrafficPolicy
+	healthCheckNodePort: Int
+	publishNotReadyAddresses: Boolean
+	sessionAffinityConfig: SessionAffinityConfig
+	ipFamilies: [IPFamily!]
+	ipFamilyPolicy: IpFamilyPolicy
+	allocateLoadBalancerNodePorts: Boolean
+	loadBalancerClass: String
+	internalTrafficPolicy: ServiceInternalTrafficPolicy
+}
+
+input K8sResourceServiceStatusInput {
+	loadBalancer: K8sResourceServiceLoadBalancerStatusInput
+}
+
+input K8sServiceInput {
+	namespace: String!
+	otterizeServer: String!
+	resourceName: String!
+	service: K8sResourceServiceInput!
+}
+
+input K8sServicePort {
+	name: String
+	protocol: K8sPortProtocol
+	appProtocol: String
+	port: Int!
+	targetPort: IntOrStringInput
+	nodePort: Int
+}
+
+enum K8sServiceType {
+	CLUSTER_IP
+	NODE_PORT
+	LOAD_BALANCER
+	EXTERNAL_NAME
 }
 
 type KafkaConfig {
@@ -983,6 +1155,11 @@ type LabelValueTuple {
 	value: String!
 }
 
+enum LoadBalancerIPMode {
+	VIP
+	PROXY
+}
+
 type Me {
 """The logged-in user details."""
 	user: User!
@@ -1005,6 +1182,11 @@ type MergedYAMLFile {
 	fileName: String!
 	rows: [ClientIntentsRow!]!
 	content: String!
+}
+
+input MetadataEntry {
+	key: String!
+	value: String!
 }
 
 type Mutation {
@@ -1062,6 +1244,10 @@ type Mutation {
 		id: ID!
 		key: String!
 	): Environment!
+	sendErrors(
+		component: Component
+		errors: [Error!]!
+	): Boolean!
 """Create a new generic integration"""
 	createGenericIntegration(
 		name: String!
@@ -1193,6 +1379,14 @@ type Mutation {
 	acceptInvite(
 		id: ID!
 	): Invite!
+	reportK8sServices(
+		namespace: String!
+		services: [K8sServiceInput!]!
+	): Boolean!
+	reportK8sIngresses(
+		namespace: String!
+		ingresses: [K8sIngressInput!]!
+	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
@@ -1269,6 +1463,12 @@ type Namespace {
 	serviceCount: Int!
 }
 
+input NamespaceFilterInput {
+	name: String
+	clusterIds: [ID!]
+	environmentIds: [ID!]
+}
+
 input NamespacedPodOwner {
 	name: String!
 	namespace: String!
@@ -1307,7 +1507,7 @@ input NetworkPolicyInput {
 }
 
 input NetworkPolicySpecInput {
-	egress: [NetworkPolicyEgressRuleInput!]!
+	egress: [NetworkPolicyEgressRuleInput!]
 }
 
 type Organization {
@@ -1326,8 +1526,20 @@ input OrganizationSettingsInput {
 	domains: [String]
 }
 
+enum PathType {
+	IMPLEMENTATION_SPECIFIC
+	PREFIX
+	EXACT
+}
+
 input PeerInput {
 	ipBlock: IpBlockInput!
+}
+
+input PortStatusInput {
+	port: Int!
+	protocol: K8sPortProtocol!
+	error: String
 }
 
 input ProtectedServiceInput {
@@ -1346,6 +1558,8 @@ type Query {
 		asServiceId: ID
 		lastSeenAfter: Time!
 		clusterIds: [ID!]
+		enableInternetIntents: Boolean
+		featureFlags: InputFeatureFlags
 	): ServiceClientIntents!
 """Get cluster"""
 	cluster(
@@ -1419,6 +1633,7 @@ type Query {
 		environmentId: ID
 		clusterId: ID
 		name: String
+		filter: NamespaceFilterInput
 	): [Namespace!]!
 """Get one namespace"""
 	oneNamespace(
@@ -1461,6 +1676,11 @@ type Query {
 enum RowDiff {
 	ADDED
 	REMOVED
+}
+
+input SelectorKeyValueInput {
+	key: String
+	value: String
 }
 
 type ServerBlockingStatus {
@@ -1555,9 +1775,24 @@ type ServiceAccessStatus {
 	hasAppliedIntents: Boolean!
 }
 
+input ServiceBackendPortInput {
+	name: String
+	number: Int
+}
+
 type ServiceClientIntents {
 	asClient: ClientIntentsFiles
 	asServer: ClientIntentsFiles
+}
+
+enum ServiceExternalTrafficPolicy {
+	CLUSTER
+	LOCAL
+}
+
+enum ServiceInternalTrafficPolicy {
+	CLUSTER
+	LOCAL
 }
 
 enum ServiceTags {
@@ -1578,6 +1813,23 @@ enum ServiceType {
 	DATABASE
 	INTERNET
 	DATABASE_USER
+	KUBERNETES_LOAD_BALANCER
+}
+
+enum SessionAffinity {
+	CLIENT_IP
+	NONE
+}
+
+input SessionAffinityConfig {
+	clientIP: ClientIPConfig
+}
+
+input StackFrame {
+	file: String!
+	lineNumber: Int!
+	name: String!
+	package: String!
 }
 
 """The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
@@ -1644,6 +1896,7 @@ enum TutorialName {
 	GCP_IAM
 	AZURE_IAM
 	POSTGRESQL
+	MYSQL
 	ISTIO_AUTH_POLICY_AUTOMATION
 	KAFKA_ACCESS_AUTOMATE_OTTERIZE_CLOUD
 }

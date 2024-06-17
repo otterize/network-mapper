@@ -2,10 +2,10 @@ package collectors
 
 import (
 	"encoding/hex"
-	"github.com/golang/mock/gomock"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/nilable"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"testing"
 	"time"
 

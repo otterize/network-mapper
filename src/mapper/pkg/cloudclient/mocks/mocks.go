@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	cloudclient "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockCloudClient is a mock of CloudClient interface.
@@ -89,4 +89,32 @@ func (m *MockCloudClient) ReportIncomingTrafficDiscoveredIntents(ctx context.Con
 func (mr *MockCloudClientMockRecorder) ReportIncomingTrafficDiscoveredIntents(ctx, intents interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportIncomingTrafficDiscoveredIntents", reflect.TypeOf((*MockCloudClient)(nil).ReportIncomingTrafficDiscoveredIntents), ctx, intents)
+}
+
+// ReportK8sIngresses mocks base method.
+func (m *MockCloudClient) ReportK8sIngresses(ctx context.Context, namespace string, ingresses []cloudclient.K8sIngressInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportK8sIngresses", ctx, namespace, ingresses)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportK8sIngresses indicates an expected call of ReportK8sIngresses.
+func (mr *MockCloudClientMockRecorder) ReportK8sIngresses(ctx, namespace, ingresses interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sIngresses", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sIngresses), ctx, namespace, ingresses)
+}
+
+// ReportK8sServices mocks base method.
+func (m *MockCloudClient) ReportK8sServices(ctx context.Context, namespace string, services []cloudclient.K8sServiceInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportK8sServices", ctx, namespace, services)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportK8sServices indicates an expected call of ReportK8sServices.
+func (mr *MockCloudClientMockRecorder) ReportK8sServices(ctx, namespace, services interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sServices", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sServices), ctx, namespace, services)
 }
