@@ -36,7 +36,7 @@ type KubeFinder interface {
 }
 
 func OnEvict(key string, _ []byte) {
-	logrus.Debugf("Namespace %s evicted from cache, you may change configuration to increase cache size or TTL", key)
+	logrus.WithField("namespace", key).Debug("key evicted from cache, you may change configuration to increase cache size or TTL")
 }
 
 func NewServiceReconciler(client client.Client, otterizeCloudClient cloudclient.CloudClient, kubeFinder KubeFinder) *ServiceReconciler {
@@ -87,7 +87,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	val, found := r.namespaceToReportedServicesCache.Get(namespace)
 	if found && bytes.Equal(val, hashSum) {
-		logrus.Debugf("Skipping reporting of services in namespace %s", namespace)
+		logrus.WithField("namespace", namespace).Debug("Skipping reporting of services in namespace due to cache")
 		return ctrl.Result{}, nil
 	}
 
