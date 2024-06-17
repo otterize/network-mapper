@@ -53,6 +53,7 @@ var (
 		"source_workload",
 		"source_workload_namespace",
 		"destination_workload",
+		"destination_service_name",
 		"destination_workload_namespace",
 		"request_method",
 		"request_path",
@@ -60,12 +61,13 @@ var (
 )
 
 type ConnectionWithPath struct {
-	SourceWorkload       string `json:"source_workload"`
-	SourceNamespace      string `json:"source_workload_namespace"`
-	DestinationWorkload  string `json:"destination_workload"`
-	DestinationNamespace string `json:"destination_workload_namespace"`
-	RequestPath          string `json:"request_path"`
-	RequestMethod        string `json:"request_method"`
+	SourceWorkload         string `json:"source_workload"`
+	SourceNamespace        string `json:"source_workload_namespace"`
+	DestinationWorkload    string `json:"destination_workload"`
+	DestinationServiceName string `json:"destination_service_name"`
+	DestinationNamespace   string `json:"destination_workload_namespace"`
+	RequestPath            string `json:"request_path"`
+	RequestMethod          string `json:"request_method"`
 }
 
 type IstioWatcher struct {
@@ -311,6 +313,8 @@ func extractRegexGroups(inputString string, groupNames []string) (*ConnectionWit
 			connection.RequestPath = groupValue
 		case "request_method":
 			connection.RequestMethod = groupValue
+		case "destination_service_name":
+			connection.DestinationServiceName = groupValue
 		default:
 			return nil, errors.Errorf("unknown group name: %s", groupName)
 		}

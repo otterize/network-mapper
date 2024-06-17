@@ -651,6 +651,7 @@ input IstioConnection {
     srcWorkload: String!
     srcWorkloadNamespace: String!
     dstWorkload: String!
+    dstServiceName: String!
     dstWorkloadNamespace: String!
     path: String!
     methods: [HttpMethod!]!
@@ -4562,7 +4563,7 @@ func (ec *executionContext) unmarshalInputIstioConnection(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"srcWorkload", "srcWorkloadNamespace", "dstWorkload", "dstWorkloadNamespace", "path", "methods", "lastSeen"}
+	fieldsInOrder := [...]string{"srcWorkload", "srcWorkloadNamespace", "dstWorkload", "dstServiceName", "dstWorkloadNamespace", "path", "methods", "lastSeen"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4590,6 +4591,13 @@ func (ec *executionContext) unmarshalInputIstioConnection(ctx context.Context, o
 				return it, err
 			}
 			it.DstWorkload = data
+		case "dstServiceName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dstServiceName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DstServiceName = data
 		case "dstWorkloadNamespace":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dstWorkloadNamespace"))
 			data, err := ec.unmarshalNString2string(ctx, v)

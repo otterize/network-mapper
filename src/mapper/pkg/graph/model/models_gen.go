@@ -55,6 +55,7 @@ type IstioConnection struct {
 	SrcWorkload          string       `json:"srcWorkload"`
 	SrcWorkloadNamespace string       `json:"srcWorkloadNamespace"`
 	DstWorkload          string       `json:"dstWorkload"`
+	DstServiceName       string       `json:"dstServiceName"`
 	DstWorkloadNamespace string       `json:"dstWorkloadNamespace"`
 	Path                 string       `json:"path"`
 	Methods              []HTTPMethod `json:"methods"`

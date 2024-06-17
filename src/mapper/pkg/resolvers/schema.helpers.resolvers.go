@@ -186,9 +186,10 @@ func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *c
 	}
 
 	dstSvcIdentity := model.OtterizeServiceIdentity{
-		Name:      dstService.Name,
-		Namespace: pod.Namespace,
-		Labels:    podLabelsToOtterizeLabels(&pod),
+		Name:              dstService.Name,
+		Namespace:         pod.Namespace,
+		Labels:            podLabelsToOtterizeLabels(&pod),
+		KubernetesService: lo.ToPtr(svc.Name),
 	}
 
 	if dstService.OwnerObject != nil {
@@ -670,6 +671,9 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 
 		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
 		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
+		if result.DstServiceName != "" && strings.ToLower(result.DstServiceName) != "unknown" {
+			dstSvcIdentity.KubernetesService = lo.ToPtr(result.DstServiceName)
+		}
 		if srcService.OwnerObject != nil {
 			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
+	otterizev2alpha1 "github.com/otterize/intents-operator/src/operator/api/v2alpha1"
 	mutatingwebhookconfiguration "github.com/otterize/intents-operator/src/operator/controllers/mutating_webhook_controller"
 	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/clusterutils"
@@ -66,6 +67,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(otterizev1alpha2.AddToScheme(scheme))
 	utilruntime.Must(otterizev1alpha3.AddToScheme(scheme))
+	utilruntime.Must(otterizev2alpha1.AddToScheme(scheme))
 }
 
 func getClusterDomainOrDefault() string {

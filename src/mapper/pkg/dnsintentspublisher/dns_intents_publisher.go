@@ -2,7 +2,7 @@ package dnsintentspublisher
 
 import (
 	"context"
-	otterizev1alpha3 "github.com/otterize/intents-operator/src/operator/api/v1alpha3"
+	otterizev2alpha1 "github.com/otterize/intents-operator/src/operator/api/v2alpha1"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/samber/lo"
@@ -40,16 +40,16 @@ func NewPublisher(k8sClient client.Client, dnsCache DnsCache) *Publisher {
 func (p *Publisher) InitIndices(ctx context.Context, mgr ctrl.Manager) error {
 	err := mgr.GetCache().IndexField(
 		ctx,
-		&otterizev1alpha3.ClientIntents{},
+		&otterizev2alpha1.ClientIntents{},
 		hasAnyDnsIntentsIndexKey,
 		func(object client.Object) []string {
-			intents := object.(*otterizev1alpha3.ClientIntents)
+			intents := object.(*otterizev2alpha1.ClientIntents)
 			if intents.Spec == nil {
 				return nil
 			}
 
-			if lo.ContainsBy(intents.GetCallsList(), func(intent otterizev1alpha3.Intent) bool {
-				return intent.Type == otterizev1alpha3.IntentTypeInternet
+			if lo.ContainsBy(intents.GetCallsList(), func(intent otterizev2alpha1.Target) bool {
+				return intent.Internet != nil
 			}) {
 				return []string{hasAnyDnsIntentsIndexValue}
 			}
@@ -80,7 +80,7 @@ func (p *Publisher) RunForever(ctx context.Context) {
 }
 
 func (p *Publisher) PublishDNSIntents(ctx context.Context) error {
-	var intentsList otterizev1alpha3.ClientIntentsList
+	var intentsList otterizev2alpha1.ClientIntentsList
 
 	err := p.client.List(ctx, &intentsList, client.MatchingFields{hasAnyDnsIntentsIndexKey: hasAnyDnsIntentsIndexValue})
 	if err != nil {
@@ -97,15 +97,15 @@ func (p *Publisher) PublishDNSIntents(ctx context.Context) error {
 	return nil
 }
 
-func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otterizev1alpha3.ClientIntents) error {
+func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otterizev2alpha1.ClientIntents) error {
 	resolvedIPsMap, shouldUpdate := p.compareIntentsAndStatus(clientIntents)
 	if !shouldUpdate {
 		return nil
 	}
 
-	updatedResolvedIPs := make([]otterizev1alpha3.ResolvedIPs, 0, len(resolvedIPsMap))
+	updatedResolvedIPs := make([]otterizev2alpha1.ResolvedIPs, 0, len(resolvedIPsMap))
 	for dnsName, ips := range resolvedIPsMap {
-		updatedResolvedIPs = append(updatedResolvedIPs, otterizev1alpha3.ResolvedIPs{
+		updatedResolvedIPs = append(updatedResolvedIPs, otterizev2alpha1.ResolvedIPs{
 			DNS: dnsName,
 			IPs: ips,
 		})
@@ -121,13 +121,13 @@ func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otteriz
 	return nil
 }
 
-func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev1alpha3.ClientIntents) (map[string][]string, bool) {
-	resolvedIPsMap := lo.SliceToMap(clientIntents.Status.ResolvedIPs, func(resolvedIPs otterizev1alpha3.ResolvedIPs) (string, []string) {
+func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.ClientIntents) (map[string][]string, bool) {
+	resolvedIPsMap := lo.SliceToMap(clientIntents.Status.ResolvedIPs, func(resolvedIPs otterizev2alpha1.ResolvedIPs) (string, []string) {
 		return resolvedIPs.DNS, resolvedIPs.IPs
 	})
 
-	dnsIntents := lo.Reduce(clientIntents.GetCallsList(), func(names []string, intent otterizev1alpha3.Intent, _ int) []string {
-		if intent.Type != otterizev1alpha3.IntentTypeInternet {
+	dnsIntents := lo.Reduce(clientIntents.GetCallsList(), func(names []string, intent otterizev2alpha1.Target, _ int) []string {
+		if intent.Internet == nil {
 			return names
 		}
 		names = append(names, intent.Internet.Domains...)
