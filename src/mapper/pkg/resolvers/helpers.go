@@ -6,20 +6,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 )
-
-func podLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
-	labels := make([]model.PodLabel, 0, len(pod.Labels))
-	for key, value := range pod.Labels {
-		labels = append(labels, model.PodLabel{
-			Key:   key,
-			Value: value,
-		})
-	}
-
-	return labels
-}
 
 // isExternalOrAssumeExternalIfError returns true if the IP is external or if an error occurred while determining if the IP is external.
 func (r *Resolver) isExternalOrAssumeExternalIfError(ctx context.Context, srcIP string) (bool, error) {
@@ -77,7 +64,7 @@ func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDe
 	}
 
 	src.Destinations = filteredDestinations
-	srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
+	srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(srcPod)}
 	if srcService.OwnerObject != nil {
 		srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}

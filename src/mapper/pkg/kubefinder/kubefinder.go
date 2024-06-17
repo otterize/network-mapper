@@ -6,6 +6,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"strings"
+	"time"
 )
 
 const (
@@ -26,6 +28,8 @@ const (
 	portNumberIndexField       = "service.spec.ports.nodePort"
 	nodeIPIndexField           = "node.status.Addresses.ExternalIP"
 	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
+	apiServerName              = "kubernetes"
+	apiServerNamespace         = "default"
 )
 
 type KubeFinder struct {
@@ -379,4 +383,68 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 	default:
 		return nil, types.NamespacedName{}, errors.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
 	}
+}
+
+func ServiceIsAPIServer(name string, namespace string) bool {
+	return name == apiServerName && namespace == apiServerNamespace
+}
+
+func PodLabelsToOtterizeLabels(pod *corev1.Pod) []model.PodLabel {
+	labels := make([]model.PodLabel, 0, len(pod.Labels))
+	for key, value := range pod.Labels {
+		labels = append(labels, model.PodLabel{
+			Key:   key,
+			Value: value,
+		})
+	}
+
+	return labels
+}
+
+func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
+	pods, err := k.ResolveServiceToPods(ctx, svc)
+	if err != nil {
+		if errors.Is(err, ErrServiceNotFound) {
+			return model.OtterizeServiceIdentity{}, false, nil
+		}
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+	}
+
+	if len(pods) == 0 {
+		if ServiceIsAPIServer(svc.Name, svc.Namespace) {
+			return model.OtterizeServiceIdentity{
+				Name:              svc.Name,
+				Namespace:         svc.Namespace,
+				KubernetesService: &svc.Name,
+			}, true, nil
+		}
+
+		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
+	// Assume the pods backing the service are identical
+	pod := pods[0]
+
+	if pod.CreationTimestamp.After(lastSeen) {
+		logrus.Debugf("Pod %s was created after scan time %s, ignoring", pod.Name, lastSeen)
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
+	dstService, err := k.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
+	if err != nil {
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+	}
+
+	dstSvcIdentity := model.OtterizeServiceIdentity{
+		Name:      dstService.Name,
+		Namespace: pod.Namespace,
+		Labels:    PodLabelsToOtterizeLabels(&pod),
+	}
+
+	if dstService.OwnerObject != nil {
+		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+	}
+	dstSvcIdentity.KubernetesService = lo.ToPtr(svc.Name)
+	return dstSvcIdentity, true, nil
 }

@@ -14,3 +14,11 @@ mutation ReportComponentStatus($component: ComponentType!) {
 mutation ReportIncomingTrafficDiscoveredIntents($intents: [IncomingTrafficDiscoveredIntentInput!]!) {
     reportIncomingTrafficDiscoveredIntents(intents: $intents)
 }
+
+mutation ReportK8sServices($namespace: String!, $services: [K8sServiceInput!]!) {
+    reportK8sServices(namespace: $namespace, services: $services)
+}
+
+mutation ReportK8sIngresses($namespace: String!, $ingresses: [K8sIngressInput!]!) {
+    reportK8sIngresses(namespace: $namespace, ingresses: $ingresses)
+}

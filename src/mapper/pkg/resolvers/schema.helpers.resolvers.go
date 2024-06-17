@@ -150,59 +150,6 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	return nil
 }
 
-func (r *Resolver) resolveOtterizeIdentityForService(ctx context.Context, svc *corev1.Service, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
-	pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
-	if err != nil {
-		if errors.Is(err, kubefinder.ErrServiceNotFound) {
-			return model.OtterizeServiceIdentity{}, false, nil
-		}
-		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
-	}
-
-	if len(pods) == 0 {
-		if serviceIsAPIServer(svc.Name, svc.Namespace) {
-			return model.OtterizeServiceIdentity{
-				Name:              svc.Name,
-				Namespace:         svc.Namespace,
-				KubernetesService: &svc.Name,
-			}, true, nil
-		}
-
-		logrus.Debugf("could not find any pods for service '%s' in namespace '%s'", svc.Name, svc.Namespace)
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-
-	// Assume the pods backing the service are identical
-	pod := pods[0]
-
-	if pod.CreationTimestamp.After(lastSeen) {
-		logrus.Debugf("Pod %s was created after scan time %s, ignoring", pod.Name, lastSeen)
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-
-	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, &pod)
-	if err != nil {
-		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
-	}
-
-	dstSvcIdentity := model.OtterizeServiceIdentity{
-		Name:              dstService.Name,
-		Namespace:         pod.Namespace,
-		Labels:            podLabelsToOtterizeLabels(&pod),
-		KubernetesService: lo.ToPtr(svc.Name),
-	}
-
-	if dstService.OwnerObject != nil {
-		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
-	}
-	dstSvcIdentity.KubernetesService = lo.ToPtr(svc.Name)
-	return dstSvcIdentity, true, nil
-}
-
-func serviceIsAPIServer(name string, namespace string) bool {
-	return name == apiServerName && namespace == apiServerNamespace
-}
-
 func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, destPod *corev1.Pod) error {
 	if destPod.DeletionTimestamp != nil {
 		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
@@ -671,9 +618,6 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 
 		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: podLabelsToOtterizeLabels(srcPod)}
 		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: podLabelsToOtterizeLabels(dstPod)}
-		if result.DstServiceName != "" && strings.ToLower(result.DstServiceName) != "unknown" {
-			dstSvcIdentity.KubernetesService = lo.ToPtr(result.DstServiceName)
-		}
 		if srcService.OwnerObject != nil {
 			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}
