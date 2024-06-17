@@ -254,6 +254,11 @@ func convertServiceLoadBalancerStatus(status corev1.ServiceStatus) (nilable.Nila
 		result = append(result, ingressInput)
 	}
 
+	if len(result) == 0 {
+		var empty *cloudclient.K8sResourceServiceStatusInput
+		return nilable.FromPtr(empty), nil
+	}
+
 	serviceStatusInput := cloudclient.K8sResourceServiceStatusInput{
 		LoadBalancer: nilable.From(cloudclient.K8sResourceServiceLoadBalancerStatusInput{Ingress: result}),
 	}
@@ -297,14 +302,19 @@ func convertServiceResource(service corev1.Service) (cloudclient.K8sResourceServ
 			return cloudclient.K8sResourceServiceInput{}, errors.Wrap(err)
 		}
 
-		ports = append(ports, cloudclient.K8sServicePort{
-			Name:        nilable.From(port.Name),
+		servicePort := cloudclient.K8sServicePort{
 			Protocol:    nilable.FromPtr(protocol),
 			AppProtocol: nilable.FromPtr(port.AppProtocol),
 			Port:        int(port.Port),
 			TargetPort:  nilable.FromPtr(convertIntOrString(port.TargetPort)),
-			NodePort:    nilable.From(int(port.NodePort)),
-		})
+		}
+		if port.Name != "" {
+			servicePort.Name = nilable.From(port.Name)
+		}
+		if port.NodePort != 0 {
+			servicePort.NodePort = nilable.From(int(port.NodePort))
+		}
+		ports = append(ports, servicePort)
 	}
 
 	selector := make([]cloudclient.SelectorKeyValueInput, 0)
@@ -331,13 +341,9 @@ func convertServiceResource(service corev1.Service) (cloudclient.K8sResourceServ
 	}
 
 	sessionAffinityConfig := convertSessionAffinityConfig(service.Spec.SessionAffinityConfig)
-	ipFamilies := make([]cloudclient.IPFamily, 0)
-	for _, family := range service.Spec.IPFamilies {
-		ipFamily, err := convertIPFamily(family)
-		if err != nil {
-			return cloudclient.K8sResourceServiceInput{}, errors.Wrap(err)
-		}
-		ipFamilies = append(ipFamilies, ipFamily)
+	ipFamilies, err := getIpFamily(service)
+	if err != nil {
+		return cloudclient.K8sResourceServiceInput{}, errors.Wrap(err)
 	}
 
 	ipFamilyPolicy, err := convertIpFamilyPolicy(service.Spec.IPFamilyPolicy)
@@ -378,20 +384,35 @@ func convertServiceResource(service corev1.Service) (cloudclient.K8sResourceServ
 	}
 
 	input := cloudclient.K8sResourceServiceInput{
-		Spec:   spec,
-		Status: status,
+		Spec: spec,
+	}
+
+	if status.Set {
+		input.Status = status
 	}
 
 	return input, nil
 }
 
-func convertIngressBackend(backend *networkingv1.IngressBackend) (nilable.Nilable[cloudclient.K8sIngressBackendInput], error) {
-	if backend == nil {
-		return nilable.Nilable[cloudclient.K8sIngressBackendInput]{}, nil
+func getIpFamily(service corev1.Service) ([]cloudclient.IPFamily, error) {
+	if len(service.Spec.IPFamilies) == 0 {
+		return nil, nil
 	}
 
-	if backend.Service == nil && backend.Resource == nil {
-		return nilable.Nilable[cloudclient.K8sIngressBackendInput]{}, errors.Errorf("both service and resource are nil in ingress backend")
+	ipFamilies := make([]cloudclient.IPFamily, 0)
+	for _, family := range service.Spec.IPFamilies {
+		ipFamily, err := convertIPFamily(family)
+		if err != nil {
+			return nil, errors.Wrap(err)
+		}
+		ipFamilies = append(ipFamilies, ipFamily)
+	}
+	return ipFamilies, nil
+}
+
+func convertIngressBackend(backend *networkingv1.IngressBackend) nilable.Nilable[cloudclient.K8sIngressBackendInput] {
+	if backend == nil || (backend.Service == nil && backend.Resource == nil) {
+		return nilable.Nilable[cloudclient.K8sIngressBackendInput]{}
 	}
 
 	result := cloudclient.K8sIngressBackendInput{}
@@ -419,10 +440,14 @@ func convertIngressBackend(backend *networkingv1.IngressBackend) (nilable.Nilabl
 		result.Resource = nilable.From(resource)
 	}
 
-	return nilable.From(result), nil
+	return nilable.From(result)
 }
 
 func convertIngressTLS(tls []networkingv1.IngressTLS) ([]cloudclient.K8sIngressTLSInput, error) {
+	if len(tls) == 0 {
+		return nil, nil
+	}
+
 	result := make([]cloudclient.K8sIngressTLSInput, 0)
 	for _, tlsItem := range tls {
 		hosts := make([]string, 0)
@@ -469,7 +494,7 @@ func convertIngressRulePaths(httpRule *networkingv1.HTTPIngressRuleValue) ([]clo
 			return nil, errors.Wrap(err)
 		}
 
-		backend, err := convertIngressBackend(&path.Backend)
+		backend := convertIngressBackend(&path.Backend)
 		if err != nil {
 			return nil, errors.Wrap(err)
 		}
@@ -501,10 +526,7 @@ func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResour
 		return cloudclient.K8sResourceIngressInput{}, false, nil
 	}
 
-	defaultBackend, err := convertIngressBackend(ingress.Spec.DefaultBackend)
-	if err != nil {
-		return cloudclient.K8sResourceIngressInput{}, false, errors.Wrap(err)
-	}
+	defaultBackend := convertIngressBackend(ingress.Spec.DefaultBackend)
 
 	tls, err := convertIngressTLS(ingress.Spec.TLS)
 	if err != nil {
@@ -516,11 +538,19 @@ func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResour
 		return cloudclient.K8sResourceIngressInput{}, false, errors.Wrap(err)
 	}
 
+	ingressClassName := nilable.FromPtr(ingress.Spec.IngressClassName)
 	spec := cloudclient.K8sResourceIngressSpecInput{
-		IngressClassName: nilable.FromPtr(ingress.Spec.IngressClassName),
-		DefaultBackend:   defaultBackend,
-		Tls:              tls,
-		Rules:            rules,
+		Rules: rules,
+	}
+
+	if defaultBackend.Set {
+		spec.DefaultBackend = defaultBackend
+	}
+	if ingressClassName.Set {
+		spec.IngressClassName = ingressClassName
+	}
+	if len(tls) > 0 {
+		spec.Tls = tls
 	}
 
 	status, err := convertIngressLoadBalancerStatus(ingress.Status)

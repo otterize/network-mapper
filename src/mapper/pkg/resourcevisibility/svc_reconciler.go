@@ -5,7 +5,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/injectablerecorder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -19,10 +19,14 @@ type ServiceReconciler struct {
 	client.Client
 	injectablerecorder.InjectableRecorder
 	otterizeCloud cloudclient.CloudClient
-	kubeFinder    *kubefinder.KubeFinder
+	kubeFinder    KubeFinder
 }
 
-func NewServiceReconciler(client client.Client, otterizeCloudClient cloudclient.CloudClient, kubeFinder *kubefinder.KubeFinder) *ServiceReconciler {
+type KubeFinder interface {
+	ResolveOtterizeIdentityForService(ctx context.Context, service *corev1.Service, now time.Time) (model.OtterizeServiceIdentity, bool, error)
+}
+
+func NewServiceReconciler(client client.Client, otterizeCloudClient cloudclient.CloudClient, kubeFinder KubeFinder) *ServiceReconciler {
 	return &ServiceReconciler{
 		Client:        client,
 		otterizeCloud: otterizeCloudClient,
