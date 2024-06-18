@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/nilable"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net"
@@ -136,13 +137,21 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 		ip, _ := ipLayer.(*layers.IPv4)
 		dns, _ := dnsLayer.(*layers.DNS)
 		if dns.OpCode == layers.DNSOpCodeQuery && dns.ResponseCode == layers.DNSResponseCodeNoErr {
+			cnameToA := getCNameTranslation(dns)
+
 			for _, answer := range dns.Answers {
 				// This is the DNS Answer, so the Dst IP is the pod IP
 				if answer.Type != layers.DNSTypeA && answer.Type != layers.DNSTypeAAAA {
 					continue
 				}
+				hostName := string(answer.Name)
+				if nameFromCNAME, ok := cnameToA[hostName]; ok {
+					logrus.Debugf("Found CNAME record for %s: %s", hostName, nameFromCNAME)
+					hostName = nameFromCNAME
+				}
+
 				if !s.isRunningOnAWS {
-					s.addCapturedRequest(ip.DstIP.String(), "", string(answer.Name), answer.IP.String(), captureTime, nilable.From(int(answer.TTL)), nil)
+					s.addCapturedRequest(ip.DstIP.String(), "", hostName, answer.IP.String(), captureTime, nilable.From(int(answer.TTL)), nil)
 					continue
 				}
 				hostname, err := s.resolver.ResolveIP(ip.DstIP.String())
@@ -153,7 +162,7 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 					s.pending = append(s.pending, pendingCapture{
 						srcIp:            ip.DstIP.String(),
 						srcHostname:      hostname,
-						destHostnameOrIP: string(answer.Name),
+						destHostnameOrIP: hostName,
 						destIPFromDNS:    answer.IP.String(),
 						time:             captureTime,
 						ttl:              nilable.From(int(answer.TTL)),
@@ -162,6 +171,25 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 			}
 		}
 	}
+}
+
+func getCNameTranslation(dns *layers.DNS) map[string]string {
+	// Probably there is one CNAME record per DNS packet, so we could just use the first one we find
+	// But, since the implementation uses a list of answers, we will support multiple CNAME records with one
+	// caveat: it won't work with multiple domains for the same CNAME which is really unlikely in the same packet
+	cnameAnswer := lo.Filter(dns.Answers, func(answer layers.DNSResourceRecord, _ int) bool {
+		return answer.Type == layers.DNSTypeCNAME && len(answer.CNAME) > 0 && len(answer.Name) > 0
+	})
+
+	cnameToA := make(map[string]string)
+	for _, answer := range cnameAnswer {
+		existing, found := cnameToA[string(answer.CNAME)]
+		if found && existing != string(answer.Name) {
+			logrus.Debugf("Multiple CNAME records for the same CNAME, overwriting %s with %s", existing, string(answer.Name))
+		}
+		cnameToA[string(answer.CNAME)] = string(answer.Name)
+	}
+	return cnameToA
 }
 
 func (s *DNSSniffer) RefreshHostsMapping() error {
