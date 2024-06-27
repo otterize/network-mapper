@@ -34,6 +34,10 @@ const (
 	DNSClientIntentsUpdateIntervalDefault = 1 * time.Second
 	DNSClientIntentsUpdateEnabledKey      = "dns-client-intents-update-enabled"
 	DNSClientIntentsUpdateEnabledDefault  = true
+	ServiceCacheTTLDurationKey            = "service-cache-ttl-duration"
+	ServiceCacheTTLDurationDefault        = 1 * time.Minute
+	ServiceCacheSizeKey                   = "service-cache-size"
+	ServiceCacheSizeDefault               = 10000
 
 	EnableIstioCollectionKey           = "enable-istio-collection"
 	EnableIstioCollectionDefault       = false
@@ -71,5 +75,7 @@ func init() {
 	viper.SetDefault(IstioCooldownIntervalKey, IstioCooldownIntervalDefault)
 	viper.SetDefault(IstioRestrictCollectionToNamespace, "")
 	viper.SetDefault(EnableIstioCollectionKey, EnableIstioCollectionDefault)
+	viper.SetDefault(ServiceCacheTTLDurationKey, ServiceCacheTTLDurationDefault)
+	viper.SetDefault(ServiceCacheSizeKey, ServiceCacheSizeDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
