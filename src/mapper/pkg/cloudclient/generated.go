@@ -207,7 +207,10 @@ func (v *IntOrStringInput) GetStrVal() nilable.Nilable[string] { return v.StrVal
 type IntentInput struct {
 	Namespace           *string                   `json:"namespace"`
 	ClientName          *string                   `json:"clientName"`
+	ClientWorkloadKind  *string                   `json:"clientWorkloadKind"`
 	ServerName          *string                   `json:"serverName"`
+	ServerWorkloadKind  *string                   `json:"serverWorkloadKind"`
+	ServerAlias         *ServerAliasInput         `json:"serverAlias"`
 	ServerNamespace     *string                   `json:"serverNamespace"`
 	Type                *IntentType               `json:"type"`
 	Topics              []*KafkaConfigInput       `json:"topics"`
@@ -227,8 +230,17 @@ func (v *IntentInput) GetNamespace() *string { return v.Namespace }
 // GetClientName returns IntentInput.ClientName, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetClientName() *string { return v.ClientName }
 
+// GetClientWorkloadKind returns IntentInput.ClientWorkloadKind, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetClientWorkloadKind() *string { return v.ClientWorkloadKind }
+
 // GetServerName returns IntentInput.ServerName, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetServerName() *string { return v.ServerName }
+
+// GetServerWorkloadKind returns IntentInput.ServerWorkloadKind, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerWorkloadKind() *string { return v.ServerWorkloadKind }
+
+// GetServerAlias returns IntentInput.ServerAlias, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerAlias() *ServerAliasInput { return v.ServerAlias }
 
 // GetServerNamespace returns IntentInput.ServerNamespace, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetServerNamespace() *string { return v.ServerNamespace }
@@ -830,6 +842,17 @@ func (v *SelectorKeyValueInput) GetKey() nilable.Nilable[string] { return v.Key 
 
 // GetValue returns SelectorKeyValueInput.Value, and is useful for accessing the field via an interface.
 func (v *SelectorKeyValueInput) GetValue() nilable.Nilable[string] { return v.Value }
+
+type ServerAliasInput struct {
+	Name *string `json:"name"`
+	Kind *string `json:"kind"`
+}
+
+// GetName returns ServerAliasInput.Name, and is useful for accessing the field via an interface.
+func (v *ServerAliasInput) GetName() *string { return v.Name }
+
+// GetKind returns ServerAliasInput.Kind, and is useful for accessing the field via an interface.
+func (v *ServerAliasInput) GetKind() *string { return v.Kind }
 
 type ServiceBackendPortInput struct {
 	Name   nilable.Nilable[string] `json:"name"`

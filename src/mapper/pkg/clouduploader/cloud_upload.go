@@ -3,6 +3,7 @@ package clouduploader
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
@@ -36,7 +37,7 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 	}
 
 	discoveredIntents := lo.Map(intents, func(intent intentsstore.TimestampedIntent, _ int) *cloudclient.DiscoveredIntentInput {
-		return &cloudclient.DiscoveredIntentInput{
+		toCloud := &cloudclient.DiscoveredIntentInput{
 			DiscoveredAt: lo.ToPtr(intent.Timestamp),
 			Intent: &cloudclient.IntentInput{
 				ClientName:      &intent.Intent.Client.Name,
@@ -52,6 +53,19 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 				Resources: httpResourceToHTTPConfInput(intent.Intent.HTTPResources),
 			},
 		}
+		if intent.Intent.Client.PodOwnerKind != nil && intent.Intent.Client.PodOwnerKind.Kind != "" {
+			toCloud.Intent.ClientWorkloadKind = lo.ToPtr(intent.Intent.Client.PodOwnerKind.Kind)
+		}
+		if intent.Intent.Server.PodOwnerKind != nil && intent.Intent.Server.PodOwnerKind.Kind != "" {
+			toCloud.Intent.ServerWorkloadKind = lo.ToPtr(intent.Intent.Server.PodOwnerKind.Kind)
+		}
+		if intent.Intent.Server.KubernetesService != nil {
+			toCloud.Intent.ServerAlias = &cloudclient.ServerAliasInput{Name: intent.Intent.Server.KubernetesService, Kind: lo.ToPtr(serviceidentity.KindService)}
+		}
+		// debug log all the fields of intent input one by one with their values
+		logrus.Debugf("intent CleintName: %s\t Namespace: %s\t ServerName: %s\t ServerNamespace: %s\t ClientWorkloadKind: %s\t ServerWorkloadKind: %s\t ServerAlias: %v", lo.FromPtr(toCloud.Intent.ClientName), lo.FromPtr(toCloud.Intent.Namespace), lo.FromPtr(toCloud.Intent.ServerName), lo.FromPtr(toCloud.Intent.ServerNamespace), lo.FromPtr(toCloud.Intent.ClientWorkloadKind), lo.FromPtr(toCloud.Intent.ServerWorkloadKind), lo.FromPtr(toCloud.Intent.ServerAlias))
+
+		return toCloud
 	})
 
 	exponentialBackoff := backoff.NewExponentialBackOff()
@@ -171,7 +185,7 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 	err := c.client.ReportDiscoveredIntents(
 		ctx,
 		lo.Map(intents, func(intent awsintentsholder.AWSIntent, _ int) *cloudclient.DiscoveredIntentInput {
-			return &cloudclient.DiscoveredIntentInput{
+			toCloud := &cloudclient.DiscoveredIntentInput{
 				DiscoveredAt: &now,
 				Intent: &cloudclient.IntentInput{
 					ClientName: &intent.Client.Name,
@@ -181,6 +195,11 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 					AwsActions: lo.ToSlicePtr(intent.Actions),
 				},
 			}
+			if intent.Client.PodOwnerKind != nil && intent.Client.PodOwnerKind.Kind != "" {
+				toCloud.Intent.ClientWorkloadKind = lo.ToPtr(intent.Client.PodOwnerKind.Kind)
+			}
+
+			return toCloud
 		}),
 	)
 

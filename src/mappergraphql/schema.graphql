@@ -128,6 +128,7 @@ input IstioConnection {
     srcWorkload: String!
     srcWorkloadNamespace: String!
     dstWorkload: String!
+    dstServiceName: String!
     dstWorkloadNamespace: String!
     path: String!
     methods: [HttpMethod!]!
