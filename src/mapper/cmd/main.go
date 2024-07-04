@@ -92,6 +92,15 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	signalHandlerCtx := ctrl.SetupSignalHandler()
+
+	clusterUID, err := clusterutils.GetOrCreateClusterUID(signalHandlerCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed fetching cluster UID")
+	}
+
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
+
 	errorreporter.Init("network-mapper", version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
@@ -115,14 +124,6 @@ func main() {
 	if err != nil {
 		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
-	signalHandlerCtx := ctrl.SetupSignalHandler()
-
-	clusterUID, err := clusterutils.GetOrCreateClusterUID(signalHandlerCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed fetching cluster UID")
-	}
-
-	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 
 	errgrp, errGroupCtx := errgroup.WithContext(signalHandlerCtx)
 
