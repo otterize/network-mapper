@@ -117,6 +117,13 @@ func main() {
 	}
 	signalHandlerCtx := ctrl.SetupSignalHandler()
 
+	clusterUID, err := clusterutils.GetOrCreateClusterUID(signalHandlerCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed fetching cluster UID")
+	}
+
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
+
 	errgrp, errGroupCtx := errgroup.WithContext(signalHandlerCtx)
 
 	dnsCache := dnscache.NewDNSCache()
@@ -146,13 +153,6 @@ func main() {
 
 		return nil
 	})
-
-	clusterUID, err := clusterutils.GetOrCreateClusterUID(signalHandlerCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed fetching cluster UID")
-	}
-
-	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 
 	// start API server
 	mapperServer.GET("/healthz", func(c echo.Context) error {
