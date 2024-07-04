@@ -306,7 +306,6 @@ func main() {
 		return nil
 	})
 
-	componentinfo.SetGlobalVersion(version.Version())
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeStarted, 1)
 	telemetrysender.NetworkMapperRunActiveReporter(errGroupCtx)
 

@@ -48,7 +48,7 @@ func (p *Publisher) InitIndices(ctx context.Context, mgr ctrl.Manager) error {
 				return nil
 			}
 
-			if lo.ContainsBy(intents.GetCallsList(), func(intent otterizev2alpha1.Target) bool {
+			if lo.ContainsBy(intents.GetTargetList(), func(intent otterizev2alpha1.Target) bool {
 				return intent.Internet != nil
 			}) {
 				return []string{hasAnyDnsIntentsIndexValue}
@@ -126,7 +126,7 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 		return resolvedIPs.DNS, resolvedIPs.IPs
 	})
 
-	dnsIntents := lo.Reduce(clientIntents.GetCallsList(), func(names []string, intent otterizev2alpha1.Target, _ int) []string {
+	dnsIntents := lo.Reduce(clientIntents.GetTargetList(), func(names []string, intent otterizev2alpha1.Target, _ int) []string {
 		if intent.Internet == nil {
 			return names
 		}
