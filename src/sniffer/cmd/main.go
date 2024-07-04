@@ -7,9 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
-	"github.com/otterize/network-mapper/src/shared/componentutils"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"golang.org/x/sync/errgroup"
 	"net/http"
@@ -33,13 +31,11 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
-	errorreporter.Init("sniffer", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	errorreporter.Init("sniffer", version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
-	componentutils.SetCloudClientId()
-	componentinfo.SetGlobalComponentInstanceId()
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 

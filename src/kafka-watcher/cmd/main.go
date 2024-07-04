@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/otterize/intents-operator/src/shared"
-	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
-	"github.com/otterize/network-mapper/src/shared/componentutils"
-
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
+	"github.com/otterize/intents-operator/src/shared"
+	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
@@ -36,13 +33,11 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
-	errorreporter.Init("kafka-watcher", version.Version(), viper.GetString(sharedconfig.TelemetryErrorsAPIKeyKey))
+	errorreporter.Init("kafka-watcher", version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
-	componentutils.SetCloudClientId()
-	componentinfo.SetGlobalComponentInstanceId()
 
 	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
 
