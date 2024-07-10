@@ -6,8 +6,11 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared"
+	"github.com/otterize/intents-operator/src/shared/clusterutils"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"golang.org/x/sync/errgroup"
 	"net/http"
@@ -31,6 +34,12 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+	clusterUID, err := clusterutils.GetOrCreateClusterUID(errGroupCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed fetching cluster UID")
+	}
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	errorreporter.Init("sniffer", version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
@@ -54,7 +63,8 @@ func main() {
 	metricsServer.HideBanner = true
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
-	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	logrus.Debug("Starting metrics server")
 	errgrp.Go(func() error {
 		logrus.Debug("Started metrics server")
@@ -77,7 +87,7 @@ func main() {
 		return snifferInstance.RunForever(errGroupCtx)
 	})
 
-	err := errgrp.Wait()
+	err = errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logrus.WithError(err).Panic("Error when running server or HTTP server")
 	}

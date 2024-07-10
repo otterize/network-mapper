@@ -7,8 +7,11 @@ import (
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared"
+	"github.com/otterize/intents-operator/src/shared/clusterutils"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
@@ -33,6 +36,12 @@ func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
+	clusterUID, err := clusterutils.GetOrCreateClusterUID(errGroupCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed fetching cluster UID")
+	}
+	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	errorreporter.Init("kafka-watcher", version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
@@ -43,7 +52,6 @@ func main() {
 
 	mode := viper.GetString(config.KafkaLogReadModeKey)
 
-	var err error
 	var watcher logwatcher2.Watcher
 
 	switch mode {
@@ -98,7 +106,6 @@ func main() {
 	metricsServer.HideBanner = true
 
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
-	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
