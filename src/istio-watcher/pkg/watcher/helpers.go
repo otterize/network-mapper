@@ -42,6 +42,7 @@ func ToGraphQLIstioConnections(connections map[ConnectionWithPath]time.Time) []m
 				SrcWorkloadNamespace: connWithPath.SourceNamespace,
 				DstWorkload:          connWithPath.DestinationWorkload,
 				DstWorkloadNamespace: connWithPath.DestinationNamespace,
+				DstServiceName:       connWithPath.DestinationServiceName,
 				Path:                 connWithPath.RequestPath,
 				LastSeen:             timestamp,
 			}

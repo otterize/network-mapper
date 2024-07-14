@@ -30,6 +30,8 @@ const (
 	SourceTypeSocketScan  SourceType = "SocketScan"
 	SourceTypeKafkaMapper SourceType = "KafkaMapper"
 	SourceTypeIstio       SourceType = "Istio"
+	apiServerName                    = "kubernetes"
+	apiServerNamespace               = "default"
 )
 
 func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
@@ -124,7 +126,7 @@ func (r *Resolver) tryHandleSocketScanDestinationAsService(ctx context.Context, 
 
 func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentity model.OtterizeServiceIdentity, dest model.Destination, svc *corev1.Service) error {
 	lastSeen := dest.LastSeen
-	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, svc, lastSeen)
+	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, svc, dest.LastSeen)
 	if err != nil {
 		return errors.Wrap(err)
 	}
