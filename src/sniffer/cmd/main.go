@@ -35,10 +35,7 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
-	clusterUID, err := clusterutils.GetOrCreateClusterUID(errGroupCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed fetching cluster UID")
-	}
+	clusterUID := clusterutils.GetOrCreateClusterUID(errGroupCtx)
 	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	errorreporter.Init("sniffer", version.Version())
 	defer errorreporter.AutoNotify()
@@ -87,7 +84,7 @@ func main() {
 		return snifferInstance.RunForever(errGroupCtx)
 	})
 
-	err = errgrp.Wait()
+	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logrus.WithError(err).Panic("Error when running server or HTTP server")
 	}

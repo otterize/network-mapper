@@ -37,10 +37,7 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
-	clusterUID, err := clusterutils.GetOrCreateClusterUID(errGroupCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed fetching cluster UID")
-	}
+	clusterUID := clusterutils.GetOrCreateClusterUID(errGroupCtx)
 	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	errorreporter.Init("kafka-watcher", version.Version())
 	defer errorreporter.AutoNotify()
@@ -53,6 +50,7 @@ func main() {
 	mode := viper.GetString(config.KafkaLogReadModeKey)
 
 	var watcher logwatcher2.Watcher
+	var err error
 
 	switch mode {
 	case config.FileReadMode:
