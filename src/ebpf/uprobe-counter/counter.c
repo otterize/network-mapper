@@ -1,3 +1,4 @@
+//go:build ignore
 #include <linux/types.h>
 #include <linux/bpf.h>
 #include <bpf/bpf_tracing.h>
