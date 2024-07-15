@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/bombsimon/logrusr/v3"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -20,4 +21,6 @@ func InitializeService() {
 	})
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
+
+	componentutils.RegisterPanicHandlers()
 }

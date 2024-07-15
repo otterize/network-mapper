@@ -6,7 +6,6 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
-	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/clusterutils"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
@@ -16,6 +15,7 @@ import (
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/shared/componentutils"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
@@ -42,7 +42,7 @@ func main() {
 	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	errorreporter.Init(telemetriesgql.TelemetryComponentTypeNetworkMapper, version.Version())
 	defer errorreporter.AutoNotify()
-	shared.RegisterPanicHandlers()
+	componentutils.RegisterPanicHandlers()
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 
