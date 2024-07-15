@@ -62,6 +62,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Tip: run the markdown lint action locally with '--fix' to automatically fix some of the issues:
+      # docker run -v $PWD:/workdir ghcr.io/igorshubovych/markdownlint-cli:latest "**/*.md" --fix
       - uses: articulate/actions-markdownlint@v1
         with:
           config: .markdownlint.json
