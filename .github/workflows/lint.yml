@@ -1,4 +1,4 @@
-name: golangci-lint
+name: lint
 on:
   pull_request:
     types:
@@ -11,9 +11,10 @@ permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   # pull-requests: read
+
 jobs:
   golangci:
-    name: lint
+    name: golangci-lint
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-go@v3
@@ -54,3 +55,14 @@ jobs:
 
           # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
 #          skip-build-cache: true
+
+  markdownlint:
+    name: Check for Markdown errors
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: articulate/actions-markdownlint@v1
+        with:
+          config: .markdownlint.json
+          files: '**/*.md'
