@@ -10,7 +10,7 @@ import (
 
 const socketPath = "unix:///run/bpfman-sock/bpfman.sock"
 
-func ConnectToBpfmanOrDie(ctx context.Context) *bpfmanclient.BpfmanClient {
+func ConnectToBpfmanOrDie(ctx context.Context) bpfmanclient.BpfmanClient {
 	conn, err := grpc.NewClient(socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
@@ -19,5 +19,5 @@ func ConnectToBpfmanOrDie(ctx context.Context) *bpfmanclient.BpfmanClient {
 
 	client := bpfmanclient.NewBpfmanClient(conn)
 
-	return &client
+	return client
 }
