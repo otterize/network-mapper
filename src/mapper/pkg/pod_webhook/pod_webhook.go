@@ -13,10 +13,10 @@ import (
 
 type InjectDNSConfigToPodWebhook struct {
 	client  client.Client
-	decoder *admission.Decoder
+	decoder admission.Decoder
 }
 
-func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Decoder) (*InjectDNSConfigToPodWebhook, error) {
+func NewInjectDNSConfigToPodWebhook(client client.Client, decoder admission.Decoder) (*InjectDNSConfigToPodWebhook, error) {
 	return &InjectDNSConfigToPodWebhook{
 		client:  client,
 		decoder: decoder,

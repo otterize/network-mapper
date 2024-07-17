@@ -1,0 +1,1 @@
+This module was vendored from https://github.com/kubernetes/cri-client to overcome dependency incompatibility with intents-operator

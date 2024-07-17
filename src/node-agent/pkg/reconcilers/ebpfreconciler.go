@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	bpfmanclient "github.com/bpfman/bpfman/clients/gobpfman/v1"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	cri "github.com/otterize/network-mapper/src/shared/criclient"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/trace/noop"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	cri "k8s.io/cri-client/pkg"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -87,7 +86,6 @@ func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containe
 	criClient, err := cri.NewRemoteRuntimeService(
 		"unix:///var/run/containerd/containerd.sock",
 		time.Second*5,
-		noop.NewTracerProvider(),
 		&logger,
 	)
 
