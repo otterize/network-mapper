@@ -116,7 +116,7 @@ func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containe
 		return errors.Wrap(err)
 	}
 
-	logrus.WithField("containerId", containerInfo.GetID()).Info("Loaded program")
+	logrus.WithField("containerId", containerInfo.GetID()).Debug("Loaded program")
 
 	return nil
 }
