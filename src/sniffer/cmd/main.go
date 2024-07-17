@@ -36,6 +36,7 @@ func main() {
 	})
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	clusterUID := clusterutils.GetOrCreateClusterUID(errGroupCtx)
+
 	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 	errorreporter.Init("sniffer", version.Version())
 	defer errorreporter.AutoNotify()
