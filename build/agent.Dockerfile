@@ -1,20 +1,23 @@
-FROM --platform=linux/amd64 golang:1.22.1 as ebpf-buildenv
+FROM --platform=$TARGETPLATFORM golang:1.22.1 as ebpf-buildenv
 
 WORKDIR /src
 COPY go.mod go.sum ./
 
 RUN  <<EOR
 apt-get update
-apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-amd64
-ln -sf /usr/include/x86_64-linux-gnu/asm /usr/include/asm
+apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-generic
+ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
 go mod download
 EOR
 
 COPY ebpf/ ./ebpf/
 
 RUN <<EOR
-go generate ./ebpf/...
+go generate -tags ebpf ./ebpf/...
 EOR
+
+FROM quay.io/bpfman/bpfman:latest as bpfman
+COPY --from=ebpf-buildenv /src/ebpf/ /otterize/ebpf/
 
 FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine as buildenv
 RUN apk add --no-cache ca-certificates git protoc
