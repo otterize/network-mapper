@@ -25,7 +25,7 @@ static __u32 uprobe_counter(struct pt_regs *ctx) {
 
   rec->counter++;
   char msg[80];
-  bpf_probe_read(&msg, sizeof(msg), (void *)ctx->rsi);
+  bpf_probe_read(&msg, sizeof(msg), (void *)PT_REGS_PARM2(ctx));
   bpf_printk("uprobe called %s", msg);
 
   return 0;
