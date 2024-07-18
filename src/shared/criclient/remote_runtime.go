@@ -103,7 +103,7 @@ func NewRemoteRuntimeService(endpoint string, connectionTimeout time.Duration, l
 		grpc.WithConnectParams(connParams),
 	)
 
-	conn, err := grpc.Dial(addr, dialOpts...) // nolint: deprecate
+	conn, err := grpc.Dial(addr, dialOpts...) // nolint:staticcheck
 	if err != nil {
 		internal.LogErr(logger, err, "Connect remote runtime failed", "address", addr)
 		return nil, err
