@@ -156,7 +156,7 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 		return nil
 	}
 
-	if destPod.CreationTimestamp.After(dest.LastSeen) {
+	if destPod.CreationTimestamp.After(dest.LastSeen.Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))) {
 		logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, dest.LastSeen)
 		return nil
 	}
@@ -287,6 +287,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 		logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", destAddress)
 		return nil, false, nil
 	}
+	// Resolving the IP of the service's endpoints!
 	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, ips[0])
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {

@@ -39,15 +39,17 @@ const (
 	ServiceCacheSizeKey                   = "service-cache-size"
 	ServiceCacheSizeDefault               = 10000
 
-	EnableIstioCollectionKey           = "enable-istio-collection"
-	EnableIstioCollectionDefault       = false
-	IstioRestrictCollectionToNamespace = "istio-restrict-collection-to-namespace"
-	IstioReportIntervalKey             = "istio-report-interval"
-	IstioReportIntervalDefault         = 30 * time.Second
-	IstioCooldownIntervalKey           = "istio-cooldown-interval"
-	IstioCooldownIntervalDefault       = 15 * time.Second
-	MetricFetchTimeoutKey              = "istio-metric-fetch-timeout"
-	MetricFetchTimeoutDefault          = 10 * time.Second
+	EnableIstioCollectionKey                  = "enable-istio-collection"
+	EnableIstioCollectionDefault              = false
+	IstioRestrictCollectionToNamespace        = "istio-restrict-collection-to-namespace"
+	IstioReportIntervalKey                    = "istio-report-interval"
+	IstioReportIntervalDefault                = 30 * time.Second
+	IstioCooldownIntervalKey                  = "istio-cooldown-interval"
+	IstioCooldownIntervalDefault              = 15 * time.Second
+	MetricFetchTimeoutKey                     = "istio-metric-fetch-timeout"
+	MetricFetchTimeoutDefault                 = 10 * time.Second
+	TimeServerHasToLiveBeforeWeTrustItKey     = "time-server-has-to-live-before-we-trust-it"
+	TimeServerHasToLiveBeforeWeTrustItDefault = 5 * time.Minute
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -77,5 +79,6 @@ func init() {
 	viper.SetDefault(EnableIstioCollectionKey, EnableIstioCollectionDefault)
 	viper.SetDefault(ServiceCacheTTLDurationKey, ServiceCacheTTLDurationDefault)
 	viper.SetDefault(ServiceCacheSizeKey, ServiceCacheSizeDefault)
+	viper.SetDefault(TimeServerHasToLiveBeforeWeTrustItKey, TimeServerHasToLiveBeforeWeTrustItDefault)
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }
