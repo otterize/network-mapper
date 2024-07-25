@@ -56,10 +56,12 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 	err := k.mgr.GetCache().IndexField(ctx, &corev1.Pod{}, podIPIndexField, func(object client.Object) []string {
 		res := make([]string, 0)
 		pod := object.(*corev1.Pod)
+
+		// host network pods use their node's IP address, it's not safe to assume this IP is unique to this pod
+		if pod.Spec.HostNetwork || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+			return res
+		}
 		for _, ip := range pod.Status.PodIPs {
-			if pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
-				continue
-			}
 			res = append(res, ip.IP)
 		}
 		return res
