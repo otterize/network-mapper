@@ -378,20 +378,10 @@ func (k *KubeFinder) ResolveServiceAddressToPods(ctx context.Context, fqdn strin
 		return pods, serviceNamespacedName, nil
 	case "pod":
 		// for address format of pods: 172-17-0-3.default.pod.cluster.local
-		ip := []string{strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")}
-		pod, err := k.ResolveIPToPod(ctx, ip[0])
+		ip := strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")
+		pod, err := k.ResolveIPToPod(ctx, ip)
 		if err != nil {
-			return nil, types.NamespacedName{}, errors.Wrap(err)
-		}
-		minDateInOrderToTrustIp := time.Now().Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
-		if pod.CreationTimestamp.After(minDateInOrderToTrustIp) {
-			logrus.Debugf("Pod %s was created after capture time %s, ignoring", pod.Name, minDateInOrderToTrustIp)
-			return nil, types.NamespacedName{}, nil
-		}
-
-		if pod.DeletionTimestamp != nil {
-			logrus.Debugf("Pod %s is being deleted, ignoring", pod.Name)
-			return nil, types.NamespacedName{}, nil
+			return make([]corev1.Pod, 0), types.NamespacedName{}, errors.Wrap(err)
 		}
 
 		return []corev1.Pod{*pod}, types.NamespacedName{}, nil
