@@ -268,7 +268,7 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 
 func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Context, dest model.Destination) (*model.OtterizeServiceIdentity, bool, error) {
 	destAddress := dest.Destination
-	ips, serviceName, err := r.kubeFinder.ResolveServiceAddressToIps(ctx, destAddress)
+	pods, serviceName, err := r.kubeFinder.ResolveServiceAddressToPods(ctx, destAddress)
 	if err != nil {
 		logrus.WithError(err).Warningf("Could not resolve service address %s", destAddress)
 		// Intentionally no error return
@@ -282,30 +282,21 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 		}, true, nil
 	}
 
-	if len(ips) == 0 {
-		logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", destAddress)
-		return nil, false, nil
-	}
-	// Resolving the IP of the service's endpoints!
-	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, ips[0])
-	if err != nil {
-		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", ips[0])
-		} else {
-			logrus.WithError(err).Debugf("Could not resolve %s to pod", ips[0])
+	filteredPods := lo.Filter(pods, func(pod corev1.Pod, _ int) bool {
+		LastCreationTimeForUsToTrustIt := dest.LastSeen
+		if lo.IsEmpty(serviceName) {
+			// In this case the DNS was a "pod" DNS - which contains IP - ad therefore less reliable.
+			LastCreationTimeForUsToTrustIt = LastCreationTimeForUsToTrustIt.Add(viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
 		}
+		return LastCreationTimeForUsToTrustIt.After(pod.CreationTimestamp.Time) && pod.DeletionTimestamp == nil
+	})
+
+	if len(filteredPods) == 0 {
+		logrus.Debugf("Service address %s is currently not backed by any valoid pod, ignoring", destAddress)
 		return nil, false, nil
 	}
 
-	if destPod.CreationTimestamp.After(dest.LastSeen) {
-		logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
-		return nil, false, nil
-	}
-
-	if destPod.DeletionTimestamp != nil {
-		logrus.Debugf("Pod %s is being deleted, ignoring", destPod.Name)
-		return nil, false, nil
-	}
+	destPod := &filteredPods[0]
 
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {

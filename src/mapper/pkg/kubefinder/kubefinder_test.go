@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/network-mapper/src/shared/testbase"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	"testing"
@@ -38,10 +39,10 @@ func (s *KubeFinderTestSuite) TestResolveIpToPod() {
 }
 
 func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
-	_, _, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), "www.google.com")
+	_, _, err := s.kubeFinder.ResolveServiceAddressToPods(context.Background(), "www.google.com")
 	s.Require().Error(err)
 
-	_, _, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace))
+	_, _, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().Error(err)
 
 	podIp0 := "1.1.1.1"
@@ -49,24 +50,28 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	podIp2 := "1.1.1.3"
 	s.Require().NoError(s.Mgr.GetClient().List(context.Background(), &corev1.EndpointsList{})) // Workaround: make then client start caching Endpoints, so when we do "WaitForCacheSync" it will actually sync cache"
 	s.AddDeploymentWithService("service0", []string{podIp0}, map[string]string{"app": "service0"}, "10.0.0.10")
-	s.AddDeploymentWithService("service1", []string{podIp1, podIp2}, map[string]string{"app": "service1"}, "10.0.0.11")
+	_, _, retPods := s.AddDeploymentWithService("service1", []string{podIp1, podIp2}, map[string]string{"app": "service1"}, "10.0.0.11")
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
-	ips, service, err := s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace))
+	pods, service, err := s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().NoError(err)
 	s.Require().Equal("svc-service1", service.Name)
-	s.Require().ElementsMatch(ips, []string{podIp1, podIp2})
+	s.Require().ElementsMatch(pods, lo.Map(retPods, func(p *corev1.Pod, _ int) corev1.Pod { return *p }))
 
 	// make sure we don't fail on the longer forms of k8s service addresses, listed on this page: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service
-	ips, service, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.svc-service1.%s.svc.cluster.local", s.TestNamespace))
+	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.svc-service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().Equal("svc-service1", service.Name)
 	s.Require().NoError(err)
-	s.Require().ElementsMatch(ips, []string{podIp1, podIp2})
+	s.Require().ElementsMatch(pods, lo.Map(retPods, func(p *corev1.Pod, _ int) corev1.Pod { return *p }))
 
-	ips, service, err = s.kubeFinder.ResolveServiceAddressToIps(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
-	s.Require().NoError(err)
+	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
+	s.Require().Error(err)
+
+	_, pods4444 := s.AddDeployment("depl", []string{"4.4.4.4"}, map[string]string{"app": "4444"})
+	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
+	s.Require().Error(err)
 	s.Require().Empty(service)
-	s.Require().ElementsMatch(ips, []string{"4.4.4.4"})
+	s.Require().ElementsMatch(pods, lo.Map(pods4444, func(p *corev1.Pod, _ int) corev1.Pod { return *p }))
 }
 
 func TestKubeFinderTestSuite(t *testing.T) {
