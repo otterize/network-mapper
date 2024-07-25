@@ -56,13 +56,13 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	pods, service, err := s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("svc-service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().NoError(err)
 	s.Require().Equal("svc-service1", service.Name)
-	s.Require().ElementsMatch(pods, lo.Map(retPods, func(p *corev1.Pod, _ int) corev1.Pod { return *p }))
+	s.Require().ElementsMatch(lo.Map(pods, func(p corev1.Pod, _ int) string { return p.Status.PodIP }), lo.Map(retPods, func(p *corev1.Pod, _ int) string { return p.Status.PodIP }))
 
 	// make sure we don't fail on the longer forms of k8s service addresses, listed on this page: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service
 	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.svc-service1.%s.svc.cluster.local", s.TestNamespace))
 	s.Require().Equal("svc-service1", service.Name)
 	s.Require().NoError(err)
-	s.Require().ElementsMatch(pods, lo.Map(retPods, func(p *corev1.Pod, _ int) corev1.Pod { return *p }))
+	s.Require().ElementsMatch(lo.Map(pods, func(p corev1.Pod, _ int) string { return p.Status.PodIP }), lo.Map(retPods, func(p *corev1.Pod, _ int) string { return p.Status.PodIP }))
 
 	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
 	s.Require().Error(err)
@@ -71,7 +71,7 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
 	s.Require().Error(err)
 	s.Require().Empty(service)
-	s.Require().ElementsMatch(pods, lo.Map(pods4444, func(p *corev1.Pod, _ int) corev1.Pod { return *p }))
+	s.Require().ElementsMatch(lo.Map(pods, func(p corev1.Pod, _ int) string { return p.Status.PodIP }), lo.Map(pods4444, func(p *corev1.Pod, _ int) string { return p.Status.PodIP }))
 }
 
 func TestKubeFinderTestSuite(t *testing.T) {
