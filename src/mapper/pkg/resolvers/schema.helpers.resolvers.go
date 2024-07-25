@@ -30,8 +30,6 @@ const (
 	SourceTypeSocketScan  SourceType = "SocketScan"
 	SourceTypeKafkaMapper SourceType = "KafkaMapper"
 	SourceTypeIstio       SourceType = "Istio"
-	apiServerName                    = "kubernetes"
-	apiServerNamespace               = "default"
 )
 
 func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
@@ -156,8 +154,9 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 		return nil
 	}
 
-	if destPod.CreationTimestamp.After(dest.LastSeen.Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))) {
-		logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, dest.LastSeen)
+	minTimeForPodCreationTime := dest.LastSeen.Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
+	if destPod.CreationTimestamp.After(minTimeForPodCreationTime) {
+		logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, minTimeForPodCreationTime)
 		return nil
 	}
 
