@@ -66,6 +66,7 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 
 	_, _, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
 	s.Require().Error(err)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	_, pods4444 := s.AddDeployment("depl", []string{"4.4.4.4"}, map[string]string{"app": "4444"})
 	pods, service, err = s.kubeFinder.ResolveServiceAddressToPods(context.Background(), fmt.Sprintf("4-4-4-4.%s.pod.cluster.local", s.TestNamespace))
