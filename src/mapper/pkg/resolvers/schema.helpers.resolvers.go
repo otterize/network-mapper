@@ -30,8 +30,6 @@ const (
 	SourceTypeSocketScan  SourceType = "SocketScan"
 	SourceTypeKafkaMapper SourceType = "KafkaMapper"
 	SourceTypeIstio       SourceType = "Istio"
-	apiServerName                    = "kubernetes"
-	apiServerNamespace               = "default"
 )
 
 func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
@@ -156,8 +154,9 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 		return nil
 	}
 
-	if destPod.CreationTimestamp.After(dest.LastSeen) {
-		logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, dest.LastSeen)
+	minTimeForPodCreationTime := dest.LastSeen.Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
+	if destPod.CreationTimestamp.After(minTimeForPodCreationTime) {
+		logrus.Debugf("Pod %s was created after scan time %s, ignoring", destPod.Name, minTimeForPodCreationTime)
 		return nil
 	}
 
@@ -287,6 +286,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 		logrus.Debugf("Service address %s is currently not backed by any pod, ignoring", destAddress)
 		return nil, false, nil
 	}
+	// Resolving the IP of the service's endpoints!
 	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, ips[0])
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
