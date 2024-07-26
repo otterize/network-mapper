@@ -283,16 +283,16 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 	}
 
 	filteredPods := lo.Filter(pods, func(pod corev1.Pod, _ int) bool {
-		LastCreationTimeForUsToTrustIt := dest.LastSeen
+		lastCreationTimeForUsToTrustIt := dest.LastSeen
 		if lo.IsEmpty(serviceName) {
-			// In this case the DNS was a "pod" DNS - which contains IP - ad therefore less reliable.
-			LastCreationTimeForUsToTrustIt = LastCreationTimeForUsToTrustIt.Add(viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
+			// In this case the DNS was a "pod" DNS - which contains IP - and therefore less reliable.
+			lastCreationTimeForUsToTrustIt = lastCreationTimeForUsToTrustIt.Add(viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
 		}
-		return LastCreationTimeForUsToTrustIt.After(pod.CreationTimestamp.Time) && pod.DeletionTimestamp == nil
+		return lastCreationTimeForUsToTrustIt.After(pod.CreationTimestamp.Time) && pod.DeletionTimestamp == nil
 	})
 
 	if len(filteredPods) == 0 {
-		logrus.Debugf("Service address %s is currently not backed by any valoid pod, ignoring", destAddress)
+		logrus.Debugf("Service address %s is currently not backed by any valid pod, ignoring", destAddress)
 		return nil, false, nil
 	}
 
