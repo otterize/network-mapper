@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
@@ -1210,6 +1211,27 @@ func (s *ResolverTestSuite) TestIntentsFilterByServer() {
 		},
 	}
 	s.Require().ElementsMatch(res.Intents, expectedIntents)
+}
+
+func (s *ResolverTestSuite) TestResolveOtterizeIdentityIgnoreHostNetworkPods() {
+	// Setup
+	serviceName := "test-service"
+	serviceIP := "10.0.0.10"
+	podIP := "1.1.1.3"
+
+	pod3 := s.AddPodWithHostNetwork("pod3", podIP, map[string]string{"app": "test"}, nil, true)
+	s.AddService(serviceName, map[string]string{"app": "test"}, serviceIP, []*v1.Pod{pod3})
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	service := &v1.Service{}
+	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: "svc-" + serviceName, Namespace: s.TestNamespace}, service)
+	s.Require().NoError(err)
+
+	lastSeen := time.Now().Add(time.Minute)
+	_, ok, err := s.resolver.resolveOtterizeIdentityForDestinationAddress(context.Background(), model.Destination{LastSeen: lastSeen, Destination: fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, service.Namespace)})
+	s.Require().False(ok)
+	s.Require().NoError(err)
+
 }
 
 func TestRunSuite(t *testing.T) {

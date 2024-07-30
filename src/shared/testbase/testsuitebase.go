@@ -132,6 +132,47 @@ func (s *ControllerManagerTestSuiteBase) AddPod(name string, podIp string, label
 	return podCopy
 }
 
+func (s *ControllerManagerTestSuiteBase) AddPodWithHostNetwork(name, ip string, labels, annotations map[string]string, hostNetwork bool) *corev1.Pod {
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Namespace:   s.TestNamespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: corev1.PodSpec{
+			HostNetwork: hostNetwork,
+			Containers: []corev1.Container{
+				{
+					Name:            name,
+					Image:           "nginx",
+					ImagePullPolicy: "Always",
+				},
+			},
+		},
+		Status: corev1.PodStatus{
+			PodIP: ip,
+			PodIPs: []corev1.PodIP{
+				{IP: ip},
+			},
+		},
+	}
+	s.Require().NoError(s.Mgr.GetClient().Create(context.Background(), pod))
+
+	// Prevents race - UpdateStatus can alter the pod.
+	podCopy := pod.DeepCopy()
+	if ip != "" {
+		pod.Status.PodIP = ip
+		pod.Status.PodIPs = []corev1.PodIP{{IP: ip}}
+		pod.Status.Phase = corev1.PodRunning
+		pod.Status.DeepCopyInto(&podCopy.Status)
+		_, err := s.K8sDirectClient.CoreV1().Pods(s.TestNamespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
+		s.Require().NoError(err)
+	}
+	s.waitForObjectToBeCreated(pod)
+	return pod
+}
+
 func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev1.Pod, port *int) *corev1.Endpoints {
 	addresses := lo.Map(pods, func(pod *corev1.Pod, _ int) corev1.EndpointAddress {
 		return corev1.EndpointAddress{IP: pod.Status.PodIP, TargetRef: &corev1.ObjectReference{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace}}
