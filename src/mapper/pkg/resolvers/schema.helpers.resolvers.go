@@ -283,6 +283,10 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 	}
 
 	filteredPods := lo.Filter(pods, func(pod corev1.Pod, _ int) bool {
+		if pod.Spec.HostNetwork {
+			logrus.Debugf("pod %s is in host network, ignoring", pod.Name)
+			return false
+		}
 		lastCreationTimeForUsToTrustIt := dest.LastSeen
 		if lo.IsEmpty(serviceName) {
 			// In this case the DNS was a "pod" DNS - which contains IP - and therefore less reliable.
@@ -593,7 +597,7 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 		}
 		dstPod, err := r.kubeFinder.ResolveIstioWorkloadToPod(ctx, result.DstWorkload, result.DstWorkloadNamespace)
 		if err != nil {
-			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.SrcWorkload)
+			logrus.WithError(err).Debugf("Could not resolve workload %s to pod", result.DstWorkload)
 			continue
 		}
 		srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
@@ -615,6 +619,9 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 
 		if dstService.OwnerObject != nil {
 			dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
+			if result.DstServiceName != "" {
+				dstSvcIdentity.KubernetesService = &result.DstServiceName
+			}
 		}
 
 		intent := model.Intent{
