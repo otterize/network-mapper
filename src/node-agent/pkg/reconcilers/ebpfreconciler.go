@@ -80,7 +80,11 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err)
 		}
-		_ = r.loadBpfProgramToContainer(ctx, containerInfo)
+		err = r.loadBpfProgramToContainer(ctx, containerInfo)
+
+		if err != nil {
+			return reconcile.Result{}, errors.Wrap(err)
+		}
 	}
 
 	return reconcile.Result{}, nil
@@ -93,7 +97,7 @@ func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containe
 	_, err := r.bpfmanClient.Load(
 		ctx,
 		&bpfmanclient.LoadRequest{
-			Name:        "uprobe_counter",
+			Name:        "openssl_SSL_write_entry",
 			ProgramType: Kprobe,
 			Attach: &bpfmanclient.AttachInfo{
 				Info: &bpfmanclient.AttachInfo_UprobeAttachInfo{
@@ -113,6 +117,34 @@ func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containe
 	)
 
 	if err != nil {
+		logrus.WithError(err).Error("Failed to load program")
+		return errors.Wrap(err)
+	}
+
+	_, err = r.bpfmanClient.Load(
+		ctx,
+		&bpfmanclient.LoadRequest{
+			Name:        "openssl_SSL_write_exit",
+			ProgramType: Kprobe,
+			Attach: &bpfmanclient.AttachInfo{
+				Info: &bpfmanclient.AttachInfo_UprobeAttachInfo{
+					UprobeAttachInfo: &bpfmanclient.UprobeAttachInfo{
+						FnName:       &fnName,
+						Target:       "libssl",
+						ContainerPid: &pid,
+					},
+				},
+			},
+			Bytecode: &bpfmanclient.BytecodeLocation{
+				Location: &bpfmanclient.BytecodeLocation_File{
+					File: "/otterize/ebpf/uprobe-counter/bpf_x86_bpfel.o",
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		logrus.WithError(err).Error("Failed to load program")
 		return errors.Wrap(err)
 	}
 
