@@ -11,13 +11,22 @@ import (
 const socketPath = "unix:///run/bpfman-sock/bpfman.sock"
 
 func ConnectToBpfmanOrDie(ctx context.Context) bpfmanclient.BpfmanClient {
-	conn, err := grpc.NewClient(socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(
+		socketPath,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 
 	if err != nil {
 		logrus.WithError(err).Panic("Failed to create grpc client")
 	}
 
 	client := bpfmanclient.NewBpfmanClient(conn)
+
+	_, err = client.List(ctx, &bpfmanclient.ListRequest{})
+
+	if err != nil {
+		logrus.WithError(err).Panic("Failed to connect to bpfman")
+	}
 
 	return client
 }

@@ -4,31 +4,71 @@
 #include <bpf/bpf_tracing.h>
 #include <asm/ptrace.h>
 
-struct datarec {
-  __u64 counter;
-} datarec;
+const __u32 MAX_SIZE = 1024;
+
+struct ssl_event_t {
+    __u32 pid;
+//    __u64 timestamp;
+    __u32 size;
+    char data[MAX_SIZE];
+};
 
 struct {
-  __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-  __type(key, __u32);
-  __type(value, datarec);
-  __uint(max_entries, 1);
-} uprobe_stats_map SEC(".maps");
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, struct ssl_event_t);
+} ssl_data SEC(".maps");
 
-SEC("uprobe/uprobe_counter")
-static __u32 uprobe_counter(struct pt_regs *ctx) {
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __type(key, __u64);
+    __type(value, void*);
+    __uint(max_entries, 1024);
+} ssl_write SEC(".maps");
 
-  __u32 index = 0;
-  struct datarec *rec = bpf_map_lookup_elem(&uprobe_stats_map, &index);
-  if (!rec)
-    return 1;
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(__u32));
+    __uint(value_size, sizeof(__u32));
+} events SEC(".maps");
 
-  rec->counter++;
-  char msg[80];
-  bpf_probe_read(&msg, sizeof(msg), (void *)PT_REGS_PARM2(ctx));
-  bpf_printk("uprobe called %s", msg);
+SEC("uprobe/openssl_SSL_write_entry")
+static __u32 openssl_SSL_write_entry(struct pt_regs *ctx) {
+    __u64 pid = bpf_get_current_pid_tgid();
 
-  return 0;
+    const void* buf = (const void*)PT_REGS_PARM1(ctx);
+    bpf_map_update_elem(&ssl_write, &pid, &buf, 0);
+
+    return 0;
 }
 
-char _license[] SEC("license") = "Dual BSD/GPL";
+SEC("uprobe/openssl_SSL_write_exit")
+static __u32 openssl_SSL_write_exit(struct pt_regs *ctx) {
+    __u64 pid = bpf_get_current_pid_tgid();
+
+    void **buf = bpf_map_lookup_elem(&ssl_write, &pid);
+
+    if (!buf) {
+        return 0;
+    }
+
+    const __s32 ret = PT_REGS_RC(ctx);
+
+    int zero = 0;
+    struct ssl_event_t* event = bpf_map_lookup_elem(&ssl_data, &zero);
+
+    if (!event) {
+        return 0;
+    }
+
+    event->pid = pid;
+    event->size = ret > MAX_SIZE ? MAX_SIZE : ret;
+    bpf_probe_read_user(&event->data, event->size, *buf);
+
+    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
+
+    bpf_map_delete_elem(&ssl_write, &pid);
+
+    return 0;
+}
