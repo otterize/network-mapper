@@ -11,6 +11,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
+	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
@@ -39,7 +40,7 @@ func main() {
 	errgrp, errGroupCtx := errgroup.WithContext(signals.SetupSignalHandler())
 	clusterUID := clusterutils.GetOrCreateClusterUID(errGroupCtx)
 	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
-	errorreporter.Init("kafka-watcher", version.Version())
+	errorreporter.Init(telemetriesgql.TelemetryComponentTypeNetworkMapper, version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
 
