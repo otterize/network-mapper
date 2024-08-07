@@ -37,7 +37,7 @@ SEC("uprobe/openssl_SSL_write_entry")
 static __u32 openssl_SSL_write_entry(struct pt_regs *ctx) {
     __u64 pid = bpf_get_current_pid_tgid();
 
-    const void* buf = (const void*)PT_REGS_PARM1(ctx);
+    const void* buf = (const void*)PT_REGS_PARM2(ctx);
     bpf_map_update_elem(&ssl_write, &pid, &buf, 0);
 
     return 0;
@@ -53,7 +53,12 @@ static __u32 openssl_SSL_write_exit(struct pt_regs *ctx) {
         return 0;
     }
 
-    const __s32 ret = PT_REGS_RC(ctx);
+    int bytesWritten = PT_REGS_RC(ctx);
+
+    if (bytesWritten <= 0) {
+        bpf_map_delete_elem(&ssl_write, &pid);
+        return 0;
+    }
 
     int zero = 0;
     struct ssl_event_t* event = bpf_map_lookup_elem(&ssl_data, &zero);
@@ -63,10 +68,16 @@ static __u32 openssl_SSL_write_exit(struct pt_regs *ctx) {
     }
 
     event->pid = pid;
-    event->size = ret > MAX_SIZE ? MAX_SIZE : ret;
-    bpf_probe_read_user(&event->data, event->size, *buf);
 
-    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
+    if (bytesWritten > MAX_SIZE) {
+        event->size = MAX_SIZE;
+    } else {
+        event->size = (__u32) bytesWritten;
+    }
+
+    bpf_probe_read_user(&event->data, 30, *buf);
+
+    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, event, 5);
 
     bpf_map_delete_elem(&ssl_write, &pid);
 

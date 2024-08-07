@@ -53,5 +53,7 @@ func (m *ContainerManager) GetContainerInfo(ctx context.Context, containerID str
 
 	info.Id = resp.Status.Id
 
+	logrus.WithField("containerId", info.Id).WithField("info", info).Debug("Got container info")
+
 	return info, nil
 }
