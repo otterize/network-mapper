@@ -5,7 +5,7 @@ COPY go.mod go.sum ./
 
 RUN  <<EOR
 apt-get update
-apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-generic
+apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-generic bpftool
 ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
 go mod download
 EOR
