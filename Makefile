@@ -1,6 +1,8 @@
 PROMPT_COLOR=\033[36m
 PROMPT_NC=\033[0m # No Color
 
+HELM_CHARTS_PATH = ~/helm-charts/otterize-kubernetes
+
 OTRZ_NAMESPACE = otterize-system
 OTRZ_IMAGE_TAG = 0.0.0
 OTRZ_IMAGE_REGISTRY = otterize
@@ -15,6 +17,12 @@ LIMA_K8S_TEMPLATE = ./dev/lima-k8s.yaml
 LIMA_CLUSTER_NAME = k8s
 LIMA_KUBECONFIG_PATH = $(HOME)/.kube/lima
 LIMA_TEMP_DIR = /tmp/lima/
+
+# Include .env file if it exists
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+endif
 
 help: ## Show help message
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n"} /^[$$()% a-zA-Z_-]+:.*?##/ { printf "  ${PROMPT_COLOR}%-25s${PROMPT_NC} %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -81,7 +89,7 @@ lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with 
 	fi; \
     helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) dep up ~/helm-charts/otterize-kubernetes; \
     helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) upgrade --install \
-    	otterize ~/helm-charts/otterize-kubernetes -n $(OTRZ_NAMESPACE) --create-namespace \
+    	otterize $(HELM_CHARTS_PATH) -n $(OTRZ_NAMESPACE) --create-namespace \
 		--set networkMapper.debug=true \
 		--set networkMapper.agent.tag=$(OTRZ_IMAGE_TAG) \
 		--set networkMapper.agent.image=$(OTRZ_AGENT_IMAGE_NAME) \
