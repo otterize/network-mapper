@@ -44,11 +44,36 @@ lima-restart-otterize: ## Restarts Otterize pods running in the lima kubernetes 
 	@echo "${PROMPT_COLOR}Restarting Otterize pods...${PROMPT_NC}"
 	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima kubectl delete pods --all -n $(OTRZ_NAMESPACE)
 
-lima-update-mapper: build-mapper lima-copy-images lima-restart-otterize ## Updates the mapper image in the lima kubernetes cluster
+lima-update-mapper: build-mapper lima-copy-images lima-restart-otterize ## Builds and updates the mapper image in the lima kubernetes cluster and restarts the pods
 
-setup-lima: lima-install lima-k8s lima-kubeconfig ## Setup Lima with kubernetes template
-	@echo "${PROMPT_COLOR}Setup completed. You can now install Otterize in the new cluster${PROMPT_NC}"
-	lima kubectl get pods -n otterize-system
+lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with the provided client ID and client secret
+	@if [ -z "$(CLIENT_ID)" ]; then \
+	  read -p "Client ID: " client_id; \
+	else \
+	  client_id=$(CLIENT_ID); \
+	fi; \
+	if [ -z "$(CLIENT_SECRET)" ]; then \
+	  read -p "Client Secret: " client_secret; \
+	else \
+	  client_secret=$(CLIENT_SECRET); \
+	fi; \
+	KUBECONFIG=$(LIMA_KUBECONFIG_PATH) && helm repo add otterize https://helm.otterize.com; \
+    KUBECONFIG=$(LIMA_KUBECONFIG_PATH) && helm repo update; \
+    KUBECONFIG=$(LIMA_KUBECONFIG_PATH) && helm upgrade --install \
+    	otterize otterize/otterize-kubernetes -n otterize-system --create-namespace \
+		--set networkMapper.debug=true \
+		--set networkMapper.mapper.image=mapper \
+		--set networkMapper.mapper.tag=0.0.0 \
+		--set networkMapper.mapper.pullPolicy=IfNotPresent \
+		--set intentsOperator.operator.mode=defaultShadow \
+		--set global.otterizeCloud.apiAddress=http://host.lima.internal:3000/api \
+		--set global.otterizeCloud.credentials.clientId=$$client_id \
+		--set global.otterizeCloud.credentials.clientSecret=$$client_secret
+
+
+setup-lima: lima-install lima-k8s lima-kubeconfig lima-install-otterize ## Setup Lima with kubernetes template
+	@echo "${PROMPT_COLOR}Setup completed.${PROMPT_NC}"
+	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima kubectl get pods -n otterize-system
 
 clean-lima: ## Cleans up lima environment
 	@echo "${PROMPT_COLOR}Cleaning up '$(LIMA_K8S_TEMPLATE)'...${PROMPT_NC}"
