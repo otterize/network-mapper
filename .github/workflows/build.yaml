@@ -29,6 +29,7 @@ jobs:
           - mapper
           - sniffer
           - kafka-watcher
+          - agent
 
     steps:
       - id: registry

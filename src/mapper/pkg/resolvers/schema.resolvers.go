@@ -13,7 +13,8 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/exp/slices"
+	"slices"
+	"strings"
 )
 
 // ResetCapture is the resolver for the resetCapture field.
@@ -120,13 +121,13 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	intentsBySource := intentsstore.GroupIntentsBySource(discoveredIntents)
 
 	// sorting by service name so results are more consistent
-	slices.SortFunc(intentsBySource, func(intentsa, intentsb model.ServiceIntents) bool {
-		return intentsa.Client.AsNamespacedName().String() < intentsb.Client.AsNamespacedName().String()
+	slices.SortFunc(intentsBySource, func(intentsa, intentsb model.ServiceIntents) int {
+		return strings.Compare(intentsa.Client.AsNamespacedName().String(), intentsb.Client.AsNamespacedName().String())
 	})
 
 	for _, intents := range intentsBySource {
-		slices.SortFunc(intents.Intents, func(desta, destb model.OtterizeServiceIdentity) bool {
-			return desta.AsNamespacedName().String() < destb.AsNamespacedName().String()
+		slices.SortFunc(intents.Intents, func(desta, destb model.OtterizeServiceIdentity) int {
+			return strings.Compare(desta.AsNamespacedName().String(), desta.AsNamespacedName().String())
 		})
 	}
 
@@ -156,15 +157,15 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 	})
 
 	// sort by service names for consistent ordering
-	slices.SortFunc(intents, func(intenta, intentb model.Intent) bool {
+	slices.SortFunc(intents, func(intenta, intentb model.Intent) int {
 		clienta, clientb := intenta.Client.AsNamespacedName(), intentb.Client.AsNamespacedName()
 		servera, serverb := intenta.Server.AsNamespacedName(), intentb.Server.AsNamespacedName()
 
 		if clienta != clientb {
-			return clienta.String() < clientb.String()
+			return strings.Compare(clientb.String(), clientb.String())
 		}
 
-		return servera.String() < serverb.String()
+		return strings.Compare(servera.String(), serverb.String())
 	})
 
 	return intents, nil
