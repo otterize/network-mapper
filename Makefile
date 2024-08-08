@@ -66,13 +66,13 @@ lima-copy-images: ## Copies the images to lima
 	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
 	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_BPFMAN_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
 
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
+	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
+	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
+	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
 
 lima-restart-otterize: ## Restarts Otterize pods running in the lima kubernetes cluster
 	@echo "${PROMPT_COLOR}Restarting Otterize pods...${PROMPT_NC}"
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima kubectl delete pods --all -n $(OTRZ_NAMESPACE)
+	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima kubectl delete pods --all -n $(OTRZ_NAMESPACE)
 
 lima-update-images: build-mapper build-agent build-bpfman lima-copy-images lima-restart-otterize ## Builds and updates the mapper image in the lima kubernetes cluster and restarts the pods
 
@@ -108,7 +108,7 @@ lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with 
 
 setup-lima: lima-install lima-k8s lima-kubeconfig lima-install-otterize ## Setup Lima with kubernetes template
 	@echo "${PROMPT_COLOR}Setup completed.${PROMPT_NC}"
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) && lima kubectl get pods -n otterize-system
+	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima kubectl get pods -n otterize-system
 
 clean-lima: ## Cleans up lima environment
 	@echo "${PROMPT_COLOR}Cleaning up '$(LIMA_K8S_TEMPLATE)'...${PROMPT_NC}"
