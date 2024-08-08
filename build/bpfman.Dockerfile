@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.22.1 AS ebpf-buildenv
+FROM --platform=$TARGETPLATFORM golang:1.22.1 AS ebpf-buildenv
 
 WORKDIR /src
 COPY go.mod go.sum ./
