@@ -17,7 +17,7 @@ RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-2023021
     ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
 RUN go test ./node-agent/...
 
-FROM test as builder
+FROM test AS builder
 ARG TARGETOS
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd

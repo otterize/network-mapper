@@ -10,9 +10,9 @@ RUN go mod download
 
 COPY ebpf/ ./ebpf/
 
-RUN <<EOR
-go generate -tags ebpf ./ebpf/...
-EOR
+# Generate ebpf code
+ARG TARGETARCH
+RUN GOARCH=$TARGETARCH go generate -tags ebpf ./ebpf/...
 
 FROM quay.io/bpfman/bpfman AS bpfman
 COPY --from=ebpf-buildenv /src/ebpf/ /otterize/ebpf/

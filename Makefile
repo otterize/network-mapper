@@ -62,17 +62,17 @@ lima-copy-images: ## Copies the images to lima
 	docker save -o $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar $(OTRZ_MAPPER_IMAGE_FULL_NAME)
 	docker save -o $(LIMA_TEMP_DIR)images/$(OTRZ_BPFMAN_IMAGE_NAME).tar $(OTRZ_BPFMAN_IMAGE_FULL_NAME)
 
-	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_AGENT_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
-	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
-	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_BPFMAN_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
+	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_AGENT_IMAGE_NAME).tar $(LIMA_CLUSTER_NAME):/tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
+	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar $(LIMA_CLUSTER_NAME):/tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
+	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_BPFMAN_IMAGE_NAME).tar $(LIMA_CLUSTER_NAME):/tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
 
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
+	env LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
+	env LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
+	env LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_BPFMAN_IMAGE_NAME).tar
 
 lima-restart-otterize: ## Restarts Otterize pods running in the lima kubernetes cluster
 	@echo "${PROMPT_COLOR}Restarting Otterize pods...${PROMPT_NC}"
-	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima kubectl delete pods --all -n $(OTRZ_NAMESPACE)
+	env LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima kubectl delete pods --all -n $(OTRZ_NAMESPACE)
 
 lima-update-images: build-mapper build-agent build-bpfman lima-copy-images lima-restart-otterize ## Builds and updates the mapper image in the lima kubernetes cluster and restarts the pods
 
