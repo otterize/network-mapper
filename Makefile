@@ -1,7 +1,7 @@
 PROMPT_COLOR=\033[36m
 PROMPT_NC=\033[0m # No Color
 
-HELM_CHARTS_PATH = ~/helm-charts/otterize-kubernetes
+HELM_CHARTS_PATH = ../helm-charts/otterize-kubernetes
 
 OTRZ_NAMESPACE = otterize-system
 OTRZ_IMAGE_TAG = 0.0.0
@@ -17,6 +17,8 @@ LIMA_K8S_TEMPLATE = ./dev/lima-k8s.yaml
 LIMA_CLUSTER_NAME = k8s
 LIMA_KUBECONFIG_PATH = $(HOME)/.kube/lima
 LIMA_TEMP_DIR = /tmp/lima/
+DOCKER_TARGET_ARCH = arm64
+LIMA_TARGET_ARCH = aarch64
 
 # Include .env file if it exists
 ifneq (,$(wildcard ./.env))
@@ -31,15 +33,15 @@ help: ## Show help message
 
 build-agent: ## Builds the node agent image
 	@echo "${PROMPT_COLOR}Building agent image '$(OTRZ_AGENT_IMAGE_FULL_NAME)'...${PROMPT_NC}"
-	docker buildx build --platform linux/amd64 -t $(OTRZ_AGENT_IMAGE_FULL_NAME) --file build/$(OTRZ_AGENT_IMAGE_NAME).Dockerfile src/
+	docker buildx build --platform linux/$(DOCKER_TARGET_ARCH) -t $(OTRZ_AGENT_IMAGE_FULL_NAME) --file build/$(OTRZ_AGENT_IMAGE_NAME).Dockerfile src/
 
 build-mapper: ## Builds the mapper image
 	@echo "${PROMPT_COLOR}Building mapper image '$(OTRZ_MAPPER_IMAGE_FULL_NAME)'...${PROMPT_NC}"
-	docker buildx build --platform linux/amd64 -t $(OTRZ_MAPPER_IMAGE_FULL_NAME) --file build/$(OTRZ_MAPPER_IMAGE_NAME).Dockerfile src/
+	docker buildx build --platform linux/$(DOCKER_TARGET_ARCH) -t $(OTRZ_MAPPER_IMAGE_FULL_NAME) --file build/$(OTRZ_MAPPER_IMAGE_NAME).Dockerfile src/
 
 build-bpfman: ## Builds the mapper image
 	@echo "${PROMPT_COLOR}Building mapper image '$(OTRZ_BPFMAN_IMAGE_FULL_NAME)'...${PROMPT_NC}"
-	docker buildx build --platform linux/amd64 -t $(OTRZ_BPFMAN_IMAGE_FULL_NAME) --file build/$(OTRZ_BPFMAN_IMAGE_NAME).Dockerfile src/
+	docker buildx build --platform linux/$(DOCKER_TARGET_ARCH) -t $(OTRZ_BPFMAN_IMAGE_FULL_NAME) --file build/$(OTRZ_BPFMAN_IMAGE_NAME).Dockerfile src/
 
 # Lima-specific targets - used for local development on macOS
 
@@ -49,7 +51,7 @@ lima-install: ## Installs lima if not already installed
 
 lima-k8s: ## Starts Lima with k8s template
 	@echo "${PROMPT_COLOR}Starting Lima with the template '$(LIMA_K8S_TEMPLATE)'...${PROMPT_NC}"
-	limactl start $(LIMA_K8S_TEMPLATE) --arch x86_64 --name k8s
+	limactl start $(LIMA_K8S_TEMPLATE) --arch $(LIMA_TARGET_ARCH) --name k8s
 
 lima-kubeconfig: ## Copies kubeconfig from lima to host
 	@echo "${PROMPT_COLOR}Copying kubeconfig from Lima to host...${PROMPT_NC}"
@@ -87,9 +89,10 @@ lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with 
 	else \
 	  client_secret=$(CLIENT_SECRET); \
 	fi; \
-    helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) dep up ~/helm-charts/otterize-kubernetes; \
+    helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) dep up ../helm-charts/otterize-kubernetes; \
     helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) upgrade --install \
     	otterize $(HELM_CHARTS_PATH) -n $(OTRZ_NAMESPACE) --create-namespace \
+		--set networkMapper.sniffer.enable=false \
 		--set networkMapper.debug=true \
 		--set networkMapper.agent.tag=$(OTRZ_IMAGE_TAG) \
 		--set networkMapper.agent.image=$(OTRZ_AGENT_IMAGE_NAME) \
