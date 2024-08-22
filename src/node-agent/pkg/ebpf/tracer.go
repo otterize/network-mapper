@@ -16,7 +16,7 @@ type Tracer struct {
 
 func NewTracer() Tracer {
 	return Tracer{
-		pidMap: openssl.BpfObjects.Maps.PidTargets,
+		pidMap: openssl.BpfObjects.Maps.Targets,
 	}
 }
 
