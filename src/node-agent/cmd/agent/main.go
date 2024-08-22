@@ -13,14 +13,14 @@ func main() {
 	service.InitializeService()
 	mgr, client := service.CreateControllerRuntimeComponentsOrDie()
 
-	bpfmanClient := service.ConnectToBpfmanOrDie(signalHandlerCtx)
+	//bpfmanClient := service.ConnectToBpfmanOrDie(signalHandlerCtx)
 	criClient := service.CreateCRIClientOrDie()
 	containerManager := container.NewContainerManager(criClient)
 
 	service.RegisterReconcilersOrDie(
 		mgr,
 		client,
-		bpfmanClient,
+		//bpfmanClient,
 		containerManager,
 	)
 

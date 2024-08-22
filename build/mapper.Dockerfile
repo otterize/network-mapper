@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine as buildenv
+FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine AS buildenv
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
 WORKDIR /src
@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-FROM buildenv as test
+FROM buildenv AS test
 # install dependencies for "envtest" package
 RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230216140739-c98506dc3b8e && \
     source <(setup-envtest use -p env) && \
@@ -17,10 +17,12 @@ RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-2023021
     ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
 RUN go test ./mapper/...
 
-FROM test as builder
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /main ./mapper/cmd
+
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /main ./mapper/cmd
+EOR
 
 # add version file
 ARG VERSION

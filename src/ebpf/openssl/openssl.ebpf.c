@@ -1,20 +1,16 @@
 //go:build ignore
-#include <linux/types.h>
-#include <linux/bpf.h>
+#include "vmlinux_aarch64.h"
 #include <bpf/bpf_tracing.h>
-#include <asm/ptrace.h>
-#include <stddef.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 
 const __u32 MAX_SIZE = 1024;
-
-typedef long unsigned int uintptr_t;
+const __u32 MAX_ENTRIES_HASH = 4096;
 
 struct ssl_event_t {
     __u32 pid;
-//    __u64 timestamp;
+    __u64 timestamp;
     __u32 size;
     __u8 data[MAX_SIZE];
 };
@@ -43,10 +39,44 @@ struct {
     __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
 } ssl_events SEC(".maps");
 
-//static struct ssl_context_t lookup_buffer(struct pt_regs* ctx, void* map, __u64 key);
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_ENTRIES_HASH);
+    __type(key, __u32);
+    __type(value, _Bool);
+} pid_targets SEC(".maps");
 
-SEC("uprobe/ssl_write")
-void BPF_KPROBE(ssl_write, void* ssl, uintptr_t buffer, int num) {
+int should_trace() {
+    __u64 pid = bpf_get_current_pid_tgid();
+
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+
+    int nsInode = BPF_CORE_READ(task, group_leader, nsproxy, pid_ns_for_children, ns.inum);
+
+    {
+        char msg[] = "pid ns inode: %llu";
+        bpf_trace_printk(msg, sizeof(msg), nsInode);
+    }
+
+    _Bool *pTarget = bpf_map_lookup_elem(&pid_targets, &nsInode);
+
+    if (pTarget == 0) {
+        {
+            char msg[] = "tracing disabled for pid, pid: %llu";
+            bpf_trace_printk(msg, sizeof(msg), pid);
+        }
+        return 0;
+    }
+
+    return *pTarget;
+}
+
+SEC("uprobe/otterize_SSL_write")
+void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
+    if (!should_trace()) {
+        return;
+    }
+
     __u64 pid = bpf_get_current_pid_tgid();
 
     {
@@ -68,8 +98,8 @@ void BPF_KPROBE(ssl_write, void* ssl, uintptr_t buffer, int num) {
     }
 }
 
-SEC("uretprobe/ret_ssl_write")
-void BPF_KPROBE(ret_ssl_write) {
+SEC("uretprobe/otterize_SSL_write_ret")
+void BPF_KRETPROBE(otterize_SSL_write_ret) {
     __u64 pid = bpf_get_current_pid_tgid();
 
     {

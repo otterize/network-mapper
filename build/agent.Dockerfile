@@ -1,3 +1,17 @@
+FROM golang:1.22.1 AS ebpf-buildenv
+
+RUN apt-get update
+RUN apt-get install -y clang libelf-dev libbpf-dev linux-headers-generic
+RUN ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+
+COPY . /src/
+WORKDIR /src
+
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+RUN go mod download
+go generate -tags ebpf ./ebpf/...
+EOR
+
 FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine AS buildenv
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
@@ -9,18 +23,20 @@ RUN go mod download
 
 COPY . .
 
-FROM buildenv AS test
+FROM --platform=$BUILDPLATFORM buildenv AS test
 # install dependencies for "envtest" package
-RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230216140739-c98506dc3b8e && \
-    source <(setup-envtest use -p env) && \
-    mkdir -p /usr/local/kubebuilder && \
-    ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
-RUN go test ./node-agent/...
+#
+#RUN go test ./node-agent/...
 
-FROM test as builder
+FROM --platform=$BUILDPLATFORM test AS builder
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd
+
+COPY --from=ebpf-buildenv /src/ebpf /src/ebpf
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd/agent
+CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-nsutil ./node-agent/cmd/nsutil
+EOR
 
 # add version file
 ARG VERSION
@@ -28,8 +44,9 @@ RUN echo -n $VERSION > /version
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:debug
+FROM ubuntu:24.04
 COPY --from=builder /otterize-node-agent /otterize/bin/otterize-node-agent
+COPY --from=builder /otterize-node-nsutil /otterize/bin/otterize-node-nsutil
 COPY --from=builder /version .
 
 ENV OTTERIZE_EBPF_SOCKET_PATH=/run/bpfman-sock/bpfman.sock

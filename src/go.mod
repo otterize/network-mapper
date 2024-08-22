@@ -27,7 +27,9 @@ require (
 	github.com/otterize/go-procnet v0.1.1
 	github.com/otterize/intents-operator/src v0.0.0-20240728122430-815e69d82f7a
 	github.com/otterize/nilable v0.0.0-20240410132629-f242bb6f056f
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/procfs v0.12.0
 	github.com/samber/lo v1.33.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.13.0
@@ -112,11 +114,9 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
-	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sosodev/duration v1.2.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect

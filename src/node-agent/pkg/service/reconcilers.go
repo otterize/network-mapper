@@ -1,7 +1,6 @@
 package service
 
 import (
-	bpfmanclient "github.com/bpfman/bpfman/clients/gobpfman/v1"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/reconcilers"
 	"github.com/sirupsen/logrus"
@@ -13,13 +12,13 @@ import (
 func RegisterReconcilersOrDie(
 	mgr manager.Manager,
 	client crtClient.Client,
-	bpfmanClient bpfmanclient.BpfmanClient,
+//bpfmanClient bpfmanclient.BpfmanClient,
 	containerManager *container.ContainerManager,
 ) {
 	reconcilersToRegister := []reconcilers.Reconciler{
 		reconcilers.NewEBPFReconciler(
 			client,
-			bpfmanClient,
+			//bpfmanClient,
 			containerManager,
 		),
 	}

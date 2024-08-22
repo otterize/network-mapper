@@ -2,9 +2,10 @@ package reconcilers
 
 import (
 	"context"
-	bpfmanclient "github.com/bpfman/bpfman/clients/gobpfman/v1"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/network-mapper/src/ebpf/openssl"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/labels"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
@@ -27,19 +28,19 @@ const (
 
 type EBPFReconciler struct {
 	client            client.Client
-	bpfmanClient      bpfmanclient.BpfmanClient
 	containersManager *container.ContainerManager
+	tracer            ebpf.Tracer
+	stop              bool
 }
 
 func NewEBPFReconciler(
 	client client.Client,
-	bpfmanClient bpfmanclient.BpfmanClient,
 	containerManager *container.ContainerManager,
 ) *EBPFReconciler {
 	return &EBPFReconciler{
 		client:            client,
-		bpfmanClient:      bpfmanClient,
 		containersManager: containerManager,
+		tracer:            ebpf.NewTracer(),
 	}
 }
 
@@ -51,6 +52,10 @@ func (r *EBPFReconciler) SetupWithManager(mgr manager.Manager) error {
 }
 
 func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
+	if r.stop {
+		return reconcile.Result{}, nil
+	}
+
 	logger := logrus.WithContext(ctx).
 		WithField("namespace", req.Namespace).
 		WithField("podName", req.Name)
@@ -74,7 +79,7 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		return reconcile.Result{}, nil
 	}
 
-	for _, container := range pod.Status.ContainerStatuses {
+	for _, container := range pod.Status.ContainerStatuses[:1] {
 		containerInfo, err := r.containersManager.GetContainerInfo(ctx, container.ContainerID)
 
 		if err != nil {
@@ -85,70 +90,23 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err)
 		}
+
+		r.stop = true
 	}
 
 	return reconcile.Result{}, nil
 }
 
 func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containerInfo container.ContainerInfo) error {
-	fnName := "SSL_write"
-	pid := containerInfo.GetPID()
+	logrus.WithContext(ctx).
+		WithField("pid", containerInfo.GetPID()).
+		Warningf("Loading %s", openssl.BpfSpecs.OtterizeSSL_write.Name)
 
-	_, err := r.bpfmanClient.Load(
-		ctx,
-		&bpfmanclient.LoadRequest{
-			Name:        "openssl_SSL_write_entry",
-			ProgramType: Kprobe,
-			Attach: &bpfmanclient.AttachInfo{
-				Info: &bpfmanclient.AttachInfo_UprobeAttachInfo{
-					UprobeAttachInfo: &bpfmanclient.UprobeAttachInfo{
-						FnName:       &fnName,
-						Target:       "libssl",
-						ContainerPid: &pid,
-					},
-				},
-			},
-			Bytecode: &bpfmanclient.BytecodeLocation{
-				Location: &bpfmanclient.BytecodeLocation_File{
-					File: "/otterize/ebpf/uprobe-counter/bpf_x86_bpfel.o",
-				},
-			},
-		},
-	)
+	err := r.tracer.AttachToOpenSSL(containerInfo.GetPID())
 
 	if err != nil {
-		logrus.WithError(err).Error("Failed to load program")
 		return errors.Wrap(err)
 	}
-
-	_, err = r.bpfmanClient.Load(
-		ctx,
-		&bpfmanclient.LoadRequest{
-			Name:        "openssl_SSL_write_exit",
-			ProgramType: Kprobe,
-			Attach: &bpfmanclient.AttachInfo{
-				Info: &bpfmanclient.AttachInfo_UprobeAttachInfo{
-					UprobeAttachInfo: &bpfmanclient.UprobeAttachInfo{
-						FnName:       &fnName,
-						Target:       "libssl",
-						ContainerPid: &pid,
-					},
-				},
-			},
-			Bytecode: &bpfmanclient.BytecodeLocation{
-				Location: &bpfmanclient.BytecodeLocation_File{
-					File: "/otterize/ebpf/uprobe-counter/bpf_x86_bpfel.o",
-				},
-			},
-		},
-	)
-
-	if err != nil {
-		logrus.WithError(err).Error("Failed to load program")
-		return errors.Wrap(err)
-	}
-
-	logrus.WithField("containerId", containerInfo.GetID()).Debug("Loaded program")
 
 	return nil
 }
