@@ -23,10 +23,12 @@ jobs:
           go-version: '1.21.3'
       - uses: actions/checkout@v3
       - name: Install dependencies
-        run: sudo apt update && sudo apt install libpcap-dev # required for the linter to be able to lint github.com/google/gopacket
+        run: |
+          sudo apt update && sudo apt install libpcap-dev clang libelf-dev libbpf-dev linux-headers-generic
+          sudo ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
       - name: go generate
         run: | 
-          go generate ./...
+          go generate -tags ebpf ./...
 
         working-directory: src
       - name: go vet
@@ -44,7 +46,13 @@ jobs:
           go-version: '1.21.3'
       - uses: actions/checkout@v3
       - name: Install dependencies
-        run: sudo apt update && sudo apt install libpcap-dev # required for the linter to be able to lint github.com/google/gopacket
+        run: |
+          sudo apt update && sudo apt install libpcap-dev clang libelf-dev libbpf-dev linux-headers-generic
+          sudo ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+      - name: go generate
+        run: |
+          go generate -tags ebpf ./...
+        working-directory: src
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
