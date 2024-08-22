@@ -2,18 +2,18 @@ package container
 
 type ContainerInfo interface {
 	GetID() string
-	GetPID() uint32
+	GetPID() int
 }
 
 type criContainerInfo struct {
 	Id  string
-	Pid uint32 `json:"pid"`
+	Pid int `json:"pid"`
 }
 
 func (c criContainerInfo) GetID() string {
 	return c.Id
 }
 
-func (c criContainerInfo) GetPID() uint32 {
+func (c criContainerInfo) GetPID() int {
 	return c.Pid
 }

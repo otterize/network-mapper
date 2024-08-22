@@ -30,7 +30,6 @@ type EBPFReconciler struct {
 	client            client.Client
 	containersManager *container.ContainerManager
 	tracer            ebpf.Tracer
-	stop              bool
 }
 
 func NewEBPFReconciler(
@@ -52,10 +51,6 @@ func (r *EBPFReconciler) SetupWithManager(mgr manager.Manager) error {
 }
 
 func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	if r.stop {
-		return reconcile.Result{}, nil
-	}
-
 	logger := logrus.WithContext(ctx).
 		WithField("namespace", req.Namespace).
 		WithField("podName", req.Name)
@@ -90,8 +85,6 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err)
 		}
-
-		r.stop = true
 	}
 
 	return reconcile.Result{}, nil

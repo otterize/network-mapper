@@ -6,7 +6,7 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 
-const __u32 MAX_SIZE = 1024;
+const __u32 MAX_SIZE = 512;
 const __u32 MAX_ENTRIES_HASH = 4096;
 
 struct ssl_event_t {
@@ -57,6 +57,8 @@ int shouldTrace() {
     // equivalent to running `readlink /proc/self/ns/pid`
     int nsInode = BPF_CORE_READ(task, group_leader, nsproxy, pid_ns_for_children, ns.inum);
 
+    bpf_printk("PID namespace: %llu", nsInode);
+
     _Bool *pTarget = bpf_map_lookup_elem(&targets, &nsInode);
 
     if (pTarget == 0) {
@@ -96,6 +98,10 @@ void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
 
 SEC("uretprobe/otterize_SSL_write_ret")
 void BPF_KRETPROBE(otterize_SSL_write_ret) {
+    if (!shouldTrace()) {
+        return;
+    }
+
     bpf_printk("entering SSL_write_ret");
 
     __u64 key = bpf_get_current_pid_tgid();
@@ -126,7 +132,6 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
         return;
     }
 
-
     event->pid = get_pid();
     event->size = context.size;
 
@@ -137,7 +142,12 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
         event->size = MAX_SIZE;
     }
 
-    err = bpf_probe_read_user(&event->data, event->size, (char*)context.buffer);
+    // copy the cleartext buffer to the event struct
+    // the verifier doesn't let us use event->size, or any other variable, as it
+    // can't ensure that it's within bounds. So we use a constant the size of the
+    // output buffer. This appeases the verifier, but I'm not sure what is the effect of
+    // reading beyond (context.buffer + context.size). ???
+    err = bpf_probe_read_user(&event->data, MAX_SIZE, (char*)context.buffer);
 
     if (err != 0) {
         bpf_printk("bpf_probe_read_user failed");
@@ -147,7 +157,7 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
     err = bpf_perf_event_output(ctx, &ssl_events, BPF_F_CURRENT_CPU, event, sizeof(struct ssl_event_t));
 
     if (err != 0) {
-        bpf_printk("bpf_perf_event_output failed");
+        bpf_printk("bpf_perf_event_output failed: %d", err);
         return;
     }
 
