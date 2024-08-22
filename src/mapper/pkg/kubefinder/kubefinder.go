@@ -56,10 +56,12 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 	err := k.mgr.GetCache().IndexField(ctx, &corev1.Pod{}, podIPIndexField, func(object client.Object) []string {
 		res := make([]string, 0)
 		pod := object.(*corev1.Pod)
+
+		// host network pods use their node's IP address, it's not safe to assume this IP is unique to this pod
+		if pod.Spec.HostNetwork || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+			return res
+		}
 		for _, ip := range pod.Status.PodIPs {
-			if pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
-				continue
-			}
 			res = append(res, ip.IP)
 		}
 		return res
@@ -344,7 +346,7 @@ func (k *KubeFinder) ResolveIstioWorkloadToPod(ctx context.Context, workload str
 	return &podList.Items[0], nil
 }
 
-func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string) ([]string, types.NamespacedName, error) {
+func (k *KubeFinder) ResolveServiceAddressToPods(ctx context.Context, fqdn string) ([]corev1.Pod, types.NamespacedName, error) {
 	clusterDomain := viper.GetString(config.ClusterDomainKey)
 	if !strings.HasSuffix(fqdn, clusterDomain) {
 		return nil, types.NamespacedName{}, errors.Errorf("address %s is not in the cluster", fqdn)
@@ -364,22 +366,28 @@ func (k *KubeFinder) ResolveServiceAddressToIps(ctx context.Context, fqdn string
 		}
 		namespace := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-2]
 		serviceName := fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-3]
-		endpoints := &corev1.Endpoints{}
+		service := &corev1.Service{}
 		serviceNamespacedName := types.NamespacedName{Name: serviceName, Namespace: namespace}
-		err := k.client.Get(ctx, serviceNamespacedName, endpoints)
+		err := k.client.Get(ctx, serviceNamespacedName, service)
 		if err != nil {
 			return nil, types.NamespacedName{}, errors.Wrap(err)
 		}
-		ips := make([]string, 0)
-		for _, subset := range endpoints.Subsets {
-			for _, address := range subset.Addresses {
-				ips = append(ips, address.IP)
-			}
+		pods, err := k.ResolveServiceToPods(ctx, service)
+		if err != nil {
+			return nil, types.NamespacedName{}, errors.Wrap(err)
 		}
-		return ips, serviceNamespacedName, nil
+
+		return pods, serviceNamespacedName, nil
 	case "pod":
 		// for address format of pods: 172-17-0-3.default.pod.cluster.local
-		return []string{strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")}, types.NamespacedName{}, nil
+		ip := strings.ReplaceAll(fqdnWithoutClusterDomainParts[0], "-", ".")
+		pod, err := k.ResolveIPToPod(ctx, ip)
+		if err != nil {
+			return make([]corev1.Pod, 0), types.NamespacedName{}, errors.Wrap(err)
+		}
+
+		return []corev1.Pod{*pod}, types.NamespacedName{}, nil
+
 	default:
 		return nil, types.NamespacedName{}, errors.Errorf("cannot resolve k8s address %s, type %s not supported", fqdn, fqdnWithoutClusterDomainParts[len(fqdnWithoutClusterDomainParts)-1])
 	}

@@ -2,10 +2,8 @@ package sniffer
 
 import (
 	"context"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/smithy-go/logging"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/network-mapper/src/shared/isrunningonaws"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/collectors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
@@ -26,7 +24,7 @@ type Sniffer struct {
 
 func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
 	procFSIPResolver := ipresolver.NewProcFSIPResolver()
-	isRunningOnAws := initIsRunningOnAWS()
+	isRunningOnAws := isrunningonaws.Check()
 
 	return &Sniffer{
 		dnsSniffer:    collectors.NewDNSSniffer(procFSIPResolver, isRunningOnAws),
@@ -34,28 +32,6 @@ func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
 		socketScanner: collectors.NewSocketScanner(),
 		mapperClient:  mapperClient,
 	}
-}
-
-func initIsRunningOnAWS() bool {
-	ctxTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	cfg, err := awsconfig.LoadDefaultConfig(ctxTimeout)
-	if err != nil {
-		logrus.Debug("Autodetect AWS (an error here is fine): Failed to load AWS config")
-		return false
-	}
-	cfg.Logger = logging.Nop{}
-
-	client := imds.NewFromConfig(cfg)
-
-	result, err := client.GetInstanceIdentityDocument(ctxTimeout, &imds.GetInstanceIdentityDocumentInput{})
-	if err != nil {
-		logrus.Debug("Autodetect AWS (an error here is fine): Failed to get instance identity document")
-		return false
-	}
-
-	logrus.WithField("region", result.Region).Debug("Autodetect AWS: Running on AWS")
-	return true
 }
 
 func (s *Sniffer) reportCaptureResults(ctx context.Context) {

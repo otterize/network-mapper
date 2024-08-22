@@ -40,7 +40,9 @@ func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDe
 		}
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to pod: %w", src.SrcIP, err)
 	}
-	if src.SrcHostname != "" && srcPod.Name != src.SrcHostname {
+	// When running on AWS - we must validate the hostname because the IP may be reused by a new pod (AWS VPC CNI)
+	// When not running on AWS - source hostname resolution in the sniffer might be disabled
+	if (src.SrcHostname != "" || r.isRunningOnAws) && srcPod.Name != src.SrcHostname {
 		// This could mean a new pod is reusing the same IP
 		// TODO: Use the captured hostname to actually find the relevant pod (instead of the IP that might no longer exist or be reused)
 		return model.OtterizeServiceIdentity{}, errors.Errorf("found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, src.SrcIP, src.SrcHostname)

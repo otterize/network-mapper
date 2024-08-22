@@ -15,6 +15,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/otterize/network-mapper/src/shared/isrunningonaws"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -38,6 +39,7 @@ type Resolver struct {
 	awsOperations                chan model.AWSOperationResults
 	gotResultsCtx                context.Context
 	gotResultsSignal             context.CancelFunc
+	isRunningOnAws               bool
 }
 
 func NewResolver(
@@ -63,6 +65,7 @@ func NewResolver(
 		awsOperations:                make(chan model.AWSOperationResults, 200),
 		awsIntentsHolder:             awsIntentsHolder,
 		dnsCache:                     dnsCache,
+		isRunningOnAws:               isrunningonaws.Check(),
 	}
 	r.gotResultsCtx, r.gotResultsSignal = context.WithCancel(context.Background())
 

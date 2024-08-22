@@ -13,9 +13,10 @@ permissions:
   # pull-requests: read
 
 jobs:
-  golangci:
-    name: golangci-lint
-    runs-on: ubuntu-20.04
+  vet:
+    # run vet in a separate job to avoid conflicts with golangci-lint pkg-cache
+    name: vet
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -34,6 +35,16 @@ jobs:
         working-directory: src/
       - name: check git diff
         run: git diff --exit-code
+  golangci:
+    name: golangci-lint
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.21.3'
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install libpcap-dev # required for the linter to be able to lint github.com/google/gopacket
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -44,7 +55,7 @@ jobs:
           working-directory: src
 
           # Optional: golangci-lint command line arguments.
-          args: --timeout 5m
+          args: --timeout 5m --out-format github-actions
 
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true

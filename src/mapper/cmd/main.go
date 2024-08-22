@@ -98,7 +98,7 @@ func main() {
 
 	componentinfo.SetGlobalContextId(telemetrysender.Anonymize(clusterUID))
 
-	errorreporter.Init("network-mapper", version.Version())
+	errorreporter.Init(telemetriesgql.TelemetryComponentTypeNetworkMapper, version.Version())
 	defer errorreporter.AutoNotify()
 	shared.RegisterPanicHandlers()
 
