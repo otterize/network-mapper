@@ -24,8 +24,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install libpcap-dev clang libelf-dev libbpf-dev linux-headers-generic
-          sudo ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+          sudo apt update && sudo apt install libpcap-dev clang libelf-dev libbpf-dev
       - name: go generate
         run: | 
           go generate -tags ebpf ./...
@@ -47,8 +46,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install libpcap-dev clang libelf-dev libbpf-dev linux-headers-generic
-          sudo ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+          sudo apt update && sudo apt install libpcap-dev clang libelf-dev libbpf-dev
       - name: go generate
         run: |
           go generate -tags ebpf ./...

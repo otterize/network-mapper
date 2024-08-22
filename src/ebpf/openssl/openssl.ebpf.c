@@ -1,5 +1,6 @@
 //go:build ignore
 #include "vmlinux_aarch64.h"
+#include "vmlinux_x86_64.h"
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
