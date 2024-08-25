@@ -62,15 +62,14 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
-	if !foundSvc {
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
-	if err != nil {
-		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
-	}
-	if ok {
-		return dstSvcIdentity, true, nil
+	if foundSvc {
+		dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
+		if err != nil {
+			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+		}
+		if ok {
+			return dstSvcIdentity, true, nil
+		}
 	}
 
 	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
@@ -99,7 +98,7 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	dstSvcIdentity = model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -378,7 +377,8 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 
 	for _, captureItem := range results.Results {
 		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
-		isExternal, err := r.isExternalOrAssumeExternalIfError(ctx, captureItem.SrcIP)
+
+		isExternal, err := r.isExternalIP(ctx, captureItem.SrcIP)
 		if err != nil {
 			logrus.WithError(err).Error("could not determine if IP is external")
 			continue

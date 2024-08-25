@@ -10,7 +10,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"inet.af/netaddr"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -23,6 +22,7 @@ import (
 
 const (
 	podIPIndexField            = "ip"
+	endpointIPPortIndexField   = "ipPort"
 	serviceIPIndexField        = "spec.ip"
 	externalIPIndexField       = "spec.externalIPs"
 	portNumberIndexField       = "service.spec.ports.nodePort"
@@ -206,43 +206,6 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 	return pods, nil
 }
 
-func (k *KubeFinder) IsIPNotInNodePodCIDR(ctx context.Context, ip string) (bool, error) {
-	var nodes corev1.NodeList
-	err := k.client.List(ctx, &nodes)
-	if err != nil {
-		return false, errors.Wrap(err)
-	}
-
-	cidrBuilder := netaddr.IPSetBuilder{}
-	for _, node := range nodes.Items {
-		nodeCidr := node.Spec.PodCIDR
-		if nodeCidr == "" {
-			logrus.Debugf("node %s has no podCIDR", node.Name)
-			continue
-		}
-
-		logrus.Debugf("node %s has podCIDR %s", node.Name, nodeCidr)
-		cidr, err := netaddr.ParseIPPrefix(nodeCidr)
-		if err != nil {
-			return false, errors.Wrap(err)
-		}
-
-		cidrBuilder.AddPrefix(cidr)
-	}
-
-	cidrSet, err := cidrBuilder.IPSet()
-	if err != nil {
-		return false, errors.Wrap(err)
-	}
-
-	ipAddr, err := netaddr.ParseIP(ip)
-	if err != nil {
-		return false, errors.Wrap(err)
-	}
-
-	return !cidrSet.Contains(ipAddr), nil
-}
-
 func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod, error) {
 	var pods corev1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIPIndexField: ip})
@@ -258,6 +221,34 @@ func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod
 		return nil, errors.Wrap(ErrFoundMoreThanOnePod)
 	}
 	return &pods.Items[0], nil
+}
+
+func (k *KubeFinder) ResolveIPToControlPlane(ctx context.Context, ip string) (*corev1.Service, bool, error) {
+	var svc corev1.Service
+	err := k.client.Get(ctx, types.NamespacedName{Name: apiServerName, Namespace: apiServerNamespace}, &svc)
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+
+	if ip == svc.Spec.ClusterIP {
+		return &svc, true, nil
+	}
+
+	var endpoints corev1.Endpoints
+	err = k.client.Get(ctx, types.NamespacedName{Name: apiServerName, Namespace: apiServerNamespace}, &endpoints)
+	if err != nil {
+		return nil, false, errors.Wrap(err)
+	}
+
+	for _, subset := range endpoints.Subsets {
+		for _, address := range subset.Addresses {
+			if address.IP == ip {
+				return &svc, true, nil
+			}
+		}
+	}
+
+	return nil, false, nil
 }
 
 func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
