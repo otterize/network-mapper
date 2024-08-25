@@ -332,13 +332,32 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIP)
-		} else {
-			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+			return model.OtterizeServiceIdentity{}, false, nil
 		}
-		return model.OtterizeServiceIdentity{}, false, nil
+		logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 	if !ok {
-		return model.OtterizeServiceIdentity{}, false, nil
+		// If the traffic is not to a NodePort or LoadBalancer Service, it can be traffic from a loadbalancer like AWS ALB
+		// to a pod.
+		pod, err := r.kubeFinder.ResolveIPToPod(ctx, destIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIP)
+				return model.OtterizeServiceIdentity{}, false, nil
+			}
+			if errors.Is(err, kubefinder.ErrNoPodFound) {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod: no pod found", destIP)
+				return model.OtterizeServiceIdentity{}, false, nil
+			}
+			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+		}
+		dstSvcIdentity, err := r.resolveInClusterIdentity(ctx, pod)
+		if err != nil {
+			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+		}
+		return dstSvcIdentity, true, nil
 	}
 
 	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
