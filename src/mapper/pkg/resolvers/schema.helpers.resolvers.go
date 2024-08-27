@@ -378,12 +378,8 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	for _, captureItem := range results.Results {
 		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
 
-		isExternal, err := r.isExternalIP(ctx, captureItem.SrcIP)
-		if err != nil {
-			logrus.WithError(err).Error("could not determine if IP is external")
-			continue
-		}
-		if isExternal {
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
+		if errors.Is(err, kubefinder.ErrNoPodFound) {
 			err := r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
 			if err != nil {
 				logrus.WithError(err).Error("could not report incoming internet traffic")
@@ -391,14 +387,13 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 			}
 		}
 
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
 		}
 
 		for _, dest := range captureItem.Destinations {
-			r.handleTCPResult(ctx, srcSvcIdentity, dest)
+			r.handleExternalIncomingTrafficTCPResult(ctx, srcSvcIdentity, dest)
 		}
 	}
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
@@ -428,7 +423,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 	return nil
 }
 
-func (r *Resolver) handleTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+func (r *Resolver) handleExternalIncomingTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
 	lastSeen := dest.LastSeen
 	destIdentity, ok, err := r.resolveDestIdentity(ctx, dest, lastSeen)
 	if err != nil {
@@ -458,7 +453,7 @@ func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model
 
 	var newResults int
 	for _, captureItem := range results.Results {
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
@@ -495,7 +490,7 @@ func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results mo
 		return nil
 	}
 	for _, socketScanItem := range results.Results {
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, socketScanItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
 			continue

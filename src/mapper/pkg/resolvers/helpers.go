@@ -6,49 +6,10 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
-	"inet.af/netaddr"
 	corev1 "k8s.io/api/core/v1"
-	"sync"
 )
 
-var ipset *netaddr.IPSet
-var ipsetOnce sync.Once
-
-func MustGetInternalIPSet() *netaddr.IPSet {
-	ipsetOnce.Do(func() {
-		setBuilder := netaddr.IPSetBuilder{}
-		setBuilder.AddPrefix(netaddr.IPPrefixFrom(netaddr.IPFrom4([4]byte{192, 168, 0, 0}), 16))
-		setBuilder.AddPrefix(netaddr.IPPrefixFrom(netaddr.IPFrom4([4]byte{10, 0, 0, 0}), 8))
-		setBuilder.AddPrefix(netaddr.IPPrefixFrom(netaddr.IPFrom4([4]byte{172, 16, 0, 0}), 12))
-		set, err := setBuilder.IPSet()
-		if err != nil {
-			logrus.WithError(err).Panic("could not create IP set")
-		}
-		ipset = set
-	})
-	return ipset
-}
-
-// isExternalIP returns true if the IP is external.
-func (r *Resolver) isExternalIP(ctx context.Context, srcIP string) (bool, error) {
-	_, err := r.kubeFinder.ResolveIPToPod(ctx, srcIP)
-	if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-		return false, nil
-	}
-
-	// If the IP is not found, it may be external
-	if err != nil && !errors.Is(err, kubefinder.ErrNoPodFound) {
-		return false, errors.Wrap(err)
-	}
-
-	if MustGetInternalIPSet().Contains(netaddr.MustParseIP(srcIP)) {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
+func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	svc, ok, err := r.kubeFinder.ResolveIPToControlPlane(ctx, src.SrcIP)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to service: %w", src.SrcIP, err)
@@ -60,10 +21,7 @@ func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDe
 
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {
-		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-			return model.OtterizeServiceIdentity{}, errors.Errorf("IP %s belongs to more than one pod, ignoring", src.SrcIP)
-		}
-		if errors.Is(err, kubefinder.ErrNoPodFound) {
+		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) || errors.Is(err, kubefinder.ErrNoPodFound) {
 			return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 		}
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to pod: %w", src.SrcIP, err)
