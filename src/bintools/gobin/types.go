@@ -1,18 +1,7 @@
 package gobin
 
 import (
-	"errors"
-)
-
-// ErrUnsupportedArch is returned when an architecture given as a parameter is not supported.
-var ErrUnsupportedArch = errors.New("got unsupported arch")
-
-// GoArch only includes go architectures that we support in the ebpf code.
-type GoArch string
-
-const (
-	GoArchX86_64 GoArch = "amd64"
-	GoArchARM64  GoArch = "arm64"
+	"github.com/otterize/network-mapper/src/bintools/bininfo"
 )
 
 // FunctionMetadata  used to attach a uprobe to a function.
@@ -22,7 +11,7 @@ type FunctionMetadata struct {
 }
 
 type GoBinaryInfo struct {
-	Arch      GoArch
+	Arch      bininfo.Arch
 	GoVersion string
 	Functions map[string]FunctionMetadata
 }

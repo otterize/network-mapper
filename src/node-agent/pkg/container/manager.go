@@ -2,10 +2,14 @@ package container
 
 import (
 	"context"
+	"debug/elf"
 	"encoding/json"
+	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/network-mapper/src/bintools/bininfo"
 	"github.com/sirupsen/logrus"
 	internalapi "k8s.io/cri-api/pkg/apis"
+	"os"
 	"strings"
 )
 
@@ -53,7 +57,49 @@ func (m *ContainerManager) GetContainerInfo(ctx context.Context, containerID str
 
 	info.Id = resp.Status.Id
 
+	// Get the executable info
+	execInfo, err := m.InspectContainerExec(info.GetPID())
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	info.ExecutableInfo = execInfo
+
 	logrus.WithField("containerId", info.Id).WithField("info", info).Debug("Got container info")
 
 	return info, nil
+}
+
+func (m *ContainerManager) InspectContainerExec(pid uint32) (ExecutableInfo, error) {
+	res := ExecutableInfo{}
+	execPath := fmt.Sprintf("/host/proc/%d/exe", pid)
+
+	// Open the executable file
+	f, err := os.Open(execPath)
+	if err != nil {
+		return res, errors.Wrap(err)
+	}
+
+	defer func(f *os.File) {
+		cErr := f.Close()
+		if cErr == nil {
+			err = cErr
+		}
+	}(f)
+
+	// Parse the ELF file
+	elfFile, err := elf.NewFile(f)
+	if err != nil {
+		return res, errors.Wrap(err)
+	}
+
+	res.Arch, err = bininfo.GetArchitecture(elfFile)
+	if err != nil {
+		return res, errors.Wrap(err)
+	}
+
+	res.Language = bininfo.GetSourceLanguage(execPath, f)
+
+	logrus.WithField("lang", res.Language).WithField("arch", res.Arch).Debug("Got exec info for pid %d", pid)
+
+	return res, nil
 }

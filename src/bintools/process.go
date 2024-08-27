@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 	"fmt"
 	delve "github.com/go-delve/delve/pkg/goversion"
+	"github.com/otterize/network-mapper/src/bintools/bininfo"
 	"github.com/otterize/network-mapper/src/bintools/gobin"
 	"log"
 	"os"
@@ -28,7 +29,7 @@ func ProcessGoBinary(binPath string, functions []string) (res *gobin.GoBinaryInf
 	}
 
 	// Determine the architecture of the binary
-	arch, err := gobin.GetGoArchitecture(elfFile)
+	arch, err := bininfo.GetArchitecture(elfFile)
 	if err != nil {
 		return nil, err
 	}

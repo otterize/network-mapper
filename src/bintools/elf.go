@@ -8,7 +8,7 @@ import (
 	"debug/elf"
 	"errors"
 	"fmt"
-	"github.com/otterize/network-mapper/src/bintools/gobin"
+	"github.com/otterize/network-mapper/src/bintools/bininfo"
 )
 
 // GetELFSymbolsByName retrieves ELF symbols by name and returns them in a map.
@@ -71,18 +71,18 @@ func SymbolToOffset(f *elf.File, symbol elf.Symbol) (uint32, error) {
 }
 
 // FindReturnLocations returns the offsets of all the returns of the given func (sym) with the given offset.
-func FindReturnLocations(elfFile *elf.File, arch gobin.GoArch, sym elf.Symbol, functionOffset uint64) ([]uint64, error) {
+func FindReturnLocations(elfFile *elf.File, arch bininfo.Arch, sym elf.Symbol, functionOffset uint64) ([]uint64, error) {
 	textSection := elfFile.Section(".text")
 	if textSection == nil {
 		return nil, fmt.Errorf("no %q section found in binary file", ".text")
 	}
 
 	switch arch {
-	case gobin.GoArchX86_64:
+	case bininfo.ArchX86_64:
 		return ScanFunction(textSection, sym, functionOffset, FindX86_64ReturnInstructions)
-	case gobin.GoArchARM64:
+	case bininfo.ArchARM64:
 		return ScanFunction(textSection, sym, functionOffset, FindARM64ReturnInstructions)
 	default:
-		return nil, gobin.ErrUnsupportedArch
+		return nil, bininfo.ErrUnsupportedArch
 	}
 }

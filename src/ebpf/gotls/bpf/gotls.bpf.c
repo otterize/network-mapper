@@ -114,8 +114,8 @@ static __inline struct context_id get_context_id(struct pt_regs* ctx) {
 }
 
 // Read and submit the buffer data - split into chunks if necessary.
-static __inline void read_buffer(struct pt_regs *ctx, struct go_slice buf) {
-    bpf_printk("reading: %x %d \n", buf.ptr, buf.len);
+static __inline void read_buffer(struct pt_regs *ctx, struct go_slice *buf) {
+    bpf_printk("reading: %x %d \n", buf->ptr, buf->len);
 
     // Get the TGID (process ID) for the event
     struct context_id ctx_id = get_context_id(ctx);
@@ -129,18 +129,18 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice buf) {
 
     #pragma unroll
     for (i = 0; i < MAX_CHUNKS; ++i) {
-        const __u64 bytes_remaining = buf.len - bytes_sent;
+        const __u64 bytes_remaining = buf->len - bytes_sent;
 
         // Calculate the size to read
-        __u64 size_to_read = buf.len;
+        __u64 size_to_read = buf->len;
         if (size_to_read > MAX_PER_CPU_EL_SIZE) size_to_read = MAX_PER_CPU_EL_SIZE;
 
         event->meta.pid = ctx_id.goid;
         event->meta.pos = bytes_sent;
-        event->meta.buf_size = buf.len;
+        event->meta.buf_size = buf->len;
         event->meta.msg_size = size_to_read;
 
-        bpf_probe_read(event->msg, size_to_read, (void *)buf.ptr);
+        bpf_probe_read(event->msg, size_to_read, (void *)buf->ptr);
 
         // Submit the event to the event array
         bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, event, sizeof(*event));
@@ -166,7 +166,7 @@ int go_tls_write_enter(struct pt_regs *ctx) {
     };
 
     // Read the buffer data.
-    read_buffer(ctx, buf);
+    read_buffer(ctx, &buf);
     return 0;
 }
 
@@ -220,7 +220,7 @@ int gotls_read_return(struct pt_regs *ctx) {
     bpf_map_delete_elem(&go_tls_context, &ctx_id);
 
     // Read the buffer data.
-    read_buffer(ctx, buf);
+    read_buffer(ctx, &buf);
     return 0;
 }
 
