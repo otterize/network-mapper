@@ -1,11 +1,19 @@
 //go:build ignore
+
+#ifdef TARGET_ARCH_amd64
+#include "vmlinux_x86_64.h"
+#endif
+
+#ifdef TARGET_ARCH_arm64
 #include "vmlinux_aarch64.h"
+#endif
+
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_core_read.h>
 
-const __u32 MAX_SIZE = 1024;
+const __u32 MAX_SIZE = 512;
 const __u32 MAX_ENTRIES_HASH = 4096;
 
 struct ssl_event_t {
@@ -25,7 +33,6 @@ struct {
     __uint(max_entries, 1024);
     __type(key, __u64);
     __type(value, struct ssl_context_t);
-//    __uint(pinning, LIBBPF_PIN_BY_NAME);
 } ssl_contexts SEC(".maps");
 
 struct {
@@ -44,162 +51,127 @@ struct {
     __uint(max_entries, MAX_ENTRIES_HASH);
     __type(key, __u32);
     __type(value, _Bool);
-} pid_targets SEC(".maps");
+} targets SEC(".maps");
 
-int should_trace() {
-    __u64 pid = bpf_get_current_pid_tgid();
+int shouldTrace() {
+    // gets the current (real) PID
+    __u32 pid = bpf_get_current_pid_tgid() >> 32;
 
+    // gets the current 'task' which is a linux kernel struct that represents a process
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
+    // a bit of magic, but this gets the inode of the current PID namespace
+    // equivalent to running `readlink /proc/self/ns/pid`
     int nsInode = BPF_CORE_READ(task, group_leader, nsproxy, pid_ns_for_children, ns.inum);
 
-    {
-        char msg[] = "pid ns inode: %llu";
-        bpf_trace_printk(msg, sizeof(msg), nsInode);
-    }
+    bpf_printk("PID namespace: %llu", nsInode);
 
-    _Bool *pTarget = bpf_map_lookup_elem(&pid_targets, &nsInode);
+    _Bool *pTarget = bpf_map_lookup_elem(&targets, &nsInode);
 
     if (pTarget == 0) {
-        {
-            char msg[] = "tracing disabled for pid, pid: %llu";
-            bpf_trace_printk(msg, sizeof(msg), pid);
-        }
+        bpf_printk("tracing disabled for pid, pid: %llu", pid);
         return 0;
     }
 
     return *pTarget;
 }
 
+__u32 get_pid() {
+    return bpf_get_current_pid_tgid() >> 32;
+}
+
 SEC("uprobe/otterize_SSL_write")
 void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
-    if (!should_trace()) {
+    if (!shouldTrace()) {
         return;
     }
 
-    __u64 pid = bpf_get_current_pid_tgid();
+    bpf_printk("entering SSL_write");
 
-    {
-        char msg[] = "openssl_SSL_write_entry, buffer: %p, size: %d, pid: %llu";
-        bpf_trace_printk(msg, sizeof(msg), buffer, num, pid);
-    }
-
+    // capture the cleartext buffer and size
     struct ssl_context_t context = {
         .buffer = buffer,
         .size = num
     };
 
-    long err = bpf_map_update_elem(&ssl_contexts, &pid, &context, BPF_ANY);
+    __u64 key = bpf_get_current_pid_tgid();
+    long err = bpf_map_update_elem(&ssl_contexts, &key, &context, BPF_ANY);
 
     if (err != 0) {
-        char msg[] = "bpf_map_update_elem failed";
-        bpf_trace_printk(msg, sizeof(msg));
+        bpf_printk("capturing SSL_write input: update_elem failed");
         return;
     }
 }
 
 SEC("uretprobe/otterize_SSL_write_ret")
 void BPF_KRETPROBE(otterize_SSL_write_ret) {
-    __u64 pid = bpf_get_current_pid_tgid();
-
-    {
-        char msg[] = "openssl_SSL_write_exit, pid: %llu";
-        bpf_trace_printk(msg, sizeof(msg), pid);
-    }
-
-    void *pContext = bpf_map_lookup_elem(&ssl_contexts, &pid);
-
-    if (pContext == 0) {
-        char msg[] = "pContext is null";
-        bpf_trace_printk(msg, sizeof(msg));
+    if (!shouldTrace()) {
         return;
     }
 
+    bpf_printk("entering SSL_write_ret");
 
-//    int result = PT_REGS_RC(ctx);
-//
-//
+    __u64 key = bpf_get_current_pid_tgid();
+    void* pContext = bpf_map_lookup_elem(&ssl_contexts, &key);
+
+    if (pContext == NULL) {
+        bpf_printk("pContext is null");
+        return;
+    }
+
     struct ssl_context_t context = {
         .buffer = 0,
         .size = 0
     };
+
     long err = bpf_probe_read(&context, sizeof(struct ssl_context_t), pContext);
 
     if (err != 0) {
-        char msg[] = "bpf_probe_read failed";
-        bpf_trace_printk(msg, sizeof(msg));
+        bpf_printk("bpf_probe_read failed");
         return;
-    }
-
-    {
-        char msg[] = "exit, context: %p, context.size: %llu";
-        bpf_trace_printk(msg, sizeof(msg), context.buffer, context.size);
     }
 
     int zero = 0;
     struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &zero);
 
-    if (event == 0) {
-        char msg[] = "event is null";
-        bpf_trace_printk(msg, sizeof(msg));
+    if (event == NULL) {
+        bpf_printk("failed to create ssl_event_t");
         return;
     }
 
-    event->pid = pid;
+    event->pid = get_pid();
     event->size = context.size;
 
-    {
-        char msg[] = "pid: %d, size: %d";
-        bpf_trace_printk(msg, sizeof(msg), event->pid, event->size);
-    }
-
     if (event->size <= 0) {
+        // not supposed to happen, but the verifier can't know that
         return;
-    }
-
-    if (event->size > MAX_SIZE) {
+    } else if (event->size > MAX_SIZE) {
         event->size = MAX_SIZE;
     }
 
-    err = bpf_probe_read_user(&event->data, event->size, (char*)context.buffer);
+    // copy the cleartext buffer to the event struct
+    // the verifier doesn't let us use event->size, or any other variable, as it
+    // can't ensure that it's within bounds. So we use a constant the size of the
+    // output buffer. This appeases the verifier, but I'm not sure what is the effect of
+    // reading beyond (context.buffer + context.size). ???
+    err = bpf_probe_read_user(&event->data, MAX_SIZE, (char*)context.buffer);
 
     if (err != 0) {
-        char msg[] = "bpf_probe_read_user failed";
-        bpf_trace_printk(msg, sizeof(msg));
+        bpf_printk("bpf_probe_read_user failed");
         return;
     }
 
     err = bpf_perf_event_output(ctx, &ssl_events, BPF_F_CURRENT_CPU, event, sizeof(struct ssl_event_t));
 
     if (err != 0) {
-        char msg[] = "bpf_perf_event_output failed";
-        bpf_trace_printk(msg, sizeof(msg));
+        bpf_printk("bpf_perf_event_output failed: %d", err);
         return;
     }
 
-    {
-        char msg[] = "bpf_perf_event_output success";
-        bpf_trace_printk(msg, sizeof(msg));
-        return;
-    }
-
-//    bpf_map_delete_elem(&ssl_buffers, &pid);
+    // delete the context
+    bpf_map_delete_elem(&ssl_contexts, &key);
 
     return;
 }
-
-//static struct ssl_context_t lookup_buffer(struct pt_regs* ctx, void* map, __u64 key) {
-//    struct ssl_context_t* pContext = bpf_map_lookup_elem(map, &key);
-//    struct ssl_context_t buffer = {
-//            .buffer = 0,
-//            .size = 0
-//    };
-//
-//    if (pContext != NULL) {
-//        bpf_probe_read(&buffer, sizeof(struct ssl_context_t), pContext);
-//    }
-//
-//    return buffer;
-//}
 
 char _license[] SEC("license") = "GPL";

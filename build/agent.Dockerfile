@@ -1,14 +1,14 @@
 FROM golang:1.22.1 AS ebpf-buildenv
 
 RUN apt-get update
-RUN apt-get install -y clang libelf-dev libbpf-dev linux-headers-generic
-RUN ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+RUN apt-get install -y clang libelf-dev libbpf-dev
 
 COPY . /src/
 WORKDIR /src
 
 RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
-RUN go mod download
+set -ex
+go mod download
 go generate -tags ebpf ./ebpf/...
 EOR
 
@@ -34,8 +34,8 @@ ARG TARGETARCH
 
 COPY --from=ebpf-buildenv /src/ebpf /src/ebpf
 RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
 CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd/agent
-CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-nsutil ./node-agent/cmd/nsutil
 EOR
 
 # add version file
@@ -46,11 +46,7 @@ RUN echo -n $VERSION > /version
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM ubuntu:24.04
 COPY --from=builder /otterize-node-agent /otterize/bin/otterize-node-agent
-COPY --from=builder /otterize-node-nsutil /otterize/bin/otterize-node-nsutil
 COPY --from=builder /version .
-
-ENV OTTERIZE_EBPF_SOCKET_PATH=/run/bpfman-sock/bpfman.sock
-ENV OTTERIZE_EBPF_PROGRAMS_PATH=/otterize/ebpf
 
 EXPOSE 9090
 ENTRYPOINT ["/otterize/bin/otterize-node-agent"]

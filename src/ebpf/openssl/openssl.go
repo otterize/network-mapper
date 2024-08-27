@@ -19,6 +19,8 @@ type Objects struct {
 	Maps
 }
 
+type SslEventT = opensslSslEventT
+
 var BpfSpecs Specs
 var BpfObjects Objects
 

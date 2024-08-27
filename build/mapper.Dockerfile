@@ -11,16 +11,21 @@ COPY . .
 
 FROM buildenv AS test
 # install dependencies for "envtest" package
-RUN go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230216140739-c98506dc3b8e && \
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
+go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230216140739-c98506dc3b8e && \
     source <(setup-envtest use -p env) && \
     mkdir -p /usr/local/kubebuilder && \
     ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
+go test ./mapper/...
+EOR
 
 FROM test AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
 RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
 CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /main ./mapper/cmd
 EOR
 

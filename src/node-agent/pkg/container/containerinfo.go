@@ -4,13 +4,13 @@ import "github.com/otterize/network-mapper/src/bintools/bininfo"
 
 type ContainerInfo interface {
 	GetID() string
-	GetPID() uint32
+	GetPID() int
 	GetExecInfo() ExecutableInfo
 }
 
 type criContainerInfo struct {
-	Id             string
-	Pid            uint32 `json:"pid"`
+	Id  string
+	Pid int `json:"pid"`
 	ExecutableInfo ExecutableInfo
 }
 
@@ -23,7 +23,7 @@ func (c criContainerInfo) GetID() string {
 	return c.Id
 }
 
-func (c criContainerInfo) GetPID() uint32 {
+func (c criContainerInfo) GetPID() int {
 	return c.Pid
 }
 

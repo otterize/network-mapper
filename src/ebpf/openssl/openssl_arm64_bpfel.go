@@ -75,10 +75,10 @@ type opensslProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type opensslMapSpecs struct {
-	PidTargets  *ebpf.MapSpec `ebpf:"pid_targets"`
 	SslContexts *ebpf.MapSpec `ebpf:"ssl_contexts"`
 	SslEvent    *ebpf.MapSpec `ebpf:"ssl_event"`
 	SslEvents   *ebpf.MapSpec `ebpf:"ssl_events"`
+	Targets     *ebpf.MapSpec `ebpf:"targets"`
 }
 
 // opensslObjects contains all objects after they have been loaded into the kernel.
@@ -100,18 +100,18 @@ func (o *opensslObjects) Close() error {
 //
 // It can be passed to loadOpensslObjects or ebpf.CollectionSpec.LoadAndAssign.
 type opensslMaps struct {
-	PidTargets  *ebpf.Map `ebpf:"pid_targets"`
 	SslContexts *ebpf.Map `ebpf:"ssl_contexts"`
 	SslEvent    *ebpf.Map `ebpf:"ssl_event"`
 	SslEvents   *ebpf.Map `ebpf:"ssl_events"`
+	Targets     *ebpf.Map `ebpf:"targets"`
 }
 
 func (m *opensslMaps) Close() error {
 	return _OpensslClose(
-		m.PidTargets,
 		m.SslContexts,
 		m.SslEvent,
 		m.SslEvents,
+		m.Targets,
 	)
 }
 

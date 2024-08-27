@@ -6,9 +6,8 @@ import (
 )
 
 var (
-	podName         string
-	podNamespace    string
-	ebpfProgramsDir string
+	podName      string
+	podNamespace string
 )
 
 func init() {
@@ -23,12 +22,6 @@ func init() {
 	if podNamespace == "" {
 		logrus.Panic("POD_NAMESPACE environment variable must be set")
 	}
-
-	ebpfProgramsDir = os.Getenv("OTTERIZE_EBPF_PROGRAMS_PATH")
-
-	if ebpfProgramsDir == "" {
-		logrus.Panic("OTTERIZE_EBPF_PROGRAMS_PATH environment variable must be set")
-	}
 }
 
 func PodName() string {
@@ -37,8 +30,4 @@ func PodName() string {
 
 func PodNamespace() string {
 	return podNamespace
-}
-
-func EBPFProgramsDir() string {
-	return ebpfProgramsDir
 }
