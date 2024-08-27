@@ -69,7 +69,7 @@ func (m *ContainerManager) GetContainerInfo(ctx context.Context, containerID str
 	return info, nil
 }
 
-func (m *ContainerManager) InspectContainerExec(pid uint32) (ExecutableInfo, error) {
+func (m *ContainerManager) InspectContainerExec(pid int) (ExecutableInfo, error) {
 	res := ExecutableInfo{}
 	execPath := fmt.Sprintf("/host/proc/%d/exe", pid)
 
