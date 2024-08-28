@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/reconcilers"
 	"github.com/sirupsen/logrus"
@@ -12,15 +13,21 @@ import (
 func RegisterReconcilersOrDie(
 	mgr manager.Manager,
 	client crtClient.Client,
-//bpfmanClient bpfmanclient.BpfmanClient,
 	containerManager *container.ContainerManager,
+	finder *kubefinder.KubeFinder,
 ) {
+	ebpfReconciler, err := reconcilers.NewEBPFReconciler(
+		client,
+		containerManager,
+		finder,
+	)
+
+	if err != nil {
+		logrus.WithError(err).Panic("unable to create EBPF reconciler")
+	}
+
 	reconcilersToRegister := []reconcilers.Reconciler{
-		reconcilers.NewEBPFReconciler(
-			client,
-			//bpfmanClient,
-			containerManager,
-		),
+		ebpfReconciler,
 	}
 
 	for _, r := range reconcilersToRegister {

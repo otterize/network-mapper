@@ -20,6 +20,7 @@ type Objects struct {
 }
 
 type SslEventT = opensslSslEventT
+type SslTargetT = opensslTargetT
 
 var BpfSpecs Specs
 var BpfObjects Objects

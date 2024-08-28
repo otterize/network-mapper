@@ -95,7 +95,7 @@ lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with 
 		--set networkMapper.mapper.image=$(OTRZ_MAPPER_IMAGE_NAME) \
 		--set networkMapper.mapper.pullPolicy=Never \
 		--set intentsOperator.operator.mode=defaultShadow \
-		--set global.otterizeCloud.apiAddress=http://host.lima.internal:3000/api \
+		--set global.otterizeCloud.apiAddress=https://app.staging.otterize.com/api \
 		--set global.otterizeCloud.credentials.clientId=$$client_id \
 		--set global.otterizeCloud.credentials.clientSecret=$$client_secret
 
