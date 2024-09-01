@@ -1,7 +1,8 @@
 FROM golang:1.22.1 AS ebpf-buildenv
 
 RUN apt-get update
-RUN apt-get install -y clang libelf-dev libbpf-dev
+RUN apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-generic
+RUN ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
 
 WORKDIR /src
 
