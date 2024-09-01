@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
 	"github.com/sirupsen/logrus"
@@ -13,15 +14,20 @@ func main() {
 	service.InitializeService()
 	mgr, client := service.CreateControllerRuntimeComponentsOrDie()
 
-	//bpfmanClient := service.ConnectToBpfmanOrDie(signalHandlerCtx)
 	criClient := service.CreateCRIClientOrDie()
 	containerManager := container.NewContainerManager(criClient)
+
+	finder, err := kubefinder.NewKubeFinder(signalHandlerCtx, mgr)
+
+	if err != nil {
+		logrus.WithError(err).Panic("unable to create kube finder")
+	}
 
 	service.RegisterReconcilersOrDie(
 		mgr,
 		client,
-		//bpfmanClient,
 		containerManager,
+		finder,
 	)
 
 	if err := mgr.Start(signalHandlerCtx); err != nil {

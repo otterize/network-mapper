@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/ebpf/openssl"
+	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/labels"
@@ -18,29 +19,32 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const (
-	Kprobe     uint32 = 2
-	Tc         uint32 = 3
-	Tracepoint uint32 = 5
-	Xdp        uint32 = 6
-	Tracing    uint32 = 26
-)
-
 type EBPFReconciler struct {
 	client            client.Client
 	containersManager *container.ContainerManager
-	tracer            ebpf.Tracer
+	tracer            *ebpf.Tracer
+	eventReader       *ebpf.EventReader
 }
 
 func NewEBPFReconciler(
 	client client.Client,
 	containerManager *container.ContainerManager,
-) *EBPFReconciler {
+	finder *kubefinder.KubeFinder,
+) (*EBPFReconciler, error) {
+	eventReader, err := ebpf.NewEventReader(openssl.BpfObjects.SslEvents)
+
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+
+	eventReader.Start()
+
 	return &EBPFReconciler{
 		client:            client,
 		containersManager: containerManager,
-		tracer:            ebpf.NewTracer(),
-	}
+		tracer:            ebpf.NewTracer(eventReader),
+		eventReader:       eventReader,
+	}, nil
 }
 
 func (r *EBPFReconciler) SetupWithManager(mgr manager.Manager) error {
@@ -74,12 +78,13 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		return reconcile.Result{}, nil
 	}
 
-	for _, container := range pod.Status.ContainerStatuses[:1] {
-		containerInfo, err := r.containersManager.GetContainerInfo(ctx, container.ContainerID)
+	for _, container := range pod.Status.ContainerStatuses {
+		containerInfo, err := r.containersManager.GetContainerInfo(ctx, pod, container.ContainerID)
 
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err)
 		}
+
 		err = r.loadBpfProgramToContainer(ctx, containerInfo)
 
 		if err != nil {
@@ -91,11 +96,7 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 }
 
 func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containerInfo container.ContainerInfo) error {
-	logrus.WithContext(ctx).
-		WithField("pid", containerInfo.GetPID()).
-		Warningf("Loading %s", openssl.BpfSpecs.OtterizeSSL_write.Name)
-
-	err := r.tracer.AttachToOpenSSL(containerInfo.GetPID())
+	err := r.tracer.AttachToOpenSSL(containerInfo)
 
 	if err != nil {
 		return errors.Wrap(err)

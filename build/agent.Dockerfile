@@ -3,12 +3,18 @@ FROM golang:1.22.1 AS ebpf-buildenv
 RUN apt-get update
 RUN apt-get install -y clang libelf-dev libbpf-dev
 
-COPY . /src/
 WORKDIR /src
 
+COPY go.mod go.sum ./
 RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
 set -ex
 go mod download
+EOR
+
+COPY . /src/
+
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
 go generate -tags ebpf ./ebpf/...
 EOR
 

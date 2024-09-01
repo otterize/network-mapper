@@ -18,13 +18,17 @@ type opensslSslContextT struct {
 }
 
 type opensslSslEventT struct {
-	Pid       uint32
-	_         [4]byte
-	Timestamp uint64
-	Size      uint32
-	Data      [1024]uint8
-	_         [4]byte
+	Meta struct {
+		Pid       uint32
+		_         [4]byte
+		Timestamp uint64
+		DataSize  uint32
+		_         [4]byte
+	}
+	Data [4096]uint8
 }
+
+type opensslTargetT struct{ Enabled bool }
 
 // loadOpenssl returns the embedded CollectionSpec for openssl.
 func loadOpenssl() (*ebpf.CollectionSpec, error) {
