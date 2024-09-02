@@ -35,6 +35,8 @@ type BpfSslEventT struct {
 		Timestamp uint64
 		DataSize  uint32
 		TotalSize uint32
+		Direction uint32
+		_         [4]byte
 	}
 	Data [30720]uint8
 }

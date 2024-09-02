@@ -30,7 +30,7 @@ func (t *Tracer) AttachToGoTls(cInfo container.ContainerInfo) error {
 	binPath := fmt.Sprintf("/host/proc/%d/root%s", cInfo.Pid, absPath)
 
 	// Dynamically calculate the programs based on the binary
-	programs, err := getBpfPrograms(otrzebpf.Objs, binPath)
+	programs, err := getBpfPrograms(binPath)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -62,7 +62,7 @@ func (t *Tracer) AttachToGoTls(cInfo container.ContainerInfo) error {
 	return nil
 }
 
-func getBpfPrograms(objs otrzebpf.BpfObjects, binPath string) ([]BpfProgram, error) {
+func getBpfPrograms(binPath string) ([]BpfProgram, error) {
 	inspectionResult, err := bintools.ProcessGoBinary(binPath, FunctionsToProcess)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -73,14 +73,14 @@ func getBpfPrograms(objs otrzebpf.BpfObjects, binPath string) ([]BpfProgram, err
 		Type:        BpfEventTypeUProbe,
 		Symbol:      WriteGoTLSFunc,
 		Address:     inspectionResult.Functions[WriteGoTLSFunc].EntryAddress,
-		Handler:     objs.GoTlsWriteEnter,
+		Handler:     otrzebpf.Objs.GoTlsWriteEnter,
 		HandlerSpec: otrzebpf.Specs.GoTlsWriteEnter,
 	})
 	programs = append(programs, BpfProgram{
 		Type:        BpfEventTypeUProbe,
 		Symbol:      ReadGoTLSFunc,
 		Address:     inspectionResult.Functions[ReadGoTLSFunc].EntryAddress,
-		Handler:     objs.GotlsReadEnter,
+		Handler:     otrzebpf.Objs.GotlsReadEnter,
 		HandlerSpec: otrzebpf.Specs.GotlsReadEnter,
 	})
 
@@ -89,7 +89,7 @@ func getBpfPrograms(objs otrzebpf.BpfObjects, binPath string) ([]BpfProgram, err
 			Type:        BpfEventTypeUProbe,
 			Symbol:      ReadGoTLSFunc,
 			Address:     retLoc,
-			Handler:     objs.GotlsReadReturn,
+			Handler:     otrzebpf.Objs.GotlsReadReturn,
 			HandlerSpec: otrzebpf.Specs.GotlsReadReturn,
 		})
 	}

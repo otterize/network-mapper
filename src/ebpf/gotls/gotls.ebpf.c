@@ -55,7 +55,7 @@ static __inline struct go_context_id_t get_context_id(struct pt_regs* ctx) {
 }
 
 // Read and submit the buffer data - split into chunks if necessary.
-static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf) {
+static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf, enum direction_t direction) {
     bpf_printk("reading: %x %d", buf->ptr, buf->len);
 
     // Get the TGID (process ID) for the event
@@ -80,6 +80,7 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf) {
         event->meta.position = bytes_sent;
         event->meta.data_size = size_to_read;
         event->meta.total_size = buf->len;
+        event->meta.direction = direction;
 
         bpf_probe_read(event->data, size_to_read, (void *)buf->ptr);
 
@@ -109,7 +110,7 @@ int go_tls_write_enter(struct pt_regs *ctx) {
     };
 
     // Read the buffer data.
-    read_buffer(ctx, &buf);
+    read_buffer(ctx, &buf, EGRESS);
     return 0;
 }
 
@@ -168,6 +169,6 @@ int gotls_read_return(struct pt_regs *ctx) {
     bpf_map_delete_elem(&go_tls_context, &ctx_id);
 
     // Read the buffer data.
-    read_buffer(ctx, &buf);
+    read_buffer(ctx, &buf, INGRESS);
     return 0;
 }

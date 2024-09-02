@@ -39,8 +39,8 @@ func NewEBPFReconciler(
 		return nil, errors.Wrap(err)
 	}
 
-	//eventReader.Start()
-	ebpf.ReadEvents()
+	eventReader.Start()
+	//eventReader.ReadEvents()
 
 	return &EBPFReconciler{
 		client:            client,

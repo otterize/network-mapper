@@ -51,3 +51,11 @@ func getPIDNamespaceInode(pid int) (uint32, error) {
 
 	return pidNamespace.Inode, nil
 }
+
+func Data2Bytes(bs []uint8) []byte {
+	b := make([]byte, len(bs))
+	for i, v := range bs {
+		b[i] = byte(v)
+	}
+	return b
+}

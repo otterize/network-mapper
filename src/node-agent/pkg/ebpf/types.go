@@ -4,6 +4,14 @@ import (
 	"github.com/cilium/ebpf"
 )
 
+// Direction signifies the traffic direction of a BPF event
+type Direction int
+
+const (
+	DirectionEgress Direction = iota
+	DirectionIngress
+)
+
 type BpfEventType string
 
 const (
