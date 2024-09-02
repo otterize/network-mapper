@@ -171,5 +171,3 @@ int gotls_read_return(struct pt_regs *ctx) {
     read_buffer(ctx, &buf);
     return 0;
 }
-
-char __license[] SEC("license") = "Dual MIT/GPL";

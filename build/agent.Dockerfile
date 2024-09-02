@@ -7,15 +7,17 @@ RUN ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
 WORKDIR /src
 
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    set -ex \
-    go mod download
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
+go mod download
+EOR
 
 COPY . /src/
 
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    set -ex \
-    go generate -tags ebpf ./ebpf/...
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
+go generate -tags ebpf ./ebpf/...
+EOR
 
 FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine AS buildenv
 RUN apk add --no-cache ca-certificates git protoc
@@ -38,9 +40,11 @@ ARG TARGETOS
 ARG TARGETARCH
 
 COPY --from=ebpf-buildenv /src/ebpf /src/ebpf
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    set -ex \
-    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd/agent
+RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
+set -ex
+CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd/agent
+EOR
+
 
 # add version file
 ARG VERSION

@@ -99,5 +99,3 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
 
     return;
 }
-
-char _license[] SEC("license") = "GPL";
