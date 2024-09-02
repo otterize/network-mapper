@@ -1,3 +1,5 @@
+#pragma once
+
 #ifdef TARGET_ARCH_amd64
 #include "vmlinux_x86_64.h"
 #endif

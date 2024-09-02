@@ -54,6 +54,8 @@ lima-kubeconfig: ## Copies kubeconfig from lima to host
 
 lima-copy-images: ## Copies the images to lima
 	@echo "${PROMPT_COLOR}Copying images to Lima...${PROMPT_NC}"
+	mkdir -p $(LIMA_TEMP_DIR)images
+
 	docker save -o $(LIMA_TEMP_DIR)images/$(OTRZ_AGENT_IMAGE_NAME).tar $(OTRZ_AGENT_IMAGE_FULL_NAME)
 	docker save -o $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar $(OTRZ_MAPPER_IMAGE_FULL_NAME)
 

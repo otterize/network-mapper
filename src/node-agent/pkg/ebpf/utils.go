@@ -8,20 +8,6 @@ import (
 	"syscall"
 )
 
-func getProbeKey(
-	binaryInode uint64,
-	fnName string,
-	retprobe bool,
-	programName string,
-) probeKey {
-	return probeKey{
-		inode:       binaryInode,
-		fnName:      fnName,
-		retprobe:    retprobe,
-		programName: programName,
-	}
-}
-
 func getFileInode(path string) (uint64, error) {
 	stat, err := os.Stat(path)
 
@@ -64,15 +50,4 @@ func getPIDNamespaceInode(pid int) (uint32, error) {
 	}
 
 	return pidNamespace.Inode, nil
-}
-
-func getIdAsCharSlice(id string) [64]int8 {
-	var result [64]int8
-	bytes := []byte(id)
-
-	for i := 0; i < len(bytes); i++ {
-		result[i] = int8(bytes[i])
-	}
-
-	return result
 }

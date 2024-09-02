@@ -8,11 +8,12 @@ import (
 	"github.com/cilium/ebpf/perf"
 	"github.com/otterize/iamlive/iamlivecore"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/ebpf/openssl"
+	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 type EventReader struct {
@@ -26,9 +27,7 @@ func init() {
 	iamlivecore.ReadServiceFiles()
 }
 
-func NewEventReader(
-	perfMap *ebpf.Map,
-) (*EventReader, error) {
+func NewEventReader(perfMap *ebpf.Map) (*EventReader, error) {
 	perfReader, err := perf.NewReader(perfMap, 4096)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -59,7 +58,7 @@ func (e *EventReader) Start() {
 				continue
 			}
 
-			var event openssl.SslEventT
+			var event otrzebpf.BpfSslEventT
 			byteReader := bytes.NewReader(record.RawSample)
 
 			err = binary.Read(byteReader, binary.LittleEndian, &event.Meta)
@@ -93,6 +92,54 @@ func (e *EventReader) Start() {
 			logrus.Println("HTTP request handled", req.RemoteAddr)
 		}
 	}()
+}
+
+func ReadEvents() {
+	go func() {
+		reader, err := perf.NewReader(otrzebpf.Objs.SslEvents, os.Getpagesize()*64)
+		if err != nil {
+			logrus.Fatalf("Failed to create reader: %v", err)
+		}
+		defer reader.Close()
+
+		var event otrzebpf.BpfSslEventT
+		for {
+			logrus.Debug("Reading go events...")
+			record, err := reader.Read()
+			if err != nil {
+				if errors.Is(err, perf.ErrClosed) {
+					return
+				}
+				logrus.Printf("Error reading from perf event reader: %s", err)
+				continue
+			}
+
+			if record.LostSamples != 0 {
+				logrus.Printf("Perf event ring buffer full, dropped %d samples", record.LostSamples)
+				continue
+			}
+
+			// Parse the perf event entry into a bpfEvent structure.
+			if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &event); err != nil {
+				logrus.Printf("parsing perf event: %s", err)
+				continue
+			}
+
+			msgString := B2S(event.Data[:event.Meta.DataSize])
+			logrus.Debug("  Pid: %d\n", event.Meta.Pid)
+			logrus.Printf("  Msg pos: %d\n", event.Meta.Position)
+			logrus.Printf("  Msg size: %d\n", event.Meta.TotalSize)
+			logrus.Printf("  Msg: %s\n", msgString)
+		}
+	}()
+}
+
+func B2S(bs []uint8) string {
+	b := make([]byte, len(bs))
+	for i, v := range bs {
+		b[i] = byte(v)
+	}
+	return string(b)
 }
 
 func (e *EventReader) Close() error {
