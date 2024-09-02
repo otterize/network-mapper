@@ -39,7 +39,7 @@
 static __inline struct go_context_id_t get_context_id(struct pt_regs* ctx) {
     // Get the current process ID
     __u64 id = bpf_get_current_pid_tgid();
-    __u32 tgid = id >> 32;
+    __u64 tgid = id >> 32;
 
     // Get the goroutine ID
     __u64 goid;
@@ -56,7 +56,7 @@ static __inline struct go_context_id_t get_context_id(struct pt_regs* ctx) {
 
 // Read and submit the buffer data - split into chunks if necessary.
 static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf) {
-    bpf_printk("reading: %x %d \n", buf->ptr, buf->len);
+    bpf_printk("reading: %x %d", buf->ptr, buf->len);
 
     // Get the TGID (process ID) for the event
     struct go_context_id_t ctx_id = get_context_id(ctx);
@@ -99,7 +99,7 @@ int go_tls_write_enter(struct pt_regs *ctx) {
 
     // Get the context ID.
     struct go_context_id_t ctx_id = get_context_id(ctx);
-    bpf_printk("uprobe invoked on crypto/tls connection write enter with goid: %d", ctx_id.goid);
+    bpf_printk("uprobe invoked on crypto/tls connection write enter with id: %d-%d", ctx_id.pid, ctx_id.goid);
 
     // Get the buffer slice as a struct from the registers.
     struct go_slice_t buf = {
@@ -122,7 +122,7 @@ int gotls_read_enter(struct pt_regs *ctx) {
     // Get the context ID.
     struct go_context_id_t ctx_id = get_context_id(ctx);
 
-    bpf_printk("uprobe invoked on crypto/tls connection read enter with goid: %d", ctx_id.goid);
+    bpf_printk("uprobe invoked on crypto/tls connection read enter with id: %d-%d", ctx_id.pid, ctx_id.goid);
 
     // Get the buffer slice as a struct from the registers.
     struct go_slice_t buf = {
@@ -133,8 +133,8 @@ int gotls_read_enter(struct pt_regs *ctx) {
 
     // Save the buffer data (specifically the pointer).
     long err = bpf_map_update_elem(&go_tls_context, &ctx_id, &buf, BPF_ANY);
-    if (err != 0) {
-        bpf_printk("error saving buffer data: %d\n", err);
+    if (err) {
+        bpf_printk("error saving buffer data: %d with id: %d-%d", err, ctx_id.pid, ctx_id.goid);
     }
 
     return 0;
@@ -151,11 +151,11 @@ int gotls_read_return(struct pt_regs *ctx) {
     struct go_slice_t *buf_ptr;
     buf_ptr = bpf_map_lookup_elem(&go_tls_context, &ctx_id);
     if (buf_ptr == NULL){
-        bpf_printk("uprobe failed on crypto/tls connection read return with goid: %d", ctx_id.goid);
+        bpf_printk("uprobe miss on crypto/tls connection read return with id: %d-%d", ctx_id.pid, ctx_id.goid);
         return 0;
     }
 
-    bpf_printk("uprobe invoked on crypto/tls connection read return with goid: %d", ctx_id.goid);
+    bpf_printk("uprobe invoked on crypto/tls connection read return with id: %d-%d", ctx_id.pid, ctx_id.goid);
 
     // Create a new struct from the pointer and the return value.
     struct go_slice_t buf = {

@@ -36,15 +36,15 @@ struct ssl_context_t {
     __u64 buffer;
 };
 
-struct go_context_id_t {
-  __u32 pid;
-  __u64 goid;
-};
-
 struct go_slice_t {
     __u64 ptr;
     int len;
     int cap;
+};
+
+struct go_context_id_t {
+  __u64 pid;
+  __u64 goid;
 };
 
 // ####################################################################### //
@@ -68,7 +68,6 @@ struct {
     __type(key, __u32);
     __type(value, struct target_t);
 } targets SEC(".maps");
-
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);

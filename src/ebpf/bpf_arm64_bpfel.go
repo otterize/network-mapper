@@ -13,8 +13,7 @@ import (
 )
 
 type BpfGoContextIdT struct {
-	Pid  uint32
-	_    [4]byte
+	Pid  uint64
 	Goid uint64
 }
 
