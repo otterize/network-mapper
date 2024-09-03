@@ -76,7 +76,7 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf, en
         __u64 size_to_read = buf->len;
         if (size_to_read > MAX_DATA_SIZE) size_to_read = MAX_DATA_SIZE;
 
-        event->meta.pid = ctx_id.goid;
+        event->meta.pid = ctx_id.pid;
         event->meta.position = bytes_sent;
         event->meta.data_size = size_to_read;
         event->meta.total_size = buf->len;

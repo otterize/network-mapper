@@ -3,6 +3,7 @@ PROMPT_NC=\033[0m # No Color
 
 HELM_CHARTS_PATH = ../helm-charts/otterize-kubernetes
 
+OTRZ_CLUSTER = https://app.staging.otterize.com/api
 OTRZ_NAMESPACE = otterize-system
 OTRZ_IMAGE_TAG = 0.0.0
 OTRZ_IMAGE_REGISTRY = otterize
@@ -97,7 +98,7 @@ lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with 
 		--set networkMapper.mapper.image=$(OTRZ_MAPPER_IMAGE_NAME) \
 		--set networkMapper.mapper.pullPolicy=Never \
 		--set intentsOperator.operator.mode=defaultShadow \
-		--set global.otterizeCloud.apiAddress=https://app.staging.otterize.com/api \
+		--set global.otterizeCloud.apiAddress=$(OTRZ_CLUSTER) \
 		--set global.otterizeCloud.credentials.clientId=$$client_id \
 		--set global.otterizeCloud.credentials.clientSecret=$$client_secret
 

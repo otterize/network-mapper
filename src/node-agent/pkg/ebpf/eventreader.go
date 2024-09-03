@@ -3,6 +3,7 @@ package ebpf
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/perf"
 	"github.com/otterize/iamlive/iamlivecore"
@@ -85,14 +86,19 @@ func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, error) {
 }
 
 func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT) error {
+	// TODO: delete
+	data := data2Bytes(event.Data[:event.Meta.DataSize])
+	fmt.Printf("\nevent: %d | %d | %d \n", event.Meta.TotalSize, event.Meta.DataSize, event.Meta.Position)
+	fmt.Printf("raw data: %s\n", string(data))
+
 	// Try to parse the event as an HTTP message
-	err := e.handleHttpRequest(event)
-	if err == nil {
+	errReq := e.handleHttpRequest(event)
+	if errReq == nil {
 		return nil
 	}
 
-	err = e.handleHttpResponse(event)
-	if err == nil {
+	errRes := e.handleHttpResponse(event)
+	if errRes == nil {
 		return nil
 	}
 
@@ -102,11 +108,7 @@ func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT) error {
 	// Try to parse the event as an FTP message
 	// TODO: Implement
 
-	// log raw message that could not be parsed
-	data := data2Bytes(event.Data[:event.Meta.DataSize])
-	logrus.Debug("error parsing message: %s\n", string(data))
-
-	return err
+	return fmt.Errorf("%w\n%w", errReq, errRes)
 }
 
 func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT) error {
@@ -122,7 +124,7 @@ func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT) error {
 		return nil
 	}
 
-	logrus.Debug("Got HTTP request: %s\n", string(body))
+	logrus.Debugf("Got HTTP request: %s\n", string(body))
 
 	// Handle outgoing HTTP requests
 	if Direction(event.Meta.Direction) == DirectionEgress {
@@ -151,7 +153,7 @@ func (e *EventReader) handleHttpResponse(event otrzebpf.BpfSslEventT) error {
 		return nil
 	}
 
-	logrus.Debug("Got HTTP response: %s\n", string(body))
+	logrus.Debugf("Got HTTP response: %s\n", string(body))
 
 	return nil
 }
