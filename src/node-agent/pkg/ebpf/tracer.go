@@ -44,7 +44,7 @@ func (t *Tracer) attachBpfProgram(ex *link.Executable, binaryInode uint64, progr
 		return fmt.Errorf("invalid program type: %s", program.Type)
 	}
 	if err != nil {
-		return fmt.Errorf("could not attach probe: %s", err)
+		return fmt.Errorf("error attaching probe: %s", err)
 	}
 
 	t.probes[key] = probe
@@ -76,8 +76,6 @@ func (t *Tracer) addTarget(container container.ContainerInfo) error {
 }
 
 func (t *Tracer) removeTarget(info container.ContainerInfo) error {
-	// TODO: cleanup probes using probe.Close()
-
 	pidNamespaceInode, err := getPIDNamespaceInode(info.Pid)
 
 	if err != nil {

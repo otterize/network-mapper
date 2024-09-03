@@ -19,10 +19,6 @@ const (
 	BpfEventTypeURetProbe BpfEventType = "URetProbe"
 )
 
-type HttpEvent struct {
-	Direction Direction
-}
-
 type ProbeKey struct {
 	inode       uint64
 	fnName      string
