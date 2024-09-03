@@ -1,9 +1,6 @@
 package ebpf
 
 import (
-	"bufio"
-	"bytes"
-	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/pkg/errors"
 	"github.com/prometheus/procfs"
 	"os"
@@ -47,17 +44,4 @@ func getPIDNamespaceInode(pid int) (uint32, error) {
 	}
 
 	return pidNamespace.Inode, nil
-}
-
-func getBpfEventMessageReader(event otrzebpf.BpfSslEventT) *bufio.Reader {
-	data := data2Bytes(event.Data[:event.Meta.DataSize])
-	return bufio.NewReader(bytes.NewReader(data))
-}
-
-func data2Bytes(bs []uint8) []byte {
-	b := make([]byte, len(bs))
-	for i, v := range bs {
-		b[i] = byte(v)
-	}
-	return b
 }

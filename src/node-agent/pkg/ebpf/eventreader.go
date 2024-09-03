@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -58,13 +59,13 @@ func (e *EventReader) Start() {
 			}
 
 			// Parse the perf event entry into a bpfEvent structure.
-			event, err := e.parseEvent(record.RawSample)
+			event, data, err := e.parseEvent(record.RawSample)
 			if err != nil {
 				logrus.Printf("error parsing perf event: %s", err)
 				continue
 			}
 
-			err = e.handleEvent(event)
+			err = e.handleEvent(event, data)
 			if err != nil {
 				logrus.Printf("error handling event: %s", err)
 				continue
@@ -73,31 +74,37 @@ func (e *EventReader) Start() {
 	}()
 }
 
-func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, error) {
+func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, []byte, error) {
 	var event otrzebpf.BpfSslEventT
 
 	// Parse the perf event entry into a bpfEvent structure.
 	byteReader := bytes.NewReader(raw)
-	if err := binary.Read(byteReader, binary.LittleEndian, &event); err != nil {
-		return event, err
+	if err := binary.Read(byteReader, binary.LittleEndian, &event.Meta); err != nil {
+		return event, nil, errors.Wrap(err)
 	}
 
-	return event, nil
+	// Read the exact amount of data for the event.
+	dataBuffer := bufio.NewReaderSize(byteReader, int(event.Meta.DataSize))
+	data, err := io.ReadAll(dataBuffer)
+	if err != nil {
+		return event, nil, errors.Wrap(err)
+	}
+
+	return event, data, nil
 }
 
-func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT) error {
+func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT, data []byte) error {
 	// TODO: delete
-	data := data2Bytes(event.Data[:event.Meta.DataSize])
 	fmt.Printf("\nevent: %d | %d | %d \n", event.Meta.TotalSize, event.Meta.DataSize, event.Meta.Position)
 	fmt.Printf("raw data: %s\n", string(data))
 
 	// Try to parse the event as an HTTP message
-	errReq := e.handleHttpRequest(event)
+	errReq := e.handleHttpRequest(event, data)
 	if errReq == nil {
 		return nil
 	}
 
-	errRes := e.handleHttpResponse(event)
+	errRes := e.handleHttpResponse(event, data)
 	if errRes == nil {
 		return nil
 	}
@@ -111,17 +118,16 @@ func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT) error {
 	return fmt.Errorf("%w\n%w", errReq, errRes)
 }
 
-func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT) error {
-	reader := getBpfEventMessageReader(event)
-
+func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT, data []byte) error {
+	reader := bufio.NewReader(bytes.NewReader(data))
 	req, err := http.ReadRequest(reader)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return nil
+		return errors.Wrap(err)
 	}
 
 	logrus.Debugf("Got HTTP request: %s\n", string(body))
@@ -140,17 +146,16 @@ func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT) error {
 	return nil
 }
 
-func (e *EventReader) handleHttpResponse(event otrzebpf.BpfSslEventT) error {
-	reader := getBpfEventMessageReader(event)
-
+func (e *EventReader) handleHttpResponse(event otrzebpf.BpfSslEventT, data []byte) error {
+	reader := bufio.NewReader(bytes.NewReader(data))
 	resp, err := http.ReadResponse(reader, nil)
 	if err != nil {
-		return err
+		return errors.Wrap(err)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil
+		return errors.Wrap(err)
 	}
 
 	logrus.Debugf("Got HTTP response: %s\n", string(body))

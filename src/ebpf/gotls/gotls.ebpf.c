@@ -85,7 +85,13 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf, en
         bpf_probe_read(event->data, size_to_read, (void *)buf->ptr);
 
         // Submit the event to the event array
-        bpf_perf_event_output(ctx, &ssl_events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+        bpf_perf_event_output(
+            ctx,
+            &ssl_events,
+            BPF_F_CURRENT_CPU,
+            event,
+            (sizeof(struct ssl_event_meta_t) + event->meta.data_size) & (MAX_DATA_SIZE - 1)
+        );
 
         if (size_to_read == bytes_remaining) break;
         bytes_sent += size_to_read;

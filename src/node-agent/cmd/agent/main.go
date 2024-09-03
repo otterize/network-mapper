@@ -4,11 +4,18 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func main() {
+	logrus.SetLevel(logrus.InfoLevel)
+	if viper.GetBool(sharedconfig.DebugKey) {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	signalHandlerCtx := ctrl.SetupSignalHandler()
 
 	service.InitializeService()
