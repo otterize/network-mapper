@@ -159,9 +159,9 @@ type AccessGraphFilter {
 type AccessLog {
 	clusters: [Cluster!]!
 	namespaces: [Namespace!]!
-	serviceCount: Int!
 	entries: [AccessLogEdge!]!
 	timeRange: TimeRange!
+	totalCount: Int!
 }
 
 type AccessLogEdge {
@@ -611,7 +611,9 @@ input ExternalTrafficIntentInput {
 input ExternallyAccessibleServiceInput {
 	namespace: String!
 	serverName: String!
+	serviceName: String
 	referredByIngress: Boolean!
+	hasInternetFacingAWSALBIngress: Boolean
 	serviceType: KubernetesServiceType!
 }
 
@@ -816,13 +818,22 @@ input InputAccessGraphFilter {
 	featureFlags: InputFeatureFlags
 }
 
+""" Access log filter """
 input InputAccessLogFilter {
+""" Access log filter """
 	clusterIds: InputIDFilterValue
+""" Access log filter """
 	serviceIds: InputIDFilterValue
+""" Access log filter """
 	namespaceIds: InputIDFilterValue
+""" Access log filter """
 	environmentIds: InputIDFilterValue
+""" Access log filter """
 	timeRange: TimeRangeInput
+""" Access log filter """
 	featureFlags: InputFeatureFlags
+""" Access log filter """
+	pagination: PaginationInput
 }
 
 input InputFeatureFlags {
@@ -1077,6 +1088,7 @@ input IntentsOperatorConfigurationInput {
 	databaseEnforcementEnabled: Boolean
 	enforcedNamespaces: [String!]
 	ingressControllerConfig: [IngressControllerConfigInput!]
+	awsALBLoadBalancerExemptionEnabled: Boolean
 }
 
 type IntentsOperatorState {
@@ -1748,6 +1760,11 @@ input OrganizationSettingsInput {
 	enforcedRegulations: [String]
 }
 
+input PaginationInput {
+	offset: Int
+	limit: Int
+}
+
 enum PathType {
 	IMPLEMENTATION_SPECIFIC
 	PREFIX
@@ -1940,6 +1957,10 @@ enum RegulationCode {
 	PCI_4_0_1_3_6
 	ZERO_TRUST
 	ZERO_TRUST_SENSITIVE
+	ZERO_TRUST_DEFAULT_DENY
+	ZERO_TRUST_EGRESS_ACCESS_COVERED
+	ZERO_TRUST_EXTERNAL_INGRESS_TAGGED
+	ZERO_TRUST_ALL_INTRA_CLUSTER_ACCESS_COVERED
 }
 
 enum RegulationStandard {
@@ -2050,6 +2071,7 @@ type Service {
 	azureResource: AzureResource
 	discoveredByIntegration: Integration
 	awsVisibility: AWSVisibility
+	databaseIntegration: Integration
 	tlsKeyPair: KeyPair!
 }
 
@@ -2286,6 +2308,7 @@ enum WorkloadTag {
 	PII
 	HIPAA
 	Sensitive
+	External
 }
 
 

@@ -1,20 +1,15 @@
 //go:build ignore
-#include <linux/ptrace.h>
-#include <linux/types.h>
-#include <linux/bpf.h>
-#include <bpf/bpf_tracing.h>
 
-// The maximum percpu map element size is 32KB - we set it at 30KB.
-// Source: https://github.com/iovisor/bcc/issues/2519
-#define MAX_PER_CPU_EL_SIZE 30720 // 30KB max buffer size
-
-// Set max chunks we allow the buffer to be split into.
-// TODO: currently this is a made up number
-#define MAX_CHUNKS 4
+#include "headers.h"
+#include "maps.h"
+#include "common.h"
 
 // TODO: add some return values and error handling
 
-// --------------------------------------------------------------------
+// ####################################################################### //
+// Definitions
+// ####################################################################### //
+
 // Gets the ID of the go routine - we are accessing the go id depending on the architecture.
 // This code is supported only for ARM64 and x86_64 architectures and go versions 1.18 and above.
 // For ARM64 - https://go.googlesource.com/go/+/refs/heads/master/src/cmd/compile/abi-internal.md#arm64-architecture
@@ -35,70 +30,16 @@
 #define GO_TLS_BUFFER_LEN(ctx) ((int)PT_REGS_PARM3(ctx))
 #define GO_TLS_BUFFER_CAP(ctx) ((int)PT_REGS_PARM4(ctx))
 
-// --------------------------------------------------------------------
-
-const int key = 0;
-
-// ####################################################################### //
-// Structs
-// ####################################################################### //
-
-struct go_slice {
-    __u64 ptr;
-    int len;
-    int cap;
-};
-
-struct context_id {
-  __u32 pid;
-  __u64 goid;
-};
-
-struct event {
-    struct meta_t {
-    	__u32 pid;
-    	__u64 pos;
-    	__u64 buf_size;
-    	__u64 msg_size;
-    } meta;
-	char msg[MAX_PER_CPU_EL_SIZE];
-};
-
-// ####################################################################### //
-// BPF Maps
-// ####################################################################### //
-
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __type(key, struct context_id);
-    __type(value, struct go_slice);
-    __uint(max_entries, 1024);
-} go_tls_context SEC(".maps");
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);
-    __type(key, __u32);
-    __type(value, struct event);
-} events_map SEC(".maps");
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-} events SEC(".maps");
-
-// Force emitting struct event into the ELF.
-const struct event *unused __attribute__((unused));
-
 // ####################################################################### //
 // Functions
 // ####################################################################### //
 
 // Get the context ID from the current process and goroutine.
 // Currently we are truncating the goid to 32 bits to fit into the context ID that acts as a key in the map.
-static __inline struct context_id get_context_id(struct pt_regs* ctx) {
+static __inline struct go_context_id_t get_context_id(struct pt_regs* ctx) {
     // Get the current process ID
     __u64 id = bpf_get_current_pid_tgid();
-    __u32 tgid = id >> 32;
+    __u64 tgid = id >> 32;
 
     // Get the goroutine ID
     __u64 goid;
@@ -106,7 +47,7 @@ static __inline struct context_id get_context_id(struct pt_regs* ctx) {
     bpf_probe_read_user(&goid, sizeof(__u64), (void*)(g_ptr + GOROUTINE_ID_OFFSET));
 
     // Combine the process ID and the goroutine ID to get a unique context ID.
-    struct context_id ctxid = {
+    struct go_context_id_t ctxid = {
         .pid = tgid,
         .goid = goid
     };
@@ -114,17 +55,17 @@ static __inline struct context_id get_context_id(struct pt_regs* ctx) {
 }
 
 // Read and submit the buffer data - split into chunks if necessary.
-static __inline void read_buffer(struct pt_regs *ctx, struct go_slice *buf) {
-    bpf_printk("reading: %x %d \n", buf->ptr, buf->len);
+static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf, enum direction_t direction) {
+    bpf_printk("reading: %x %d", buf->ptr, buf->len);
 
     // Get the TGID (process ID) for the event
-    struct context_id ctx_id = get_context_id(ctx);
+    struct go_context_id_t ctx_id = get_context_id(ctx);
 
     __u64 bytes_sent = 0;
     unsigned int i;
 
     // Initialize the event from the map.
-    struct event *event = bpf_map_lookup_elem(&events_map, &key);
+    struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &ZERO);
     if (event == NULL) return;
 
     #pragma unroll
@@ -133,17 +74,24 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice *buf) {
 
         // Calculate the size to read
         __u64 size_to_read = buf->len;
-        if (size_to_read > MAX_PER_CPU_EL_SIZE) size_to_read = MAX_PER_CPU_EL_SIZE;
+        if (size_to_read > MAX_DATA_SIZE) size_to_read = MAX_DATA_SIZE;
 
-        event->meta.pid = ctx_id.goid;
-        event->meta.pos = bytes_sent;
-        event->meta.buf_size = buf->len;
-        event->meta.msg_size = size_to_read;
+        event->meta.pid = ctx_id.pid;
+        event->meta.position = bytes_sent;
+        event->meta.data_size = size_to_read;
+        event->meta.total_size = buf->len;
+        event->meta.direction = direction;
 
-        bpf_probe_read(event->msg, size_to_read, (void *)buf->ptr);
+        bpf_probe_read(event->data, size_to_read, (void *)buf->ptr);
 
         // Submit the event to the event array
-        bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, event, sizeof(*event));
+        bpf_perf_event_output(
+            ctx,
+            &ssl_events,
+            BPF_F_CURRENT_CPU,
+            event,
+            (sizeof(struct ssl_event_meta_t) + event->meta.data_size) & (MAX_DATA_SIZE - 1)
+        );
 
         if (size_to_read == bytes_remaining) break;
         bytes_sent += size_to_read;
@@ -154,19 +102,21 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice *buf) {
 // Function symbol:    crypto/tls.(*Conn).Write
 SEC("uprobe/go_tls_write_enter")
 int go_tls_write_enter(struct pt_regs *ctx) {
+    if (!shouldTrace()) return 0;
+
     // Get the context ID.
-    struct context_id ctx_id = get_context_id(ctx);
-    bpf_printk("uprobe invoked on crypto/tls connection write enter with goid: %d", ctx_id.goid);
+    struct go_context_id_t ctx_id = get_context_id(ctx);
+    bpf_printk("uprobe invoked on crypto/tls connection write enter with id: %d-%d", ctx_id.pid, ctx_id.goid);
 
     // Get the buffer slice as a struct from the registers.
-    struct go_slice buf = {
+    struct go_slice_t buf = {
         .ptr = GO_TLS_BUFFER_PTR(ctx),
         .len = GO_TLS_BUFFER_LEN(ctx),
         .cap = GO_TLS_BUFFER_CAP(ctx)
     };
 
     // Read the buffer data.
-    read_buffer(ctx, &buf);
+    read_buffer(ctx, &buf, EGRESS);
     return 0;
 }
 
@@ -174,13 +124,15 @@ int go_tls_write_enter(struct pt_regs *ctx) {
 // Function symbol:    crypto/tls.(*Conn).Read
 SEC("uprobe/go_tls_read_enter")
 int gotls_read_enter(struct pt_regs *ctx) {
-    // Get the context ID.
-    struct context_id ctx_id = get_context_id(ctx);
+    if (!shouldTrace()) return 0;
 
-    bpf_printk("uprobe invoked on crypto/tls connection read enter with goid: %d", ctx_id.goid);
+    // Get the context ID.
+    struct go_context_id_t ctx_id = get_context_id(ctx);
+
+    bpf_printk("uprobe invoked on crypto/tls connection read enter with id: %d-%d", ctx_id.pid, ctx_id.goid);
 
     // Get the buffer slice as a struct from the registers.
-    struct go_slice buf = {
+    struct go_slice_t buf = {
         .ptr = GO_TLS_BUFFER_PTR(ctx),
         .len = GO_TLS_BUFFER_LEN(ctx),
         .cap = GO_TLS_BUFFER_CAP(ctx)
@@ -188,8 +140,8 @@ int gotls_read_enter(struct pt_regs *ctx) {
 
     // Save the buffer data (specifically the pointer).
     long err = bpf_map_update_elem(&go_tls_context, &ctx_id, &buf, BPF_ANY);
-    if (err != 0) {
-        bpf_printk("error saving buffer data: %d\n", err);
+    if (err) {
+        bpf_printk("error saving buffer data: %d with id: %d-%d", err, ctx_id.pid, ctx_id.goid);
     }
 
     return 0;
@@ -200,17 +152,20 @@ int gotls_read_enter(struct pt_regs *ctx) {
 SEC("uprobe/go_tls_read_return")
 int gotls_read_return(struct pt_regs *ctx) {
     // Get the context ID.
-    struct context_id ctx_id = get_context_id(ctx);
+    struct go_context_id_t ctx_id = get_context_id(ctx);
 
     // Get the buffer slice from the map - populated in the enter probe.
-    struct go_slice *buf_ptr;
+    struct go_slice_t *buf_ptr;
     buf_ptr = bpf_map_lookup_elem(&go_tls_context, &ctx_id);
-    if (buf_ptr == NULL) return 0;
+    if (buf_ptr == NULL){
+        bpf_printk("uprobe miss on crypto/tls connection read return with id: %d-%d", ctx_id.pid, ctx_id.goid);
+        return 0;
+    }
 
-    bpf_printk("uprobe invoked on crypto/tls connection read return with goid: %d", ctx_id.goid);
+    bpf_printk("uprobe invoked on crypto/tls connection read return with id: %d-%d", ctx_id.pid, ctx_id.goid);
 
     // Create a new struct from the pointer and the return value.
-    struct go_slice buf = {
+    struct go_slice_t buf = {
         .ptr = buf_ptr->ptr,
         .len = (int)PT_REGS_PARM1(ctx),
         .cap = 0
@@ -220,8 +175,6 @@ int gotls_read_return(struct pt_regs *ctx) {
     bpf_map_delete_elem(&go_tls_context, &ctx_id);
 
     // Read the buffer data.
-    read_buffer(ctx, &buf);
+    read_buffer(ctx, &buf, INGRESS);
     return 0;
 }
-
-char __license[] SEC("license") = "Dual MIT/GPL";

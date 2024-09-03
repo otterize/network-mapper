@@ -1,63 +1,50 @@
 package ebpf
 
 import (
+	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
-	"github.com/otterize/network-mapper/src/ebpf/openssl"
+	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/pkg/errors"
 )
 
-type probeKey struct {
-	inode       uint64
-	fnName      string
-	retprobe    bool
-	programName string
-}
-
 type Tracer struct {
 	targetMap *ebpf.Map
-	probes    map[probeKey]link.Link
+	probes    map[ProbeKey]link.Link
 	reader    *EventReader
 }
 
-func NewTracer(
-	reader *EventReader,
-) *Tracer {
-	t := &Tracer{
-		targetMap: openssl.BpfObjects.Maps.Targets,
-		probes:    make(map[probeKey]link.Link),
+func NewTracer(reader *EventReader) *Tracer {
+	return &Tracer{
+		targetMap: otrzebpf.Objs.Targets,
+		probes:    make(map[ProbeKey]link.Link),
 		reader:    reader,
 	}
-
-	return t
 }
 
-func (t *Tracer) attachToFunction(
-	ex *link.Executable,
-	binaryInode uint64,
-	fnName string,
-	retprobe bool,
-	program *ebpf.Program,
-	programName string,
-) error {
-	key := getProbeKey(binaryInode, fnName, retprobe, programName)
-
+func (t *Tracer) attachBpfProgram(ex *link.Executable, binaryInode uint64, program BpfProgram) (err error) {
+	key := getProbeKey(program, binaryInode)
 	if _, ok := t.probes[key]; ok {
 		return nil
 	}
 
-	var probe link.Link
-	var err error
-
-	if retprobe {
-		probe, err = ex.Uretprobe(fnName, program, nil)
-	} else {
-		probe, err = ex.Uprobe(fnName, program, nil)
+	opts := &link.UprobeOptions{}
+	if program.Address != 0 {
+		opts.Address = program.Address
 	}
 
+	var probe link.Link
+	switch program.Type {
+	case BpfEventTypeUProbe:
+		probe, err = ex.Uprobe(program.Symbol, program.Handler, opts)
+	case BpfEventTypeURetProbe:
+		probe, err = ex.Uretprobe(program.Symbol, program.Handler, opts)
+	default:
+		return fmt.Errorf("invalid program type: %s", program.Type)
+	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to attach to %s", fnName)
+		return fmt.Errorf("error attaching probe: %s", err)
 	}
 
 	t.probes[key] = probe
@@ -74,7 +61,7 @@ func (t *Tracer) addTarget(container container.ContainerInfo) error {
 
 	err = t.targetMap.Update(
 		pidNamespaceInode,
-		openssl.SslTargetT{
+		otrzebpf.BpfTargetT{
 			Enabled: true,
 		},
 		ebpf.UpdateAny)

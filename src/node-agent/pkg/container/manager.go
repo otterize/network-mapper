@@ -4,7 +4,6 @@ import (
 	"context"
 	"debug/elf"
 	"encoding/json"
-	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/bintools/bininfo"
 	"github.com/sirupsen/logrus"
@@ -73,7 +72,7 @@ func (m *ContainerManager) GetContainerInfo(ctx context.Context, pod v1.Pod, con
 
 func (m *ContainerManager) InspectContainerExec(pid int) (ExecutableInfo, error) {
 	res := ExecutableInfo{}
-	execPath := fmt.Sprintf("/host/proc/%d/exe", pid)
+	execPath := GetContainerExecPath(pid)
 
 	// Open the executable file
 	f, err := os.Open(execPath)

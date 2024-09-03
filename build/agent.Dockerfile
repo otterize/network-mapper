@@ -45,12 +45,11 @@ set -ex
 CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /otterize-node-agent ./node-agent/cmd/agent
 EOR
 
+
 # add version file
 ARG VERSION
 RUN echo -n $VERSION > /version
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM ubuntu:24.04
 COPY --from=builder /otterize-node-agent /otterize/bin/otterize-node-agent
 COPY --from=builder /version .

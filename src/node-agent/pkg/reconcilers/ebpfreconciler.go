@@ -3,7 +3,8 @@ package reconcilers
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/ebpf/openssl"
+	"github.com/otterize/network-mapper/src/bintools/bininfo"
+	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
@@ -31,8 +32,7 @@ func NewEBPFReconciler(
 	containerManager *container.ContainerManager,
 	finder *kubefinder.KubeFinder,
 ) (*EBPFReconciler, error) {
-	eventReader, err := ebpf.NewEventReader(openssl.BpfObjects.SslEvents)
-
+	eventReader, err := ebpf.NewEventReader(otrzebpf.Objs.SslEvents)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
@@ -78,14 +78,14 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		return reconcile.Result{}, nil
 	}
 
-	for _, container := range pod.Status.ContainerStatuses {
-		containerInfo, err := r.containersManager.GetContainerInfo(ctx, pod, container.ContainerID)
+	for _, cs := range pod.Status.ContainerStatuses {
+		containerInfo, err := r.containersManager.GetContainerInfo(ctx, pod, cs.ContainerID)
 
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err)
 		}
 
-		err = r.loadBpfProgramToContainer(ctx, containerInfo)
+		err = r.loadBpfProgramIntoContainer(containerInfo)
 
 		if err != nil {
 			return reconcile.Result{}, errors.Wrap(err)
@@ -95,11 +95,18 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 	return reconcile.Result{}, nil
 }
 
-func (r *EBPFReconciler) loadBpfProgramToContainer(ctx context.Context, containerInfo container.ContainerInfo) error {
-	err := r.tracer.AttachToOpenSSL(containerInfo)
-
-	if err != nil {
-		return errors.Wrap(err)
+func (r *EBPFReconciler) loadBpfProgramIntoContainer(containerInfo container.ContainerInfo) error {
+	// TODO: errors should not crash the entire reconciler
+	if containerInfo.ExecutableInfo.Language == bininfo.SourceLanguageNodeJs {
+		err := r.tracer.AttachToOpenSSL(containerInfo)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+	} else if containerInfo.ExecutableInfo.Language == bininfo.SourceLanguageGoLang {
+		err := r.tracer.AttachToGoTls(containerInfo)
+		if err != nil {
+			return errors.Wrap(err)
+		}
 	}
 
 	return nil

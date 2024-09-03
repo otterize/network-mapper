@@ -2,33 +2,8 @@
 
 #include "headers.h"
 #include "maps.h"
+#include "common.h"
 
-int shouldTrace() {
-    // gets the current (real) PID
-    __u32 pid = bpf_get_current_pid_tgid() >> 32;
-
-    // gets the current 'task' which is a linux kernel struct that represents a process
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-
-    // a bit of magic, but this gets the inode of the current PID namespace
-    // equivalent to running `readlink /proc/self/ns/pid`
-    int nsInode = BPF_CORE_READ(task, group_leader, nsproxy, pid_ns_for_children, ns.inum);
-
-    bpf_printk("PID namespace: %llu", nsInode);
-
-    struct target_t *pTarget = bpf_map_lookup_elem(&targets, &nsInode);
-
-    if (pTarget == 0) {
-        bpf_printk("tracing disabled for pid, pid: %llu", pid);
-        return 0;
-    }
-
-    return pTarget->enabled;
-}
-
-__u32 get_pid() {
-    return bpf_get_current_pid_tgid() >> 32;
-}
 
 SEC("uprobe/otterize_SSL_write")
 void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
@@ -77,8 +52,7 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
         return;
     }
 
-    int zero = 0;
-    struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &zero);
+    struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &ZERO);
 
     if (event == NULL) {
         bpf_printk("failed to create ssl_event_t");
@@ -86,13 +60,13 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
     }
 
     event->meta.pid = get_pid();
-    event->meta.dataSize = context.size;
+    event->meta.data_size = context.size;
 
     if (context.size <= 0) {
         // not supposed to happen, but the verifier can't know that
         return;
-    } else if (context.size > MAX_SIZE) {
-        event->meta.dataSize = MAX_SIZE;
+    } else if (context.size > MAX_CHUNK_SIZE) {
+        event->meta.data_size = MAX_CHUNK_SIZE;
     }
 
     // copy the cleartext buffer to the event struct
@@ -100,7 +74,7 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
     // can't ensure that it's within bounds. So we use a constant the size of the
     // output buffer. This appeases the verifier, but I'm not sure what is the effect of
     // reading beyond (context.buffer + context.size). ???
-    err = bpf_probe_read_user(&event->data, context.size & (MAX_SIZE - 1), (char*)context.buffer);
+    err = bpf_probe_read_user(&event->data, context.size & (MAX_CHUNK_SIZE - 1), (char*)context.buffer);
 
     if (err != 0) {
         bpf_printk("bpf_probe_read_user failed");
@@ -112,7 +86,7 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
         &ssl_events,
         BPF_F_CURRENT_CPU,
         event,
-        (sizeof(struct ssl_event_meta_t) + event->meta.dataSize) & (MAX_SIZE - 1)
+        (sizeof(struct ssl_event_meta_t) + event->meta.data_size) & (MAX_CHUNK_SIZE - 1)
     );
 
     if (err != 0) {
@@ -125,5 +99,3 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
 
     return;
 }
-
-char _license[] SEC("license") = "GPL";

@@ -7,7 +7,7 @@ import (
 	"github.com/cilium/ebpf/perf"
 	"github.com/otterize/network-mapper/src/bintools"
 	"github.com/otterize/network-mapper/src/bpfmanager"
-	"github.com/otterize/network-mapper/src/ebpf/gotls/bpf"
+	"github.com/otterize/network-mapper/src/ebpf"
 	"log"
 	"os"
 	"os/signal"
@@ -25,7 +25,7 @@ const (
 
 var FunctionsToProcess = []string{WriteGoTLSFunc, ReadGoTLSFunc}
 
-func B2S(bs []int8) string {
+func B2S(bs []uint8) string {
 	b := make([]byte, len(bs))
 	for i, v := range bs {
 		b[i] = byte(v)
@@ -43,8 +43,8 @@ func main() {
 	signal.Notify(stopper, os.Interrupt, syscall.SIGTERM)
 
 	// Load pre-compiled programs and maps into the kernel.
-	objs := bpf.BpfObjects{}
-	if err := bpf.LoadBpfObjects(&objs, nil); err != nil {
+	objs := ebpf.BpfObjects{}
+	if err := ebpf.LoadBpfObjects(&objs, nil); err != nil {
 		log.Fatalf("loading objects: %s", err)
 	}
 	defer objs.Close()
@@ -81,7 +81,7 @@ func main() {
 		log.Fatalf("Failed init manager: %v", err)
 	}
 
-	reader, err := perf.NewReader(objs.Events, os.Getpagesize()*64)
+	reader, err := perf.NewReader(objs.SslEvents, os.Getpagesize()*64)
 	if err != nil {
 		log.Fatalf("Failed to create reader: %v", err)
 	}
@@ -100,7 +100,7 @@ func main() {
 
 	log.Println("Waiting for events..")
 
-	var event bpf.BpfEvent
+	var event ebpf.BpfSslEventT
 	for {
 		record, err := reader.Read()
 		if err != nil {
@@ -122,10 +122,10 @@ func main() {
 			continue
 		}
 
-		msgString := B2S(event.Msg[:event.Meta.MsgSize])
+		msgString := B2S(event.Data[:event.Meta.DataSize])
 		log.Printf("  Pid: %d\n", event.Meta.Pid)
-		log.Printf("  Msg pos: %d\n", event.Meta.Pos)
-		log.Printf("  Msg size: %d\n", event.Meta.MsgSize)
+		log.Printf("  Msg pos: %d\n", event.Meta.Position)
+		log.Printf("  Msg size: %d\n", event.Meta.TotalSize)
 		log.Printf("  Msg: %s\n", msgString)
 	}
 }

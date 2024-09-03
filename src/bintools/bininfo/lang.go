@@ -10,25 +10,25 @@ import (
 type SourceLanguage string
 
 const (
-	GoLang SourceLanguage = "golang"
-	Python SourceLanguage = "python"
-	NodeJs SourceLanguage = "nodejs"
-	Binary SourceLanguage = "binary"
+	SourceLanguageGoLang SourceLanguage = "golang"
+	SourceLanguagePython SourceLanguage = "python"
+	SourceLanguageNodeJs SourceLanguage = "nodejs"
+	SourceLanguageBinary SourceLanguage = "binary"
 )
 
 func GetSourceLanguage(path string, f *os.File) SourceLanguage {
 	if isGoBinary(f) {
-		return GoLang
+		return SourceLanguageGoLang
 	}
 	if isPythonCommand(path) {
-		return Python
+		return SourceLanguagePython
 
 	}
 	if isNodeCommand(path) {
-		return NodeJs
+		return SourceLanguageNodeJs
 	}
 
-	return Binary
+	return SourceLanguageBinary
 }
 
 func isGoBinary(f *os.File) bool {
