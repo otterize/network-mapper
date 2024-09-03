@@ -1,7 +1,6 @@
 package ebpf
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"github.com/cilium/ebpf"
@@ -41,8 +40,8 @@ func NewEventReader(perfMap *ebpf.Map) (*EventReader, error) {
 
 func (e *EventReader) Start() {
 	go func() {
-		var event otrzebpf.BpfSslEventT
 		for {
+			// Read the next TLS event.
 			record, err := e.perfReader.Read()
 			if err != nil {
 				if errors.Is(err, perf.ErrClosed) {
@@ -58,68 +57,103 @@ func (e *EventReader) Start() {
 			}
 
 			// Parse the perf event entry into a bpfEvent structure.
-			byteReader := bytes.NewReader(record.RawSample)
-			if err = binary.Read(byteReader, binary.LittleEndian, &event); err != nil {
-				logrus.Printf("parsing perf event: %s", err)
+			event, err := e.parseEvent(record.RawSample)
+			if err != nil {
+				logrus.Printf("error parsing perf event: %s", err)
 				continue
 			}
 
-			msg := Data2Bytes(event.Data[:event.Meta.DataSize])
-			reader := bufio.NewReader(bytes.NewReader(msg))
-
-			var body []byte
-
-			switch Direction(event.Meta.Direction) {
-			case DirectionEgress:
-				req, err := http.ReadRequest(reader)
-				if err != nil {
-					logrus.Printf("parsing HTTP request: %s", err)
-					continue
-				}
-
-				body, err = io.ReadAll(req.Body)
-				if err != nil {
-					logrus.Printf("error reading HTTP request body: %s", err)
-					continue
-				}
-			case DirectionIngress:
-				resp, err := http.ReadResponse(reader, nil)
-				if err != nil {
-					logrus.Printf("parsing HTTP response: %s", err)
-					continue
-				}
-
-				body, err = io.ReadAll(resp.Body)
-				if err != nil {
-					logrus.Printf("error reading HTTP response body: %s", err)
-					continue
-				}
-			default:
+			err = e.handleEvent(event)
+			if err != nil {
+				logrus.Printf("error handling event: %s", err)
 				continue
 			}
-			logrus.Debug("Msg: %s\n", string(body))
-
-			//pidNamespaceInode, err := getPIDNamespaceInode(int(event.Meta.Pid))
-			//if err != nil {
-			//	logrus.Errorf("getting PID namespace inode: %s", err)
-			//	continue
-			//}
-			//
-			//req.RemoteAddr = e.containerMap[pidNamespaceInode].PodIP
-			//
-			//logrus.Printf("HTTP request received %v", req.RemoteAddr)
-			//
-			//if err != nil {
-			//	logrus.Errorf("reading HTTP request: %s", err)
-			//	continue
-			//}
-			//
-			//reqBody, _ := ioutil.ReadAll(req.Body)
-			//
-			//iamlivecore.HandleAWSRequest(req, reqBody, 200)
-			//logrus.Println("HTTP request handled", req.RemoteAddr)
 		}
 	}()
+}
+
+func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, error) {
+	var event otrzebpf.BpfSslEventT
+
+	// Parse the perf event entry into a bpfEvent structure.
+	byteReader := bytes.NewReader(raw)
+	if err := binary.Read(byteReader, binary.LittleEndian, &event); err != nil {
+		return event, err
+	}
+
+	return event, nil
+}
+
+func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT) error {
+	// Try to parse the event as an HTTP message
+	err := e.handleHttpRequest(event)
+	if err == nil {
+		return nil
+	}
+
+	err = e.handleHttpResponse(event)
+	if err == nil {
+		return nil
+	}
+
+	// Try to parse the event as an SMTP message
+	// TODO: Implement
+
+	// Try to parse the event as an FTP message
+	// TODO: Implement
+
+	// log raw message that could not be parsed
+	data := data2Bytes(event.Data[:event.Meta.DataSize])
+	logrus.Debug("error parsing message: %s\n", string(data))
+
+	return err
+}
+
+func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT) error {
+	reader := getBpfEventMessageReader(event)
+
+	req, err := http.ReadRequest(reader)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil
+	}
+
+	logrus.Debug("Got HTTP request: %s\n", string(body))
+
+	// Handle outgoing HTTP requests
+	if Direction(event.Meta.Direction) == DirectionEgress {
+		pidNamespaceInode, err := getPIDNamespaceInode(int(event.Meta.Pid))
+		if err != nil {
+			return errors.Errorf("error getting PID namespace inode: %w", err)
+		}
+
+		req.RemoteAddr = e.containerMap[pidNamespaceInode].PodIP
+		iamlivecore.HandleAWSRequest(req, body, 200)
+	}
+
+	return nil
+}
+
+func (e *EventReader) handleHttpResponse(event otrzebpf.BpfSslEventT) error {
+	reader := getBpfEventMessageReader(event)
+
+	resp, err := http.ReadResponse(reader, nil)
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
+
+	logrus.Debug("Got HTTP response: %s\n", string(body))
+
+	return nil
 }
 
 func (e *EventReader) Close() error {
