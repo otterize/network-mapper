@@ -24,7 +24,7 @@ func NewTracer(reader *EventReader) *Tracer {
 }
 
 func (t *Tracer) attachBpfProgram(ex *link.Executable, binaryInode uint64, program BpfProgram) (err error) {
-	key := program.GetUniqueKey(binaryInode)
+	key := getProbeKey(program, binaryInode)
 	if _, ok := t.probes[key]; ok {
 		return nil
 	}

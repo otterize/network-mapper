@@ -38,12 +38,3 @@ type BpfProgram struct {
 	HandlerSpec *ebpf.ProgramSpec
 	Address     uint64
 }
-
-func (p *BpfProgram) GetUniqueKey(inode uint64) ProbeKey {
-	return ProbeKey{
-		address:  p.Address,
-		inode:    inode,
-		fnName:   p.Symbol,
-		retprobe: p.Type == BpfEventTypeURetProbe,
-	}
-}

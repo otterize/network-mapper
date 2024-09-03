@@ -8,6 +8,15 @@ import (
 	"syscall"
 )
 
+func getProbeKey(p BpfProgram, inode uint64) ProbeKey {
+	return ProbeKey{
+		address:  p.Address,
+		inode:    inode,
+		fnName:   p.Symbol,
+		retprobe: p.Type == BpfEventTypeURetProbe,
+	}
+}
+
 func getFileInode(path string) (uint64, error) {
 	stat, err := os.Stat(path)
 	if err != nil {

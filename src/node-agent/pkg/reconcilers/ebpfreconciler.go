@@ -32,15 +32,12 @@ func NewEBPFReconciler(
 	containerManager *container.ContainerManager,
 	finder *kubefinder.KubeFinder,
 ) (*EBPFReconciler, error) {
-	//eventReader, err := ebpf.NewEventReader(openssl.BpfObjects.SslEvents)
 	eventReader, err := ebpf.NewEventReader(otrzebpf.Objs.SslEvents)
-
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
 	eventReader.Start()
-	//eventReader.ReadEvents()
 
 	return &EBPFReconciler{
 		client:            client,
