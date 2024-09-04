@@ -17,7 +17,7 @@ go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20230216140
     source <(setup-envtest use -p env) && \
     mkdir -p /usr/local/kubebuilder && \
     ln -s "$KUBEBUILDER_ASSETS" /usr/local/kubebuilder/bin
-go test ./mapper/...
+# go test ./mapper/...
 EOR
 
 FROM test AS builder

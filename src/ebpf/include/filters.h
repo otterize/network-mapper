@@ -1,24 +1,70 @@
 #pragma once
 
-static __inline bool shouldSend() {
-    // gets the current (real) PID
-    __u32 pid = bpf_get_current_pid_tgid() >> 32;
+// TODO: reconsider consts
+const __u32 MAX_LINE_LENGTH = 100;
+const __u32 MAX_CHARS_TO_READ = 1024;
 
-    // gets the current 'task' which is a linux kernel struct that represents a process
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+static __inline bool startsWith(__u8 *line, int line_len, __u8 *target, int target_len) {
+    // If the line is shorter than the target, it cannot start with the target
+    if (line_len < target_len) return false;
 
-    // a bit of magic, but this gets the inode of the current PID namespace
-    // equivalent to running `readlink /proc/self/ns/pid`
-    int nsInode = BPF_CORE_READ(task, group_leader, nsproxy, pid_ns_for_children, ns.inum);
-
-    bpf_printk("PID namespace: %llu", nsInode);
-
-    struct target_t *pTarget = bpf_map_lookup_elem(&targets, &nsInode);
-
-    if (pTarget == 0) {
-        bpf_printk("tracing disabled for pid, pid: %llu", pid);
-        return 0;
+    // Compare each byte of the target with the beginning of the line
+    for (int k = 0; k < target_len; k++) {
+        if (line[k] != target[k]) return false;
     }
 
-    return pTarget->enabled;
+    return true;
+}
+
+static __inline bool containsString(__u8 *line, int line_len, __u8 *target, int target_len) {
+    // If the line is shorter than the target, it cannot contain the target
+    if (line_len < target_len) return false;
+
+    // Compare each substring of the line with the target
+    // Cannot return from the for loop - it causes ebpf verifier error
+    bool match;
+    for (int i = 0; i <= line_len - target_len; i++) {
+        match = true;
+        for (int j = 0; j < target_len; j++) {
+            if (line[i + j] != target[j]) {
+                match = false;
+                break;
+            }
+        }
+        if (match) break;
+    }
+
+    return match;
+}
+
+static __inline bool isHostHeader(__u8 *line, int line_len) {
+    __u8 target[] = {'H', 'o', 's', 't', ':'};
+    return startsWith(line, line_len, target, 5);
+}
+
+static __inline bool isAuthHeader(__u8 *line, int line_len) {
+    __u8 target[] = {'A', 'u', 't', 'h', 'o', 'r', 'i', 'z', 'a', 't', 'i', 'o', 'n', ':'};
+    return startsWith(line, line_len, target, 14);
+}
+
+static __inline bool isAwsApiCall(__u8 *line, int line_len) {
+    // AWS requests are authed using AWS4-HMAC-SHA256
+    __u8 target[] = {'A', 'W', 'S', '4', '-', 'H', 'M', 'A', 'a'};
+    return startsWith(line + 15, line_len - 15, target, sizeof(target));
+}
+
+static __inline bool shouldSendEvent(struct ssl_event_t *event) {
+    int start = 0;
+    int line_len = 0;
+
+    for (int i = 0; i < event->meta.data_size && i < MAX_CHARS_TO_READ; i++) {
+        if (event->data[i] == '\n' || i - start >= MAX_LINE_LENGTH) {
+            line_len = i - start;
+            start = i + 1;  // Move to the next line
+
+            if(isAwsApiCall(event->data + start, line_len)) return true;
+        }
+    }
+
+    return false;
 }

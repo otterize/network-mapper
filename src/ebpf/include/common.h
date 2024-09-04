@@ -1,5 +1,11 @@
 #pragma once
 
+#include "filters.h"
+
+static __inline __u32 get_pid() {
+    return bpf_get_current_pid_tgid() >> 32;
+}
+
 static __inline int shouldTrace() {
     // gets the current (real) PID
     __u32 pid = bpf_get_current_pid_tgid() >> 32;
@@ -23,10 +29,6 @@ static __inline int shouldTrace() {
     return pTarget->enabled;
 }
 
-static __inline __u32 get_pid() {
-    return bpf_get_current_pid_tgid() >> 32;
-}
-
 static __inline void send_event(struct pt_regs *ctx, __u64 buf, __u64 size, __u64 total_size, enum direction_t direction) {
     bpf_printk("reading: %x %d", buf, size);
 
@@ -45,11 +47,15 @@ static __inline void send_event(struct pt_regs *ctx, __u64 buf, __u64 size, __u6
     event->meta.direction = direction;
     event->meta.total_size = total_size;
 
+    // Read the data from the buffer
     err = bpf_probe_read(event->data, size, (void *)buf);
     if (err) {
         bpf_printk("error reading data");
         return;
     }
+
+    // Check if we should send the event
+    if(!shouldSendEvent(event)) return;
 
     // Send the event to the event array
     err = bpf_perf_event_output(

@@ -4,8 +4,6 @@
 #include "maps.h"
 #include "common.h"
 
-// TODO: add some return values and error handling
-
 // ####################################################################### //
 // Definitions
 // ####################################################################### //
@@ -79,7 +77,7 @@ static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf, en
 // Function symbol:    crypto/tls.(*Conn).Write
 SEC("uprobe/go_tls_write_enter")
 int go_tls_write_enter(struct pt_regs *ctx) {
-    if (!shouldTrace()) return 0;
+//    if (!shouldTrace()) return 0;
 
     // Get the context ID.
     struct go_context_id_t ctx_id = get_context_id(ctx);
