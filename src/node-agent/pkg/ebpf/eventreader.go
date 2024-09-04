@@ -95,7 +95,7 @@ func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, []byte, err
 
 func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT, data []byte) error {
 	// TODO: delete
-	fmt.Printf("\nevent: %d | %d | %d \n", event.Meta.TotalSize, event.Meta.DataSize, event.Meta.Position)
+	fmt.Printf("\nevent: %d | %d | %d \n", event.Meta.TotalSize, event.Meta.TotalSize, event.Meta.DataSize)
 	fmt.Printf("raw data: %s\n", string(data))
 
 	// Try to parse the event as an HTTP message

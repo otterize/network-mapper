@@ -124,7 +124,6 @@ func main() {
 
 		msgString := B2S(event.Data[:event.Meta.DataSize])
 		log.Printf("  Pid: %d\n", event.Meta.Pid)
-		log.Printf("  Msg pos: %d\n", event.Meta.Position)
 		log.Printf("  Msg size: %d\n", event.Meta.TotalSize)
 		log.Printf("  Msg: %s\n", msgString)
 	}

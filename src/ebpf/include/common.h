@@ -26,3 +26,42 @@ static __inline int shouldTrace() {
 static __inline __u32 get_pid() {
     return bpf_get_current_pid_tgid() >> 32;
 }
+
+static __inline void send_event(struct pt_regs *ctx, __u64 buf, __u64 size, __u64 total_size, enum direction_t direction) {
+    bpf_printk("reading: %x %d", buf, size);
+
+    long err;
+
+    // Initialize the event from the map.
+    struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &ZERO);
+    if (event == NULL){
+        bpf_printk("error creating ssl_event_t");
+        return;
+    }
+
+    event->meta.pid = get_pid();
+    event->meta.timestamp = bpf_ktime_get_ns();
+    event->meta.data_size = size;
+    event->meta.direction = direction;
+    event->meta.total_size = total_size;
+
+    err = bpf_probe_read(event->data, size, (void *)buf);
+    if (err) {
+        bpf_printk("error reading data");
+        return;
+    }
+
+    // Send the event to the event array
+    err = bpf_perf_event_output(
+        ctx,
+        &ssl_events,
+        BPF_F_CURRENT_CPU,
+        event,
+        (sizeof(struct ssl_event_meta_t) + event->meta.data_size) & (MAX_DATA_SIZE - 1)
+    );
+
+    if (err != 0) {
+        bpf_printk("error sending event: %d", err);
+        return;
+    }
+}

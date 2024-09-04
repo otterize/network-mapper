@@ -58,42 +58,19 @@ static __inline struct go_context_id_t get_context_id(struct pt_regs* ctx) {
 static __inline void read_buffer(struct pt_regs *ctx, struct go_slice_t *buf, enum direction_t direction) {
     bpf_printk("reading: %x %d", buf->ptr, buf->len);
 
-    // Get the TGID (process ID) for the event
-    struct go_context_id_t ctx_id = get_context_id(ctx);
-
     __u64 bytes_sent = 0;
     unsigned int i;
 
-    // Initialize the event from the map.
-    struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &ZERO);
-    if (event == NULL) return;
-
     #pragma unroll
     for (i = 0; i < MAX_CHUNKS; ++i) {
-        const __u64 bytes_remaining = buf->len - bytes_sent;
-
         // Calculate the size to read
         __u64 size_to_read = buf->len;
         if (size_to_read > MAX_DATA_SIZE) size_to_read = MAX_DATA_SIZE;
 
-        event->meta.pid = ctx_id.pid;
-        event->meta.position = bytes_sent;
-        event->meta.data_size = size_to_read;
-        event->meta.total_size = buf->len;
-        event->meta.direction = direction;
+        send_event(ctx, buf->ptr, size_to_read, buf->len, direction);
 
-        bpf_probe_read(event->data, size_to_read, (void *)buf->ptr);
-
-        // Submit the event to the event array
-        bpf_perf_event_output(
-            ctx,
-            &ssl_events,
-            BPF_F_CURRENT_CPU,
-            event,
-            (sizeof(struct ssl_event_meta_t) + event->meta.data_size) & (MAX_DATA_SIZE - 1)
-        );
-
-        if (size_to_read == bytes_remaining) break;
+        const __u64 bytes_remaining = buf->len - bytes_sent;
+        if (size_to_read >= bytes_remaining) break;
         bytes_sent += size_to_read;
     }
 }

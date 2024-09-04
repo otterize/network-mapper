@@ -31,7 +31,7 @@ type BpfSslContextT struct {
 type BpfSslEventT struct {
 	Meta struct {
 		Pid       uint32
-		Position  uint32
+		_         [4]byte
 		Timestamp uint64
 		DataSize  uint32
 		TotalSize uint32
