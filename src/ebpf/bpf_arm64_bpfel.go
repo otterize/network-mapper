@@ -23,6 +23,16 @@ type BpfGoSliceT struct {
 	Cap int32
 }
 
+type BpfHttpRequestT struct {
+	HostLen uint32
+	Host    [255]int8
+	_       [1]byte
+	AuthLen uint32
+	Auth    [255]int8
+	CurLine [255]int8
+	_       [2]byte
+}
+
 type BpfSslContextT struct {
 	Size   uint64
 	Buffer uint64
@@ -95,11 +105,12 @@ type BpfProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
-	GoTlsContext *ebpf.MapSpec `ebpf:"go_tls_context"`
-	SslContexts  *ebpf.MapSpec `ebpf:"ssl_contexts"`
-	SslEvent     *ebpf.MapSpec `ebpf:"ssl_event"`
-	SslEvents    *ebpf.MapSpec `ebpf:"ssl_events"`
-	Targets      *ebpf.MapSpec `ebpf:"targets"`
+	GoTlsContext   *ebpf.MapSpec `ebpf:"go_tls_context"`
+	HttpRequestMap *ebpf.MapSpec `ebpf:"http_request_map"`
+	SslContexts    *ebpf.MapSpec `ebpf:"ssl_contexts"`
+	SslEvent       *ebpf.MapSpec `ebpf:"ssl_event"`
+	SslEvents      *ebpf.MapSpec `ebpf:"ssl_events"`
+	Targets        *ebpf.MapSpec `ebpf:"targets"`
 }
 
 // BpfObjects contains all objects after they have been loaded into the kernel.
@@ -121,16 +132,18 @@ func (o *BpfObjects) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
-	GoTlsContext *ebpf.Map `ebpf:"go_tls_context"`
-	SslContexts  *ebpf.Map `ebpf:"ssl_contexts"`
-	SslEvent     *ebpf.Map `ebpf:"ssl_event"`
-	SslEvents    *ebpf.Map `ebpf:"ssl_events"`
-	Targets      *ebpf.Map `ebpf:"targets"`
+	GoTlsContext   *ebpf.Map `ebpf:"go_tls_context"`
+	HttpRequestMap *ebpf.Map `ebpf:"http_request_map"`
+	SslContexts    *ebpf.Map `ebpf:"ssl_contexts"`
+	SslEvent       *ebpf.Map `ebpf:"ssl_event"`
+	SslEvents      *ebpf.Map `ebpf:"ssl_events"`
+	Targets        *ebpf.Map `ebpf:"targets"`
 }
 
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
 		m.GoTlsContext,
+		m.HttpRequestMap,
 		m.SslContexts,
 		m.SslEvent,
 		m.SslEvents,

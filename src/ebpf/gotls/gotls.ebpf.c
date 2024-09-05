@@ -99,7 +99,7 @@ int go_tls_write_enter(struct pt_regs *ctx) {
 // Function symbol:    crypto/tls.(*Conn).Read
 SEC("uprobe/go_tls_read_enter")
 int gotls_read_enter(struct pt_regs *ctx) {
-    if (!should_trace()) return 0;
+//    if (!should_trace()) return 0;
 
     // Get the context ID.
     struct go_context_id_t ctx_id = get_context_id(ctx);

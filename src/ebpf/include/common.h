@@ -55,7 +55,7 @@ static __inline void send_event(struct pt_regs *ctx, __u64 buf, __u64 size, __u6
     }
 
     // Check if we should send the event
-    if(!shouldSendEvent(event)) return;
+    if(!should_send_event(event)) return;
 
     // Send the event to the event array
     err = bpf_perf_event_output(
