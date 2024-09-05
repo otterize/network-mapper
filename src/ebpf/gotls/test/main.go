@@ -36,7 +36,7 @@ func B2S(bs []uint8) string {
 func main() {
 	inspectionResult, err := bintools.ProcessGoBinary(binPath, FunctionsToProcess)
 	if err != nil {
-		log.Fatalf("error extracting inspectoin data from %s: %w", binPath, err)
+		log.Fatalf("error extracting inspectoin data from %s: %s", binPath, err)
 	}
 
 	stopper := make(chan os.Signal, 1)

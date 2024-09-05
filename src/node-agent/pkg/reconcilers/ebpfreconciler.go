@@ -5,7 +5,6 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/bintools/bininfo"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
-	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/labels"
@@ -30,7 +29,6 @@ type EBPFReconciler struct {
 func NewEBPFReconciler(
 	client client.Client,
 	containerManager *container.ContainerManager,
-	finder *kubefinder.KubeFinder,
 ) (*EBPFReconciler, error) {
 	eventReader, err := ebpf.NewEventReader(otrzebpf.Objs.SslEvents)
 	if err != nil {
