@@ -14,8 +14,6 @@ EOR
 
 COPY . /src/
 
-RUN bpftool btf dump file /sys/kernel/btf/vmlinux format c > ./ebpf/include/vmlinux.h
-
 RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
 set -ex
 go generate -tags ebpf ./ebpf/...
