@@ -25,7 +25,7 @@ require (
 	github.com/nxadm/tail v1.4.8
 	github.com/oriser/regroup v0.0.0-20210730155327-fca8d7531263
 	github.com/otterize/go-procnet v0.1.1
-	github.com/otterize/iamlive v0.0.0-20240826163223-05161a8ba38b
+	github.com/otterize/iamlive v0.0.0-20240905170246-6c7506c8a8a1
 	github.com/otterize/intents-operator/src v0.0.0-20240728122430-815e69d82f7a
 	github.com/otterize/nilable v0.0.0-20240410132629-f242bb6f056f
 	github.com/pkg/errors v0.9.1
