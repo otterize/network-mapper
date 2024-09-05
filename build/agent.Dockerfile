@@ -1,7 +1,7 @@
 FROM golang:1.22.1 AS ebpf-buildenv
 
 RUN apt-get update
-RUN apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-generic
+RUN apt-get install -y clang llvm libelf-dev libbpf-dev linux-headers-generic bpftool
 RUN ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
 
 WORKDIR /src
@@ -13,6 +13,8 @@ go mod download
 EOR
 
 COPY . /src/
+
+RUN bpftool btf dump file /sys/kernel/btf/vmlinux format c > ./ebpf/include/vmlinux.h
 
 RUN --mount=type=cache,target="/root/.cache/go-build" <<EOR
 set -ex
