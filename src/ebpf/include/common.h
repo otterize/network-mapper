@@ -6,7 +6,7 @@ static __inline __u32 get_pid() {
     return bpf_get_current_pid_tgid() >> 32;
 }
 
-static __inline int shouldTrace() {
+static __inline int should_trace() {
     // gets the current (real) PID
     __u32 pid = bpf_get_current_pid_tgid() >> 32;
 

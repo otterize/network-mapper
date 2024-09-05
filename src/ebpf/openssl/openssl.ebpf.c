@@ -7,7 +7,7 @@
 
 SEC("uprobe/otterize_SSL_write")
 void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
-    if (!shouldTrace()) return;
+    if (!should_trace()) return;
 
     // capture the cleartext buffer and size
     struct ssl_context_t context = {
@@ -26,7 +26,7 @@ void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
 
 SEC("uretprobe/otterize_SSL_write_ret")
 void BPF_KRETPROBE(otterize_SSL_write_ret) {
-    if (!shouldTrace()) return;
+    if (!should_trace()) return;
 
     __u64 key = bpf_get_current_pid_tgid();
     void* pContext = bpf_map_lookup_elem(&ssl_contexts, &key);
