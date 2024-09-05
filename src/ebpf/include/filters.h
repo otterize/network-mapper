@@ -35,7 +35,8 @@ struct {
     __uint(max_entries, 1);
 } http_request_map SEC(".maps");
 
-static inline int manual_memcmp(const char *s1, const char *s2, int len) {
+// TODO: This should be available in the BPF helpers - could not find it
+static inline int helper_memcmp(const char *s1, const char *s2, int len) {
     #pragma unroll
     for (int i = 0; i < len; i++) {
         if (s1[i] != s2[i]) {
@@ -43,6 +44,28 @@ static inline int manual_memcmp(const char *s1, const char *s2, int len) {
         }
     }
     return 0;  // Strings match
+}
+
+static inline bool is_http_request(__u8 *data, int data_len) {
+    int method_lens[] = {3, 4, 3, 6, 4, 7, 6};
+    const char *methods[] = {"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"};
+
+    // total size in bytes / size of a single element (char *)
+    int num_methods = sizeof(methods) / sizeof(methods[0]);
+
+    // Minimum length to fit a method and space "GET "
+    if (data_len < 4) return false;
+
+    // Check for any HTTP method at the start of the data
+    #pragma unroll
+    for (int i = 0; i < num_methods; i++) {
+        int method_len = method_lens[i];
+        if (data_len >= method_len + 1 && helper_memcmp((char *)data, methods[i], method_len) == 0 && data[method_len] == ' ') {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static int parse_headers(u32 index, struct http_request_ctx_t *ctx) {
@@ -72,11 +95,11 @@ static int parse_headers(u32 index, struct http_request_ctx_t *ctx) {
         bpf_probe_read(&req->cur_line, line_len, ctx->data + ctx->line_start);
 
         // Check if the line is a Host or Authorization header and save it in the request object
-        if (line_len >= HOST_HEADER_LEN && !manual_memcmp(req->cur_line, HOST_HEADER, HOST_HEADER_LEN)) {
+        if (line_len >= HOST_HEADER_LEN && !helper_memcmp(req->cur_line, HOST_HEADER, HOST_HEADER_LEN)) {
             // Copy Host header
             bpf_probe_read(&req->host, line_len, &req->cur_line);
             req->host_len = line_len;
-        } else if (line_len >= AUTH_HEADER_LEN && !manual_memcmp(req->cur_line, AUTH_HEADER, AUTH_HEADER_LEN)) {
+        } else if (line_len >= AUTH_HEADER_LEN && !helper_memcmp(req->cur_line, AUTH_HEADER, AUTH_HEADER_LEN)) {
             // Copy Authorization header
             bpf_probe_read(req->auth, line_len, req->cur_line);
             req->auth_len = line_len;
@@ -110,7 +133,7 @@ static __inline bool is_aws_api_call(struct http_request_t *req) {
         if(i >= req->host_len) break;
 
         // Compare substring
-        if (manual_memcmp(&req->host[i], HOST_AWS, HOST_AWS_LEN) == 0) {
+        if (helper_memcmp(&req->host[i], HOST_AWS, HOST_AWS_LEN) == 0) {
             bpf_printk("HEADER: %c%c%c%c%c%c%c%c%c%c", req->host[0], req->host[1], req->host[2], req->host[3], req->host[4], req->host[5], req->host[6], req->host[7], req->host[8], req->host[9]);
             return true;  // "amazonaws.com" found
         }
@@ -121,19 +144,24 @@ static __inline bool is_aws_api_call(struct http_request_t *req) {
 
 static __inline bool should_send_event(struct ssl_event_t *event) {
     bool should_send = false;
-    // Populates the request data in the map
-    parse_request(event);
 
-    // Grab the request object from the map.
-    struct http_request_t *request = bpf_map_lookup_elem(&http_request_map, &ZERO);
-    if (request == NULL){
-        bpf_printk("error creating http_request_t");
-        return false;
+    // Handle event which is an HTTP request
+    if(is_http_request(event->data, event->meta.data_size)) {
+        // Populates the request data in the map
+        parse_request(event);
+
+        // Grab the request object from the map.
+        struct http_request_t *request = bpf_map_lookup_elem(&http_request_map, &ZERO);
+        if (request == NULL){
+            bpf_printk("error creating http_request_t");
+            return false;
+        }
+
+        if(is_aws_api_call(request)) should_send = true;
+
+        bpf_map_delete_elem(&http_request_map, &ZERO);
     }
 
-    if(is_aws_api_call(request)) should_send = true;
-
-    bpf_map_delete_elem(&http_request_map, &ZERO);
 
     return should_send;
 }
