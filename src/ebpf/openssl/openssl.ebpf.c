@@ -1,9 +1,7 @@
 //go:build ignore
 
-#include "headers.h"
-#include "maps.h"
-#include "common.h"
-
+#include "include/headers.h"
+#include "include/events/events.h"
 
 SEC("uprobe/otterize_SSL_write")
 void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {

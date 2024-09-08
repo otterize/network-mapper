@@ -1,13 +1,21 @@
 //go:build ignore
 
 // Common header for all eBPF programs
-#include "headers.h"
-#include "maps.h"
-#include "filters.h"
-#include "common.h"
+#include "include/headers.h"
+
+// Event logic
+#include "include/events/events.h"
+#include "include/events/events.c"
+
+// Filter logic
+#include "include/filters/pci.h"
+#include "include/filters/pci.c"
+
+#include "include/filters/filters.h"
+#include "include/filters/filters.c"
 
 // All eBPF programs
-#include "gotls.ebpf.c"
-#include "openssl.ebpf.c"
+#include "gotls/gotls.ebpf.c"
+#include "openssl/openssl.ebpf.c"
 
 char _license[] SEC("license") = "GPL";

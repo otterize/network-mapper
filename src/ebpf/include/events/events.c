@@ -1,6 +1,6 @@
 #pragma once
 
-#include "filters.h"
+#include "include/filters/filters.h"
 
 static __inline __u32 get_pid() {
     return bpf_get_current_pid_tgid() >> 32;

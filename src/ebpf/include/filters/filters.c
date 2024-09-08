@@ -1,42 +1,7 @@
-#pragma once
 
-#define HOST_HEADER_LEN 6
-#define AUTH_HEADER_LEN 14
-#define MAX_HEADER_LENGTH 255
+#include "filters.h"
 
-#define HOST_HEADER "Host: "
-#define AUTH_HEADER "Authorization: "
-
-#define HOST_AWS "amazonaws.com"
-#define HOST_AWS_LEN 13
-
-struct http_request_t {
-    // Request headers
-    __u32 host_len;
-    char host[MAX_HEADER_LENGTH];
-
-    __u32 auth_len;
-    char auth[MAX_HEADER_LENGTH];
-
-    // Internal state
-    char cur_line[MAX_HEADER_LENGTH];
-};
-
-struct http_request_ctx_t {
-    __u8 *data;
-    int data_len;
-    __u32 line_start;
-};
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __type(key, __u32);
-    __type(value, struct http_request_t);
-    __uint(max_entries, 1);
-} http_request_map SEC(".maps");
-
-// TODO: This should be available in the BPF helpers - could not find it
-static inline int helper_memcmp(const char *s1, const char *s2, int len) {
+static __inline int helper_memcmp(const char *s1, const char *s2, int len) {
     #pragma unroll
     for (int i = 0; i < len; i++) {
         if (s1[i] != s2[i]) {
@@ -46,7 +11,7 @@ static inline int helper_memcmp(const char *s1, const char *s2, int len) {
     return 0;  // Strings match
 }
 
-static inline bool is_http_request(__u8 *data, int data_len) {
+static __inline bool is_http_request(__u8 *data, int data_len) {
     int method_lens[] = {3, 4, 3, 6, 4, 7, 6};
     const char *methods[] = {"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"};
 
