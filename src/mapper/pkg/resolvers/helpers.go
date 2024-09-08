@@ -6,36 +6,22 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 )
 
-// isExternalOrAssumeExternalIfError returns true if the IP is external or if an error occurred while determining if the IP is external.
-func (r *Resolver) isExternalOrAssumeExternalIfError(ctx context.Context, srcIP string) (bool, error) {
-	_, err := r.kubeFinder.ResolveIPToPod(ctx, srcIP)
-	if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-		return false, nil
-	}
-
-	// If the IP is not found, it may be external
-	if err != nil && !errors.Is(err, kubefinder.ErrNoPodFound) {
-		return false, errors.Wrap(err)
-	}
-
-	// if the IP is not in any node's pod CIDR, it is external.
-	isExternal, err := r.kubeFinder.IsIPNotInNodePodCIDR(ctx, srcIP)
+func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
+	svc, ok, err := r.kubeFinder.ResolveIPToControlPlane(ctx, src.SrcIP)
 	if err != nil {
-		logrus.WithError(err).WithField("ip", srcIP).Debug("could not determine if IP is external, assuming it is")
-		return true, nil
+		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to service: %w", src.SrcIP, err)
 	}
-	return isExternal, nil
-}
 
-func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
+	if ok {
+		return model.OtterizeServiceIdentity{Name: svc.Name, Namespace: svc.Namespace, KubernetesService: &svc.Name}, nil
+	}
+
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
 	if err != nil {
-		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
-			return model.OtterizeServiceIdentity{}, errors.Errorf("IP %s belongs to more than one pod, ignoring", src.SrcIP)
-		}
-		if errors.Is(err, kubefinder.ErrNoPodFound) {
+		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) || errors.Is(err, kubefinder.ErrNoPodFound) {
 			return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 		}
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to pod: %w", src.SrcIP, err)
@@ -48,14 +34,6 @@ func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDe
 		return model.OtterizeServiceIdentity{}, errors.Errorf("found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, src.SrcIP, src.SrcHostname)
 	}
 
-	if srcPod.DeletionTimestamp != nil {
-		return model.OtterizeServiceIdentity{}, errors.Errorf("pod %s is being deleted, ignoring", srcPod.Name)
-	}
-
-	srcService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
-	if err != nil {
-		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve pod %s to identity: %w", srcPod.Name, err)
-	}
 	filteredDestinations := make([]model.Destination, 0)
 	for _, dest := range src.Destinations {
 		if srcPod.CreationTimestamp.After(dest.LastSeen) {
@@ -64,12 +42,25 @@ func (r *Resolver) discoverSrcIdentity(ctx context.Context, src model.RecordedDe
 		}
 		filteredDestinations = append(filteredDestinations, dest)
 	}
-
 	src.Destinations = filteredDestinations
-	srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(srcPod)}
-	if srcService.OwnerObject != nil {
-		srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
+
+	return r.resolveInClusterIdentity(ctx, srcPod)
+}
+
+func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod) (model.OtterizeServiceIdentity, error) {
+	if pod.DeletionTimestamp != nil {
+		return model.OtterizeServiceIdentity{}, errors.Errorf("pod %s is being deleted, ignoring", pod.Name)
 	}
 
-	return srcSvcIdentity, nil
+	svcIdentity, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, pod)
+	if err != nil {
+		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve pod %s to identity: %w", pod.Name, err)
+	}
+
+	modelSvcIdentity := model.OtterizeServiceIdentity{Name: svcIdentity.Name, Namespace: pod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(pod)}
+	if svcIdentity.OwnerObject != nil {
+		modelSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(svcIdentity.OwnerObject.GetObjectKind().GroupVersionKind())
+	}
+
+	return modelSvcIdentity, nil
 }

@@ -62,15 +62,14 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
-	if !foundSvc {
-		return model.OtterizeServiceIdentity{}, false, nil
-	}
-	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
-	if err != nil {
-		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
-	}
-	if ok {
-		return dstSvcIdentity, true, nil
+	if foundSvc {
+		dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
+		if err != nil {
+			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+		}
+		if ok {
+			return dstSvcIdentity, true, nil
+		}
 	}
 
 	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
@@ -99,7 +98,7 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	dstSvcIdentity = model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -332,13 +331,32 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIP)
-		} else {
-			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+			return model.OtterizeServiceIdentity{}, false, nil
 		}
-		return model.OtterizeServiceIdentity{}, false, nil
+		logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 	if !ok {
-		return model.OtterizeServiceIdentity{}, false, nil
+		// If the traffic is not to a NodePort or LoadBalancer Service, it can be traffic from a loadbalancer like AWS ALB
+		// to a pod.
+		pod, err := r.kubeFinder.ResolveIPToPod(ctx, destIP)
+		if err != nil {
+			if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
+				logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", destIP)
+				return model.OtterizeServiceIdentity{}, false, nil
+			}
+			if errors.Is(err, kubefinder.ErrNoPodFound) {
+				logrus.WithError(err).Debugf("Could not resolve %s to pod: no pod found", destIP)
+				return model.OtterizeServiceIdentity{}, false, nil
+			}
+			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
+			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+		}
+		dstSvcIdentity, err := r.resolveInClusterIdentity(ctx, pod)
+		if err != nil {
+			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
+		}
+		return dstSvcIdentity, true, nil
 	}
 
 	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
@@ -359,12 +377,9 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 
 	for _, captureItem := range results.Results {
 		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
-		isExternal, err := r.isExternalOrAssumeExternalIfError(ctx, captureItem.SrcIP)
-		if err != nil {
-			logrus.WithError(err).Error("could not determine if IP is external")
-			continue
-		}
-		if isExternal {
+
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
+		if errors.Is(err, kubefinder.ErrNoPodFound) {
 			err := r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
 			if err != nil {
 				logrus.WithError(err).Error("could not report incoming internet traffic")
@@ -372,14 +387,13 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 			}
 		}
 
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
 		}
 
 		for _, dest := range captureItem.Destinations {
-			r.handleTCPResult(ctx, srcSvcIdentity, dest)
+			r.handleExternalIncomingTrafficTCPResult(ctx, srcSvcIdentity, dest)
 		}
 	}
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
@@ -409,7 +423,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 	return nil
 }
 
-func (r *Resolver) handleTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+func (r *Resolver) handleExternalIncomingTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
 	lastSeen := dest.LastSeen
 	destIdentity, ok, err := r.resolveDestIdentity(ctx, dest, lastSeen)
 	if err != nil {
@@ -439,7 +453,7 @@ func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model
 
 	var newResults int
 	for _, captureItem := range results.Results {
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, captureItem)
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
@@ -476,7 +490,7 @@ func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results mo
 		return nil
 	}
 	for _, socketScanItem := range results.Results {
-		srcSvcIdentity, err := r.discoverSrcIdentity(ctx, socketScanItem)
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, socketScanItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
 			continue

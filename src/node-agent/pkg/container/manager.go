@@ -100,7 +100,7 @@ func (m *ContainerManager) InspectContainerExec(pid int) (ExecutableInfo, error)
 
 	res.Language = bininfo.GetSourceLanguage(execPath, f)
 
-	logrus.WithField("lang", res.Language).WithField("arch", res.Arch).Debug("Got exec info for pid %d", pid)
+	logrus.WithField("lang", res.Language).WithField("arch", res.Arch).Debugf("Got exec info for pid %d", pid)
 
 	return res, nil
 }

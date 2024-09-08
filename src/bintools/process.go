@@ -13,7 +13,7 @@ import (
 func ProcessGoBinary(binPath string, functions []string) (res *gobin.GoBinaryInfo, err error) {
 	f, err := os.Open(binPath)
 	if err != nil {
-		log.Fatalf("could not open file %s, %w", binPath, err)
+		log.Fatalf("could not open file %s, %s", binPath, err)
 	}
 	defer func(f *os.File) {
 		cErr := f.Close()
@@ -25,7 +25,7 @@ func ProcessGoBinary(binPath string, functions []string) (res *gobin.GoBinaryInf
 	// Parse the ELF file
 	elfFile, err := elf.NewFile(f)
 	if err != nil {
-		log.Fatalf("file %s could not be parsed as an ELF file: %w", binPath, err)
+		log.Fatalf("file %s could not be parsed as an ELF file: %s", binPath, err)
 	}
 
 	// Determine the architecture of the binary
