@@ -17,4 +17,7 @@
 # IDE
 .idea/
 *.iml
+
+# BPF specific files
 *.o
+vmlinux.h

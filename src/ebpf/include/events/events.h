@@ -87,3 +87,14 @@ struct {
     __type(value, struct go_slice_t);
     __uint(max_entries, 1024);
 } go_tls_context SEC(".maps");
+
+
+
+
+// ####################################################################### //
+// Function declarations
+// ####################################################################### //
+
+static __inline __u32 get_pid();
+static __inline int should_trace();
+static __inline void send_event(struct pt_regs *ctx, __u64 buf, __u64 size, __u64 total_size, enum direction_t direction) ;

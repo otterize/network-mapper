@@ -1,8 +1,7 @@
 //go:build ignore
 
-#include "headers.h"
-#include "maps.h"
-#include "common.h"
+#include "include/headers.h"
+#include "include/events/events.h"
 
 // ####################################################################### //
 // Definitions
