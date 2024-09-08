@@ -37,8 +37,7 @@ func (t *Tracer) AttachToGoTls(cInfo container.ContainerInfo) error {
 
 	ex, err := link.OpenExecutable(binPath)
 	if err != nil {
-		logrus.Errorf("failed to open executable %s: %d", binPath, cInfo.Pid)
-		return nil
+		return errors.Wrap(err)
 	}
 
 	inode, err := getFileInode(binPath)

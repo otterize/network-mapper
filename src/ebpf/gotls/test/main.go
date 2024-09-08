@@ -119,6 +119,10 @@ func main() {
 
 		dataBuffer := bufio.NewReaderSize(byteReader, int(event.Meta.DataSize))
 		data, err := io.ReadAll(dataBuffer)
+		if err != nil {
+			log.Printf("reading data: %s", err)
+			continue
+		}
 
 		log.Printf("  Pid: %d\n", event.Meta.Pid)
 		log.Printf("  Msg size: %d\n", event.Meta.TotalSize)

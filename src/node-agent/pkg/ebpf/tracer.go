@@ -75,20 +75,21 @@ func (t *Tracer) addTarget(container container.ContainerInfo) error {
 	return nil
 }
 
-func (t *Tracer) removeTarget(info container.ContainerInfo) error {
-	pidNamespaceInode, err := getPIDNamespaceInode(info.Pid)
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to get PID namespace inode")
-	}
-
-	err = t.targetMap.Delete(pidNamespaceInode)
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete target map entry")
-	}
-
-	delete(t.reader.containerMap, pidNamespaceInode)
-
-	return nil
-}
+// TODO: use this function
+//func (t *Tracer) removeTarget(info container.ContainerInfo) error {
+//	pidNamespaceInode, err := getPIDNamespaceInode(info.Pid)
+//
+//	if err != nil {
+//		return errors.Wrapf(err, "failed to get PID namespace inode")
+//	}
+//
+//	err = t.targetMap.Delete(pidNamespaceInode)
+//
+//	if err != nil {
+//		return errors.Wrapf(err, "failed to delete target map entry")
+//	}
+//
+//	delete(t.reader.containerMap, pidNamespaceInode)
+//
+//	return nil
+//}

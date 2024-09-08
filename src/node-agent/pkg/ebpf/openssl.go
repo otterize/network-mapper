@@ -21,8 +21,7 @@ func (t *Tracer) AttachToOpenSSL(cInfo container.ContainerInfo) error {
 
 	ex, err := link.OpenExecutable(libsslPath)
 	if err != nil {
-		logrus.Errorf("failed to open executable %s: %d", libsslPath, cInfo.Pid)
-		return nil
+		return errors.Wrap(err)
 	}
 
 	inode, err := getFileInode(libsslPath)
