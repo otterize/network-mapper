@@ -134,8 +134,7 @@ static __inline bool is_aws_api_call(struct http_request_t *req) {
 
         // Compare substring
         if (helper_memcmp(&req->host[i], HOST_AWS, HOST_AWS_LEN) == 0) {
-            bpf_printk("HEADER: %c%c%c%c%c%c%c%c%c%c", req->host[0], req->host[1], req->host[2], req->host[3], req->host[4], req->host[5], req->host[6], req->host[7], req->host[8], req->host[9]);
-            return true;  // "amazonaws.com" found
+            return true;  // domain found
         }
     }
 
