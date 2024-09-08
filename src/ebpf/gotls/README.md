@@ -3,7 +3,7 @@
 This package enables eBPF-based tracing of TLS data in Go applications.
 This is done by attaching uprobes to the crypto/tls read and write functions in Go, allowing to capture and inspect plain-text data during TLS communication.
 
-### Hook points
+## Hook points
 
 Getting the required symbols can be done by using the `objdump` command. The following symbols are required to attach uprobes to the read and write functions of the `crypto/tls` package:
 
@@ -12,7 +12,7 @@ Getting the required symbols can be done by using the `objdump` command. The fol
 
 Useful [tutorial](https://www.grant.pizza/blog/tracing-go-functions-with-ebpf-part-1/) on the subject
 
-### Uprobes vs Uretprobes
+## Uprobes vs Uretprobes
 
 Go's runtime makes it impossible using uretprobes due to its stack management.
 The stack in Go is small initially and expands as needed, which copies the old
@@ -23,7 +23,7 @@ the function, as uretprobes can lead to program errors during stack expansion.
 
 A nice [explanation](https://blog.0x74696d.com/posts/challenges-of-bpf-tracing-go/) regarding the subject
 
-### Go version
+## Go version
 
 Prior to go version 1.17 go passed arguments to functions using the stack.
 This really complicated the task of tracing functions in Go, as we needed to
@@ -33,7 +33,7 @@ Starting from go version 1.17, We can read the arguments from the registers.
 
 A nice [explanation](https://blog.0x74696d.com/posts/challenges-of-bpf-tracing-go/) regarding the subject
 
-### The g struct
+## The g struct
 
 Since we are using uprobes to hook into the return points of the `Read` function,
 we are losing reference to the input buffer. To solve this issue we need to get
