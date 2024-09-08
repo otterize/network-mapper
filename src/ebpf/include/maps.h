@@ -21,7 +21,6 @@ enum direction_t {
 
 struct ssl_event_meta_t {
     __u32 pid;
-    __u32 position;
     __u64 timestamp;
     __u32 data_size;
     __u32 total_size;

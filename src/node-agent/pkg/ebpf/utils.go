@@ -10,10 +10,11 @@ import (
 
 func getProbeKey(p BpfProgram, inode uint64) ProbeKey {
 	return ProbeKey{
-		address:  p.Address,
-		inode:    inode,
-		fnName:   p.Symbol,
-		retprobe: p.Type == BpfEventTypeURetProbe,
+		address:     p.Address,
+		inode:       inode,
+		fnName:      p.Symbol,
+		retprobe:    p.Type == BpfEventTypeURetProbe,
+		programName: p.HandlerSpec.Name,
 	}
 }
 

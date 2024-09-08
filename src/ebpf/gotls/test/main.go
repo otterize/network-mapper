@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"github.com/otterize/network-mapper/src/bintools"
 	"github.com/otterize/network-mapper/src/bpfmanager"
 	"github.com/otterize/network-mapper/src/ebpf"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -24,14 +26,6 @@ const (
 )
 
 var FunctionsToProcess = []string{WriteGoTLSFunc, ReadGoTLSFunc}
-
-func B2S(bs []uint8) string {
-	b := make([]byte, len(bs))
-	for i, v := range bs {
-		b[i] = byte(v)
-	}
-	return string(b)
-}
 
 func main() {
 	inspectionResult, err := bintools.ProcessGoBinary(binPath, FunctionsToProcess)
@@ -117,15 +111,21 @@ func main() {
 		}
 
 		// Parse the perf event entry into a bpfEvent structure.
-		if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &event); err != nil {
+		byteReader := bytes.NewReader(record.RawSample)
+		if err := binary.Read(byteReader, binary.LittleEndian, &event.Meta); err != nil {
 			log.Printf("parsing perf event: %s", err)
 			continue
 		}
 
-		msgString := B2S(event.Data[:event.Meta.DataSize])
+		dataBuffer := bufio.NewReaderSize(byteReader, int(event.Meta.DataSize))
+		data, err := io.ReadAll(dataBuffer)
+		if err != nil {
+			log.Printf("reading data: %s", err)
+			continue
+		}
+
 		log.Printf("  Pid: %d\n", event.Meta.Pid)
-		log.Printf("  Msg pos: %d\n", event.Meta.Position)
 		log.Printf("  Msg size: %d\n", event.Meta.TotalSize)
-		log.Printf("  Msg: %s\n", msgString)
+		log.Printf("  Msg: %s\n", string(data))
 	}
 }

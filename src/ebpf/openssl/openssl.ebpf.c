@@ -7,9 +7,7 @@
 
 SEC("uprobe/otterize_SSL_write")
 void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
-    if (!shouldTrace()) {
-        return;
-    }
+    if (!should_trace()) return;
 
     // capture the cleartext buffer and size
     struct ssl_context_t context = {
@@ -28,9 +26,7 @@ void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
 
 SEC("uretprobe/otterize_SSL_write_ret")
 void BPF_KRETPROBE(otterize_SSL_write_ret) {
-    if (!shouldTrace()) {
-        return;
-    }
+    if (!should_trace()) return;
 
     __u64 key = bpf_get_current_pid_tgid();
     void* pContext = bpf_map_lookup_elem(&ssl_contexts, &key);
@@ -52,47 +48,12 @@ void BPF_KRETPROBE(otterize_SSL_write_ret) {
         return;
     }
 
-    struct ssl_event_t *event = bpf_map_lookup_elem(&ssl_event, &ZERO);
+    // Calculate the size to read
+    __u64 size_to_read = context.size;
+    if (size_to_read > MAX_CHUNK_SIZE) size_to_read = MAX_CHUNK_SIZE;
 
-    if (event == NULL) {
-        bpf_printk("failed to create ssl_event_t");
-        return;
-    }
-
-    event->meta.pid = get_pid();
-    event->meta.data_size = context.size;
-
-    if (context.size <= 0) {
-        // not supposed to happen, but the verifier can't know that
-        return;
-    } else if (context.size > MAX_CHUNK_SIZE) {
-        event->meta.data_size = MAX_CHUNK_SIZE;
-    }
-
-    // copy the cleartext buffer to the event struct
-    // the verifier doesn't let us use event->size, or any other variable, as it
-    // can't ensure that it's within bounds. So we use a constant the size of the
-    // output buffer. This appeases the verifier, but I'm not sure what is the effect of
-    // reading beyond (context.buffer + context.size). ???
-    err = bpf_probe_read_user(&event->data, context.size & (MAX_CHUNK_SIZE - 1), (char*)context.buffer);
-
-    if (err != 0) {
-        bpf_printk("bpf_probe_read_user failed");
-        return;
-    }
-
-    err = bpf_perf_event_output(
-        ctx,
-        &ssl_events,
-        BPF_F_CURRENT_CPU,
-        event,
-        (sizeof(struct ssl_event_meta_t) + event->meta.data_size) & (MAX_CHUNK_SIZE - 1)
-    );
-
-    if (err != 0) {
-        bpf_printk("bpf_perf_event_output failed: %d", err);
-        return;
-    }
+    // Send the event
+    send_event(ctx, context.buffer, size_to_read, context.size, EGRESS);
 
     // delete the context
     bpf_map_delete_elem(&ssl_contexts, &key);
