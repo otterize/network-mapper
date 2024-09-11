@@ -13,7 +13,7 @@ OTRZ_AGENT_IMAGE_FULL_NAME = $(OTRZ_IMAGE_REGISTRY)/$(OTRZ_AGENT_IMAGE_NAME):$(O
 OTRZ_MAPPER_IMAGE_FULL_NAME = $(OTRZ_IMAGE_REGISTRY)/$(OTRZ_MAPPER_IMAGE_NAME):$(OTRZ_IMAGE_TAG)
 
 LIMA_K8S_TEMPLATE = ./dev/lima-k8s.yaml
-LIMA_CLUSTER_NAME = k8s
+LIMA_CLUSTER_NAME = k8s-$(DOCKER_TARGET_ARCH)
 LIMA_KUBECONFIG_PATH = $(HOME)/.kube/lima
 LIMA_TEMP_DIR = /tmp/lima/
 DOCKER_TARGET_ARCH = arm64
@@ -46,11 +46,11 @@ lima-install: ## Installs lima if not already installed
 
 lima-k8s: ## Starts Lima with k8s template
 	@echo "${PROMPT_COLOR}Starting Lima with the template '$(LIMA_K8S_TEMPLATE)'...${PROMPT_NC}"
-	limactl start $(LIMA_K8S_TEMPLATE) --arch $(LIMA_TARGET_ARCH) --name k8s
+	limactl start $(LIMA_K8S_TEMPLATE) --arch $(LIMA_TARGET_ARCH) --name $(LIMA_CLUSTER_NAME)
 
 lima-kubeconfig: ## Copies kubeconfig from lima to host
 	@echo "${PROMPT_COLOR}Copying kubeconfig from Lima to host...${PROMPT_NC}"
-	cp $(shell limactl list k8s --format '{{.Dir}}/copied-from-guest/kubeconfig.yaml') $(LIMA_KUBECONFIG_PATH)
+	cp $(shell limactl list $(LIMA_CLUSTER_NAME) --format '{{.Dir}}/copied-from-guest/kubeconfig.yaml') $(LIMA_KUBECONFIG_PATH)
 	@echo "${PROMPT_COLOR}Run 'export KUBECONFIG=$(LIMA_KUBECONFIG_PATH)' to use the kubeconfig.${PROMPT_NC}"
 
 lima-copy-images: ## Copies the images to lima
@@ -60,8 +60,8 @@ lima-copy-images: ## Copies the images to lima
 	docker save -o $(LIMA_TEMP_DIR)images/$(OTRZ_AGENT_IMAGE_NAME).tar $(OTRZ_AGENT_IMAGE_FULL_NAME)
 	docker save -o $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar $(OTRZ_MAPPER_IMAGE_FULL_NAME)
 
-	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_AGENT_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
-	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar k8s:/tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
+	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_AGENT_IMAGE_NAME).tar $(LIMA_CLUSTER_NAME):/tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
+	limactl copy $(LIMA_TEMP_DIR)images/$(OTRZ_MAPPER_IMAGE_NAME).tar $(LIMA_CLUSTER_NAME):/tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
 
 	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_AGENT_IMAGE_NAME).tar
 	LIMA_INSTANCE=$(LIMA_CLUSTER_NAME) lima sudo ctr -n=k8s.io images import /tmp/$(OTRZ_MAPPER_IMAGE_NAME).tar
