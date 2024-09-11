@@ -111,3 +111,12 @@ clean-lima: ## Cleans up lima environment
 	@echo "${PROMPT_COLOR}Cleaning up '$(LIMA_K8S_TEMPLATE)'...${PROMPT_NC}"
 	limactl stop -f $(LIMA_CLUSTER_NAME)
 	limactl delete $(LIMA_CLUSTER_NAME)
+
+push-to-aws: build-mapper build-agent
+	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 353146681200.dkr.ecr.us-east-1.amazonaws.com
+
+	docker tag otterize/mapper:0.0.0 353146681200.dkr.ecr.us-east-1.amazonaws.com/network-mapper:0.0.0
+	docker push 353146681200.dkr.ecr.us-east-1.amazonaws.com/network-mapper:0.0.0
+
+	docker tag otterize/agent:0.0.0 353146681200.dkr.ecr.us-east-1.amazonaws.com/node-agent:0.0.0
+	docker push 353146681200.dkr.ecr.us-east-1.amazonaws.com/node-agent:0.0.0
