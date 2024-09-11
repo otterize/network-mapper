@@ -17,7 +17,6 @@ func init() {
 		logrus.Fatalf("error assigning specs: %s", err)
 	}
 
-	// Load pre-compiled programs and maps into the kernel.
 	if err := LoadBpfObjects(&Objs, nil); err != nil {
 		logrus.Fatalf("error loading objects: %s", err)
 	}

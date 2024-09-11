@@ -3,6 +3,13 @@
 #include "include/headers.h"
 #include "include/events/events.h"
 
+// SSL_write[_ex] signatures:
+// int SSL_write(SSL *ssl, const void *buf, int num);
+// int SSL_write_ex(SSL *s, const void *buf, size_t num, size_t *written);
+//
+// void* ssl - opaque SSL object
+// uintptr_t buffer - pointer to the buffer containing the unencrypted data
+// int num - number of bytes in _buffer_
 SEC("uprobe/otterize_SSL_write")
 void BPF_KPROBE(otterize_SSL_write, void* ssl, uintptr_t buffer, int num) {
     if (!should_trace()) return;

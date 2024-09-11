@@ -7,10 +7,6 @@
 #include "include/events/events.h"
 #include "include/events/events.c"
 
-// Filter logic
-#include "include/filters/pci.h"
-#include "include/filters/pci.c"
-
 #include "include/filters/filters.h"
 #include "include/filters/filters.c"
 
