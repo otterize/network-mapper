@@ -16,7 +16,6 @@ env:
   REGISTRY: us-central1-docker.pkg.dev/main-383408/otterize
 
 jobs:
-
   build:
     if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
     name: Build
@@ -29,7 +28,6 @@ jobs:
           - mapper
           - sniffer
           - kafka-watcher
-          - agent
 
     steps:
       - id: registry
@@ -106,6 +104,60 @@ jobs:
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            "VERSION=0.0.${{ github.run_id }}"
+
+  # entire workflow is duplicated (sorry) since we can't
+  # cross-compile the arm64 agent on amd64 builders.
+  # This is because the vmlinux.h generation needs
+  # information from the an arm64 kernel.
+  # TODO: refactor to avoid duplication
+  build-node-agent:
+    if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
+    name: Build (agent)
+    runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
+
+    steps:
+      - id: registry
+        run: echo "registry=${{ env.REGISTRY }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+        with:
+          driver-opts: network=host
+
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: _json_key_base64
+          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: otterize
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Test & Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: src/
+          file: build/agent.Dockerfile
+          tags: ${{ env.REGISTRY }}/agent:${{ github.sha }}
+          push: true
+          network: host
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
