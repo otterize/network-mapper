@@ -1238,6 +1238,88 @@ func (s *ResolverTestSuite) TestResolveOtterizeIdentityIgnoreHostNetworkPods() {
 
 }
 
+func (s *ResolverTestSuite) TestTCPResultsFromHostNetworkPodsIgnored() {
+	// Add external service
+	internalServiceIp := "10.0.0.16"
+	externalServiceIP := "34.10.0.12"
+	servicePort := 9090
+	s.AddDeploymentWithIngressService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, internalServiceIp, externalServiceIP, servicePort)
+
+	// Add host network pod
+	hostNetworkServiceName := "test-service"
+	hostNetworkServiceIP := "10.0.0.10"
+	hostNetworkPodIP := "1.1.1.3"
+	pod := s.AddPodWithHostNetwork("pod", hostNetworkPodIP, map[string]string{"app": "test"}, nil, true)
+	s.AddService(hostNetworkServiceName, map[string]string{"app": "test"}, hostNetworkServiceIP, []*v1.Pod{pod})
+
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Report TCP results of traffic from host network pod to external service
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: hostNetworkPodIP,
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination:     externalServiceIP,
+						DestinationIP:   nilable.From(externalServiceIP),
+						DestinationPort: nilable.From(servicePort),
+						LastSeen:        packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	// Verify that the traffic from host network pod to external service is ignored
+	res, err := test_gql_client.ServiceIntents(context.Background(), s.client, nil)
+	s.Require().NoError(err)
+	s.Require().ElementsMatch(res.ServiceIntents, []test_gql_client.ServiceIntentsServiceIntents{})
+
+	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
+	s.Require().Empty(intents)
+}
+
+func (s *ResolverTestSuite) TestTCPResultsFromExternalToPodSavedAsIncoming() {
+	// Add Pod
+	deploymentName := "coolz"
+	podIP := "1.1.1.3"
+	dep, _ := s.AddDeployment(deploymentName, []string{podIP}, map[string]string{"app": "coolz"})
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Report TCP results of traffic from external ip to pod
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "8.8.8.8",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination:     podIP,
+						DestinationIP:   nilable.From(podIP),
+						DestinationPort: nilable.From(80),
+						LastSeen:        packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	// Verify that the traffic from external ip to pod is saved as incoming
+	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
+	s.Require().Len(intents, 1)
+	s.Require().Equal(dep.Name, intents[0].Intent.Server.Name)
+	s.Require().Equal(dep.Namespace, intents[0].Intent.Server.Namespace)
+	s.Require().Equal("8.8.8.8", intents[0].Intent.IP)
+}
+
 func TestRunSuite(t *testing.T) {
 	suite.Run(t, new(ResolverTestSuite))
 }
