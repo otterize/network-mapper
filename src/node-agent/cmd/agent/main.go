@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/reconcilers"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
 	"github.com/sirupsen/logrus"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -16,7 +17,7 @@ func main() {
 	criClient := service.CreateCRIClientOrDie()
 	containerManager := container.NewContainerManager(criClient)
 
-	service.RegisterReconcilersOrDie(
+	reconcilers.RegisterReconcilersOrDie(
 		mgr,
 		client,
 		containerManager,

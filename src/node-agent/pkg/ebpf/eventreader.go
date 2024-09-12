@@ -11,6 +11,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -94,10 +95,6 @@ func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, []byte, err
 }
 
 func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT, data []byte) error {
-	// TODO: delete
-	fmt.Printf("\nevent: %d | %d | %d \n", event.Meta.Timestamp, event.Meta.TotalSize, event.Meta.DataSize)
-	fmt.Printf("raw data: %s\n", string(data))
-
 	// Try to parse the event as an HTTP message
 	errReq := e.handleHttpRequest(event, data)
 	if errReq == nil {
@@ -130,7 +127,9 @@ func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT, data []byte
 		return errors.Wrap(err)
 	}
 
-	logrus.Debugf("Got HTTP request: %s\n", string(body))
+	if service.PrintHttpRequests() {
+		logrus.Debugf("Got HTTP request: %s\n", string(body))
+	}
 
 	// Handle outgoing HTTP requests
 	if Direction(event.Meta.Direction) == DirectionEgress {
@@ -158,7 +157,9 @@ func (e *EventReader) handleHttpResponse(event otrzebpf.BpfSslEventT, data []byt
 		return errors.Wrap(err)
 	}
 
-	logrus.Debugf("Got HTTP response: %s\n", string(body))
+	if service.PrintHttpRequests() {
+		logrus.Debugf("Got HTTP response: %s\n", string(body))
+	}
 
 	return nil
 }

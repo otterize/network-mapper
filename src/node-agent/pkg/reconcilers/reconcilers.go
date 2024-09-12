@@ -1,8 +1,7 @@
-package service
+package reconcilers
 
 import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
-	"github.com/otterize/network-mapper/src/node-agent/pkg/reconcilers"
 	"github.com/sirupsen/logrus"
 	"reflect"
 	crtClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,7 +13,7 @@ func RegisterReconcilersOrDie(
 	client crtClient.Client,
 	containerManager *container.ContainerManager,
 ) {
-	ebpfReconciler, err := reconcilers.NewEBPFReconciler(
+	ebpfReconciler, err := NewEBPFReconciler(
 		client,
 		containerManager,
 	)
@@ -23,7 +22,7 @@ func RegisterReconcilersOrDie(
 		logrus.WithError(err).Panic("unable to create EBPF reconciler")
 	}
 
-	reconcilersToRegister := []reconcilers.Reconciler{
+	reconcilersToRegister := []Reconciler{
 		ebpfReconciler,
 	}
 

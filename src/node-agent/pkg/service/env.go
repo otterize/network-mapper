@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	podName      string
-	podNamespace string
+	podName           string
+	podNamespace      string
+	printHttpRequests = false
 )
 
 func init() {
@@ -22,6 +23,8 @@ func init() {
 	if podNamespace == "" {
 		logrus.Panic("POD_NAMESPACE environment variable must be set")
 	}
+
+	printHttpRequests = os.Getenv("OTTERIZE_PRINT_HTTP_REQUESTS") == "true"
 }
 
 func PodName() string {
@@ -30,4 +33,8 @@ func PodName() string {
 
 func PodNamespace() string {
 	return podNamespace
+}
+
+func PrintHttpRequests() bool {
+	return printHttpRequests
 }
