@@ -167,9 +167,10 @@ func main() {
 	if viper.GetBool(config.EnableAWSVisibilityWebHookKey) {
 		logrus.Infoln("Registering AWS visibility mutating webhook")
 
+		decoder := admission.NewDecoder(mgr.GetScheme())
 		webhookHandler, err := pod_webhook.NewInjectDNSConfigToPodWebhook(
 			mgr.GetClient(),
-			admission.NewDecoder(mgr.GetScheme()),
+			&decoder,
 		)
 
 		if err != nil {

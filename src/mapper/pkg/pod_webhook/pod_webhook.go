@@ -13,10 +13,10 @@ import (
 
 type InjectDNSConfigToPodWebhook struct {
 	client  client.Client
-	decoder admission.Decoder
+	decoder *admission.Decoder
 }
 
-func NewInjectDNSConfigToPodWebhook(client client.Client, decoder admission.Decoder) (*InjectDNSConfigToPodWebhook, error) {
+func NewInjectDNSConfigToPodWebhook(client client.Client, decoder *admission.Decoder) (*InjectDNSConfigToPodWebhook, error) {
 	return &InjectDNSConfigToPodWebhook{
 		client:  client,
 		decoder: decoder,
@@ -25,7 +25,7 @@ func NewInjectDNSConfigToPodWebhook(client client.Client, decoder admission.Deco
 
 func (w *InjectDNSConfigToPodWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := corev1.Pod{}
-	err := w.decoder.Decode(req, &pod)
+	err := (*w.decoder).Decode(req, &pod)
 
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)

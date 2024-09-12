@@ -202,8 +202,12 @@ func (s *ResolverTestSuite) TestReportCaptureResults() {
 
 func (s *ResolverTestSuite) TestReportIncomingTraffic() {
 	serviceIp := "10.0.0.16"
+	service2Ip := "10.0.0.17"
 	serviceExternalIP := "34.10.0.12"
 	s.AddDeploymentWithIngressService("service1", []string{"1.1.1.1"}, map[string]string{"app": "service1"}, serviceIp, serviceExternalIP, 9090)
+
+	// Add service2 to make sure our resolution handles the case where the load-balancer services share the same external IP
+	s.AddDeploymentWithIngressService("service2", []string{"1.1.1.2"}, map[string]string{"app": "service1"}, service2Ip, serviceExternalIP, 1337)
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 	externalInternetServerIP := "142.198.10.38"
 

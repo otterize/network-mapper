@@ -273,23 +273,18 @@ func (k *KubeFinder) resolveLoadBalancerService(ctx context.Context, ip string, 
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
-	if len(services.Items) == 0 {
+	servicesSlice := lo.Filter(services.Items, func(s corev1.Service, _ int) bool {
+		return lo.SomeBy(s.Spec.Ports, func(p corev1.ServicePort) bool { return p.Port == int32(port) })
+	})
+
+	if len(servicesSlice) == 0 {
 		return nil, false, nil
 	}
-	if len(services.Items) != 1 {
+	if len(servicesSlice) != 1 {
 		return nil, false, errors.Wrap(ErrFoundMoreThanOneService)
 	}
 
-	service := services.Items[0]
-	_, isServicePort := lo.Find(service.Spec.Ports, func(p corev1.ServicePort) bool {
-		return p.Port == int32(port)
-	})
-
-	if !isServicePort {
-		logrus.Debugf("service %s does not have port %d, ignoring", service.Name, port)
-		return nil, false, nil
-	}
-
+	service := servicesSlice[0]
 	return &service, true, nil
 }
 

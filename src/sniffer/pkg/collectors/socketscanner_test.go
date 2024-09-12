@@ -11,7 +11,6 @@ import (
 	"golang.org/x/exp/slices"
 	"gotest.tools/v3/assert"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -125,8 +124,8 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 			},
 		},
 	}
-	slices.SortFunc(results, func(a, b mapperclient.RecordedDestinationsForSrc) int {
-		return strings.Compare(a.SrcIp, b.SrcIp)
+	slices.SortFunc(results, func(a, b mapperclient.RecordedDestinationsForSrc) bool {
+		return a.SrcIp < b.SrcIp
 	})
 	assert.DeepEqual(s.T(), expectedResults, results, cmpopts.IgnoreTypes(time.Time{}))
 }
