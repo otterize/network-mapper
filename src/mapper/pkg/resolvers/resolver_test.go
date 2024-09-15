@@ -1224,7 +1224,7 @@ func (s *ResolverTestSuite) TestResolveOtterizeIdentityIgnoreHostNetworkPods() {
 	podIP := "1.1.1.3"
 
 	pod3 := s.AddPodWithHostNetwork("pod3", podIP, map[string]string{"app": "test"}, nil, true)
-	s.AddService(serviceName, map[string]string{"app": "test"}, serviceIP, []*v1.Pod{pod3})
+	s.AddClusterIPService(serviceName, map[string]string{"app": "test"}, serviceIP, []*v1.Pod{pod3})
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	service := &v1.Service{}
@@ -1250,7 +1250,7 @@ func (s *ResolverTestSuite) TestTCPResultsFromHostNetworkPodsIgnored() {
 	hostNetworkServiceIP := "10.0.0.10"
 	hostNetworkPodIP := "1.1.1.3"
 	pod := s.AddPodWithHostNetwork("pod", hostNetworkPodIP, map[string]string{"app": "test"}, nil, true)
-	s.AddService(hostNetworkServiceName, map[string]string{"app": "test"}, hostNetworkServiceIP, []*v1.Pod{pod})
+	s.AddClusterIPService(hostNetworkServiceName, map[string]string{"app": "test"}, hostNetworkServiceIP, []*v1.Pod{pod})
 
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
@@ -1285,7 +1285,7 @@ func (s *ResolverTestSuite) TestTCPResultsFromHostNetworkPodsIgnored() {
 }
 
 func (s *ResolverTestSuite) TestTCPResultsFromExternalToPodSavedAsIncoming() {
-	// Add Pod
+	// Create deployment
 	deploymentName := "coolz"
 	podIP := "1.1.1.3"
 	dep, _ := s.AddDeployment(deploymentName, []string{podIP}, map[string]string{"app": "coolz"})
@@ -1313,6 +1313,51 @@ func (s *ResolverTestSuite) TestTCPResultsFromExternalToPodSavedAsIncoming() {
 	s.waitForCaptureResultsProcessed(10 * time.Second)
 
 	// Verify that the traffic from external ip to pod is saved as incoming
+	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
+	s.Require().Len(intents, 1)
+	s.Require().Equal(dep.Name, intents[0].Intent.Server.Name)
+	s.Require().Equal(dep.Namespace, intents[0].Intent.Server.Namespace)
+	s.Require().Equal("8.8.8.8", intents[0].Intent.IP)
+}
+
+func (s *ResolverTestSuite) TestTCPResultsFromExternalToLoadBalancerServiceUsingNodeIpAndPortSavedAsIncoming() {
+	// Create deployment
+	deploymentName := "coolz"
+	podIP := "1.1.1.3"
+	serviceIP := "10.0.0.10"
+	dep, pods := s.AddDeployment(deploymentName, []string{podIP}, map[string]string{"app": "coolz"})
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+	svc := s.AddLoadBalancerService("coolz", map[string]string{"app": "coolz"}, serviceIP, pods)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+	nodePort := svc.Spec.Ports[0].NodePort
+
+	nodes := v1.NodeList{}
+	err := s.Mgr.GetClient().List(context.Background(), &nodes)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(nodes.Items)
+	nodeIP := nodes.Items[0].Status.Addresses[0].Address
+
+	// Report TCP results of traffic from external ip to nodeIp:nodePort
+	packetTime := time.Now().Add(time.Minute)
+	_, err = test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "8.8.8.8",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination:     nodeIP,
+						DestinationIP:   nilable.From(nodeIP),
+						DestinationPort: nilable.From(int(nodePort)),
+						LastSeen:        packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	// Verify that the traffic from external ip to nodeIp:nodePort is saved as incoming
 	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
 	s.Require().Len(intents, 1)
 	s.Require().Equal(dep.Name, intents[0].Intent.Server.Name)
