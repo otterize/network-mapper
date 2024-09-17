@@ -10,15 +10,17 @@ import (
 	"time"
 )
 
+// InitializeService sets up the basic infrastructure for the service
 func InitializeService() {
 	logrus.SetLevel(logrus.DebugLevel)
-
-	if viper.GetBool(sharedconfig.DebugKey) {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
+
+	if viper.GetBool(sharedconfig.DebugKey) {
+		logrus.Infof("Running in debug mode")
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 

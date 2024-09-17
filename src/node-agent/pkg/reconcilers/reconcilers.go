@@ -2,7 +2,9 @@ package reconcilers
 
 import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"reflect"
 	crtClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -13,20 +15,22 @@ func RegisterReconcilersOrDie(
 	client crtClient.Client,
 	containerManager *container.ContainerManager,
 ) {
-	ebpfReconciler, err := NewEBPFReconciler(
-		client,
-		containerManager,
-	)
+	var reconcilers []Reconciler
 
-	if err != nil {
-		logrus.WithError(err).Panic("unable to create EBPF reconciler")
+	if viper.GetBool(sharedconfig.EnableEBPFKey) {
+		ebpfReconciler, err := NewEBPFReconciler(
+			client,
+			containerManager,
+		)
+
+		if err != nil {
+			logrus.WithError(err).Panic("unable to create EBPF reconciler")
+		}
+
+		reconcilers = append(reconcilers, ebpfReconciler)
 	}
 
-	reconcilersToRegister := []Reconciler{
-		ebpfReconciler,
-	}
-
-	for _, r := range reconcilersToRegister {
+	for _, r := range reconcilers {
 		if err := r.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).
 				WithField("reconciler", reflect.TypeOf(r).Name()).

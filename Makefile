@@ -86,21 +86,20 @@ lima-install-otterize: ## Installs Otterize in the lima kubernetes cluster with 
     helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) dep up ../helm-charts/otterize-kubernetes; \
     helm --kubeconfig=$(LIMA_KUBECONFIG_PATH) upgrade --install \
     	otterize $(HELM_CHARTS_PATH) -n $(OTRZ_NAMESPACE) --create-namespace \
-		--set networkMapper.sniffer.enable=false \
-		--set networkMapper.debug=true \
-		--set networkMapper.agent.tag=$(OTRZ_IMAGE_TAG) \
-		--set networkMapper.agent.image=$(OTRZ_AGENT_IMAGE_NAME) \
-		--set networkMapper.agent.pullPolicy=Never \
-		--set networkMapper.bpfman.tag=$(OTRZ_IMAGE_TAG) \
-		--set networkMapper.bpfman.image=$(OTRZ_BPFMAN_IMAGE_NAME) \
-		--set networkMapper.bpfman.pullPolicy=Never \
-		--set networkMapper.mapper.tag=$(OTRZ_IMAGE_TAG) \
-		--set networkMapper.mapper.image=$(OTRZ_MAPPER_IMAGE_NAME) \
-		--set networkMapper.mapper.pullPolicy=Never \
-		--set intentsOperator.operator.mode=defaultShadow \
 		--set global.otterizeCloud.apiAddress=$(OTRZ_CLUSTER) \
 		--set global.otterizeCloud.credentials.clientId=$$client_id \
-		--set global.otterizeCloud.credentials.clientSecret=$$client_secret
+		--set global.otterizeCloud.credentials.clientSecret=$$client_secret \
+		--set intentsOperator.operator.mode=defaultShadow \
+		--set networkMapper.agent.enable=true \
+		--set networkMapper.agent.image=$(OTRZ_AGENT_IMAGE_NAME) \
+		--set networkMapper.agent.pullPolicy=Never \
+		--set networkMapper.agent.tag=$(OTRZ_IMAGE_TAG) \
+		--set networkMapper.debug=true \
+		--set networkMapper.experimental.ebpf=true \
+		--set networkMapper.mapper.image=$(OTRZ_MAPPER_IMAGE_NAME) \
+		--set networkMapper.mapper.pullPolicy=Never \
+		--set networkMapper.mapper.tag=$(OTRZ_IMAGE_TAG) \
+		--wait
 
 
 setup-lima: lima-install lima-k8s lima-kubeconfig lima-update-images lima-install-otterize ## Setup Lima with kubernetes template

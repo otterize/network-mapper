@@ -31,6 +31,7 @@ func NewEBPFReconciler(
 	containerManager *container.ContainerManager,
 ) (*EBPFReconciler, error) {
 	eventReader, err := ebpf.NewEventReader(otrzebpf.Objs.SslEvents)
+
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

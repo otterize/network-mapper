@@ -30,7 +30,12 @@ func init() {
 }
 
 func NewEventReader(perfMap *ebpf.Map) (*EventReader, error) {
+	if perfMap == nil {
+		return nil, errors.New("perfMap is nil - check that eBPF programs are loaded")
+	}
+
 	perfReader, err := perf.NewReader(perfMap, os.Getpagesize()*64)
+
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

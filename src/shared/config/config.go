@@ -11,23 +11,34 @@ Shared config keys between all reporter components - DNS Sniffer, Kafka watcher,
 */
 
 const (
-	MapperApiUrlKey              = "mapper-api-url"
-	MapperApiUrlDefault          = "http://mapper:9090/query"
-	DebugKey                     = "debug"
-	DebugDefault                 = false
+	MapperApiUrlKey     = "mapper-api-url"
+	MapperApiUrlDefault = "http://mapper:9090/query"
+
+	DebugKey     = "debug"
+	DebugDefault = false
+
 	PrometheusMetricsPortKey     = "metrics-port"
 	PrometheusMetricsPortDefault = 2112
+
 	TelemetryErrorsAPIKeyKey     = "telemetry-errors-api-key"
 	TelemetryErrorsAPIKeyDefault = "d86195588a41fa03aa6711993bb1c765"
-	EnableTCPKey                 = "enable-tcp"
-	EnableTCPSnifferDefault      = true
-	EnableSocketScannerKey       = "enable-socket-scanner"
-	EnableSocketScannerDefault   = true
-	EnableDNSKey                 = "enable-dns"
-	EnableDNSSnifferDefault      = true
+
+	EnableTCPKey            = "enable-tcp"
+	EnableTCPSnifferDefault = true
+
+	EnableSocketScannerKey     = "enable-socket-scanner"
+	EnableSocketScannerDefault = true
+
+	EnableDNSKey            = "enable-dns"
+	EnableDNSSnifferDefault = true
 
 	EnvPodKey       = "pod"
 	EnvNamespaceKey = "namespace"
+
+	// experimental features
+
+	EnableEBPFKey     = "experimental-ebpf"
+	EnableEBPFDefault = false
 
 	envPrefix = "OTTERIZE"
 )
@@ -46,6 +57,7 @@ func init() {
 	viper.SetDefault(EnableTCPKey, EnableTCPSnifferDefault)
 	viper.SetDefault(EnableSocketScannerKey, EnableSocketScannerDefault)
 	viper.SetDefault(EnableDNSKey, EnableDNSSnifferDefault)
+	viper.SetDefault(EnableEBPFKey, EnableEBPFDefault)
 	viper.SetEnvPrefix(envPrefix)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
