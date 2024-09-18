@@ -26,7 +26,7 @@ const (
 	endpointIPPortIndexField            = "ipPort"
 	serviceIPIndexField                 = "spec.ip"
 	externalIPIndexField                = "spec.externalIPs"
-	portNumberIndexField                = "service.spec.ports.nodePort"
+	nodePortNumberIndexField            = "service.spec.ports.nodePort"
 	nodeIPIndexField                    = "node.status.Addresses.ExternalIP"
 	IstioCanonicalNameLabelKey          = "service.istio.io/canonical-name"
 	apiServerName                       = "kubernetes"
@@ -75,7 +75,6 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		res := make([]string, 0)
 		pod := object.(*corev1.Pod)
 
-		// TODO: SHOULD I REMOVE IT??
 		if pod.DeletionTimestamp != nil {
 			return res
 		}
@@ -118,14 +117,14 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		return errors.Wrap(err)
 	}
 
-	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, portNumberIndexField, func(object client.Object) []string {
+	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, nodePortNumberIndexField, func(object client.Object) []string {
+		// node ports are unique per service - so it can be used for indexing services
 		ports := sets.New[string]()
 		svc := object.(*corev1.Service)
 		if svc.DeletionTimestamp != nil {
 			return nil
 		}
-
-		// Node ports are unique regardless of the service type
+		// Only node port and load balancer typed services use node ports
 		if svc.Spec.Type != corev1.ServiceTypeNodePort && svc.Spec.Type != corev1.ServiceTypeLoadBalancer {
 			return nil
 		}
@@ -325,7 +324,7 @@ func (k *KubeFinder) resolveServiceByNodeIPAndPort(ctx context.Context, ip strin
 
 	portString := fmt.Sprintf("%d", port)
 	var services corev1.ServiceList
-	err = k.client.List(ctx, &services, client.MatchingFields{portNumberIndexField: portString})
+	err = k.client.List(ctx, &services, client.MatchingFields{nodePortNumberIndexField: portString})
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
@@ -464,7 +463,9 @@ func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc 
 	return dstSvcIdentity, true, nil
 }
 
-func (k *KubeFinder) IsSrcIpLocal(ctx context.Context, ip string) (bool, error) {
+func (k *KubeFinder) IsSrcIpClusterInternal(ctx context.Context, ip string) (bool, error) {
+	// Known issue: this function is currently missing support for services/endpoints, node.PodCIDR, and pods that were deleted.
+
 	isNode, err := k.IsNodeIP(ctx, ip)
 	if err != nil {
 		return false, errors.Wrap(err)
@@ -488,10 +489,6 @@ func (k *KubeFinder) IsSrcIpLocal(ctx context.Context, ip string) (bool, error) 
 	if isControlPlane {
 		return true, nil
 	}
-
-	//TODO: Should we check for services/endpoints as well?
-	//TODO: Should we check PodCIDR
-	//TODO: Should we have cache for pod ips and node ips?
 
 	return false, nil
 }

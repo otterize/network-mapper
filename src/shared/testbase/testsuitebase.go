@@ -69,6 +69,7 @@ func (s *ControllerManagerTestSuiteBase) SetupTest() {
 		ObjectMeta: metav1.ObjectMeta{Name: "node1"},
 		Status:     corev1.NodeStatus{Addresses: []corev1.NodeAddress{{Type: corev1.NodeInternalIP, Address: "192.168.1.1"}}},
 	}, metav1.CreateOptions{})
+	s.Require().NoError(err)
 }
 
 // BeforeTest happens AFTER the SetupTest()

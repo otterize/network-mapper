@@ -376,31 +376,37 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	}
 
 	for _, captureItem := range results.Results {
-		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
-
-		isLocal, err := r.kubeFinder.IsSrcIpLocal(ctx, captureItem.SrcIP)
+		err := r.handleTCPCaptureResult(ctx, captureItem)
 		if err != nil {
-			logrus.WithError(err).WithField("ip", captureItem.SrcIP).Error("could not determine if source IP is local")
-			continue
-		}
-		if !isLocal {
-			err := r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
-			if err != nil {
-				logrus.WithError(err).Error("could not report incoming internet traffic")
-			}
-			continue
-		}
-		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
-		if err != nil {
-			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
-			continue
-		}
-		for _, dest := range captureItem.Destinations {
-			r.handleInternalTrafficTCPResult(ctx, srcSvcIdentity, dest)
+			logrus.WithError(err).
+				WithField("srcIp", captureItem.SrcIP).
+				WithField("srcHostname", captureItem.SrcHostname).
+				Error("could not handle TCP capture result")
 		}
 	}
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
 	r.gotResultsSignal()
+	return nil
+}
+
+func (r *Resolver) handleTCPCaptureResult(ctx context.Context, captureItem model.RecordedDestinationsForSrc) error {
+	logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
+	isSrcInCluster, err := r.kubeFinder.IsSrcIpClusterInternal(ctx, captureItem.SrcIP)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	if !isSrcInCluster {
+		return errors.Wrap(r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations))
+	}
+
+	srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
+	if err != nil {
+		logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
+		return nil
+	}
+	for _, dest := range captureItem.Destinations {
+		r.handleInternalTrafficTCPResult(ctx, srcSvcIdentity, dest)
+	}
 	return nil
 }
 
