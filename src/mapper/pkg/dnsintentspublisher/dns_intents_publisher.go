@@ -5,10 +5,12 @@ import (
 	otterizev2alpha1 "github.com/otterize/intents-operator/src/operator/api/v2alpha1"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
+	"net"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -19,17 +21,13 @@ const (
 	hasAnyDnsIntentsIndexValue = "true"
 )
 
-type DnsCache interface {
-	GetResolvedIP(dnsName string) (string, bool)
-}
-
 type Publisher struct {
 	client         client.Client
-	dnsCache       DnsCache
+	dnsCache       *dnscache.DNSCache
 	updateInterval time.Duration
 }
 
-func NewPublisher(k8sClient client.Client, dnsCache DnsCache) *Publisher {
+func NewPublisher(k8sClient client.Client, dnsCache *dnscache.DNSCache) *Publisher {
 	return &Publisher{
 		client:         k8sClient,
 		dnsCache:       dnsCache,
@@ -153,14 +151,34 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 }
 
 func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string][]string) bool {
-	resolvedIP, ok := p.dnsCache.GetResolvedIP(dnsName)
-	if !ok {
-		return false
-	}
+	resolvedIP, ipResolved := p.dnsCache.GetResolvedIP(dnsName)
 
 	ips, ok := resolvedIPsMap[dnsName]
 	if !ok {
 		ips = make([]string, 0)
+		if !ipResolved {
+			// Try to resolve it ourselves
+			ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
+			ipaddrs, err := net.DefaultResolver.LookupIPAddr(ctxTimeout, dnsName)
+			if err != nil {
+				logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
+				return false
+			}
+
+			for _, ip := range ipaddrs {
+				ips = append(ips, ip.String())
+				p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 60)
+			}
+			resolvedIPsMap[dnsName] = ips
+			return true
+		}
+	}
+
+	// This happens when we've resolved the IP ourselves in a prior run, and still have no new passive resolution this time.
+	if !ipResolved {
+		return false
 	}
 
 	if slices.Contains(ips, resolvedIP) {

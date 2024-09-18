@@ -196,7 +196,11 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
 		intent.IPs = map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}}
-		r.dnsCache.AddOrUpdateDNSData(dest.Destination, ip, int(lo.FromPtr(dest.TTL)))
+		ttl := 60 * time.Second
+		if dest.TTL != nil {
+			ttl = time.Duration(*dest.TTL) * time.Second
+		}
+		r.dnsCache.AddOrUpdateDNSData(dest.Destination, ip, ttl)
 	}
 	logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
 

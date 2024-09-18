@@ -566,8 +566,8 @@ func (s *PublisherTestSuite) TestUpdate() {
 	s.Require().NoError(err)
 }
 
-func ttlForTest() int {
-	return int(time.Hour.Seconds())
+func ttlForTest() time.Duration {
+	return time.Hour
 }
 
 func TestPublisherTestSuite(t *testing.T) {

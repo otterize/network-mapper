@@ -45,8 +45,7 @@ func NewDNSCache() *DNSCache {
 	}
 }
 
-func (d *DNSCache) AddOrUpdateDNSData(dnsName string, ip string, ttlSeconds int) {
-	ttl := time.Duration(ttlSeconds) * time.Second
+func (d *DNSCache) AddOrUpdateDNSData(dnsName string, ip string, ttl time.Duration) {
 	d.cache.Set(dnsName, ip, ttl)
 	d.ipToNameCache.Set(ip, dnsName, ttl)
 }
