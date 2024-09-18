@@ -445,8 +445,8 @@ func (r *Resolver) handleIncomingTCPResult(ctx context.Context, srcIdentity mode
 				IPs:      map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}},
 			}
 			r.externalTrafficIntentsHolder.AddIntent(intent)
-			return
 		}
+		return
 	}
 
 	intent := model.Intent{
