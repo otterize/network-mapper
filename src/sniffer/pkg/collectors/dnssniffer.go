@@ -104,25 +104,17 @@ func (s *DNSSniffer) CreatePacketChannelForInterface(iface net.Interface) (resul
 }
 
 func (s *DNSSniffer) CreateDNSPacketStream() (chan gopacket.Packet, error) {
-	interfaceList, err := net.Interfaces()
+	handle, err := pcap.OpenLive("any", 0, true, pcap.BlockForever)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	err = handle.SetBPFFilter("udp port 53")
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
-	packetChans := make([]chan gopacket.Packet, 0)
-	for _, iface := range interfaceList {
-		logrus.Debugf("Starting capture on interface '%s'", iface.Name)
-		packetChannel, err := s.CreatePacketChannelForInterface(iface)
-		if err != nil {
-			logrus.WithError(err).Errorf("failed to open packet channel for interface '%s', skipping", iface.Name)
-			continue
-		}
-		packetChans = append(packetChans, packetChannel)
-	}
-	if len(packetChans) == 0 {
-		return nil, errors.New("no captures opened successfully")
-	}
-	return NewPacketChannelCombiner(packetChans).Packets(), nil
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	return packetSource.Packets(), nil
 }
 
 func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
