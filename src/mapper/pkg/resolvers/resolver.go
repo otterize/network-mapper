@@ -3,10 +3,10 @@ package resolvers
 import (
 	"context"
 	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
+	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
@@ -84,27 +84,27 @@ func (r *Resolver) Register(e *echo.Echo) {
 func (r *Resolver) RunForever(ctx context.Context) error {
 	errgrp, errGrpCtx := errgroup.WithContext(ctx)
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGrpCtx)
+		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.dnsCaptureResults, r.handleReportCaptureResults)
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGrpCtx)
+		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.tcpCaptureResults, r.handleReportTCPCaptureResults)
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGrpCtx)
+		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.socketScanResults, r.handleReportSocketScanResults)
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGrpCtx)
+		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.kafkaMapperResults, r.handleReportKafkaMapperResults)
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGrpCtx)
+		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.istioConnectionResults, r.handleReportIstioConnectionResults)
 	})
 	errgrp.Go(func() error {
-		defer bugsnag.AutoNotify(errGrpCtx)
+		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.awsOperations, r.handleAWSOperationReport)
 	})
 	err := errgrp.Wait()

@@ -393,7 +393,7 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 		}
 
 		for _, dest := range captureItem.Destinations {
-			r.handleExternalIncomingTrafficTCPResult(ctx, srcSvcIdentity, dest)
+			r.handleIncomingTCPResult(ctx, srcSvcIdentity, dest)
 		}
 	}
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
@@ -423,7 +423,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 	return nil
 }
 
-func (r *Resolver) handleExternalIncomingTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+func (r *Resolver) handleIncomingTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
 	lastSeen := dest.LastSeen
 	destIdentity, ok, err := r.resolveDestIdentity(ctx, dest, lastSeen)
 	if err != nil {
@@ -431,7 +431,17 @@ func (r *Resolver) handleExternalIncomingTrafficTCPResult(ctx context.Context, s
 		return
 	}
 	if !ok {
-		return
+		// If the destination is not in cluster, check if it's traffic that goes to an IP address that we previously resolved by DNS.
+		dnsName, found := r.dnsCache.GetResolvedDNSName(dest.Destination)
+		if found && dest.DestinationIP != nil {
+			intent := externaltrafficholder.ExternalTrafficIntent{
+				Client:   srcIdentity,
+				LastSeen: dest.LastSeen,
+				DNSName:  dnsName,
+				IPs:      map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}},
+			}
+			r.externalTrafficIntentsHolder.AddIntent(intent)
+		}
 	}
 
 	intent := model.Intent{
