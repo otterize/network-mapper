@@ -83,10 +83,10 @@ func (r *Resolver) Register(e *echo.Echo) {
 
 func (r *Resolver) RunForever(ctx context.Context) error {
 	errgrp, errGrpCtx := errgroup.WithContext(ctx)
-	//errgrp.Go(func() error {
-	//	defer errorreporter.AutoNotify()
-	//	return runHandleLoop(errGrpCtx, r.dnsCaptureResults, r.handleReportCaptureResults)
-	//})
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		return runHandleLoop(errGrpCtx, r.dnsCaptureResults, r.handleReportCaptureResults)
+	})
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		return runHandleLoop(errGrpCtx, r.tcpCaptureResults, r.handleReportTCPCaptureResults)
