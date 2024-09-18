@@ -1,7 +1,9 @@
-package ebpf
+package types
 
 import (
 	"github.com/cilium/ebpf"
+	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 )
 
 // Direction signifies the traffic direction of a BPF event
@@ -19,18 +21,16 @@ const (
 	BpfEventTypeURetProbe BpfEventType = "URetProbe"
 )
 
-type ProbeKey struct {
-	inode       uint64
-	fnName      string
-	address     uint64
-	retprobe    bool
-	programName string
-}
-
 type BpfProgram struct {
 	Type        BpfEventType
 	Symbol      string
 	Handler     *ebpf.Program
 	HandlerSpec *ebpf.ProgramSpec
 	Address     uint64
+}
+
+type EventContext struct {
+	Data      []byte
+	Event     otrzebpf.BpfSslEventT
+	Container container.ContainerInfo
 }

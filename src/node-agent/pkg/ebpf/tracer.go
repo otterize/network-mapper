@@ -6,8 +6,17 @@ import (
 	"github.com/cilium/ebpf/link"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/pkg/errors"
 )
+
+type ProbeKey struct {
+	inode       uint64
+	fnName      string
+	address     uint64
+	retprobe    bool
+	programName string
+}
 
 type Tracer struct {
 	targetMap *ebpf.Map
@@ -23,7 +32,7 @@ func NewTracer(reader *EventReader) *Tracer {
 	}
 }
 
-func (t *Tracer) attachBpfProgram(ex *link.Executable, binaryInode uint64, program BpfProgram) (err error) {
+func (t *Tracer) attachBpfProgram(ex *link.Executable, binaryInode uint64, program types.BpfProgram) (err error) {
 	key := getProbeKey(program, binaryInode)
 	if _, ok := t.probes[key]; ok {
 		return nil
@@ -36,9 +45,9 @@ func (t *Tracer) attachBpfProgram(ex *link.Executable, binaryInode uint64, progr
 
 	var probe link.Link
 	switch program.Type {
-	case BpfEventTypeUProbe:
+	case types.BpfEventTypeUProbe:
 		probe, err = ex.Uprobe(program.Symbol, program.Handler, opts)
-	case BpfEventTypeURetProbe:
+	case types.BpfEventTypeURetProbe:
 		probe, err = ex.Uretprobe(program.Symbol, program.Handler, opts)
 	default:
 		return fmt.Errorf("invalid program type: %s", program.Type)

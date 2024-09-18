@@ -7,6 +7,7 @@ import (
 	"github.com/otterize/network-mapper/src/bintools"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -61,22 +62,22 @@ func (t *Tracer) AttachToGoTls(cInfo container.ContainerInfo) error {
 	return nil
 }
 
-func getBpfPrograms(binPath string) ([]BpfProgram, error) {
+func getBpfPrograms(binPath string) ([]types.BpfProgram, error) {
 	inspectionResult, err := bintools.ProcessGoBinary(binPath, FunctionsToProcess)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
-	programs := make([]BpfProgram, 0)
-	programs = append(programs, BpfProgram{
-		Type:        BpfEventTypeUProbe,
+	programs := make([]types.BpfProgram, 0)
+	programs = append(programs, types.BpfProgram{
+		Type:        types.BpfEventTypeUProbe,
 		Symbol:      WriteGoTLSFunc,
 		Address:     inspectionResult.Functions[WriteGoTLSFunc].EntryAddress,
 		Handler:     otrzebpf.Objs.GoTlsWriteEnter,
 		HandlerSpec: otrzebpf.Specs.GoTlsWriteEnter,
 	})
-	programs = append(programs, BpfProgram{
-		Type:        BpfEventTypeUProbe,
+	programs = append(programs, types.BpfProgram{
+		Type:        types.BpfEventTypeUProbe,
 		Symbol:      ReadGoTLSFunc,
 		Address:     inspectionResult.Functions[ReadGoTLSFunc].EntryAddress,
 		Handler:     otrzebpf.Objs.GotlsReadEnter,
@@ -84,8 +85,8 @@ func getBpfPrograms(binPath string) ([]BpfProgram, error) {
 	})
 
 	for _, retLoc := range inspectionResult.Functions[ReadGoTLSFunc].ReturnAddresses {
-		programs = append(programs, BpfProgram{
-			Type:        BpfEventTypeUProbe,
+		programs = append(programs, types.BpfProgram{
+			Type:        types.BpfEventTypeUProbe,
 			Symbol:      ReadGoTLSFunc,
 			Address:     retLoc,
 			Handler:     otrzebpf.Objs.GotlsReadReturn,

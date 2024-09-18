@@ -3,16 +3,14 @@ package pcidata
 import (
 	"github.com/otterize/iamlive/iamlivecore"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
-	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/types"
-
+	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"io"
 	"net/http"
 )
 
 const AWSHost = "amazonaws.com"
 
-func HandleAwsRequest(ctx types.EventContext, req *http.Request) error {
+func HandleAwsRequest(ctx ebpftypes.EventContext, req *http.Request) error {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return errors.Wrap(err)
@@ -24,7 +22,7 @@ func HandleAwsRequest(ctx types.EventContext, req *http.Request) error {
 	}
 
 	// Check if the event is an egress event
-	if ebpf.Direction(ctx.Event.Meta.Direction) != ebpf.DirectionEgress {
+	if ebpftypes.Direction(ctx.Event.Meta.Direction) != ebpftypes.DirectionEgress {
 		return nil
 	}
 

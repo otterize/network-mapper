@@ -5,18 +5,18 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser"
+	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/types"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
 type Parser struct {
-	handlers []eventparser.DataHandler[*http.Response]
+	handlers []types.DataHandler[*http.Response]
 }
 
 // Parse parses the HTTP request from the given data
-func (p *Parser) Parse(ctx types.EventContext) (interface{}, error) {
+func (p *Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
 	reader := bufio.NewReader(bytes.NewReader(ctx.Data))
 	resp, err := http.ReadResponse(reader, nil)
 	if err != nil {
@@ -29,12 +29,12 @@ func (p *Parser) Parse(ctx types.EventContext) (interface{}, error) {
 }
 
 // RegisterHandler registers a handler for HTTP events
-func (p *Parser) RegisterHandler(handler eventparser.DataHandler[*http.Response]) {
+func (p *Parser) RegisterHandler(handler types.DataHandler[*http.Response]) {
 	p.handlers = append(p.handlers, handler)
 }
 
 // RunHandlers executes all registered handlers on the parsed data
-func (p *Parser) RunHandlers(ctx types.EventContext, data interface{}) error {
+func (p *Parser) RunHandlers(ctx ebpftypes.EventContext, data interface{}) error {
 	req, ok := data.(*http.Response)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *http.Response")

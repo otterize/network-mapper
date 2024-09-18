@@ -58,6 +58,8 @@ func (m *ContainerManager) GetContainerInfo(ctx context.Context, pod v1.Pod, con
 	info.Id = resp.Status.Id
 	info.PodIP = pod.Status.PodIP
 
+	// TODO: pod ip sometimes is 0, need to handle
+
 	// Get the executable info
 	execInfo, err := m.InspectContainerExec(info.Pid)
 	if err != nil {

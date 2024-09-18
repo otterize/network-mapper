@@ -6,14 +6,15 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/sirupsen/logrus"
 )
 
-var progs = []BpfProgram{
-	{BpfEventTypeUProbe, "SSL_write", otrzebpf.Objs.OtterizeSSL_write, otrzebpf.Specs.OtterizeSSL_write, 0},
-	{BpfEventTypeURetProbe, "SSL_write", otrzebpf.Objs.OtterizeSSL_writeRet, otrzebpf.Specs.OtterizeSSL_writeRet, 0},
-	{BpfEventTypeUProbe, "SSL_write_ex", otrzebpf.Objs.OtterizeSSL_write, otrzebpf.Specs.OtterizeSSL_write, 0},
-	{BpfEventTypeURetProbe, "SSL_write_ex", otrzebpf.Objs.OtterizeSSL_writeRet, otrzebpf.Specs.OtterizeSSL_writeRet, 0},
+var progs = []types.BpfProgram{
+	{types.BpfEventTypeUProbe, "SSL_write", otrzebpf.Objs.OtterizeSSL_write, otrzebpf.Specs.OtterizeSSL_write, 0},
+	{types.BpfEventTypeURetProbe, "SSL_write", otrzebpf.Objs.OtterizeSSL_writeRet, otrzebpf.Specs.OtterizeSSL_writeRet, 0},
+	{types.BpfEventTypeUProbe, "SSL_write_ex", otrzebpf.Objs.OtterizeSSL_write, otrzebpf.Specs.OtterizeSSL_write, 0},
+	{types.BpfEventTypeURetProbe, "SSL_write_ex", otrzebpf.Objs.OtterizeSSL_writeRet, otrzebpf.Specs.OtterizeSSL_writeRet, 0},
 }
 
 func (t *Tracer) AttachToOpenSSL(cInfo container.ContainerInfo) error {

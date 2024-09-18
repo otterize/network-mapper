@@ -1,12 +1,10 @@
 package types
 
-import (
-	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
-	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
-)
+import ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 
-type EventContext struct {
-	Data      []byte
-	Event     otrzebpf.BpfSslEventT
-	Container container.ContainerInfo
+type DataHandler[T any] func(ctx ebpftypes.EventContext, data T) error
+
+type Parser interface {
+	Parse(ctx ebpftypes.EventContext) (interface{}, error)
+	RunHandlers(ctx ebpftypes.EventContext, data interface{}) error
 }

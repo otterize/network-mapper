@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/pkg/errors"
 	"github.com/prometheus/procfs"
 	"os"
@@ -8,12 +9,12 @@ import (
 	"syscall"
 )
 
-func getProbeKey(p BpfProgram, inode uint64) ProbeKey {
+func getProbeKey(p types.BpfProgram, inode uint64) ProbeKey {
 	return ProbeKey{
 		address:     p.Address,
 		inode:       inode,
 		fnName:      p.Symbol,
-		retprobe:    p.Type == BpfEventTypeURetProbe,
+		retprobe:    p.Type == types.BpfEventTypeURetProbe,
 		programName: p.HandlerSpec.Name,
 	}
 }
