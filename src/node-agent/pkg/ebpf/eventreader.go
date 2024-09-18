@@ -4,17 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/perf"
 	"github.com/otterize/iamlive/iamlivecore"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
-	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/types"
 	"github.com/sirupsen/logrus"
 	"io"
-	"net/http"
 	"os"
 )
 
@@ -66,9 +65,19 @@ func (e *EventReader) Start() {
 				continue
 			}
 
-			err = e.handleEvent(event, data)
+			// Get the container information for the event
+			pidNamespaceInode, err := getPIDNamespaceInode(int(event.Meta.Pid))
 			if err != nil {
-				logrus.Printf("error handling event: %s", err)
+				logrus.Printf("error getting PID namespace inode: %w", err)
+				continue
+			}
+
+			// Process the event
+			cInfo := e.containerMap[pidNamespaceInode]
+			eventContext := types.EventContext{Event: event, Data: data, Container: cInfo}
+			err = eventparser.ProcessEvent(eventContext)
+			if err != nil {
+				logrus.Printf("error processing event: %s", err)
 				continue
 			}
 		}
@@ -92,76 +101,6 @@ func (e *EventReader) parseEvent(raw []byte) (otrzebpf.BpfSslEventT, []byte, err
 	}
 
 	return event, data, nil
-}
-
-func (e *EventReader) handleEvent(event otrzebpf.BpfSslEventT, data []byte) error {
-	// Try to parse the event as an HTTP message
-	errReq := e.handleHttpRequest(event, data)
-	if errReq == nil {
-		return nil
-	}
-
-	errRes := e.handleHttpResponse(event, data)
-	if errRes == nil {
-		return nil
-	}
-
-	// Try to parse the event as an SMTP message
-	// TODO: Implement
-
-	// Try to parse the event as an FTP message
-	// TODO: Implement
-
-	return fmt.Errorf("%w\n%w", errReq, errRes)
-}
-
-func (e *EventReader) handleHttpRequest(event otrzebpf.BpfSslEventT, data []byte) error {
-	reader := bufio.NewReader(bytes.NewReader(data))
-	req, err := http.ReadRequest(reader)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	if service.PrintHttpRequests() {
-		logrus.Debugf("Got HTTP request: %s\n", string(body))
-	}
-
-	// Handle outgoing HTTP requests
-	if Direction(event.Meta.Direction) == DirectionEgress {
-		pidNamespaceInode, err := getPIDNamespaceInode(int(event.Meta.Pid))
-		if err != nil {
-			return errors.Errorf("error getting PID namespace inode: %w", err)
-		}
-
-		req.RemoteAddr = e.containerMap[pidNamespaceInode].PodIP
-		iamlivecore.HandleAWSRequest(req, body, 200)
-	}
-
-	return nil
-}
-
-func (e *EventReader) handleHttpResponse(event otrzebpf.BpfSslEventT, data []byte) error {
-	reader := bufio.NewReader(bytes.NewReader(data))
-	resp, err := http.ReadResponse(reader, nil)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
-	if service.PrintHttpRequests() {
-		logrus.Debugf("Got HTTP response: %s\n", string(body))
-	}
-
-	return nil
 }
 
 func (e *EventReader) Close() error {

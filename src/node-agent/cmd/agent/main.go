@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/reconcilers"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,9 @@ func main() {
 
 	service.InitializeService()
 	mgr, client := service.CreateControllerRuntimeComponentsOrDie()
+
+	// Initialize event parsers
+	eventparser.InitParsers()
 
 	criClient := service.CreateCRIClientOrDie()
 	containerManager := container.NewContainerManager(criClient)
