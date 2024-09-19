@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/labels"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/service"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -66,6 +67,11 @@ func (r *EBPFReconciler) Reconcile(ctx context.Context, req reconcile.Request) (
 		}
 
 		return reconcile.Result{}, errors.Wrap(err)
+	}
+
+	if pod.Spec.NodeName != service.NodeName() {
+		logger.Debug("Pod is not scheduled on this node, skipping")
+		return reconcile.Result{}, nil
 	}
 
 	if pod.Status.Phase != corev1.PodRunning {
