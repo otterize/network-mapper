@@ -21,15 +21,16 @@ import (
 )
 
 const (
-	podIPIndexField            = "ip"
-	endpointIPPortIndexField   = "ipPort"
-	serviceIPIndexField        = "spec.ip"
-	externalIPIndexField       = "spec.externalIPs"
-	portNumberIndexField       = "service.spec.ports.nodePort"
-	nodeIPIndexField           = "node.status.Addresses.ExternalIP"
-	IstioCanonicalNameLabelKey = "service.istio.io/canonical-name"
-	apiServerName              = "kubernetes"
-	apiServerNamespace         = "default"
+	podIPIndexField                     = "ip"
+	podIPIncludingHostNetworkIndexField = "ipAndHostNetwork"
+	endpointIPPortIndexField            = "ipPort"
+	serviceIPIndexField                 = "spec.ip"
+	externalIPIndexField                = "spec.externalIPs"
+	nodePortNumberIndexField            = "service.spec.ports.nodePort"
+	nodeIPIndexField                    = "node.status.Addresses.ExternalIP"
+	IstioCanonicalNameLabelKey          = "service.istio.io/canonical-name"
+	apiServerName                       = "kubernetes"
+	apiServerNamespace                  = "default"
 )
 
 type KubeFinder struct {
@@ -70,6 +71,23 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		return errors.Wrap(err)
 	}
 
+	err = k.mgr.GetCache().IndexField(ctx, &corev1.Pod{}, podIPIncludingHostNetworkIndexField, func(object client.Object) []string {
+		res := make([]string, 0)
+		pod := object.(*corev1.Pod)
+
+		if pod.DeletionTimestamp != nil {
+			return res
+		}
+
+		for _, ip := range pod.Status.PodIPs {
+			res = append(res, ip.IP)
+		}
+		return res
+	})
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
 	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, serviceIPIndexField, func(object client.Object) []string {
 		res := make([]string, 0)
 		svc := object.(*corev1.Service)
@@ -99,13 +117,15 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		return errors.Wrap(err)
 	}
 
-	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, portNumberIndexField, func(object client.Object) []string {
+	err = k.mgr.GetCache().IndexField(ctx, &corev1.Service{}, nodePortNumberIndexField, func(object client.Object) []string {
+		// node ports are unique per service - so it can be used for indexing services
 		ports := sets.New[string]()
 		svc := object.(*corev1.Service)
 		if svc.DeletionTimestamp != nil {
 			return nil
 		}
-		if svc.Spec.Type != corev1.ServiceTypeNodePort {
+		// Only node port and load balancer typed services use node ports
+		if svc.Spec.Type != corev1.ServiceTypeNodePort && svc.Spec.Type != corev1.ServiceTypeLoadBalancer {
 			return nil
 		}
 
@@ -252,7 +272,7 @@ func (k *KubeFinder) ResolveIPToControlPlane(ctx context.Context, ip string) (*c
 }
 
 func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
-	nodePortService, ok, err := k.resolveNodePortService(ctx, ip, port)
+	nodePortService, ok, err := k.resolveServiceByNodeIPAndPort(ctx, ip, port)
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
@@ -260,14 +280,14 @@ func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip st
 		return nodePortService, true, nil
 	}
 
-	loadBalancerService, ok, err := k.resolveLoadBalancerService(ctx, ip, port)
+	loadBalancerService, ok, err := k.resolveLoadBalancerServiceByExternalIP(ctx, ip, port)
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
 	return loadBalancerService, ok, nil
 }
 
-func (k *KubeFinder) resolveLoadBalancerService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
+func (k *KubeFinder) resolveLoadBalancerServiceByExternalIP(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
 	var services corev1.ServiceList
 	err := k.client.List(ctx, &services, client.MatchingFields{externalIPIndexField: ip})
 	if err != nil {
@@ -288,7 +308,7 @@ func (k *KubeFinder) resolveLoadBalancerService(ctx context.Context, ip string, 
 	return &service, true, nil
 }
 
-func (k *KubeFinder) resolveNodePortService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
+func (k *KubeFinder) resolveServiceByNodeIPAndPort(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
 	var nodes corev1.NodeList
 	err := k.client.List(ctx, &nodes, client.MatchingFields{nodeIPIndexField: ip})
 	if err != nil {
@@ -304,7 +324,7 @@ func (k *KubeFinder) resolveNodePortService(ctx context.Context, ip string, port
 
 	portString := fmt.Sprintf("%d", port)
 	var services corev1.ServiceList
-	err = k.client.List(ctx, &services, client.MatchingFields{portNumberIndexField: portString})
+	err = k.client.List(ctx, &services, client.MatchingFields{nodePortNumberIndexField: portString})
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
@@ -441,4 +461,52 @@ func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc 
 	}
 	dstSvcIdentity.KubernetesService = lo.ToPtr(svc.Name)
 	return dstSvcIdentity, true, nil
+}
+
+func (k *KubeFinder) IsSrcIpClusterInternal(ctx context.Context, ip string) (bool, error) {
+	// Known issue: this function is currently missing support for services/endpoints, node.PodCIDR, and pods that were deleted.
+
+	isNode, err := k.IsNodeIP(ctx, ip)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+	if isNode {
+		return true, nil
+	}
+
+	isPod, err := k.IsPodIp(ctx, ip)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+	if isPod {
+		return true, nil
+	}
+
+	_, isControlPlane, err := k.ResolveIPToControlPlane(ctx, ip)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+	if isControlPlane {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (k *KubeFinder) IsPodIp(ctx context.Context, ip string) (bool, error) {
+	var pods corev1.PodList
+	err := k.client.List(ctx, &pods, client.MatchingFields{podIPIncludingHostNetworkIndexField: ip})
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+	return len(pods.Items) > 0, nil
+}
+
+func (k *KubeFinder) IsNodeIP(ctx context.Context, ip string) (bool, error) {
+	var nodes corev1.NodeList
+	err := k.client.List(ctx, &nodes, client.MatchingFields{nodeIPIndexField: ip})
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+	return len(nodes.Items) > 0, nil
 }

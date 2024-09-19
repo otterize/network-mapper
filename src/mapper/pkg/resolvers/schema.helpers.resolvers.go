@@ -376,28 +376,37 @@ func (r *Resolver) handleReportTCPCaptureResults(ctx context.Context, results mo
 	}
 
 	for _, captureItem := range results.Results {
-		logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
-
-		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
-		if errors.Is(err, kubefinder.ErrNoPodFound) {
-			err := r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations)
-			if err != nil {
-				logrus.WithError(err).Error("could not report incoming internet traffic")
-				continue
-			}
-		}
-
+		err := r.handleTCPCaptureResult(ctx, captureItem)
 		if err != nil {
-			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
-			continue
-		}
-
-		for _, dest := range captureItem.Destinations {
-			r.handleExternalIncomingTrafficTCPResult(ctx, srcSvcIdentity, dest)
+			logrus.WithError(err).
+				WithField("srcIp", captureItem.SrcIP).
+				WithField("srcHostname", captureItem.SrcHostname).
+				Error("could not handle TCP capture result")
 		}
 	}
 	telemetrysender.SendNetworkMapper(telemetriesgql.EventTypeIntentsDiscoveredCapture, len(results.Results))
 	r.gotResultsSignal()
+	return nil
+}
+
+func (r *Resolver) handleTCPCaptureResult(ctx context.Context, captureItem model.RecordedDestinationsForSrc) error {
+	logrus.Debugf("Handling TCP capture result from %s to %s:%d", captureItem.SrcIP, captureItem.Destinations[0].Destination, lo.FromPtr(captureItem.Destinations[0].DestinationPort))
+	isSrcInCluster, err := r.kubeFinder.IsSrcIpClusterInternal(ctx, captureItem.SrcIP)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+	if !isSrcInCluster {
+		return errors.Wrap(r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations))
+	}
+
+	srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
+	if err != nil {
+		logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
+		return nil
+	}
+	for _, dest := range captureItem.Destinations {
+		r.handleInternalTrafficTCPResult(ctx, srcSvcIdentity, dest)
+	}
 	return nil
 }
 
@@ -423,7 +432,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 	return nil
 }
 
-func (r *Resolver) handleExternalIncomingTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
 	lastSeen := dest.LastSeen
 	destIdentity, ok, err := r.resolveDestIdentity(ctx, dest, lastSeen)
 	if err != nil {
