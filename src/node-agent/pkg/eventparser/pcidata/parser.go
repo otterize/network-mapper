@@ -12,16 +12,30 @@ type Parser struct {
 	handlers []types.DataHandler[string]
 }
 
-// Parse parses the data to check if its plain text
+// Parse parses the data to check if its plain text - allow up to 50% of the data to be non-printable
 func (p Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
+	limit := 0.7 // Default to 70% if threshold is out of range
+
+	totalBytes := len(ctx.Data)
+	if totalBytes == 0 {
+		return nil, fmt.Errorf("data is empty")
+	}
+
+	plainTextBytes := 0
 	for _, b := range ctx.Data {
 		// Check if the byte is a printable character or common whitespace (ASCII values 32-126 or newline/carriage return)
-		if b > unicode.MaxASCII || (!unicode.IsPrint(rune(b)) && b != '\n' && b != '\r' && b != '\t') {
-			return nil, fmt.Errorf("data is not plain text")
+		if b <= unicode.MaxASCII || (unicode.IsPrint(rune(b)) || b == '\n' || b == '\r' || b == '\t' || b == '\f') {
+			plainTextBytes += 1
 		}
 	}
-	logrus.Debugf("Got plain text data: %s\n", string(ctx.Data))
 
+	// Calculate the percentage of plain text bytes
+	percentage := float64(plainTextBytes) / float64(totalBytes)
+	if percentage < limit {
+		return nil, fmt.Errorf("most data is not plain text %f", percentage)
+	}
+
+	logrus.Debugf("got plain text data [%f]: %s\n", percentage, string(ctx.Data))
 	return string(ctx.Data), nil
 }
 
