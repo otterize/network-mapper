@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net"
 	"sync"
@@ -20,6 +21,9 @@ type Resolver interface {
 
 func NewDNSCache() *DNSCache {
 	capacity := viper.GetInt(config.DNSCacheItemsMaxCapacityKey)
+	if capacity == 0 {
+		logrus.Panic("Capacity cannot be 0")
+	}
 	dnsRecordCache := NewTTLCache[string, string](capacity)
 
 	return &DNSCache{

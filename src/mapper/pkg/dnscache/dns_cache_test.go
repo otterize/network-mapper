@@ -19,7 +19,7 @@ type DNSCacheTestSuite struct {
 }
 
 func (s *DNSCacheTestSuite) TearDownTest() {
-	viper.Reset()
+	viper.Set(config.DNSCacheItemsMaxCapacityKey, config.DNSCacheItemsMaxCapacityDefault)
 }
 
 func (s *DNSCacheTestSuite) TestDNSCache() {
