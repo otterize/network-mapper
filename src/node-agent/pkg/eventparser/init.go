@@ -15,16 +15,16 @@ var parsers = make(map[string]types.Parser)
 
 func init() {
 	// Initialize HTTP request parser
-	httpRequestParser := &httprequest.Parser{}
+	httpRequestParser := httprequest.Parser{}
 	httpRequestParser.RegisterHandler(httprequest.HandleAwsRequest)
 	parsers["httprequest"] = httpRequestParser
 
 	// Initialize HTTP response parser
-	httpResponseParser := &httpresponse.Parser{}
+	httpResponseParser := httpresponse.Parser{}
 	parsers["httpresponse"] = httpResponseParser
 
 	// Initialize PCI data parser
-	pciParser := &pcidata.Parser{}
+	pciParser := pcidata.Parser{}
 	pciParser.RegisterHandler(pcidata.ContainsPaymentInformation)
 	parsers["pci"] = pciParser
 }
