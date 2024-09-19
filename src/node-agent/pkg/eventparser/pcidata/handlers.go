@@ -17,7 +17,7 @@ func ContainsPaymentInformation(ctx ebpftypes.EventContext, data string) error {
 		normalized := normalizeCardNumber(match)
 		if isValidCardNumber(normalized) {
 			// Set PCI tag
-			ctx.Metadata.Tags[ebpftypes.EventTagPCI] = true
+			ctx.Metadata.AddTag(ebpftypes.EventTagPCI)
 		}
 	}
 

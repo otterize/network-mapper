@@ -48,3 +48,12 @@ type EventContext struct {
 type EventMetadata struct {
 	Tags map[EventTag]bool
 }
+
+// AddTag adds a tag to the event metadata - operates on the pointer to the metadata
+func (e *EventMetadata) AddTag(tag EventTag) {
+	if e.Tags == nil {
+		e.Tags = make(map[EventTag]bool)
+	}
+
+	e.Tags[tag] = true
+}

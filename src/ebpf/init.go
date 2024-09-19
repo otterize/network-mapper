@@ -5,7 +5,7 @@ import "github.com/sirupsen/logrus"
 var Objs BpfObjects
 var Specs BpfSpecs
 
-func init() {
+func InitializeBpf() {
 	// Load and assign specs
 	specs, err := LoadBpf()
 	if err != nil {
