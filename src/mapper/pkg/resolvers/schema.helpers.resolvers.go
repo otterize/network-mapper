@@ -187,6 +187,12 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 	if !viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		return nil
 	}
+
+	// Ignore external traffic from the network mapper except to Otterize Cloud, which is caused
+	// by the network mapper resolving all external IP traffic when Internet intents are in use.
+	if srcSvcIdentity.Name == "otterize-network-mapper" && dest.Destination != "app.otterize.com" {
+		return nil
+	}
 	intent := externaltrafficholder.ExternalTrafficIntent{
 		Client:   srcSvcIdentity,
 		LastSeen: dest.LastSeen,
