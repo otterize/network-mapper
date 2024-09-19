@@ -74,7 +74,12 @@ func (e *EventReader) Start() {
 
 			// Process the event
 			cInfo := e.containerMap[pidNamespaceInode]
-			eventContext := types.EventContext{Event: event, Data: data, Container: cInfo}
+			eventContext := types.EventContext{
+				Event:     event,
+				Data:      data,
+				Container: cInfo,
+				Metadata:  &types.EventMetadata{},
+			}
 			err = eventparser.ProcessEvent(eventContext)
 			if err != nil {
 				logrus.Printf("error processing event: %s", err)

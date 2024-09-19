@@ -5,6 +5,7 @@ import (
 	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/httprequest"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/httpresponse"
+	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/pcidata"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser/types"
 	"github.com/sirupsen/logrus"
 )
@@ -21,6 +22,11 @@ func init() {
 	// Initialize HTTP response parser
 	httpResponseParser := &httpresponse.Parser{}
 	parsers["httpresponse"] = httpResponseParser
+
+	// Initialize PCI data parser
+	pciParser := &pcidata.Parser{}
+	pciParser.RegisterHandler(pcidata.ContainsPaymentInformation)
+	parsers["pci"] = pciParser
 }
 
 func ProcessEvent(ctx ebpftypes.EventContext) error {

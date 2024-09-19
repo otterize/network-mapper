@@ -1,31 +1,25 @@
 package pcidata
 
 import (
-	"github.com/otterize/iamlive/iamlivecore"
-	"github.com/otterize/intents-operator/src/shared/errors"
 	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
-	"io"
-	"net/http"
+	"regexp"
 )
 
-const AWSHost = "amazonaws.com"
+func ContainsPaymentInformation(ctx ebpftypes.EventContext, data string) error {
+	// Regular expression for possible credit card patterns (13-19 digits, allowing spaces, dashes, or dots as separators)
+	re := regexp.MustCompile(cardRegex)
 
-func HandleAwsRequest(ctx ebpftypes.EventContext, req *http.Request) error {
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return errors.Wrap(err)
+	// Find all matches
+	matches := re.FindAllString(data, -1)
+
+	// Filter matches based on valid credit card prefix and length
+	for _, match := range matches {
+		normalized := normalizeCardNumber(match)
+		if isValidCardNumber(normalized) {
+			// Set PCI tag
+			ctx.Metadata.Tags[ebpftypes.EventTagPCI] = true
+		}
 	}
 
-	// Check if the event is an AWS request - called to host "amazonaws.com"
-	if req.Host != AWSHost {
-		return nil
-	}
-
-	// Check if the event is an egress event
-	if ebpftypes.Direction(ctx.Event.Meta.Direction) != ebpftypes.DirectionEgress {
-		return nil
-	}
-
-	iamlivecore.HandleAWSRequest(req, body, 200)
 	return nil
 }

@@ -21,6 +21,13 @@ const (
 	BpfEventTypeURetProbe BpfEventType = "URetProbe"
 )
 
+type EventTag string
+
+const (
+	EventTagPCI EventTag = "PCI"
+	EventTagPII EventTag = "PII"
+)
+
 type BpfProgram struct {
 	Type        BpfEventType
 	Symbol      string
@@ -29,8 +36,15 @@ type BpfProgram struct {
 	Address     uint64
 }
 
+// EventContext contains the data and metadata for a BPF event - used for parsing and handling of events
 type EventContext struct {
 	Data      []byte
 	Event     otrzebpf.BpfSslEventT
 	Container container.ContainerInfo
+	Metadata  *EventMetadata // Metadata for the event - this is editable by parsers
+}
+
+// EventMetadata contains the parsed metadata for a BPF event
+type EventMetadata struct {
+	Tags map[EventTag]bool
 }
