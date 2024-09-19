@@ -1,11 +1,18 @@
 package ebpf
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+	"testing"
+)
 
 var Objs BpfObjects
 var Specs BpfSpecs
 
-func InitializeBpf() {
+func init() {
+	if testing.Testing() {
+		return
+	}
+
 	// Load and assign specs
 	specs, err := LoadBpf()
 	if err != nil {

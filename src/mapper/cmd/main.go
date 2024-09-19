@@ -13,7 +13,6 @@ import (
 	"github.com/otterize/intents-operator/src/shared/filters"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
-	"github.com/otterize/network-mapper/src/ebpf"
 	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
@@ -94,9 +93,6 @@ func main() {
 		TimestampFormat: time.RFC3339,
 	})
 	signalHandlerCtx := ctrl.SetupSignalHandler()
-
-	// Initialize eBPF programs and maps
-	ebpf.InitializeBpf()
 
 	clusterUID := clusterutils.GetOrCreateClusterUID(signalHandlerCtx)
 
