@@ -25,13 +25,23 @@ type Publisher struct {
 	client         client.Client
 	dnsCache       *dnscache.DNSCache
 	updateInterval time.Duration
+	resolver       Resolver
+}
+
+type Resolver interface {
+	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
 func NewPublisher(k8sClient client.Client, dnsCache *dnscache.DNSCache) *Publisher {
+	return NewPublisherWithResolver(k8sClient, dnsCache, net.DefaultResolver)
+}
+
+func NewPublisherWithResolver(k8sClient client.Client, dnsCache *dnscache.DNSCache, resolver Resolver) *Publisher {
 	return &Publisher{
 		client:         k8sClient,
 		dnsCache:       dnsCache,
 		updateInterval: viper.GetDuration(config.DNSClientIntentsUpdateIntervalKey),
+		resolver:       resolver,
 	}
 }
 
@@ -151,17 +161,17 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 }
 
 func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string][]string) bool {
-	resolvedIP, ipResolved := p.dnsCache.GetResolvedIP(dnsName)
+	resolvedIPs := p.dnsCache.GetResolvedIPs(dnsName)
 
 	ips, ok := resolvedIPsMap[dnsName]
 	if !ok {
 		ips = make([]string, 0)
-		if !ipResolved {
+		if len(resolvedIPs) == 0 {
 			// Try to resolve it ourselves
 			ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
-			ipaddrs, err := net.DefaultResolver.LookupIPAddr(ctxTimeout, dnsName)
+			ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
 			if err != nil {
 				logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
 				return false
@@ -177,15 +187,31 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 	}
 
 	// This happens when we've resolved the IP ourselves in a prior run, and still have no new passive resolution this time.
-	if !ipResolved {
+	if len(resolvedIPs) == 0 {
 		return false
 	}
 
-	if slices.Contains(ips, resolvedIP) {
+	prevLen := len(ips)
+	ips = addMissing(ips, resolvedIPs)
+	if len(ips) == prevLen {
 		return false
 	}
-
-	ips = append(ips, resolvedIP)
 	resolvedIPsMap[dnsName] = ips
 	return true
+}
+
+// add missing items from sliceB to sliceA
+func addMissing(sliceA []string, sliceB []string) []string {
+	// using map
+	m := make(map[string]struct{}, len(sliceA))
+	for _, s := range sliceA {
+		m[s] = struct{}{}
+	}
+	for _, s := range sliceB {
+		if _, ok := m[s]; !ok {
+			sliceA = append(sliceA, s)
+		}
+	}
+
+	return sliceA
 }

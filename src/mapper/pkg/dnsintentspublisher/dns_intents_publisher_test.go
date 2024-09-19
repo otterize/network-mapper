@@ -462,52 +462,6 @@ func (s *PublisherTestSuite) TestShouldNotAffectOtherStatusFields() {
 	s.Require().NoError(err)
 }
 
-func (s *PublisherTestSuite) TestOnlyLatestIP() {
-	ttlInSeconds := ttlForTest()
-	oldIP := "10.0.2.10"
-	s.dnsCache.AddOrUpdateDNSData("my-blog.de", oldIP, ttlInSeconds)
-	s.dnsCache.AddOrUpdateDNSData("my-blog.de", IP1, ttlInSeconds)
-
-	intentsWithDNS1 := otterizev2alpha1.ClientIntents{
-		Spec: &otterizev2alpha1.IntentsSpec{
-			Workload: otterizev2alpha1.Workload{
-				Name: "blog-reader",
-			},
-			Targets: []otterizev2alpha1.Target{
-				{
-					Internet: &otterizev2alpha1.Internet{
-						Domains: []string{"my-blog.de"},
-					},
-				},
-			},
-		},
-	}
-
-	var intentsList otterizev2alpha1.ClientIntentsList
-	s.k8sMockClient.EXPECT().List(gomock.Any(), &intentsList, client.MatchingFields{hasAnyDnsIntentsIndexKey: hasAnyDnsIntentsIndexValue}).DoAndReturn(
-		func(ctx context.Context, list *otterizev2alpha1.ClientIntentsList, opts ...client.ListOption) error {
-			list.Items = []otterizev2alpha1.ClientIntents{intentsWithDNS1}
-			return nil
-		})
-
-	s.k8sMockClient.EXPECT().Status().Return(s.k8sMockStatus).Times(1)
-
-	intents1WithResolvedIPs := intentsWithDNS1.DeepCopy()
-	intents1WithResolvedIPs.Status.ResolvedIPs = []otterizev2alpha1.ResolvedIPs{
-		{
-			DNS: "my-blog.de",
-			IPs: []string{
-				IP1,
-			},
-		},
-	}
-
-	s.k8sMockStatus.EXPECT().Patch(gomock.Any(), intents1WithResolvedIPs, testbase.MatchPatch(client.MergeFrom(&intentsWithDNS1))).Return(nil)
-
-	err := s.publisher.PublishDNSIntents(context.Background())
-	s.Require().NoError(err)
-}
-
 func (s *PublisherTestSuite) TestUpdate() {
 	ttlInSeconds := ttlForTest()
 
