@@ -1019,6 +1019,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: fmt.Sprintf("%s.%s.svc.cluster.local", service.GetName(), service.GetNamespace()),
+						LastSeen:    time.Now().Add(time.Minute),
 					},
 				},
 			},
@@ -1070,7 +1071,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: service.Spec.ClusterIP,
-						LastSeen:    time.Now(),
+						LastSeen:    time.Now().Add(time.Minute),
 					},
 				},
 			},
