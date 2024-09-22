@@ -1019,6 +1019,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerDNS() {
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: fmt.Sprintf("%s.%s.svc.cluster.local", service.GetName(), service.GetNamespace()),
+						LastSeen:    time.Now().Add(time.Minute),
 					},
 				},
 			},
@@ -1070,7 +1071,7 @@ func (s *ResolverTestSuite) TestIntentsToApiServerSocketScan() {
 				Destinations: []test_gql_client.Destination{
 					{
 						Destination: service.Spec.ClusterIP,
-						LastSeen:    time.Now(),
+						LastSeen:    time.Now().Add(time.Minute),
 					},
 				},
 			},
@@ -1363,6 +1364,60 @@ func (s *ResolverTestSuite) TestTCPResultsFromExternalToLoadBalancerServiceUsing
 	s.Require().Equal(dep.Name, intents[0].Intent.Server.Name)
 	s.Require().Equal(dep.Namespace, intents[0].Intent.Server.Namespace)
 	s.Require().Equal("8.8.8.8", intents[0].Intent.IP)
+}
+
+func (s *ResolverTestSuite) TestResolveOtterizeIdentityFilterSrcDestinationsByCreationTimestamp() {
+	podIP := "1.1.1.3"
+	pod := s.AddPod("pod3", podIP, nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+	recorededDestinationForSrc := &model.RecordedDestinationsForSrc{
+		SrcIP: podIP,
+		Destinations: []model.Destination{
+			{
+				Destination: "target-on-time",
+				LastSeen:    pod.CreationTimestamp.Add(time.Minute),
+			},
+			{
+				Destination: "target-before-time",
+				LastSeen:    pod.CreationTimestamp.Add(-time.Minute),
+			},
+		},
+	}
+	srcIdentity, err := s.resolver.discoverInternalSrcIdentity(context.Background(), recorededDestinationForSrc)
+	s.Require().NoError(err)
+	s.Require().Equal("pod3", srcIdentity.Name)
+
+	s.Require().Len(recorededDestinationForSrc.Destinations, 1)
+	s.Require().Equal("target-on-time", recorededDestinationForSrc.Destinations[0].Destination)
+
+}
+
+func (s *ResolverTestSuite) TestPoop() {
+	//serviceIP := "10.0.0.10"
+	podIP := "1.1.1.3"
+
+	pod3 := s.AddPod("pod3", podIP, nil, nil)
+	//s.AddService(serviceName, map[string]string{"app": "test"}, serviceIP, []*v1.Pod{pod3})
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	pod := &v1.Pod{}
+	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: pod3.Name, Namespace: pod3.Namespace}, pod)
+	s.Require().NoError(err)
+	podlist1 := &v1.PodList{}
+	err = s.Mgr.GetClient().List(context.Background(), podlist1, client.MatchingFields{"ip": pod.Status.PodIP})
+	s.Require().NoError(err)
+	s.Require().Len(podlist1.Items, 1)
+
+	err = s.Mgr.GetClient().Delete(context.Background(), pod)
+	s.Require().NoError(err)
+
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	podlist := &v1.PodList{}
+	err = s.Mgr.GetClient().List(context.Background(), podlist, client.MatchingFields{"ip": pod.Status.PodIP})
+	s.Require().NoError(err)
+	s.Require().Empty(podlist.Items)
+
 }
 
 func TestRunSuite(t *testing.T) {

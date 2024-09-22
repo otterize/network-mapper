@@ -399,7 +399,7 @@ func (r *Resolver) handleTCPCaptureResult(ctx context.Context, captureItem model
 		return errors.Wrap(r.reportIncomingInternetTraffic(ctx, captureItem.SrcIP, captureItem.Destinations))
 	}
 
-	srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
+	srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, &captureItem)
 	if err != nil {
 		logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 		return nil
@@ -462,7 +462,7 @@ func (r *Resolver) handleReportCaptureResults(ctx context.Context, results model
 
 	var newResults int
 	for _, captureItem := range results.Results {
-		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, captureItem)
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, &captureItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 			continue
@@ -499,7 +499,7 @@ func (r *Resolver) handleReportSocketScanResults(ctx context.Context, results mo
 		return nil
 	}
 	for _, socketScanItem := range results.Results {
-		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, socketScanItem)
+		srcSvcIdentity, err := r.discoverInternalSrcIdentity(ctx, &socketScanItem)
 		if err != nil {
 			logrus.WithError(err).Debugf("could not discover src identity for '%s'", socketScanItem.SrcIP)
 			continue
