@@ -832,6 +832,26 @@ type ReportK8sServicesResponse struct {
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
 
+// ReportServiceMetaResponse is returned by ReportServiceMeta on success.
+type ReportServiceMetaResponse struct {
+	// update service metadata from operator
+	ReportServiceMeta bool `json:"reportServiceMeta"`
+}
+
+// GetReportServiceMeta returns ReportServiceMetaResponse.ReportServiceMeta, and is useful for accessing the field via an interface.
+func (v *ReportServiceMetaResponse) GetReportServiceMeta() bool { return v.ReportServiceMeta }
+
+type ReportServiceMetadataInput struct {
+	Identity ServiceIdentityInput `json:"identity"`
+	Metadata ServiceMetadataInput `json:"metadata"`
+}
+
+// GetIdentity returns ReportServiceMetadataInput.Identity, and is useful for accessing the field via an interface.
+func (v *ReportServiceMetadataInput) GetIdentity() ServiceIdentityInput { return v.Identity }
+
+// GetMetadata returns ReportServiceMetadataInput.Metadata, and is useful for accessing the field via an interface.
+func (v *ReportServiceMetadataInput) GetMetadata() ServiceMetadataInput { return v.Metadata }
+
 type SelectorKeyValueInput struct {
 	Key   nilable.Nilable[string] `json:"key"`
 	Value nilable.Nilable[string] `json:"value"`
@@ -872,12 +892,34 @@ const (
 	ServiceExternalTrafficPolicyLocal   ServiceExternalTrafficPolicy = "LOCAL"
 )
 
+type ServiceIdentityInput struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Kind      string `json:"kind"`
+}
+
+// GetName returns ServiceIdentityInput.Name, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetName() string { return v.Name }
+
+// GetNamespace returns ServiceIdentityInput.Namespace, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetNamespace() string { return v.Namespace }
+
+// GetKind returns ServiceIdentityInput.Kind, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetKind() string { return v.Kind }
+
 type ServiceInternalTrafficPolicy string
 
 const (
 	ServiceInternalTrafficPolicyCluster ServiceInternalTrafficPolicy = "CLUSTER"
 	ServiceInternalTrafficPolicyLocal   ServiceInternalTrafficPolicy = "LOCAL"
 )
+
+type ServiceMetadataInput struct {
+	Tags []string `json:"tags"`
+}
+
+// GetTags returns ServiceMetadataInput.Tags, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetTags() []string { return v.Tags }
 
 type SessionAffinity string
 
@@ -952,6 +994,14 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __ReportServiceMetaInput is used internally by genqlient
+type __ReportServiceMetaInput struct {
+	ServiceMeta ReportServiceMetadataInput `json:"serviceMeta"`
+}
+
+// GetServiceMeta returns __ReportServiceMetaInput.ServiceMeta, and is useful for accessing the field via an interface.
+func (v *__ReportServiceMetaInput) GetServiceMeta() ReportServiceMetadataInput { return v.ServiceMeta }
 
 // The query or mutation executed by ReportComponentStatus.
 const ReportComponentStatus_Operation = `
@@ -1144,6 +1194,39 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportServiceMeta.
+const ReportServiceMeta_Operation = `
+mutation ReportServiceMeta ($serviceMeta: ReportServiceMetadataInput!) {
+	reportServiceMeta(serviceMeta: $serviceMeta)
+}
+`
+
+func ReportServiceMeta(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	serviceMeta ReportServiceMetadataInput,
+) (*ReportServiceMetaResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportServiceMeta",
+		Query:  ReportServiceMeta_Operation,
+		Variables: &__ReportServiceMetaInput{
+			ServiceMeta: serviceMeta,
+		},
+	}
+	var err_ error
+
+	var data_ ReportServiceMetaResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

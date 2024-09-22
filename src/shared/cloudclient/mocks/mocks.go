@@ -118,3 +118,18 @@ func (mr *MockCloudClientMockRecorder) ReportK8sServices(ctx, namespace, service
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sServices", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sServices), ctx, namespace, services)
 }
+
+// ReportServiceMeta mocks base method.
+func (m *MockCloudClient) ReportServiceMeta(ctx context.Context, serviceMeta cloudclient.ReportServiceMetadataInput) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportServiceMeta", ctx, serviceMeta)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReportServiceMeta indicates an expected call of ReportServiceMeta.
+func (mr *MockCloudClientMockRecorder) ReportServiceMeta(ctx, serviceMeta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportServiceMeta", reflect.TypeOf((*MockCloudClient)(nil).ReportServiceMeta), ctx, serviceMeta)
+}

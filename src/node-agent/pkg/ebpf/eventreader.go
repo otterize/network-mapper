@@ -14,6 +14,8 @@ import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/eventparser"
+	"github.com/otterize/network-mapper/src/shared/cloudclient"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"io"
 	corev1 "k8s.io/api/core/v1"
@@ -24,10 +26,10 @@ import (
 )
 
 type EventReader struct {
-	client       client.Client
-	perfReader   *perf.Reader
-	containerMap map[uint32]container.ContainerInfo
-
+	client            client.Client
+	perfReader        *perf.Reader
+	cloudClient       cloudclient.CloudClient
+	containerMap      map[uint32]container.ContainerInfo
 	serviceIdResolver *serviceidresolver.Resolver
 }
 
@@ -37,7 +39,12 @@ func init() {
 	iamlivecore.ReadServiceFiles()
 }
 
-func NewEventReader(client client.Client, serviceIdResolver *serviceidresolver.Resolver, perfMap *ebpf.Map) (*EventReader, error) {
+func NewEventReader(
+	client client.Client,
+	cloudClient cloudclient.CloudClient,
+	serviceIdResolver *serviceidresolver.Resolver,
+	perfMap *ebpf.Map,
+) (*EventReader, error) {
 	perfReader, err := perf.NewReader(perfMap, os.Getpagesize()*64)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -46,6 +53,7 @@ func NewEventReader(client client.Client, serviceIdResolver *serviceidresolver.R
 	return &EventReader{
 		client:            client,
 		perfReader:        perfReader,
+		cloudClient:       cloudClient,
 		containerMap:      make(map[uint32]container.ContainerInfo),
 		serviceIdResolver: serviceIdResolver,
 	}, nil
@@ -144,6 +152,26 @@ func (e *EventReader) updateWorkload(eventCtx types.EventContext) error {
 	}
 
 	logrus.Printf("SERVICE ID: %v", serviceId)
+
+	// Update the workload with the metadata
+	serviceMeta := cloudclient.ReportServiceMetadataInput{
+		Identity: cloudclient.ServiceIdentityInput{
+			Name:      serviceId.Name,
+			Namespace: serviceId.Namespace,
+			Kind:      serviceId.Kind,
+		},
+		Metadata: cloudclient.ServiceMetadataInput{
+			Tags: lo.MapToSlice(eventCtx.Metadata.Tags, func(key types.EventTag, _ bool) string {
+				return string(key)
+			}),
+		},
+	}
+
+	err = e.cloudClient.ReportServiceMeta(ctx, serviceMeta)
+	if err != nil {
+		return errors.Wrap(err)
+
+	}
 
 	return nil
 }

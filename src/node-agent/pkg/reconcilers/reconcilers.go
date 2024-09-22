@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
+	"github.com/otterize/network-mapper/src/shared/cloudclient"
 	"github.com/sirupsen/logrus"
 	"reflect"
 	crtClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -11,10 +12,12 @@ import (
 func RegisterReconcilersOrDie(
 	mgr manager.Manager,
 	client crtClient.Client,
+	cloudClient cloudclient.CloudClient,
 	containerManager *container.ContainerManager,
 ) {
 	ebpfReconciler, err := NewEBPFReconciler(
 		client,
+		cloudClient,
 		containerManager,
 	)
 

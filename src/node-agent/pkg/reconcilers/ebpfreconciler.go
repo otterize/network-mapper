@@ -9,6 +9,7 @@ import (
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/labels"
+	"github.com/otterize/network-mapper/src/shared/cloudclient"
 	"github.com/otterize/network-mapper/src/shared/kubeutils"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -29,10 +30,11 @@ type EBPFReconciler struct {
 
 func NewEBPFReconciler(
 	client client.Client,
+	cloudClient cloudclient.CloudClient,
 	containerManager *container.ContainerManager,
 ) (*EBPFReconciler, error) {
 	idResolver := serviceidresolver.NewResolver(client)
-	eventReader, err := ebpf.NewEventReader(client, idResolver, otrzebpf.Objs.SslEvents)
+	eventReader, err := ebpf.NewEventReader(client, cloudClient, idResolver, otrzebpf.Objs.SslEvents)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

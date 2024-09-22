@@ -33,7 +33,7 @@ func ContainsPaymentKeywords(ctx ebpftypes.EventContext, data string) error {
 	// Check if any of the keywords are present in the text
 	for _, keyword := range keywords {
 		if strings.Contains(data, keyword) {
-			// Set PCI tag
+			// Set PII tag
 			ctx.Metadata.AddTag(ebpftypes.EventTagPCI)
 		}
 	}
@@ -45,7 +45,7 @@ func ContainsAddress(ctx ebpftypes.EventContext, data string) error {
 	// Check if any of the keywords are present in the text
 	for _, keyword := range helpers.AddressKeywords {
 		if strings.Contains(data, keyword) {
-			// Set PCI tag
+			// Set PII tag
 			ctx.Metadata.AddTag(ebpftypes.EventTagPII)
 		}
 	}
