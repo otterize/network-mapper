@@ -1,4 +1,4 @@
-package pcidata
+package helpers
 
 import (
 	"strings"
@@ -43,16 +43,16 @@ var cardPrefixes = map[string][]int{
 	"8699":     {13, 16}, // Voyager
 }
 
-// Matches the following card formats:
+// CardRegex Matches the following card formats:
 // 4111111111111111
 // 4111 1111 1111 1111
 // 4111-1111-1111-1111
 // 4111.1111.1111.1111
 // **** **** **** 1111
-const cardRegex = `(?:(\d|\*)[ -\.]*?){13,19}`
+const CardRegex = `(?:(\d|\*)[ -\.]*?){13,19}`
 
-// Normalize card number by removing non-digit characters (if separated by spaces, dots, or dashes)
-func normalizeCardNumber(card string) string {
+// NormalizeCardNumber Normalize card number by removing non-digit characters (if separated by spaces, dots, or dashes)
+func NormalizeCardNumber(card string) string {
 	var normalized string
 	for _, char := range card {
 		if unicode.IsDigit(char) {
@@ -62,8 +62,8 @@ func normalizeCardNumber(card string) string {
 	return normalized
 }
 
-// Check if the card number is valid based on prefixes and length
-func isValidCardNumber(card string) bool {
+// IsValidCardNumber Check if the card number is valid based on prefixes and length
+func IsValidCardNumber(card string) bool {
 	for prefix, lengths := range cardPrefixes {
 		if strings.HasPrefix(card, prefix) {
 			for _, length := range lengths {

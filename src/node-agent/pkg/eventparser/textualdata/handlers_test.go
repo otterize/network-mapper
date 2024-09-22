@@ -1,4 +1,4 @@
-package pcidata
+package textualdata
 
 import (
 	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
@@ -26,7 +26,7 @@ func (s *PciHandlersTestSuite) TestContainsPaymentInformation() {
 			Data:     []byte(msg),
 			Metadata: &ebpftypes.EventMetadata{},
 		}
-		err := ContainsPaymentInformation(ctx, string(ctx.Data))
+		err := ContainsCreditCardData(ctx, string(ctx.Data))
 		s.NoError(err)
 		s.True(ctx.Metadata.Tags[ebpftypes.EventTagPCI])
 	}

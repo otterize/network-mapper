@@ -1,4 +1,4 @@
-package pcidata
+package textualdata
 
 import (
 	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
