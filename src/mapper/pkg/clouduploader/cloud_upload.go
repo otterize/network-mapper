@@ -7,10 +7,10 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
+	"github.com/otterize/network-mapper/src/shared/cloudclient"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/samber/lo"

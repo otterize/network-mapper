@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	cloudclientmocks "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient/mocks"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
+	"github.com/otterize/network-mapper/src/shared/cloudclient"
+	cloudclientmocks "github.com/otterize/network-mapper/src/shared/cloudclient/mocks"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
@@ -36,7 +36,7 @@ func (s *CloudUploaderTestSuite) SetupTest() {
 	s.incomingHolder = incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 }
 
-func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
+func (s *CloudUploaderTestSuite) BeforeTest(_, _ string) {
 	controller := gomock.NewController(s.T())
 	s.clientMock = cloudclientmocks.NewMockCloudClient(controller)
 	s.cloudUploader = NewCloudUploader(s.intentsHolder, Config{UploadBatchSize: config.UploadBatchSizeDefault}, s.clientMock)

@@ -16,25 +16,25 @@ type Parser struct {
 }
 
 // Parse parses the HTTP request from the given data
-func (p Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
+func (p *Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
 	reader := bufio.NewReader(bytes.NewReader(ctx.Data))
 	resp, err := http.ReadResponse(reader, nil)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
 
-	logrus.Debugf("Got HTTP response: %s\n", string(ctx.Data))
+	logrus.Debugf("Got HTTP response: %s", string(ctx.Data))
 
 	return resp, nil
 }
 
 // RegisterHandler registers a handler for HTTP events
-func (p Parser) RegisterHandler(handler types.DataHandler[*http.Response]) {
+func (p *Parser) RegisterHandler(handler types.DataHandler[*http.Response]) {
 	p.handlers = append(p.handlers, handler)
 }
 
 // RunHandlers executes all registered handlers on the parsed data
-func (p Parser) RunHandlers(ctx ebpftypes.EventContext, data interface{}) error {
+func (p *Parser) RunHandlers(ctx ebpftypes.EventContext, data interface{}) error {
 	req, ok := data.(*http.Response)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *http.Response")

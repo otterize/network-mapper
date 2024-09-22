@@ -4,6 +4,7 @@ import (
 	"github.com/otterize/iamlive/iamlivecore"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	ebpftypes "github.com/otterize/network-mapper/src/node-agent/pkg/ebpf/types"
+	"strings"
 
 	"io"
 	"net/http"
@@ -18,7 +19,7 @@ func HandleAwsRequest(ctx ebpftypes.EventContext, req *http.Request) error {
 	}
 
 	// Check if the event is an AWS request - called to host "amazonaws.com"
-	if req.Host != AWSHost {
+	if !strings.HasSuffix(req.Host, AWSHost) {
 		return nil
 	}
 

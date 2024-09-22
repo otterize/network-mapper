@@ -2,7 +2,7 @@ package resourcevisibility
 
 import (
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	"github.com/otterize/network-mapper/src/shared/cloudclient"
 	"github.com/otterize/nilable"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"

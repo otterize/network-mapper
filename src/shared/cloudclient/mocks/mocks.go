@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	cloudclient "github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	cloudclient "github.com/otterize/network-mapper/src/shared/cloudclient"
 	gomock "go.uber.org/mock/gomock"
 )
 

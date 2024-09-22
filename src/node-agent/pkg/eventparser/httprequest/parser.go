@@ -16,7 +16,7 @@ type Parser struct {
 }
 
 // Parse parses the HTTP request from the given data
-func (p Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
+func (p *Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
 	reader := bufio.NewReader(bytes.NewReader(ctx.Data))
 	req, err := http.ReadRequest(reader)
 	if err != nil {
@@ -25,18 +25,17 @@ func (p Parser) Parse(ctx ebpftypes.EventContext) (interface{}, error) {
 
 	req.RemoteAddr = ctx.Container.PodIP
 
-	logrus.Debugf("Got HTTP request: %s\n", string(ctx.Data))
-
+	logrus.Debugf("Got HTTP request: %s", string(ctx.Data))
 	return req, nil
 }
 
 // RegisterHandler registers a handler for HTTP events
-func (p Parser) RegisterHandler(handler types.DataHandler[*http.Request]) {
+func (p *Parser) RegisterHandler(handler types.DataHandler[*http.Request]) {
 	p.handlers = append(p.handlers, handler)
 }
 
 // RunHandlers executes all registered handlers on the parsed data
-func (p Parser) RunHandlers(ctx ebpftypes.EventContext, data interface{}) error {
+func (p *Parser) RunHandlers(ctx ebpftypes.EventContext, data interface{}) error {
 	req, ok := data.(*http.Request)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *http.Request")

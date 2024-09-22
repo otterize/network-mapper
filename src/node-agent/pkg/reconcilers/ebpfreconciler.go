@@ -3,6 +3,7 @@ package reconcilers
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/bintools/bininfo"
 	otrzebpf "github.com/otterize/network-mapper/src/ebpf"
 	"github.com/otterize/network-mapper/src/node-agent/pkg/container"
@@ -30,7 +31,8 @@ func NewEBPFReconciler(
 	client client.Client,
 	containerManager *container.ContainerManager,
 ) (*EBPFReconciler, error) {
-	eventReader, err := ebpf.NewEventReader(otrzebpf.Objs.SslEvents)
+	idResolver := serviceidresolver.NewResolver(client)
+	eventReader, err := ebpf.NewEventReader(client, idResolver, otrzebpf.Objs.SslEvents)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}

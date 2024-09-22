@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/network-mapper/src/bintools/bininfo"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	internalapi "k8s.io/cri-api/pkg/apis"
 	"os"
 	"strings"
@@ -50,6 +51,7 @@ func (m *ContainerManager) GetContainerInfo(ctx context.Context, pod v1.Pod, con
 
 	var info ContainerInfo
 	err = json.Unmarshal([]byte(resp.Info["info"]), &info)
+	info.PodName = types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}
 
 	if err != nil {
 		return ContainerInfo{}, errors.Wrap(err)
