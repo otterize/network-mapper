@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
+func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	svc, ok, err := r.kubeFinder.ResolveIPToControlPlane(ctx, src.SrcIP)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve %s to service: %w", src.SrcIP, err)
@@ -34,6 +34,15 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src model.Re
 		return model.OtterizeServiceIdentity{}, errors.Errorf("found pod %s (by ip %s) doesn't match captured hostname %s, ignoring", srcPod.Name, src.SrcIP, src.SrcHostname)
 	}
 
+	// This function requires "src" to be a pointer.
+	// If at some point this function will be called with a non-pointer "src"
+	// It may cause a bug because the function will not be able to modify the "src" object of the caller.
+	r.filterTargetsAccordingToPodCreationTime(src, srcPod)
+
+	return r.resolveInClusterIdentity(ctx, srcPod)
+}
+
+func (r *Resolver) filterTargetsAccordingToPodCreationTime(src *model.RecordedDestinationsForSrc, srcPod *corev1.Pod) {
 	filteredDestinations := make([]model.Destination, 0)
 	for _, dest := range src.Destinations {
 		if srcPod.CreationTimestamp.After(dest.LastSeen) {
@@ -43,8 +52,6 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src model.Re
 		filteredDestinations = append(filteredDestinations, dest)
 	}
 	src.Destinations = filteredDestinations
-
-	return r.resolveInClusterIdentity(ctx, srcPod)
 }
 
 func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod) (model.OtterizeServiceIdentity, error) {
