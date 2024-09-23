@@ -31,7 +31,7 @@ const (
 	DNSCacheItemsMaxCapacityKey           = "dns-cache-items-max-capacity"
 	DNSCacheItemsMaxCapacityDefault       = 100000
 	DNSClientIntentsUpdateIntervalKey     = "dns-client-intents-update-interval"
-	DNSClientIntentsUpdateIntervalDefault = 1 * time.Second
+	DNSClientIntentsUpdateIntervalDefault = 100 * time.Millisecond
 	DNSClientIntentsUpdateEnabledKey      = "dns-client-intents-update-enabled"
 	DNSClientIntentsUpdateEnabledDefault  = true
 	ServiceCacheTTLDurationKey            = "service-cache-ttl-duration"

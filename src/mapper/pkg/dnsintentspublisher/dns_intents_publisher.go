@@ -115,7 +115,7 @@ func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otteriz
 	for dnsName, ips := range resolvedIPsMap {
 		updatedResolvedIPs = append(updatedResolvedIPs, otterizev2alpha1.ResolvedIPs{
 			DNS: dnsName,
-			IPs: ips,
+			IPs: lo.MapToSlice(ips, func(ip string, _ struct{}) string { return ip }),
 		})
 	}
 
@@ -129,9 +129,9 @@ func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otteriz
 	return nil
 }
 
-func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.ClientIntents) (map[string][]string, bool) {
-	resolvedIPsMap := lo.SliceToMap(clientIntents.Status.ResolvedIPs, func(resolvedIPs otterizev2alpha1.ResolvedIPs) (string, []string) {
-		return resolvedIPs.DNS, resolvedIPs.IPs
+func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.ClientIntents) (map[string]map[string]struct{}, bool) {
+	resolvedIPsMap := lo.SliceToMap(clientIntents.Status.ResolvedIPs, func(resolvedIPs otterizev2alpha1.ResolvedIPs) (string, map[string]struct{}) {
+		return resolvedIPs.DNS, lo.SliceToMap(resolvedIPs.IPs, func(ip string) (string, struct{}) { return ip, struct{}{} })
 	})
 
 	dnsIntents := lo.Reduce(clientIntents.GetTargetList(), func(names []string, intent otterizev2alpha1.Target, _ int) []string {
@@ -160,58 +160,41 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 	return resolvedIPsMap, shouldUpdate
 }
 
-func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string][]string) bool {
+func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]map[string]struct{}) bool {
 	resolvedIPs := p.dnsCache.GetResolvedIPs(dnsName)
 
 	ips, ok := resolvedIPsMap[dnsName]
 	if !ok {
-		ips = make([]string, 0)
-		if len(resolvedIPs) == 0 {
-			// Try to resolve it ourselves
-			ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-			logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
-			ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
-			if err != nil {
-				logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
-				return false
-			}
-
-			for _, ip := range ipaddrs {
-				ips = append(ips, ip.String())
-				p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 60)
-			}
-			resolvedIPsMap[dnsName] = ips
-			return true
-		}
+		ips = make(map[string]struct{})
 	}
 
-	// This happens when we've resolved the IP ourselves in a prior run, and still have no new passive resolution this time.
 	if len(resolvedIPs) == 0 {
-		return false
+		// Try to resolve it ourselves
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
+		//return false
+		ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
+		if err != nil {
+			logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
+			return false
+		}
+
+		for _, ip := range ipaddrs {
+			ips[ip.String()] = struct{}{}
+			p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 10*time.Second)
+		}
+	} else {
+		logrus.WithField("dnsName", dnsName).Debug("DNS cache hit")
 	}
 
 	prevLen := len(ips)
-	ips = addMissing(ips, resolvedIPs)
+	for _, resolvedIp := range resolvedIPs {
+		ips[resolvedIp] = struct{}{}
+	}
 	if len(ips) == prevLen {
 		return false
 	}
 	resolvedIPsMap[dnsName] = ips
 	return true
-}
-
-// add missing items from sliceB to sliceA
-func addMissing(sliceA []string, sliceB []string) []string {
-	// using map
-	m := make(map[string]struct{}, len(sliceA))
-	for _, s := range sliceA {
-		m[s] = struct{}{}
-	}
-	for _, s := range sliceB {
-		if _, ok := m[s]; !ok {
-			sliceA = append(sliceA, s)
-		}
-	}
-
-	return sliceA
 }
