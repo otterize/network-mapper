@@ -173,7 +173,7 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 		ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
-		//return false
+
 		ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
 		if err != nil {
 			logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
