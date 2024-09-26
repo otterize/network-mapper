@@ -63,7 +63,7 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 			toCloud.Intent.ServerAlias = &cloudclient.ServerAliasInput{Name: intent.Intent.Server.KubernetesService, Kind: lo.ToPtr(serviceidentity.KindService)}
 		}
 		// debug log all the fields of intent input one by one with their values
-		logrus.Debugf("intent CleintName: %s\t Namespace: %s\t ServerName: %s\t ServerNamespace: %s\t ClientWorkloadKind: %s\t ServerWorkloadKind: %s\t ServerAlias: %v", lo.FromPtr(toCloud.Intent.ClientName), lo.FromPtr(toCloud.Intent.Namespace), lo.FromPtr(toCloud.Intent.ServerName), lo.FromPtr(toCloud.Intent.ServerNamespace), lo.FromPtr(toCloud.Intent.ClientWorkloadKind), lo.FromPtr(toCloud.Intent.ServerWorkloadKind), lo.FromPtr(toCloud.Intent.ServerAlias))
+		logrus.Debugf("intent ClientName: %s\t Namespace: %s\t ServerName: %s\t ServerNamespace: %s\t ClientWorkloadKind: %s\t ServerWorkloadKind: %s\t ServerAlias: %v", lo.FromPtr(toCloud.Intent.ClientName), lo.FromPtr(toCloud.Intent.Namespace), lo.FromPtr(toCloud.Intent.ServerName), lo.FromPtr(toCloud.Intent.ServerNamespace), lo.FromPtr(toCloud.Intent.ClientWorkloadKind), lo.FromPtr(toCloud.Intent.ServerWorkloadKind), lo.FromPtr(toCloud.Intent.ServerAlias))
 
 		return toCloud
 	})

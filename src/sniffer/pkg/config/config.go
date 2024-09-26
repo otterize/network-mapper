@@ -11,7 +11,7 @@ const (
 	CallsTimeoutKey                    = "calls-timeout"
 	CallsTimeoutDefault                = 60 * time.Second
 	SnifferReportIntervalKey           = "sniffer-report-interval"
-	SnifferReportIntervalDefault       = 10 * time.Second
+	SnifferReportIntervalDefault       = 1 * time.Second
 	PacketsBufferLengthKey             = "packets-buffer-length"
 	PacketsBufferLengthDefault         = 4096
 	HostsMappingRefreshIntervalKey     = "hosts-mapping-refresh-interval"

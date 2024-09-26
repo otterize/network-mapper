@@ -19,28 +19,29 @@ type DNSCacheTestSuite struct {
 }
 
 func (s *DNSCacheTestSuite) TearDownTest() {
-	viper.Reset()
+	viper.Set(config.DNSCacheItemsMaxCapacityKey, config.DNSCacheItemsMaxCapacityDefault)
 }
 
 func (s *DNSCacheTestSuite) TestDNSCache() {
 	cache := NewDNSCache()
-	cache.AddOrUpdateDNSData("good-news.com", IP1, 60)
-	ip, found := cache.GetResolvedIP("good-news.com")
-	s.Require().True(found)
-	s.Require().Equal(IP1, ip)
+	cache.AddOrUpdateDNSData("good-news.com", IP1, 60*time.Second)
+	ips := cache.GetResolvedIPs("good-news.com")
+	s.Require().Len(ips, 1)
+	s.Require().Equal(IP1, ips[0])
 
-	cache.AddOrUpdateDNSData("good-news.com", IP2, 60)
-	ip, found = cache.GetResolvedIP("good-news.com")
-	s.Require().True(found)
-	s.Require().Equal(IP2, ip)
+	cache.AddOrUpdateDNSData("good-news.com", IP2, 60*time.Second)
+	ips = cache.GetResolvedIPs("good-news.com")
+	s.Require().Len(ips, 2)
+	s.Require().Contains(ips, IP1)
+	s.Require().Contains(ips, IP2)
 
-	_, found = cache.GetResolvedIP("bad-news.de")
-	s.Require().False(found)
+	ips = cache.GetResolvedIPs("bad-news.de")
+	s.Require().Len(ips, 0)
 
-	cache.AddOrUpdateDNSData("bad-news.de", IP1, 60)
-	ip, found = cache.GetResolvedIP("bad-news.de")
-	s.Require().True(found)
-	s.Require().Equal(IP1, ip)
+	cache.AddOrUpdateDNSData("bad-news.de", IP1, 60*time.Second)
+	ips = cache.GetResolvedIPs("bad-news.de")
+	s.Require().Len(ips, 1)
+	s.Require().Equal(IP1, ips[0])
 }
 
 func (s *DNSCacheTestSuite) TestCapacityConfig() {
@@ -50,16 +51,16 @@ func (s *DNSCacheTestSuite) TestCapacityConfig() {
 	names := make([]string, 0)
 	for i := 0; i < capacityLimit+1; i++ {
 		dnsName := fmt.Sprintf("dns-%d.com", i)
-		cache.AddOrUpdateDNSData(dnsName, IP1, 60)
+		cache.AddOrUpdateDNSData(dnsName, IP1, 60*time.Second)
 		names = append(names, dnsName)
 	}
 
 	for i, dnsName := range names {
-		_, found := cache.GetResolvedIP(dnsName)
+		vals := cache.GetResolvedIPs(dnsName)
 		if i == 0 {
-			s.Require().False(found)
+			s.Require().Len(vals, 0)
 		} else {
-			s.Require().True(found)
+			s.Require().Len(vals, 1)
 		}
 	}
 }
@@ -67,15 +68,18 @@ func (s *DNSCacheTestSuite) TestCapacityConfig() {
 func (s *DNSCacheTestSuite) TestTTL() {
 	cache := NewDNSCache()
 
-	cache.AddOrUpdateDNSData("my-future-blog.de", IP1, 1)
-	ip, found := cache.GetResolvedIP("my-future-blog.de")
-	s.Require().True(found)
-	s.Require().Equal(IP1, ip)
+	cache.AddOrUpdateDNSData("my-future-blog.de", IP1, 1*time.Second)
+	ips := cache.GetResolvedIPs("my-future-blog.de")
+	s.Require().Len(ips, 1)
+	s.Require().Equal(IP1, ips[0])
 
 	// This is the only place where we sleep in the test, to make sure the TTL works as expected
-	time.Sleep(1100 * time.Millisecond)
-	_, found = cache.GetResolvedIP("my-future-blog.de")
-	s.Require().False(found)
+	time.Sleep(2 * time.Second)
+
+	cache.cache.cleanupExpired()
+
+	ips = cache.GetResolvedIPs("my-future-blog.de")
+	s.Require().Len(ips, 0)
 
 }
 

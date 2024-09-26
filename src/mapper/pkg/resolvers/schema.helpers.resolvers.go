@@ -187,6 +187,12 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 	if !viper.GetBool(config.ExternalTrafficCaptureEnabledKey) {
 		return nil
 	}
+
+	// Ignore external traffic from the network mapper except to Otterize Cloud, which is caused
+	// by the network mapper resolving all external IP traffic when Internet intents are in use.
+	if srcSvcIdentity.Name == "otterize-network-mapper" && dest.Destination != "app.otterize.com" {
+		return nil
+	}
 	intent := externaltrafficholder.ExternalTrafficIntent{
 		Client:   srcSvcIdentity,
 		LastSeen: dest.LastSeen,
@@ -196,7 +202,11 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
 		intent.IPs = map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}}
-		r.dnsCache.AddOrUpdateDNSData(dest.Destination, ip, int(lo.FromPtr(dest.TTL)))
+		ttl := 60 * time.Second
+		if dest.TTL != nil {
+			ttl = time.Duration(*dest.TTL) * time.Second
+		}
+		r.dnsCache.AddOrUpdateDNSData(dest.Destination, ip, ttl)
 	}
 	logrus.Debugf("Saw external traffic, from '%s.%s' to '%s' (IP '%s')", srcSvcIdentity.Name, srcSvcIdentity.Namespace, dest.Destination, ip)
 

@@ -5,10 +5,12 @@ import (
 	otterizev2alpha1 "github.com/otterize/intents-operator/src/operator/api/v2alpha1"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
+	"net"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -19,21 +21,27 @@ const (
 	hasAnyDnsIntentsIndexValue = "true"
 )
 
-type DnsCache interface {
-	GetResolvedIP(dnsName string) (string, bool)
-}
-
 type Publisher struct {
 	client         client.Client
-	dnsCache       DnsCache
+	dnsCache       *dnscache.DNSCache
 	updateInterval time.Duration
+	resolver       Resolver
 }
 
-func NewPublisher(k8sClient client.Client, dnsCache DnsCache) *Publisher {
+type Resolver interface {
+	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
+}
+
+func NewPublisher(k8sClient client.Client, dnsCache *dnscache.DNSCache) *Publisher {
+	return NewPublisherWithResolver(k8sClient, dnsCache, net.DefaultResolver)
+}
+
+func NewPublisherWithResolver(k8sClient client.Client, dnsCache *dnscache.DNSCache, resolver Resolver) *Publisher {
 	return &Publisher{
 		client:         k8sClient,
 		dnsCache:       dnsCache,
 		updateInterval: viper.GetDuration(config.DNSClientIntentsUpdateIntervalKey),
+		resolver:       resolver,
 	}
 }
 
@@ -107,7 +115,7 @@ func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otteriz
 	for dnsName, ips := range resolvedIPsMap {
 		updatedResolvedIPs = append(updatedResolvedIPs, otterizev2alpha1.ResolvedIPs{
 			DNS: dnsName,
-			IPs: ips,
+			IPs: lo.MapToSlice(ips, func(ip string, _ struct{}) string { return ip }),
 		})
 	}
 
@@ -121,9 +129,9 @@ func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otteriz
 	return nil
 }
 
-func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.ClientIntents) (map[string][]string, bool) {
-	resolvedIPsMap := lo.SliceToMap(clientIntents.Status.ResolvedIPs, func(resolvedIPs otterizev2alpha1.ResolvedIPs) (string, []string) {
-		return resolvedIPs.DNS, resolvedIPs.IPs
+func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.ClientIntents) (map[string]map[string]struct{}, bool) {
+	resolvedIPsMap := lo.SliceToMap(clientIntents.Status.ResolvedIPs, func(resolvedIPs otterizev2alpha1.ResolvedIPs) (string, map[string]struct{}) {
+		return resolvedIPs.DNS, lo.SliceToMap(resolvedIPs.IPs, func(ip string) (string, struct{}) { return ip, struct{}{} })
 	})
 
 	dnsIntents := lo.Reduce(clientIntents.GetTargetList(), func(names []string, intent otterizev2alpha1.Target, _ int) []string {
@@ -152,22 +160,41 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 	return resolvedIPsMap, shouldUpdate
 }
 
-func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string][]string) bool {
-	resolvedIP, ok := p.dnsCache.GetResolvedIP(dnsName)
-	if !ok {
-		return false
-	}
+func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]map[string]struct{}) bool {
+	resolvedIPs := p.dnsCache.GetResolvedIPs(dnsName)
 
 	ips, ok := resolvedIPsMap[dnsName]
 	if !ok {
-		ips = make([]string, 0)
+		ips = make(map[string]struct{})
 	}
 
-	if slices.Contains(ips, resolvedIP) {
+	if len(resolvedIPs) == 0 {
+		// Try to resolve it ourselves
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
+
+		ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
+		if err != nil {
+			logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
+			return false
+		}
+
+		for _, ip := range ipaddrs {
+			ips[ip.String()] = struct{}{}
+			p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 10*time.Second)
+		}
+	} else {
+		logrus.WithField("dnsName", dnsName).Debug("DNS cache hit")
+	}
+
+	prevLen := len(ips)
+	for _, resolvedIp := range resolvedIPs {
+		ips[resolvedIp] = struct{}{}
+	}
+	if len(ips) == prevLen {
 		return false
 	}
-
-	ips = append(ips, resolvedIP)
 	resolvedIPsMap[dnsName] = ips
 	return true
 }

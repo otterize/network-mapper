@@ -15,7 +15,6 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/jellydator/ttlcache/v3 v3.1.1
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/labstack/gommon v0.4.2

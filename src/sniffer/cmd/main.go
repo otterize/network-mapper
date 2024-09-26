@@ -84,15 +84,10 @@ func main() {
 		snifferInstance := sniffer.NewSniffer(mapperClient)
 		return snifferInstance.RunForever(errGroupCtx)
 	})
-
-	err := errgrp.Wait()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logrus.WithError(err).Panic("Error when running server or HTTP server")
-	}
-
+	<-errGroupCtx.Done()
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err = healthServer.Shutdown(timeoutCtx)
+	err := healthServer.Shutdown(timeoutCtx)
 	if err != nil {
 		logrus.WithError(err).Panic("Error when shutting down")
 	}
@@ -101,4 +96,11 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Panic("Error when shutting down")
 	}
+
+	err = errgrp.Wait()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		logrus.WithError(err).Panic("Error when running server or HTTP server")
+	}
+
+	logrus.Info("Sniffer stopped")
 }
