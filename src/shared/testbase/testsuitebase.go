@@ -54,11 +54,21 @@ func (s *ControllerManagerTestSuiteBase) SetupTest() {
 	s.Mgr, err = manager.New(s.cfg, manager.Options{Metrics: server.Options{BindAddress: "0"}})
 	s.Require().NoError(err)
 	testName := s.T().Name()[strings.LastIndex(s.T().Name(), "/")+1:]
+	maxLen := 63 - len("-20060102150405")
+	if len(testName) > maxLen {
+		sliceStart := len(testName) - maxLen
+		testName = testName[sliceStart:]
+	}
 	s.TestNamespace = strings.ToLower(fmt.Sprintf("%s-%s", testName, time.Now().Format("20060102150405")))
 	testNamespaceObj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: s.TestNamespace},
 	}
 	_, err = s.K8sDirectClient.CoreV1().Namespaces().Create(context.Background(), testNamespaceObj, metav1.CreateOptions{})
+	s.Require().NoError(err)
+	_, err = s.K8sDirectClient.CoreV1().Nodes().Create(context.Background(), &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{Name: "node1"},
+		Status:     corev1.NodeStatus{Addresses: []corev1.NodeAddress{{Type: corev1.NodeInternalIP, Address: "192.168.1.1"}}},
+	}, metav1.CreateOptions{})
 	s.Require().NoError(err)
 }
 
@@ -195,12 +205,20 @@ func (s *ControllerManagerTestSuiteBase) AddEndpoints(name string, pods []*corev
 	return endpoints
 }
 
-func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[string]string, serviceIp string, pods []*corev1.Pod) *corev1.Service {
+func (s *ControllerManagerTestSuiteBase) AddClusterIPService(name string, selector map[string]string, serviceIp string, pods []*corev1.Pod) *corev1.Service {
+	return s.AddService(name, selector, serviceIp, pods, corev1.ServiceTypeClusterIP)
+}
+
+func (s *ControllerManagerTestSuiteBase) AddLoadBalancerService(name string, selector map[string]string, serviceIp string, pods []*corev1.Pod) *corev1.Service {
+	return s.AddService(name, selector, serviceIp, pods, corev1.ServiceTypeLoadBalancer)
+}
+
+func (s *ControllerManagerTestSuiteBase) AddService(name string, selector map[string]string, serviceIp string, pods []*corev1.Pod, serviceType corev1.ServiceType) *corev1.Service {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("svc-%s", name), Namespace: s.TestNamespace},
 		Spec: corev1.ServiceSpec{Selector: selector,
 			Ports:      []corev1.ServicePort{{Name: "someport", Port: 8080, Protocol: corev1.ProtocolTCP}},
-			Type:       corev1.ServiceTypeClusterIP,
+			Type:       serviceType,
 			ClusterIP:  serviceIp,
 			ClusterIPs: []string{serviceIp},
 		},
@@ -389,7 +407,7 @@ func (s *ControllerManagerTestSuiteBase) AddDeployment(name string, podIps []str
 
 func (s *ControllerManagerTestSuiteBase) AddDeploymentWithService(name string, podIps []string, podLabels map[string]string, serviceIp string) (*appsv1.Deployment, *corev1.Service, []*corev1.Pod) {
 	deployment, pods := s.AddDeployment(name, podIps, podLabels)
-	service := s.AddService(name, podLabels, serviceIp, pods)
+	service := s.AddClusterIPService(name, podLabels, serviceIp, pods)
 	return deployment, service, pods
 }
 
@@ -442,6 +460,6 @@ func (s *ControllerManagerTestSuiteBase) AddDaemonSet(name string, podIps []stri
 
 func (s *ControllerManagerTestSuiteBase) AddDaemonSetWithService(name string, podIps []string, podLabels map[string]string, serviceIp string) (*appsv1.DaemonSet, *corev1.Service) {
 	daemonSet, pods := s.AddDaemonSet(name, podIps, podLabels)
-	service := s.AddService(name, podLabels, serviceIp, pods)
+	service := s.AddClusterIPService(name, podLabels, serviceIp, pods)
 	return daemonSet, service
 }
