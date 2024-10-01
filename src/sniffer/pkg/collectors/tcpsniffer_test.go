@@ -17,7 +17,7 @@ import (
 func TestTCPSniffer_TestHandlePacketAWS(t *testing.T) {
 	controller := gomock.NewController(t)
 	mockResolver := ipresolver.NewMockIPResolver(controller)
-	mockResolver.EXPECT().ResolveIP("10.0.2.48").Return("client-1", nil).Times(2) // once for the initial check, and then another for verification
+	mockResolver.EXPECT().ResolveIP("10.0.2.48").Return("client-1", true).Times(2) // once for the initial check, and then another for verification
 	mockResolver.EXPECT().Refresh().Return(nil).Times(1)
 
 	sniffer := NewTCPSniffer(mockResolver, true)

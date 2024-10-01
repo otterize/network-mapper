@@ -29,11 +29,11 @@ func NewProcFSIPResolver() *ProcFSIPResolver {
 	return &r
 }
 
-func (r *ProcFSIPResolver) ResolveIP(ipaddr string) (hostname string, err error) {
+func (r *ProcFSIPResolver) ResolveIP(ipaddr string) (hostname string, ok bool) {
 	if hostInfo, ok := r.byAddr[ipaddr]; ok {
-		return hostInfo.Hostname, nil
+		return hostInfo.Hostname, true
 	}
-	return "", errors.New("ip not found")
+	return "", false
 }
 
 func (r *ProcFSIPResolver) Refresh() error {
