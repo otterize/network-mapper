@@ -1321,6 +1321,75 @@ func (s *ResolverTestSuite) TestTCPResultsFromExternalToPodSavedAsIncoming() {
 	s.Require().Equal("8.8.8.8", intents[0].Intent.IP)
 }
 
+func (s *ResolverTestSuite) TestTCPResultsFromExternalToPodSaveIfDestinationNameRight() {
+	// Create deployment
+	deploymentName := "coolz"
+	podIP := "1.1.1.3"
+	dep, pods := s.AddDeployment(deploymentName, []string{podIP}, map[string]string{"app": "coolz"})
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Report TCP results of traffic from external ip to pod
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "8.8.8.8",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination:     pods[0].Name,
+						DestinationIP:   nilable.From(podIP),
+						DestinationPort: nilable.From(80),
+						LastSeen:        packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	// Verify that the traffic from external ip to pod is saved as incoming
+	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
+	s.Require().Len(intents, 1)
+	s.Require().Equal(dep.Name, intents[0].Intent.Server.Name)
+	s.Require().Equal(dep.Namespace, intents[0].Intent.Server.Namespace)
+	s.Require().Equal("8.8.8.8", intents[0].Intent.IP)
+}
+
+func (s *ResolverTestSuite) TestTCPResultsFromExternalToPodSkipIfDestinationNameWrong() {
+	// Create deployment
+	deploymentName := "coolz"
+	podIP := "1.1.1.3"
+	_, pods := s.AddDeployment(deploymentName, []string{podIP}, map[string]string{"app": "coolz"})
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Report TCP results of traffic from external ip to pod
+	packetTime := time.Now().Add(time.Minute)
+	_, err := test_gql_client.ReportTCPCaptureResults(context.Background(), s.client, test_gql_client.CaptureTCPResults{
+		Results: []test_gql_client.RecordedDestinationsForSrc{
+			{
+				SrcIp: "8.8.8.8",
+				Destinations: []test_gql_client.Destination{
+					{
+						Destination:     pods[0].Name + "-wrong",
+						DestinationIP:   nilable.From(podIP),
+						DestinationPort: nilable.From(80),
+						LastSeen:        packetTime,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+
+	s.waitForCaptureResultsProcessed(10 * time.Second)
+
+	// Verify that the traffic from external ip to pod is saved as incoming
+	intents := s.resolver.incomingTrafficHolder.GetNewIntentsSinceLastGet()
+	s.Require().Len(intents, 0)
+}
+
 func (s *ResolverTestSuite) TestTCPResultsFromExternalToLoadBalancerServiceUsingNodeIpAndPortSavedAsIncoming() {
 	// Create deployment
 	deploymentName := "coolz"
@@ -1389,34 +1458,6 @@ func (s *ResolverTestSuite) TestResolveOtterizeIdentityFilterSrcDestinationsByCr
 
 	s.Require().Len(recorededDestinationForSrc.Destinations, 1)
 	s.Require().Equal("target-on-time", recorededDestinationForSrc.Destinations[0].Destination)
-
-}
-
-func (s *ResolverTestSuite) TestPoop() {
-	//serviceIP := "10.0.0.10"
-	podIP := "1.1.1.3"
-
-	pod3 := s.AddPod("pod3", podIP, nil, nil)
-	//s.AddService(serviceName, map[string]string{"app": "test"}, serviceIP, []*v1.Pod{pod3})
-	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
-
-	pod := &v1.Pod{}
-	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: pod3.Name, Namespace: pod3.Namespace}, pod)
-	s.Require().NoError(err)
-	podlist1 := &v1.PodList{}
-	err = s.Mgr.GetClient().List(context.Background(), podlist1, client.MatchingFields{"ip": pod.Status.PodIP})
-	s.Require().NoError(err)
-	s.Require().Len(podlist1.Items, 1)
-
-	err = s.Mgr.GetClient().Delete(context.Background(), pod)
-	s.Require().NoError(err)
-
-	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
-
-	podlist := &v1.PodList{}
-	err = s.Mgr.GetClient().List(context.Background(), podlist, client.MatchingFields{"ip": pod.Status.PodIP})
-	s.Require().NoError(err)
-	s.Require().Empty(podlist.Items)
 
 }
 
