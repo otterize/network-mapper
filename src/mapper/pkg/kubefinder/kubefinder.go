@@ -38,7 +38,7 @@ type KubeFinder struct {
 	mgr               manager.Manager
 	client            client.Client
 	serviceIdResolver *serviceidresolver.Resolver
-	SeenIPsTTLCache   *expirable.LRU[string, struct{}]
+	seenIPsTTLCache   *expirable.LRU[string, struct{}]
 }
 
 var (
@@ -49,17 +49,17 @@ var (
 )
 
 func NewKubeFinder(ctx context.Context, mgr manager.Manager) (*KubeFinder, error) {
-	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
-	indexer.initCache()
-	err := indexer.initIndexes(ctx)
+	finder := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
+	finder.initSeenIPsCache()
+	err := finder.initIndexes(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	return indexer, nil
+	return finder, nil
 }
 
-func (k *KubeFinder) initCache() {
-	k.SeenIPsTTLCache = expirable.NewLRU[string, struct{}](2000, nil, time.Minute*10)
+func (k *KubeFinder) initSeenIPsCache() {
+	k.seenIPsTTLCache = expirable.NewLRU[string, struct{}](2000, nil, time.Minute*10)
 }
 
 func (k *KubeFinder) initIndexes(ctx context.Context) error {
@@ -89,7 +89,7 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		}
 
 		for _, ip := range pod.Status.PodIPs {
-			k.SeenIPsTTLCache.Add(ip.IP, struct{}{})
+			k.seenIPsTTLCache.Add(ip.IP, struct{}{})
 			res = append(res, ip.IP)
 		}
 		return res
@@ -518,7 +518,7 @@ func (k *KubeFinder) IsPodIp(ctx context.Context, ip string) (bool, error) {
 }
 
 func (k *KubeFinder) WasPodIP(ip string) bool {
-	return k.SeenIPsTTLCache.Contains(ip)
+	return k.seenIPsTTLCache.Contains(ip)
 }
 
 func (k *KubeFinder) IsNodeIP(ctx context.Context, ip string) (bool, error) {

@@ -104,7 +104,7 @@ func (s *KubeFinderTestSuite) TestIsSrcIpClusterInternal() {
 	s.Require().True(isInternal)
 
 	// Reset the cache
-	s.kubeFinder.initCache()
+	s.kubeFinder.initSeenIPsCache()
 
 	// Check isInternal with the deleted pod's ip after cache reset
 	isInternal, err = s.kubeFinder.IsSrcIpClusterInternal(context.Background(), "1.1.1.1")
