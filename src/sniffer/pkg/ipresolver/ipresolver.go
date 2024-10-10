@@ -7,7 +7,7 @@ import (
 
 type IPResolver interface {
 	Refresh() error
-	ResolveIP(ipaddr string) (hostname string, err error)
+	ResolveIP(ipaddr string) (hostname string, ok bool)
 }
 
 // NewMockIPResolver creates a new mock instance.
@@ -48,11 +48,11 @@ func (mr *MockIPResolverMockRecorder) Refresh() *gomock.Call {
 }
 
 // ResolveIP mocks base method.
-func (m *MockIPResolver) ResolveIP(ipaddr string) (string, error) {
+func (m *MockIPResolver) ResolveIP(ipaddr string) (string, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveIP", ipaddr)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
+	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 

@@ -101,15 +101,15 @@ func (s *ProcFSIPResolverTestSuite) TestResolverSimple() {
 	s.mockCreateProcess(10, "172.17.0.1", "service-1")
 	_ = s.resolver.Refresh()
 
-	hostname, err := s.resolver.ResolveIP("172.17.0.1")
-	s.Require().NoError(err)
+	hostname, ok := s.resolver.ResolveIP("172.17.0.1")
+	s.Require().True(ok)
 	s.Require().Equal("service-1", hostname)
 
 	s.mockKillProcess(10)
 	_ = s.resolver.Refresh()
 
-	hostname, err = s.resolver.ResolveIP("172.17.0.1")
-	s.Require().ErrorContains(err, "not found")
+	hostname, ok = s.resolver.ResolveIP("172.17.0.1")
+	s.Require().False(ok)
 	s.Require().Equal(hostname, "")
 }
 
@@ -117,31 +117,31 @@ func (s *ProcFSIPResolverTestSuite) TestResolverRefCount() {
 	s.mockCreateProcess(20, "172.17.0.2", "service-2")
 	_ = s.resolver.Refresh()
 
-	hostname, err := s.resolver.ResolveIP("172.17.0.2")
-	s.Require().NoError(err)
+	hostname, ok := s.resolver.ResolveIP("172.17.0.2")
+	s.Require().True(ok)
 	s.Require().Equal("service-2", hostname)
 
 	s.mockCreateProcess(21, "172.17.0.2", "service-2")
 	s.mockCreateProcess(22, "172.17.0.2", "service-2")
 	_ = s.resolver.Refresh()
 
-	hostname, err = s.resolver.ResolveIP("172.17.0.2")
-	s.Require().NoError(err)
+	hostname, ok = s.resolver.ResolveIP("172.17.0.2")
+	s.Require().True(ok)
 	s.Require().Equal("service-2", hostname)
 
 	s.mockKillProcess(20)
 	s.mockKillProcess(22)
 	_ = s.resolver.Refresh()
 
-	hostname, err = s.resolver.ResolveIP("172.17.0.2")
-	s.Require().NoError(err)
+	hostname, ok = s.resolver.ResolveIP("172.17.0.2")
+	s.Require().True(ok)
 	s.Require().Equal("service-2", hostname)
 
 	s.mockKillProcess(21)
 	_ = s.resolver.Refresh()
 
-	hostname, err = s.resolver.ResolveIP("172.17.0.2")
-	s.Require().ErrorContains(err, "not found")
+	hostname, ok = s.resolver.ResolveIP("172.17.0.2")
+	s.Require().False(ok)
 	s.Require().Equal(hostname, "")
 }
 
@@ -149,30 +149,30 @@ func (s *ProcFSIPResolverTestSuite) TestResolverCollision() {
 	s.mockCreateProcess(30, "172.17.0.3", "service-3")
 	_ = s.resolver.Refresh()
 
-	hostname, err := s.resolver.ResolveIP("172.17.0.3")
-	s.Require().NoError(err)
+	hostname, ok := s.resolver.ResolveIP("172.17.0.3")
+	s.Require().True(ok)
 	s.Require().Equal("service-3", hostname)
 
 	s.mockCreateProcess(31, "172.17.0.3", "service-3-new")
 	_ = s.resolver.Refresh()
 
 	// Newer hostname should override older one
-	hostname, err = s.resolver.ResolveIP("172.17.0.3")
-	s.Require().NoError(err)
+	hostname, ok = s.resolver.ResolveIP("172.17.0.3")
+	s.Require().True(ok)
 	s.Require().Equal("service-3-new", hostname)
 
 	s.mockKillProcess(31)
 	_ = s.resolver.Refresh()
 
 	// Older process isn't counted into ProcRefCount, the exit of the new one should be enough to remove the entry
-	hostname, err = s.resolver.ResolveIP("172.17.0.3")
-	s.Require().ErrorContains(err, "not found")
+	hostname, ok = s.resolver.ResolveIP("172.17.0.3")
+	s.Require().False(ok)
 	s.Require().Equal(hostname, "")
 
 	s.mockKillProcess(30)
 	_ = s.resolver.Refresh()
-	hostname, err = s.resolver.ResolveIP("172.17.0.3")
-	s.Require().ErrorContains(err, "not found")
+	hostname, ok = s.resolver.ResolveIP("172.17.0.3")
+	s.Require().False(ok)
 	s.Require().Equal(hostname, "")
 }
 

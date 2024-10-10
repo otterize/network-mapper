@@ -146,8 +146,8 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 					s.addCapturedRequest(ip.DstIP.String(), "", hostName, answer.IP.String(), captureTime, nilable.From(int(answer.TTL)), nil)
 					continue
 				}
-				hostname, err := s.resolver.ResolveIP(ip.DstIP.String())
-				if err != nil {
+				hostname, ok := s.resolver.ResolveIP(ip.DstIP.String())
+				if !ok {
 					logrus.Debugf("Can't resolve IP addr %s, skipping", ip.DstIP.String())
 				} else {
 					// Resolver cache could be outdated, verify same resolving result after next poll
@@ -194,8 +194,8 @@ func (s *DNSSniffer) RefreshHostsMapping() error {
 	}
 
 	for _, p := range s.pending {
-		hostname, err := s.resolver.ResolveIP(p.srcIp)
-		if err != nil {
+		hostname, ok := s.resolver.ResolveIP(p.srcIp)
+		if !ok {
 			logrus.WithError(err).Debugf("Could not to resolve %s, skipping packet", p.srcIp)
 			continue
 		}

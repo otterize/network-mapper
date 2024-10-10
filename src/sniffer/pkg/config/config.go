@@ -16,6 +16,8 @@ const (
 	PacketsBufferLengthDefault         = 4096
 	HostsMappingRefreshIntervalKey     = "hosts-mapping-refresh-interval"
 	HostsMappingRefreshIntervalDefault = 500 * time.Millisecond
+	UseExtendedProcfsResolutionKey     = "use-extended-procfs-resolution"
+	UseExtendedProcfsResolutionDefault = false
 )
 
 func init() {
@@ -24,4 +26,5 @@ func init() {
 	viper.SetDefault(CallsTimeoutKey, CallsTimeoutDefault)
 	viper.SetDefault(HostProcDirKey, HostProcDirDefault)
 	viper.SetDefault(HostsMappingRefreshIntervalKey, HostsMappingRefreshIntervalDefault)
+	viper.SetDefault(UseExtendedProcfsResolutionKey, UseExtendedProcfsResolutionDefault)
 }
