@@ -362,11 +362,17 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 			logrus.WithError(err).Debugf("Could not resolve %s to pod", destIP)
 			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 		}
-		if dest.Destination != "" && dest.Destination != destIP && dest.Destination != pod.Name {
-			logrus.Infof("Destination %s is not a service, but a pod %s", dest.Destination, pod.Name)
+
+		if pod.CreationTimestamp.After(dest.LastSeen) {
+			logrus.Debugf("Pod %s was created after capture time %s, ignoring", pod.Name, dest.LastSeen)
 			return model.OtterizeServiceIdentity{}, false, nil
 		}
-		logrus.Infof("Destination %s %s is a pod %s", destIP, dest.Destination, pod.Name)
+
+		// If the sniffer sent a destination name, it should match the pod name.
+		if dest.Destination != "" && dest.Destination != destIP && dest.Destination != pod.Name {
+			logrus.Debugf("Destination %s (%s) has a different name than the pod %s, ignoring", destIP, dest.Destination, pod.Name)
+			return model.OtterizeServiceIdentity{}, false, nil
+		}
 
 		dstSvcIdentity, err := r.resolveInClusterIdentity(ctx, pod)
 		if err != nil {

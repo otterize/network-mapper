@@ -107,7 +107,6 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 
 	localHostname, ok := s.resolver.ResolveIP(srcIP)
 	if !ok {
-		logrus.Debugf("Can't resolve IP addr %s, sending IP only", srcIP)
 		// This is still reported because might be ingress traffic, mapper would drop non-ingress captures with no src hostname
 		destNameOrIP := dstIP
 		destHostname, ok := s.resolver.ResolveIP(dstIP)

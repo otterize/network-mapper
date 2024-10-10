@@ -36,12 +36,14 @@ func ScanProcDirProcesses(callback ProcessScanCallback) error {
 }
 
 func ExtractProcessHostname(pDir string) (string, error) {
-	hostname, found, err := extractProcessHostnameUsingEtcHostname(pDir)
-	if err != nil {
-		return "", errors.Wrap(err)
-	}
-	if found {
-		return hostname, nil
+	if viper.GetBool(config.UseExtendedProcfsResolutionKey) {
+		hostname, found, err := extractProcessHostnameUsingEtcHostname(pDir)
+		if err != nil {
+			return "", errors.Wrap(err)
+		}
+		if found {
+			return hostname, nil
+		}
 	}
 	return extractProcessHostnameUsingEnviron(pDir)
 
