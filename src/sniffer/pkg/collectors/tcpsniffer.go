@@ -105,11 +105,15 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 		return
 	}
 
-	localHostname, err := s.resolver.ResolveIP(srcIP)
-	if err != nil {
-		logrus.Debugf("Can't resolve IP addr %s, sending IP only", srcIP)
+	localHostname, ok := s.resolver.ResolveIP(srcIP)
+	if !ok {
 		// This is still reported because might be ingress traffic, mapper would drop non-ingress captures with no src hostname
-		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort)
+		destNameOrIP := dstIP
+		destHostname, ok := s.resolver.ResolveIP(dstIP)
+		if ok {
+			destNameOrIP = destHostname
+		}
+		s.addCapturedRequest(srcIP, "", destNameOrIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort)
 		return
 	}
 
@@ -161,8 +165,8 @@ func (s *TCPSniffer) RefreshHostsMapping() error {
 	}
 
 	for _, p := range s.pending {
-		hostname, err := s.resolver.ResolveIP(p.srcIp)
-		if err != nil {
+		hostname, ok := s.resolver.ResolveIP(p.srcIp)
+		if !ok {
 			logrus.WithError(err).Debugf("Could not to resolve %s, skipping packet", p.srcIp)
 			continue
 		}

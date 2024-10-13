@@ -298,8 +298,8 @@ func (s *PublisherTestSuite) TestAppendToOldIP() {
 		{
 			DNS: "my-blog.de",
 			IPs: []string{
-				oldIP,
 				IP1,
+				oldIP,
 			},
 		},
 	}
