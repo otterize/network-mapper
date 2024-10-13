@@ -113,9 +113,11 @@ func (p *Publisher) updateResolvedIPs(ctx context.Context, clientIntents otteriz
 
 	updatedResolvedIPs := make([]otterizev2alpha1.ResolvedIPs, 0, len(resolvedIPsMap))
 	for dnsName, ips := range resolvedIPsMap {
+		ipSlice := lo.MapToSlice(ips, func(ip string, _ struct{}) string { return ip })
+		slices.Sort(ipSlice)
 		updatedResolvedIPs = append(updatedResolvedIPs, otterizev2alpha1.ResolvedIPs{
 			DNS: dnsName,
-			IPs: lo.MapToSlice(ips, func(ip string, _ struct{}) string { return ip }),
+			IPs: ipSlice,
 		})
 	}
 
