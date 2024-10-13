@@ -32,6 +32,8 @@ const (
 	IstioCanonicalNameLabelKey          = "service.istio.io/canonical-name"
 	apiServerName                       = "kubernetes"
 	apiServerNamespace                  = "default"
+	seenIPsCacheSize                    = 2000
+	seenIPsCacheTTL                     = time.Minute * 10
 )
 
 type KubeFinder struct {
@@ -59,7 +61,7 @@ func NewKubeFinder(ctx context.Context, mgr manager.Manager) (*KubeFinder, error
 }
 
 func (k *KubeFinder) initSeenIPsCache() {
-	k.seenIPsTTLCache = expirable.NewLRU[string, struct{}](2000, nil, time.Minute*10)
+	k.seenIPsTTLCache = expirable.NewLRU[string, struct{}](seenIPsCacheSize, nil, seenIPsCacheTTL)
 }
 
 func (k *KubeFinder) initIndexes(ctx context.Context) error {
