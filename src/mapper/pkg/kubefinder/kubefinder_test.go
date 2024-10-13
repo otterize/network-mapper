@@ -75,6 +75,43 @@ func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
 	s.Require().ElementsMatch(lo.Map(pods, func(p corev1.Pod, _ int) string { return p.Status.PodIP }), lo.Map(pods4444, func(p *corev1.Pod, _ int) string { return p.Status.PodIP }))
 }
 
+func (s *KubeFinderTestSuite) TestIsSrcIpClusterInternal() {
+	pod := s.AddPod("test-pod", "1.1.1.1", nil, nil)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Check with existing pod's ip
+	isInternal, err := s.kubeFinder.IsSrcIpClusterInternal(context.Background(), "1.1.1.1")
+	s.Require().NoError(err)
+	s.Require().True(isInternal)
+
+	// Check with non-existing pod's ip
+	isInternal, err = s.kubeFinder.IsSrcIpClusterInternal(context.Background(), "8.8.8.8")
+	s.Require().NoError(err)
+	s.Require().False(isInternal)
+
+	err = s.Mgr.GetClient().Delete(context.Background(), pod)
+	s.Require().NoError(err)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Check pod doesn't exist in the manager's cache
+	pod, err = s.kubeFinder.ResolveIPToPod(context.Background(), "1.1.1.1")
+	s.Require().Nil(pod)
+	s.Require().Error(err)
+
+	// Check isInternal with the deleted pod's ip
+	isInternal, err = s.kubeFinder.IsSrcIpClusterInternal(context.Background(), "1.1.1.1")
+	s.Require().NoError(err)
+	s.Require().True(isInternal)
+
+	// Reset the cache
+	s.kubeFinder.initSeenIPsCache()
+
+	// Check isInternal with the deleted pod's ip after cache reset
+	isInternal, err = s.kubeFinder.IsSrcIpClusterInternal(context.Background(), "1.1.1.1")
+	s.Require().NoError(err)
+	s.Require().False(isInternal)
+}
+
 func TestKubeFinderTestSuite(t *testing.T) {
 	suite.Run(t, new(KubeFinderTestSuite))
 }

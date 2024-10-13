@@ -3,6 +3,7 @@ package kubefinder
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
@@ -31,26 +32,36 @@ const (
 	IstioCanonicalNameLabelKey          = "service.istio.io/canonical-name"
 	apiServerName                       = "kubernetes"
 	apiServerNamespace                  = "default"
+	seenIPsCacheSize                    = 2000
+	seenIPsCacheTTL                     = time.Minute * 10
 )
 
 type KubeFinder struct {
 	mgr               manager.Manager
 	client            client.Client
 	serviceIdResolver *serviceidresolver.Resolver
+	seenIPsTTLCache   *expirable.LRU[string, struct{}]
 }
 
-var ErrNoPodFound = errors.NewSentinelError("no pod found")
-var ErrFoundMoreThanOnePod = errors.NewSentinelError("ip belongs to more than one pod")
-var ErrFoundMoreThanOneService = errors.NewSentinelError("ip belongs to more than one service")
-var ErrServiceNotFound = errors.NewSentinelError("service not found")
+var (
+	ErrNoPodFound              = errors.NewSentinelError("no pod found")
+	ErrFoundMoreThanOnePod     = errors.NewSentinelError("ip belongs to more than one pod")
+	ErrFoundMoreThanOneService = errors.NewSentinelError("ip belongs to more than one service")
+	ErrServiceNotFound         = errors.NewSentinelError("service not found")
+)
 
 func NewKubeFinder(ctx context.Context, mgr manager.Manager) (*KubeFinder, error) {
-	indexer := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
-	err := indexer.initIndexes(ctx)
+	finder := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
+	finder.initSeenIPsCache()
+	err := finder.initIndexes(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err)
 	}
-	return indexer, nil
+	return finder, nil
+}
+
+func (k *KubeFinder) initSeenIPsCache() {
+	k.seenIPsTTLCache = expirable.NewLRU[string, struct{}](seenIPsCacheSize, nil, seenIPsCacheTTL)
 }
 
 func (k *KubeFinder) initIndexes(ctx context.Context) error {
@@ -80,6 +91,7 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 		}
 
 		for _, ip := range pod.Status.PodIPs {
+			k.seenIPsTTLCache.Add(ip.IP, struct{}{})
 			res = append(res, ip.IP)
 		}
 		return res
@@ -464,7 +476,12 @@ func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc 
 }
 
 func (k *KubeFinder) IsSrcIpClusterInternal(ctx context.Context, ip string) (bool, error) {
-	// Known issue: this function is currently missing support for services/endpoints, node.PodCIDR, and pods that were deleted.
+	// Known issue: this function is currently missing support for services/endpoints, node.PodCIDR
+
+	wasPodIp := k.WasPodIP(ip)
+	if wasPodIp {
+		return true, nil
+	}
 
 	isNode, err := k.IsNodeIP(ctx, ip)
 	if err != nil {
@@ -500,6 +517,10 @@ func (k *KubeFinder) IsPodIp(ctx context.Context, ip string) (bool, error) {
 		return false, errors.Wrap(err)
 	}
 	return len(pods.Items) > 0, nil
+}
+
+func (k *KubeFinder) WasPodIP(ip string) bool {
+	return k.seenIPsTTLCache.Contains(ip)
 }
 
 func (k *KubeFinder) IsNodeIP(ctx context.Context, ip string) (bool, error) {
