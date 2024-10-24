@@ -123,6 +123,8 @@ func (s *Sniffer) RunForever(ctx context.Context) error {
 
 	for {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case packet := <-dnsPacketsChan:
 			s.dnsSniffer.HandlePacket(packet)
 		case packet := <-tcpPacketsChan:
