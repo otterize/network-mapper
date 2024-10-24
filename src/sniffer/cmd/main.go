@@ -67,7 +67,11 @@ func main() {
 	errgrp.Go(func() error {
 		logrus.Debug("Started metrics server")
 		defer errorreporter.AutoNotify()
-		return metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
+		err := metricsServer.Start(fmt.Sprintf(":%d", viper.GetInt(sharedconfig.PrometheusMetricsPortKey)))
+		if err != nil {
+			logrus.WithError(err).Error("Error when starting metrics server, however not returning an error as this may be due to the same port being used on the host node, and the sniffer runs in hostNetwork mode.")
+		}
+		return nil
 	})
 	logrus.Debug("Starting health server")
 	errgrp.Go(func() error {
