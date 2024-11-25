@@ -37,6 +37,7 @@ type Resolver struct {
 	kafkaMapperResults           chan model.KafkaMapperResults
 	istioConnectionResults       chan model.IstioConnectionResults
 	awsOperations                chan model.AWSOperationResults
+	azureOperations              chan model.AzureOperationResults
 	gotResultsCtx                context.Context
 	gotResultsSignal             context.CancelFunc
 	isRunningOnAws               bool
@@ -63,6 +64,7 @@ func NewResolver(
 		kafkaMapperResults:           make(chan model.KafkaMapperResults, 200),
 		istioConnectionResults:       make(chan model.IstioConnectionResults, 200),
 		awsOperations:                make(chan model.AWSOperationResults, 200),
+		azureOperations:              make(chan model.AzureOperationResults, 200),
 		awsIntentsHolder:             awsIntentsHolder,
 		dnsCache:                     dnsCache,
 		isRunningOnAws:               isrunningonaws.Check(),
@@ -106,6 +108,10 @@ func (r *Resolver) RunForever(ctx context.Context) error {
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGrpCtx)
 		return runHandleLoop(errGrpCtx, r.awsOperations, r.handleAWSOperationReport)
+	})
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGrpCtx)
+		return runHandleLoop(errGrpCtx, r.azureOperations, r.handleAzureOperationReport)
 	})
 	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, context.Canceled) {

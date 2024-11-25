@@ -74,6 +74,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ReportAWSOperation           func(childComplexity int, operation []model.AWSOperation) int
+		ReportAzureOperation         func(childComplexity int, operation []model.AzureOperation) int
 		ReportCaptureResults         func(childComplexity int, results model.CaptureResults) int
 		ReportIstioConnectionResults func(childComplexity int, results model.IstioConnectionResults) int
 		ReportKafkaMapperResults     func(childComplexity int, results model.KafkaMapperResults) int
@@ -115,6 +116,7 @@ type MutationResolver interface {
 	ReportKafkaMapperResults(ctx context.Context, results model.KafkaMapperResults) (bool, error)
 	ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error)
 	ReportAWSOperation(ctx context.Context, operation []model.AWSOperation) (bool, error)
+	ReportAzureOperation(ctx context.Context, operation []model.AzureOperation) (bool, error)
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
@@ -243,6 +245,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ReportAWSOperation(childComplexity, args["operation"].([]model.AWSOperation)), true
+
+	case "Mutation.reportAzureOperation":
+		if e.complexity.Mutation.ReportAzureOperation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportAzureOperation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportAzureOperation(childComplexity, args["operation"].([]model.AzureOperation)), true
 
 	case "Mutation.reportCaptureResults":
 		if e.complexity.Mutation.ReportCaptureResults == nil {
@@ -414,6 +428,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAWSOperation,
+		ec.unmarshalInputAzureOperation,
 		ec.unmarshalInputCaptureResults,
 		ec.unmarshalInputCaptureTCPResults,
 		ec.unmarshalInputDestination,
@@ -673,6 +688,14 @@ input ServerFilter {
     namespace: String!
 }
 
+input AzureOperation {
+    resource: String!
+    actions: [String!]!
+    dataActions: [String!]!
+    podName: String!
+    podNamespace: String!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -709,6 +732,7 @@ type Mutation {
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
     reportAWSOperation(operation: [AWSOperation!]!): Boolean!
+    reportAzureOperation(operation: [AzureOperation!]!): Boolean!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -724,6 +748,21 @@ func (ec *executionContext) field_Mutation_reportAWSOperation_args(ctx context.C
 	if tmp, ok := rawArgs["operation"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operation"))
 		arg0, err = ec.unmarshalNAWSOperation2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐAWSOperationᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["operation"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportAzureOperation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []model.AzureOperation
+	if tmp, ok := rawArgs["operation"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operation"))
+		arg0, err = ec.unmarshalNAzureOperation2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐAzureOperationᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1899,6 +1938,61 @@ func (ec *executionContext) fieldContext_Mutation_reportAWSOperation(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_reportAWSOperation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reportAzureOperation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_reportAzureOperation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportAzureOperation(rctx, fc.Args["operation"].([]model.AzureOperation))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reportAzureOperation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reportAzureOperation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4447,6 +4541,61 @@ func (ec *executionContext) unmarshalInputAWSOperation(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAzureOperation(ctx context.Context, obj interface{}) (model.AzureOperation, error) {
+	var it model.AzureOperation
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"resource", "actions", "dataActions", "podName", "podNamespace"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "resource":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resource"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Resource = data
+		case "actions":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("actions"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Actions = data
+		case "dataActions":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dataActions"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DataActions = data
+		case "podName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PodName = data
+		case "podNamespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podNamespace"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PodNamespace = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCaptureResults(ctx context.Context, obj interface{}) (model.CaptureResults, error) {
 	var it model.CaptureResults
 	asMap := map[string]interface{}{}
@@ -5106,6 +5255,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "reportAzureOperation":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportAzureOperation(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5724,6 +5880,28 @@ func (ec *executionContext) unmarshalNAWSOperation2ᚕgithubᚗcomᚋotterizeᚋ
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalNAWSOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐAWSOperation(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNAzureOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐAzureOperation(ctx context.Context, v interface{}) (model.AzureOperation, error) {
+	res, err := ec.unmarshalInputAzureOperation(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNAzureOperation2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐAzureOperationᚄ(ctx context.Context, v interface{}) ([]model.AzureOperation, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.AzureOperation, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNAzureOperation2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐAzureOperation(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}

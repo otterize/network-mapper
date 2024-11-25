@@ -107,6 +107,20 @@ func (r *mutationResolver) ReportAWSOperation(ctx context.Context, operation []m
 	}
 }
 
+// ReportAzureOperation is the resolver for the reportAzureOperation field.
+func (r *mutationResolver) ReportAzureOperation(ctx context.Context, operation []model.AzureOperation) (bool, error) {
+	select {
+	case r.azureOperations <- operation:
+		prometheus.IncrementAzureOperationReports(len(operation))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementAzureOperationDrops(len(operation))
+		return false, nil
+	}
+}
+
 // ServiceIntents is the resolver for the serviceIntents field.
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
 	shouldIncludeAllLabels := false

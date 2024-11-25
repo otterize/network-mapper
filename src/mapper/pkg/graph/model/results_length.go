@@ -22,6 +22,12 @@ func (c AWSOperationResults) Length() int {
 	return len(c)
 }
 
+type AzureOperationResults []AzureOperation
+
+func (c AzureOperationResults) Length() int {
+	return len(c)
+}
+
 func (c CaptureTCPResults) Length() int {
 	return len(c.Results)
 }

@@ -252,6 +252,27 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 	return nil
 }
 
+func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation model.AzureOperationResults) error {
+	for _, op := range operation {
+		pod, err := r.kubeFinder.ResolvePodByName(ctx, op.PodName, op.PodNamespace)
+
+		if err != nil {
+			logrus.Errorf("could not resolve pod %s/%s to identity: %s",
+				op.PodName, op.PodNamespace, err.Error())
+			continue
+		}
+
+		logrus.
+			WithField("client", pod.Name).
+			WithField("namespace", pod.Namespace).
+			WithField("actions", op.Actions).
+			WithField("arn", op.Resource).
+			Debug("Discovered AWS intent")
+	}
+
+	return nil
+}
+
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
 	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForDestinationAddress(ctx, dest)
 	if err != nil {
