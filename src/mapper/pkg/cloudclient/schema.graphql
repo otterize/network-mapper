@@ -64,6 +64,10 @@ directive @validate(
 	customConstraint: CustomConstraint
 ) on INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
+type AWSCustomer {
+	awsAccountId: String!
+}
+
 type AWSGeneralResource {
 	resource: String!
 	isWildcard: Boolean!
@@ -100,13 +104,40 @@ type AWSS3Resource {
 	bucketName: String!
 }
 
+type AWSVisibility {
+	arn: String!
+	resourceType: AWSVisibilityResourceType!
+	name: String!
+	lbArn: String
+	domain: String
+	ips: [String!]!
+	eksIngressName: String
+	region: String!
+}
+
+enum AWSVisibilityResourceType {
+	EKS
+}
+
+type AWSVisibilitySettings {
+	isActive: Boolean!
+	awsAccountId: String!
+	externalId: String!
+	regions: [String!]!
+}
+
+input AWSVisibilitySettingsInput {
+	isActive: Boolean!
+	awsAccountId: String!
+	regions: [String!]!
+}
+
 type AccessGraph {
 	filter: AccessGraphFilter!
 """Clusters for which there are results"""
 	clusters: [Cluster!]!
 	serviceAccessGraphs: [ServiceAccessGraph!]!
 	serviceCount: Int!
-	findings: [Finding!]!
 }
 
 type AccessGraphEdge {
@@ -116,10 +147,10 @@ type AccessGraphEdge {
 	appliedIntents: [Intent!]!
 	accessStatus: EdgeAccessStatus!
 	accessStatuses: EdgeAccessStatuses!
-	missingTags: [MissingTagInfo!]
+	findings: [CallFinding!]!
 }
 
-"""Access graph filter"""
+""" Access graph filter """
 type AccessGraphFilter {
 	clusterIds: IDFilterValue
 	serviceIds: IDFilterValue
@@ -127,6 +158,31 @@ type AccessGraphFilter {
 	environmentIds: IDFilterValue
 	lastSeen: TimeFilterValue
 	featureFlags: FeatureFlags
+	includeOnlyClientsMatchingFilter: Boolean
+}
+
+type AccessLog {
+	clusters: [Cluster!]!
+	namespaces: [Namespace!]!
+	entries: [AccessLogEdge!]!
+	timeRange: TimeRange!
+	totalCount: Int!
+}
+
+type AccessLogEdge {
+	timestamp: Time!
+	client: Service!
+	server: Service!
+	appliedIntents: [Intent!]
+	originIntent: Intent!
+	dns: String!
+	accessStatus: EdgeAccessStatus!
+}
+
+enum AllowExternalTrafficPolicy {
+	OFF
+	ALWAYS
+	IF_BLOCKED_BY_OTTERIZE
 }
 
 enum ApiFieldAction {
@@ -216,6 +272,12 @@ input CLITelemetry {
 	command: CLICommand!
 }
 
+type CallFinding {
+	standard: RegulationStandard!
+	code: RegulationCode!
+	reason: String!
+}
+
 input CertificateCustomization {
 	dnsNames: [String!]
 	ttl: Int
@@ -240,6 +302,54 @@ input ChannelInfoInput {
 
 input ClientIPConfig {
 	timeoutSeconds: Int
+}
+
+type ClientIntentEvent {
+	firstTimestamp: Time
+	lastTimestamp: Time
+	reportingComponent: String
+	count: Int!
+	type: String!
+	reason: String!
+	message: String!
+}
+
+input ClientIntentEventInput {
+	clientName: String!
+	clientWorkloadKind: String
+	namespace: String!
+	name: String!
+	labels: [KeyValueInput!]
+	annotations: [KeyValueInput!]
+	count: Int!
+	clientIntentName: String!
+	firstTimestamp: Time
+	lastTimestamp: Time
+	reportingComponent: String
+	reportingInstance: String
+	sourceComponent: String
+	type: String!
+	reason: String!
+	message: String!
+}
+
+type ClientIntentStatus {
+	clientIntentName: String!
+	generation: Int!
+	timestamp: Time!
+	observedGeneration: Int!
+	upToDate: Boolean!
+}
+
+input ClientIntentStatusInput {
+	namespace: String!
+	clientName: String!
+	clientWorkloadKind: String
+	clientIntentName: String!
+	generation: Int!
+	timestamp: Time!
+	observedGeneration: Int!
+	upToDate: Boolean!
 }
 
 type ClientIntentsFileRepresentation {
@@ -297,6 +407,14 @@ input ClusterConfigurationInput {
 	useAzureIAMInAccessGraphStates: Boolean
 	useDatabaseInAccessGraphStates: Boolean
 	clusterFormSettings: ClusterFormSettingsInput
+}
+
+type ClusterFinding {
+	cluster: Cluster!
+	reason: String!
+	reasonId: String!
+	intentsOperatorState: IntentsOperatorState
+	relatedServices: [Service!]
 }
 
 type ClusterFormSettings {
@@ -368,6 +486,20 @@ input DNSIPPairInput {
 	ips: [String!]
 }
 
+type Dashboard {
+	findings: [FindingSummary!]!
+	summary: DashboardData!
+}
+
+type DashboardData {
+	findingsCount: Int!
+	nonCompliantClusters: Fraction!
+	nonCompliantWorkloads: Fraction!
+	overallCompliance: Fraction!
+	nonCompliantStandards: Fraction!
+	nonCompliantControls: Fraction!
+}
+
 type DatabaseConfig {
 	dbname: String!
 	table: String!
@@ -420,6 +552,12 @@ enum DatabaseVisibilitySource {
 	GCP_PUBSUB
 }
 
+type DetectedCloudServer {
+	cloudProvider: String!
+	cloudService: String!
+	region: String!
+}
+
 input DiscoveredIntentInput {
 	discoveredAt: Time!
 	intent: IntentInput!
@@ -441,6 +579,7 @@ enum EdgeAccessStatusReason {
 	ALLOWED_BY_APPLIED_INTENTS_KAFKA_OVERLY_PERMISSIVE
 	ALLOWED_BY_APPLIED_INTENTS_DATABASE_OVERLY_PERMISSIVE
 	ALLOWED_BY_EXTERNAL_TRAFFIC_NETWORK_POLICY
+	WOULD_BE_ALLOWED_BY_EXTERNAL_TRAFFIC_NETWORK_POLICY
 	BLOCKED_BY_APPLIED_INTENTS_UNDER_PERMISSIVE
 	BLOCKED_BY_APPLIED_INTENTS_RESOURCE_MISMATCH
 	BLOCKED_BY_APPLIED_INTENTS_HTTP_UNDER_PERMISSIVE
@@ -466,6 +605,9 @@ enum EdgeAccessStatusReason {
 	NO_INTENTS_FOUND_OF_RELEVANT_TYPE
 	IGNORED_IN_CALCULATION
 	INTERNET_INTENTS_ENFORCEMENT_DISABLED
+	BLOCKED_BY_DEFAULT_DENY_MISSING_EXTERNAL_TRAFFIC_POLICY
+	BLOCKED_BY_APPLIED_INTENTS_MISSING_EXTERNAL_TRAFFIC_POLICY
+	ALLOWED_BY_EXTERNALLY_MANAGED_NETWORK_POLICY
 }
 
 enum EdgeAccessStatusVerdict {
@@ -548,8 +690,16 @@ input ExternalTrafficIntentInput {
 input ExternallyAccessibleServiceInput {
 	namespace: String!
 	serverName: String!
+	serviceName: String
 	referredByIngress: Boolean!
+	hasInternetFacingAWSALBIngress: Boolean
 	serviceType: KubernetesServiceType!
+}
+
+input ExternallyManagedPolicyWorkloadInput {
+	name: String!
+	namespace: String!
+	kind: String!
 }
 
 type FeatureFlags {
@@ -557,18 +707,27 @@ type FeatureFlags {
 	isCloudSecurityEnabled: Boolean
 }
 
-type Finding {
-	id: ID!
+type FindingSummary {
+	standard: RegulationStandard!
+	codeLabel: String!
+	code: RegulationCode!
 	severity: Severity!
-	message: String!
-	server: ServiceAccessGraph!
-	clientsMissingTags: [ServiceAccessGraph!]!
-	ruleTags: [String!]!
-	totalClientsCount: Int!
+	description: String!
+	validationDescription: String
+	clusterFindings: [ClusterFinding!]!
+	serviceFindings: [ServiceFinding!]!
+	clusterCount: Int!
+	serviceCount: Int!
+	requirements: [FindingSummary!]
 }
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
 scalar Float
+
+type Fraction {
+	numerator: Int!
+	denominator: Int!
+}
 
 type GCPInfo {
 	region: String!
@@ -695,8 +854,8 @@ enum IDFilterOperators {
 }
 
 type IDFilterValue {
-	value: [ID!]!
-	operator: IDFilterOperators!
+	include: [ID!]
+	exclude: [ID!]
 }
 
 enum IPFamily {
@@ -720,6 +879,12 @@ input IncomingTrafficIntentInput {
 	source: IncomingInternetSourceInput!
 }
 
+input IngressControllerConfigInput {
+	name: String!
+	namespace: String!
+	kind: String!
+}
+
 input InputAccessGraphFilter {
 	clusterIds: InputIDFilterValue
 	serviceIds: InputIDFilterValue
@@ -727,6 +892,29 @@ input InputAccessGraphFilter {
 	environmentIds: InputIDFilterValue
 	lastSeen: InputTimeFilterValue
 	featureFlags: InputFeatureFlags
+	includeOnlyClientsMatchingFilter: Boolean
+}
+
+""" Access log filter """
+input InputAccessLogFilter {
+""" Access log filter """
+	clusterIds: InputIDFilterValue
+""" Access log filter """
+	serviceIds: InputIDFilterValue
+""" Access log filter """
+	namespaceIds: InputIDFilterValue
+""" Access log filter """
+	environmentIds: InputIDFilterValue
+""" Access log filter """
+	timeRange: TimeRangeInput
+""" Access log filter """
+	featureFlags: InputFeatureFlags
+""" Access log filter """
+	pagination: PaginationInput
+""" Access log filter """
+	accessVerdicts: InputIDFilterValue
+""" Access log filter """
+	accessStatusReasons: InputIDFilterValue
 }
 
 input InputFeatureFlags {
@@ -734,22 +922,76 @@ input InputFeatureFlags {
 	isCloudSecurityEnabled: Boolean
 }
 
+""" Findings filter """
+input InputFindingFilter {
+""" Findings filter """
+	severity: InputIDFilterValue
+""" Findings filter """
+	clusterIds: InputIDFilterValue
+""" Findings filter """
+	serviceIds: InputIDFilterValue
+""" Findings filter """
+	namespaceIds: InputIDFilterValue
+""" Findings filter """
+	regulationIds: InputIDFilterValue
+""" Findings filter """
+	environmentIds: InputIDFilterValue
+}
+
 input InputIDFilterValue {
-	value: [ID!]!
-	operator: IDFilterOperators!
+	include: [ID!]
+	exclude: [ID!]
 }
 
 input InputIntegrationAccessGraphFilter {
 	environmentIds: [ID!]
+	environmentFilterType: IDFilterOperators
 	clusterIds: [ID!]
+	clusterFilterType: IDFilterOperators
+	namespaceIds: [ID!]
+	namespaceFilterType: IDFilterOperators
 	serviceIds: [ID!]
 	serviceFilterType: IDFilterOperators
+}
+
+input InputResourceInventoryFilter {
+	serviceIds: InputIDFilterValue
+	environmentIds: InputIDFilterValue
+}
+
+""" Service filter """
+input InputServiceFilter {
+""" Service filter """
+	search: String
+""" Service filter """
+	serviceType: InputIDFilterValue
+""" Service filter """
+	serviceIds: [ID!]
+""" Service filter """
+	clusterIds: [ID!]
+""" Service filter """
 	namespaceIds: [ID!]
+""" Service filter """
+	environmentIds: [ID!]
+""" Service filter """
+	integrationIds: [ID!]
 }
 
 input InputTimeFilterValue {
 	value: Time!
 	operator: TimeFilterOperators!
+}
+
+""" Workload/Resource inventory filter """
+input InputWorkloadInventoryFilter {
+""" Workload/Resource inventory filter """
+	clusterIds: InputIDFilterValue
+""" Workload/Resource inventory filter """
+	serviceIds: InputIDFilterValue
+""" Workload/Resource inventory filter """
+	namespaceIds: InputIDFilterValue
+""" Workload/Resource inventory filter """
+	environmentIds: InputIDFilterValue
 }
 
 """The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1."""
@@ -776,14 +1018,18 @@ type Integration {
 	gitHubSettings: GitHubSettings
 	gitLabSettings: GitLabSettings
 	slackSettings: SlackSettings
+	awsVisibilitySettings: AWSVisibilitySettings
 	organizationId: String!
 	status: IntegrationStatus
 }
 
 type IntegrationAccessGraphFilter {
 	environmentIds: [ID!]
+	environmentFilterType: IDFilterOperators
 	clusterIds: [ID!]
+	clusterFilterType: IDFilterOperators
 	namespaceIds: [ID!]
+	namespaceFilterType: IDFilterOperators
 	serviceIds: [ID!]
 	serviceFilterType: IDFilterOperators
 	lastSeenAfter: Time
@@ -829,6 +1075,7 @@ enum IntegrationType {
 	GITLAB
 	AZURE
 	SLACK
+	AWS_VISIBILITY
 }
 
 type Intent {
@@ -923,6 +1170,16 @@ input IntentsOperatorConfigurationInput {
 	azureIAMPolicyEnforcementEnabled: Boolean
 	databaseEnforcementEnabled: Boolean
 	enforcedNamespaces: [String!]
+	ingressControllerConfig: [IngressControllerConfigInput!]
+	awsALBLoadBalancerExemptionEnabled: Boolean
+	allowExternalTrafficPolicy: AllowExternalTrafficPolicy
+	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
+}
+
+type IntentsOperatorState {
+	globalEnforcementEnabled: Boolean!
+	networkPolicyEnforcementEnabled: Boolean!
+	egressNetworkPolicyEnforcementEnabled: Boolean!
 }
 
 type InternetConfig {
@@ -1166,6 +1423,11 @@ type KeyPair {
 	expiresAt: Int!
 }
 
+input KeyValueInput {
+	key: String!
+	value: String
+}
+
 enum KubernetesServiceType {
 	LOAD_BALANCER
 	NODE_PORT
@@ -1220,11 +1482,6 @@ type MergedYAMLFile {
 input MetadataEntry {
 	key: String!
 	value: String!
-}
-
-type MissingTagInfo {
-	tags: [String!]!
-	reason: String!
 }
 
 type Mutation {
@@ -1336,6 +1593,17 @@ type Mutation {
 		name: String!
 		slackSettings: SlackSettingsInput!
 	): Integration
+"""Create a new AWS Visibility integration"""
+	createAwsVisibilityIntegration(
+		name: String!
+		awsVisibilitySettings: AWSVisibilitySettingsInput!
+	): Integration
+"""Update an AWS Visibility integration"""
+	updateAwsVisibilityIntegration(
+		id: ID!
+		name: String
+		awsVisibilitySettings: AWSVisibilitySettingsInput
+	): Integration
 """Create a new GCP integration"""
 	createGCPIntegration(
 		name: String!
@@ -1416,6 +1684,12 @@ type Mutation {
 		namespace: String!
 		services: [ExternallyAccessibleServiceInput!]!
 	): Boolean!
+	reportClientIntentStatus(
+		statuses: [ClientIntentStatusInput!]!
+	): Boolean!
+	reportClientIntentEvent(
+		events: [ClientIntentEventInput!]!
+	): Boolean!
 """Create user invite"""
 	createInvite(
 		email: String!
@@ -1472,6 +1746,10 @@ type Mutation {
 		id: ID!
 		tags: [String!]
 	): Service!
+"""update service metadata from operator"""
+	reportServiceMetadata(
+		serviceMeta: ReportServiceMetadataInput!
+	): Boolean!
 """Bulk Update services"""
 	addTagsToServices(
 		ids: [ID!]!
@@ -1568,16 +1846,28 @@ type Organization {
 	id: ID!
 	name: String!
 	imageURL: String
-	settings: OrganizationSettings
+	settings: OrganizationSettings!
 	created: Time!
 }
 
 type OrganizationSettings {
-	domains: [String]
+	domains: [String!]
+	enforcedRegulations: [String!]
 }
 
 input OrganizationSettingsInput {
-	domains: [String]
+	domains: [String!]
+	enforcedRegulations: [String]
+}
+
+input PaginationInput {
+	offset: Int
+	limit: Int
+}
+
+""" Pagination types """
+type PaginationMeta {
+	total: Int
 }
 
 enum PathType {
@@ -1610,14 +1900,19 @@ type Query {
 	serviceAccessGraph(
 		id: ID!
 	): ServiceAccessGraph!
+""" Get service ClientIntents """
 	serviceClientIntents(
 		id: ID!
 		asServiceId: ID
-		lastSeenAfter: Time!
+		lastSeenAfter: Time
 		clusterIds: [ID!]
 		enableInternetIntents: Boolean
 		featureFlags: InputFeatureFlags
 	): ServiceClientIntents!
+"""Get access log"""
+	accessLog(
+		filter: InputAccessLogFilter
+	): AccessLog!
 """Get cluster"""
 	cluster(
 		id: ID!
@@ -1644,8 +1939,13 @@ type Query {
 		name: String!
 	): Environment!
 	findings(
-		filter: InputAccessGraphFilter!
-	): [Finding!]!
+		filter: InputFindingFilter
+		tree: Boolean
+	): [FindingSummary!]!
+	dashboard(
+		filter: InputFindingFilter
+		tree: Boolean
+	): Dashboard!
 """List integrations"""
 	integrations(
 		name: String
@@ -1668,6 +1968,12 @@ type Query {
 	testDatabaseVisibilityConnection(
 		databaseInfo: DatabaseInfoInput!
 	): TestDatabaseConnectionResponse!
+	clientIntentEventsForWorkload(
+		id: ID!
+	): [ClientIntentEvent!]
+	clientIntentStatusForWorkload(
+		id: ID!
+	): ClientIntentStatus
 """List user invites"""
 	invites(
 		email: String
@@ -1709,8 +2015,9 @@ type Query {
 	): Organization!
 """Checks the availability of the API server"""
 	ping: Boolean!
+	regulations: [Regulation!]!
 	resources(
-		filter: InputAccessGraphFilter
+		filter: InputResourceInventoryFilter
 	): [Resource!]!
 """Get service"""
 	service(
@@ -1722,13 +2029,25 @@ type Query {
 		environmentId: ID
 		namespaceId: ID
 		name: String
+		filter: InputServiceFilter
+		featureFlags: InputFeatureFlags
 	): [Service!]!
+"""Paginate services"""
+	paginateServices(
+		filter: InputServiceFilter
+		pagination: PaginationInput
+		featureFlags: InputFeatureFlags
+	): ServicesResponse!
 """Get service by filters"""
 	oneService(
 		environmentId: ID
 		namespaceId: ID
 		name: String
 	): Service
+"""Get service by kubernetes identity"""
+	serviceByIdentity(
+		identity: ServiceIdentityInput!
+	): Service!
 """List users"""
 	users: [User!]!
 """Get user"""
@@ -1736,8 +2055,52 @@ type Query {
 		id: ID!
 	): User!
 	workloads(
-		filter: InputAccessGraphFilter
+		filter: InputWorkloadInventoryFilter
 	): [Workload!]!
+}
+
+type Regulation {
+	code: RegulationCode!
+	standard: RegulationStandard!
+	enforced: Boolean!
+	requirements: [Regulation!]
+	label: String!
+	description: String!
+	validationDescription: String
+}
+
+enum RegulationCode {
+	PCI_4_0
+	PCI_4_0_1_1
+	PCI_4_0_1_1_2
+	PCI_4_0_1_1_4
+	PCI_4_0_1_1_6
+	PCI_4_0_1_2
+	PCI_4_0_1_2_1
+	PCI_4_0_1_3
+	PCI_4_0_1_3_4
+	PCI_4_0_1_3_6
+	PCI_4_0_7_1
+	PCI_4_0_7_2
+	PCI_4_0_8_7
+	ZERO_TRUST
+	ZERO_TRUST_SENSITIVE
+	ZERO_TRUST_DEFAULT_DENY
+	ZERO_TRUST_EGRESS_ACCESS_COVERED
+	ZERO_TRUST_EXTERNAL_INGRESS_TAGGED
+	ZERO_TRUST_ALL_INTRA_CLUSTER_ACCESS_COVERED
+}
+
+enum RegulationStandard {
+	PCI_4_0
+	PII
+	HIPAA
+	ZERO_TRUST
+}
+
+input ReportServiceMetadataInput {
+	identity: ServiceIdentityInput!
+	metadata: ServiceMetadataInput!
 }
 
 type Resource {
@@ -1810,6 +2173,8 @@ enum ServerProtectionStatusReason {
 	PROTECTED_BY_DATABASE_INTEGRATION
 	PROTECTED_BY_AWS_IAM_INTEGRATION
 	PROTECTED_BY_INTERNET_INTENTS
+	SERVER_EXTERNAL_ACCESS_POLICY_CREATED
+	EXTERNALLY_MANAGED_POLICY_WORKLOAD
 }
 
 enum ServerProtectionStatusVerdict {
@@ -1840,6 +2205,9 @@ type Service {
 	gcpResource: GCPResource
 	azureResource: AzureResource
 	discoveredByIntegration: Integration
+	detectedCloudServer: DetectedCloudServer
+	awsVisibility: AWSVisibility
+	databaseIntegration: Integration
 	tlsKeyPair: KeyPair!
 }
 
@@ -1869,6 +2237,8 @@ input ServiceBackendPortInput {
 type ServiceClientIntents {
 	asClient: ClientIntentsFiles
 	asServer: ClientIntentsFiles
+	appliedIntentStatus: ClientIntentStatus
+	appliedIntentEvents: [ClientIntentEvent!]
 }
 
 enum ServiceExternalTrafficPolicy {
@@ -1876,9 +2246,26 @@ enum ServiceExternalTrafficPolicy {
 	LOCAL
 }
 
+type ServiceFinding {
+	service: Service!
+	reason: String!
+	reasonId: String!
+	callsFindings: [AccessGraphEdge!]
+}
+
+input ServiceIdentityInput {
+	name: String!
+	namespace: String!
+	kind: String!
+}
+
 enum ServiceInternalTrafficPolicy {
 	CLUSTER
 	LOCAL
+}
+
+input ServiceMetadataInput {
+	tags: [String!]
 }
 
 enum ServiceType {
@@ -1893,6 +2280,13 @@ enum ServiceType {
 	INTERNET
 	DATABASE_USER
 	KUBERNETES_LOAD_BALANCER
+	AWS_VISIBILITY_EKS
+	DETECTED_CLOUD_SERVER
+}
+
+type ServicesResponse {
+	data: [Service!]!
+	meta: PaginationMeta
 }
 
 enum SessionAffinity {
@@ -1916,6 +2310,14 @@ type SlackChannelInfo {
 	channelName: String!
 }
 
+type SlackChannelIntegrationAlerts {
+	channelInfo: SlackChannelInfo!
+}
+
+input SlackChannelIntegrationAlertsInput {
+	channelInfo: ChannelInfoInput!
+}
+
 type SlackFilterPair {
 	filter: IntegrationAccessGraphFilter!
 	channelInfo: SlackChannelInfo!
@@ -1929,11 +2331,13 @@ input SlackFilterPairInput {
 type SlackSettings {
 	isActive: Boolean!
 	channelFilterPairs: [SlackFilterPair!]!
+	channelIntegrationAlerts: [SlackChannelIntegrationAlerts!]
 }
 
 input SlackSettingsInput {
 	isActive: Boolean!
 	channelFilterPairs: [SlackFilterPairInput!]!
+	channelIntegrationAlerts: [SlackChannelIntegrationAlertsInput!]
 }
 
 input StackFrame {
@@ -1980,6 +2384,16 @@ type TimeFilterValue {
 	operator: TimeFilterOperators!
 }
 
+type TimeRange {
+	from: Time
+	to: Time
+}
+
+input TimeRangeInput {
+	from: Time
+	to: Time
+}
+
 enum TutorialEvent {
 	CLUSTER_CREATED
 	CLUSTER_CONNECTED
@@ -2020,6 +2434,7 @@ type User {
 	authProviderUserId: String!
 	tutorials: [UserTutorial!]
 	activeTutorial: UserTutorial!
+	awsCustomer: AWSCustomer
 }
 
 enum UserErrorType {
@@ -2051,6 +2466,14 @@ type Workload {
 	types: [ServiceType!]!
 	inboundStatus: ServerProtectionStatusVerdict!
 	outboundStatus: EdgeAccessStatusVerdict!
+}
+
+enum WorkloadTag {
+	PCI
+	PII
+	HIPAA
+	Sensitive
+	External
 }
 
 
