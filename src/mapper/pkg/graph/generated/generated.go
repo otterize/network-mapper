@@ -689,7 +689,7 @@ input ServerFilter {
 }
 
 input AzureOperation {
-    resource: String!
+    scope: String!
     actions: [String!]!
     dataActions: [String!]!
     podName: String!
@@ -4548,20 +4548,20 @@ func (ec *executionContext) unmarshalInputAzureOperation(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"resource", "actions", "dataActions", "podName", "podNamespace"}
+	fieldsInOrder := [...]string{"scope", "actions", "dataActions", "podName", "podNamespace"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "resource":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resource"))
+		case "scope":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scope"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Resource = data
+			it.Scope = data
 		case "actions":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("actions"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)

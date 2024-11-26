@@ -266,7 +266,7 @@ func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation mod
 			WithField("client", pod.Name).
 			WithField("namespace", pod.Namespace).
 			WithField("actions", op.Actions).
-			WithField("arn", op.Resource).
+			WithField("scope", op.Scope).
 			Debug("Discovered AWS intent")
 	}
 

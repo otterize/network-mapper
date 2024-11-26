@@ -151,7 +151,7 @@ input ServerFilter {
 }
 
 input AzureOperation {
-    resource: String!
+    scope: String!
     actions: [String!]!
     dataActions: [String!]!
     podName: String!

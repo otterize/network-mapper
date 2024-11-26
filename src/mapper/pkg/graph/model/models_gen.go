@@ -16,7 +16,7 @@ type AWSOperation struct {
 }
 
 type AzureOperation struct {
-	Resource     string   `json:"resource"`
+	Scope        string   `json:"scope"`
 	Actions      []string `json:"actions"`
 	DataActions  []string `json:"dataActions"`
 	PodName      string   `json:"podName"`
