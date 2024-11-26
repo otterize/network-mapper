@@ -257,17 +257,23 @@ func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation mod
 		pod, err := r.kubeFinder.ResolvePodByName(ctx, op.PodName, op.PodNamespace)
 
 		if err != nil {
-			logrus.Errorf("could not resolve pod %s/%s to identity: %s",
+			logrus.Errorf("could not resolve name %s/%s to Pod: %s",
 				op.PodName, op.PodNamespace, err.Error())
 			continue
 		}
 
-		logrus.
-			WithField("client", pod.Name).
-			WithField("namespace", pod.Namespace).
-			WithField("actions", op.Actions).
-			WithField("scope", op.Scope).
-			Debug("Discovered AWS intent")
+		identity, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, pod)
+
+		if err != nil {
+			logrus.Errorf("could not resolve pod %s/%s to OtterizeServiceIdentity: %s",
+				pod.Name, pod.Namespace, err.Error())
+			continue
+		}
+
+		r.azureIntentsHolder.AddOperation(model.OtterizeServiceIdentity{
+			Name:      identity.Name,
+			Namespace: identity.Namespace,
+		}, op)
 	}
 
 	return nil

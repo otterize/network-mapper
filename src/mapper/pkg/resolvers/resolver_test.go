@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -39,6 +40,7 @@ type ResolverTestSuite struct {
 	kubeFinder                   *kubefinder.KubeFinder
 	intentsHolder                *intentsstore.IntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	azureIntentsHolder           *azureintentsholder.AzureIntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	incomingTrafficIntentsHolder *incomingtrafficholder.IncomingTrafficIntentsHolder
 	resolverCtx                  context.Context
@@ -56,10 +58,21 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.intentsHolder = intentsstore.NewIntentsHolder()
 	s.externalTrafficIntentsHolder = externaltrafficholder.NewExternalTrafficIntentsHolder()
 	s.incomingTrafficIntentsHolder = incomingtrafficholder.NewIncomingTrafficIntentsHolder()
-
 	s.awsIntentsHolder = awsintentsholder.New()
+	s.azureIntentsHolder = azureintentsholder.New()
 	dnsCache := dnscache.NewDNSCache()
-	resolver := NewResolver(s.kubeFinder, serviceidresolver.NewResolver(s.Mgr.GetClient()), s.intentsHolder, s.externalTrafficIntentsHolder, s.awsIntentsHolder, dnsCache, s.incomingTrafficIntentsHolder)
+
+	resolver := NewResolver(
+		s.kubeFinder,
+		serviceidresolver.NewResolver(s.Mgr.GetClient()),
+		s.intentsHolder,
+		s.externalTrafficIntentsHolder,
+		s.awsIntentsHolder,
+		s.azureIntentsHolder,
+		dnsCache,
+		s.incomingTrafficIntentsHolder,
+	)
+
 	resolver.Register(e)
 	s.resolver = resolver
 	go func() {

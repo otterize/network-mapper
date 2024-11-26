@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
@@ -30,6 +31,7 @@ type Resolver struct {
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	incomingTrafficHolder        *incomingtrafficholder.IncomingTrafficIntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	azureIntentsHolder           *azureintentsholder.AzureIntentsHolder
 	dnsCache                     *dnscache.DNSCache
 	dnsCaptureResults            chan model.CaptureResults
 	tcpCaptureResults            chan model.CaptureTCPResults
@@ -49,6 +51,7 @@ func NewResolver(
 	intentsHolder *intentsstore.IntentsHolder,
 	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
 	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+	azureIntentsHolder *azureintentsholder.AzureIntentsHolder,
 	dnsCache *dnscache.DNSCache,
 	incomingTrafficHolder *incomingtrafficholder.IncomingTrafficIntentsHolder,
 ) *Resolver {
@@ -66,6 +69,7 @@ func NewResolver(
 		awsOperations:                make(chan model.AWSOperationResults, 200),
 		azureOperations:              make(chan model.AzureOperationResults, 200),
 		awsIntentsHolder:             awsIntentsHolder,
+		azureIntentsHolder:           azureIntentsHolder,
 		dnsCache:                     dnsCache,
 		isRunningOnAws:               isrunningonaws.Check(),
 	}
