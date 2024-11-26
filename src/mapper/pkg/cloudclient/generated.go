@@ -218,6 +218,8 @@ type IntentInput struct {
 	DatabaseResources   []*DatabaseConfigInput    `json:"databaseResources"`
 	AwsActions          []*string                 `json:"awsActions"`
 	AzureRoles          []*string                 `json:"azureRoles"`
+	AzureActions        []*string                 `json:"azureActions"`
+	AzureDataActions    []*string                 `json:"azureDataActions"`
 	AzureKeyVaultPolicy *AzureKeyVaultPolicyInput `json:"azureKeyVaultPolicy"`
 	GcpPermissions      []*string                 `json:"gcpPermissions"`
 	Internet            *InternetConfigInput      `json:"internet"`
@@ -262,6 +264,12 @@ func (v *IntentInput) GetAwsActions() []*string { return v.AwsActions }
 
 // GetAzureRoles returns IntentInput.AzureRoles, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetAzureRoles() []*string { return v.AzureRoles }
+
+// GetAzureActions returns IntentInput.AzureActions, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetAzureActions() []*string { return v.AzureActions }
+
+// GetAzureDataActions returns IntentInput.AzureDataActions, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetAzureDataActions() []*string { return v.AzureDataActions }
 
 // GetAzureKeyVaultPolicy returns IntentInput.AzureKeyVaultPolicy, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetAzureKeyVaultPolicy() *AzureKeyVaultPolicyInput {
