@@ -254,11 +254,11 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 
 func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation model.AzureOperationResults) error {
 	for _, op := range operation {
-		pod, err := r.kubeFinder.ResolvePodByName(ctx, op.PodName, op.PodNamespace)
+		pod, err := r.kubeFinder.ResolvePodByName(ctx, op.ClientName, op.ClientNamespace)
 
 		if err != nil {
 			logrus.Errorf("could not resolve name %s/%s to Pod: %s",
-				op.PodName, op.PodNamespace, err.Error())
+				op.ClientName, op.ClientNamespace, err.Error())
 			continue
 		}
 

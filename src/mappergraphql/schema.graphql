@@ -154,8 +154,8 @@ input AzureOperation {
     scope: String!
     actions: [String!]!
     dataActions: [String!]!
-    podName: String!
-    podNamespace: String!
+    clientName: String!
+    clientNamespace: String!
 }
 
 type Query {

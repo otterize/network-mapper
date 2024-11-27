@@ -220,8 +220,8 @@ func (c *CloudUploader) NotifyAzureIntents(ctx context.Context, ops []model.Azur
 		toCloud := &cloudclient.DiscoveredIntentInput{
 			DiscoveredAt: &now,
 			Intent: &cloudclient.IntentInput{
-				ClientName:       &op.PodName,
-				Namespace:        &op.PodNamespace,
+				ClientName:       &op.ClientName,
+				Namespace:        &op.ClientNamespace,
 				ServerName:       &op.Scope,
 				Type:             &intentType,
 				AzureActions:     lo.ToSlicePtr(op.Actions),

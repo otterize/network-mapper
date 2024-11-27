@@ -16,11 +16,11 @@ type AWSOperation struct {
 }
 
 type AzureOperation struct {
-	Scope        string   `json:"scope"`
-	Actions      []string `json:"actions"`
-	DataActions  []string `json:"dataActions"`
-	PodName      string   `json:"podName"`
-	PodNamespace string   `json:"podNamespace"`
+	Scope           string   `json:"scope"`
+	Actions         []string `json:"actions"`
+	DataActions     []string `json:"dataActions"`
+	ClientName      string   `json:"clientName"`
+	ClientNamespace string   `json:"clientNamespace"`
 }
 
 type CaptureResults struct {

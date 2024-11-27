@@ -692,8 +692,8 @@ input AzureOperation {
     scope: String!
     actions: [String!]!
     dataActions: [String!]!
-    podName: String!
-    podNamespace: String!
+    clientName: String!
+    clientNamespace: String!
 }
 
 type Query {
@@ -4548,7 +4548,7 @@ func (ec *executionContext) unmarshalInputAzureOperation(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"scope", "actions", "dataActions", "podName", "podNamespace"}
+	fieldsInOrder := [...]string{"scope", "actions", "dataActions", "clientName", "clientNamespace"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -4576,20 +4576,20 @@ func (ec *executionContext) unmarshalInputAzureOperation(ctx context.Context, ob
 				return it, err
 			}
 			it.DataActions = data
-		case "podName":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podName"))
+		case "clientName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.PodName = data
-		case "podNamespace":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podNamespace"))
+			it.ClientName = data
+		case "clientNamespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientNamespace"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.PodNamespace = data
+			it.ClientNamespace = data
 		}
 	}
 

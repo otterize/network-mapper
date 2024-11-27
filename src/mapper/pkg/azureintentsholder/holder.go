@@ -48,19 +48,19 @@ func (h *AzureIntentsHolder) AddOperation(serviceId model.OtterizeServiceIdentit
 
 	if !found {
 		h.intents[k] = model.AzureOperation{
-			Scope:        op.Scope,
-			Actions:      op.Actions,
-			DataActions:  op.DataActions,
-			PodName:      serviceId.Name,
-			PodNamespace: serviceId.Namespace,
+			Scope:           op.Scope,
+			Actions:         op.Actions,
+			DataActions:     op.DataActions,
+			ClientName:      serviceId.Name,
+			ClientNamespace: serviceId.Namespace,
 		}
 	} else {
 		h.intents[k] = model.AzureOperation{
-			Scope:        op.Scope,
-			Actions:      lo.Union(h.intents[k].Actions, op.Actions),
-			DataActions:  lo.Union(h.intents[k].DataActions, op.DataActions),
-			PodName:      h.intents[k].PodName,
-			PodNamespace: h.intents[k].PodNamespace,
+			Scope:           op.Scope,
+			Actions:         lo.Union(h.intents[k].Actions, op.Actions),
+			DataActions:     lo.Union(h.intents[k].DataActions, op.DataActions),
+			ClientName:      h.intents[k].ClientName,
+			ClientNamespace: h.intents[k].ClientNamespace,
 		}
 	}
 }
