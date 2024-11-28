@@ -150,6 +150,14 @@ input ServerFilter {
     namespace: String!
 }
 
+input AzureOperation {
+    scope: String!
+    actions: [String!]!
+    dataActions: [String!]!
+    clientName: String!
+    clientNamespace: String!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -186,4 +194,5 @@ type Mutation {
     reportKafkaMapperResults(results: KafkaMapperResults!): Boolean!
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
     reportAWSOperation(operation: [AWSOperation!]!): Boolean!
+    reportAzureOperation(operation: [AzureOperation!]!): Boolean!
 }

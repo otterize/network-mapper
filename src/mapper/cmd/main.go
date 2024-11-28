@@ -15,6 +15,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
@@ -213,8 +214,18 @@ func main() {
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
+	azureIntentsHolder := azureintentsholder.New()
 
-	resolver := resolvers.NewResolver(kubeFinder, serviceidresolver.NewResolver(mgr.GetClient()), intentsHolder, externalTrafficIntentsHolder, awsIntentsHolder, dnsCache, incomingTrafficIntentsHolder)
+	resolver := resolvers.NewResolver(
+		kubeFinder,
+		serviceidresolver.NewResolver(mgr.GetClient()),
+		intentsHolder,
+		externalTrafficIntentsHolder,
+		awsIntentsHolder,
+		azureIntentsHolder,
+		dnsCache,
+		incomingTrafficIntentsHolder,
+	)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
@@ -248,6 +259,7 @@ func main() {
 			incomingTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIncomingTrafficIntents)
 		}
 		awsIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAWSIntents)
+		azureIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAzureIntents)
 
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 
@@ -301,6 +313,11 @@ func main() {
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		awsIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		azureIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 

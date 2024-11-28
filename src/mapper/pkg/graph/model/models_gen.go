@@ -15,6 +15,14 @@ type AWSOperation struct {
 	SrcIP    string   `json:"srcIp"`
 }
 
+type AzureOperation struct {
+	Scope           string   `json:"scope"`
+	Actions         []string `json:"actions"`
+	DataActions     []string `json:"dataActions"`
+	ClientName      string   `json:"clientName"`
+	ClientNamespace string   `json:"clientNamespace"`
+}
+
 type CaptureResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
 }

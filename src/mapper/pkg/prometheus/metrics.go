@@ -26,10 +26,7 @@ var (
 		Name: "istio_reported_connections",
 		Help: "The total number of Istio-sourced connections",
 	})
-	awsReports = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "aws_reports",
-		Help: "The total number of AWS operations reported",
-	})
+
 	socketScanDrops = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "socketscan_dropped_connections",
 		Help: "The total number of socket scan-sourced reported connections that were dropped for performance",
@@ -51,9 +48,22 @@ var (
 		Help: "The total number of Istio-sourced reported connections that were dropped for performance",
 	})
 
+	awsReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "aws_reports",
+		Help: "The total number of AWS operations reported",
+	})
 	awsReportsDrops = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "aws_dropped_reports",
 		Help: "The total number of AWS operations reported that were dropped for performance",
+	})
+
+	azureReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "azure_reports",
+		Help: "The total number of Azure operations reported",
+	})
+	azureReportsDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "azure_dropped_reports",
+		Help: "The total number of Azure operations reported that were dropped for performance",
 	})
 )
 
@@ -103,4 +113,11 @@ func IncrementIstioDrops(count int) {
 
 func IncrementAWSOperationDrops(count int) {
 	awsReportsDrops.Add(float64(count))
+}
+
+func IncrementAzureOperationReports(count int) {
+	azureReports.Add(float64(count))
+}
+func IncrementAzureOperationDrops(count int) {
+	azureReportsDrops.Add(float64(count))
 }

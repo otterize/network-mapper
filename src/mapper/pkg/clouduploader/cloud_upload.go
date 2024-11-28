@@ -208,6 +208,39 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 	}
 }
 
+func (c *CloudUploader) NotifyAzureIntents(ctx context.Context, ops []model.AzureOperation) {
+	if len(ops) == 0 {
+		return
+	}
+
+	intentType := cloudclient.IntentTypeAzure
+	now := time.Now()
+
+	intents := lo.Map(ops, func(op model.AzureOperation, _ int) *cloudclient.DiscoveredIntentInput {
+		toCloud := &cloudclient.DiscoveredIntentInput{
+			DiscoveredAt: &now,
+			Intent: &cloudclient.IntentInput{
+				ClientName:       &op.ClientName,
+				Namespace:        &op.ClientNamespace,
+				ServerName:       &op.Scope,
+				Type:             &intentType,
+				AzureActions:     lo.ToSlicePtr(op.Actions),
+				AzureDataActions: lo.ToSlicePtr(op.DataActions),
+			},
+		}
+		return toCloud
+	})
+
+	err := c.client.ReportDiscoveredIntents(
+		ctx,
+		intents,
+	)
+
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report discovered intents to cloud")
+	}
+}
+
 func httpResourceToHTTPConfInput(resources []model.HTTPResource) []*cloudclient.HTTPConfigInput {
 	httpGQLInputs := make([]*cloudclient.HTTPConfigInput, 0)
 	for _, resource := range resources {

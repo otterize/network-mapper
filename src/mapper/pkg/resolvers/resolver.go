@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
@@ -30,6 +31,7 @@ type Resolver struct {
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	incomingTrafficHolder        *incomingtrafficholder.IncomingTrafficIntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	azureIntentsHolder           *azureintentsholder.AzureIntentsHolder
 	dnsCache                     *dnscache.DNSCache
 	dnsCaptureResults            chan model.CaptureResults
 	tcpCaptureResults            chan model.CaptureTCPResults
@@ -37,6 +39,7 @@ type Resolver struct {
 	kafkaMapperResults           chan model.KafkaMapperResults
 	istioConnectionResults       chan model.IstioConnectionResults
 	awsOperations                chan model.AWSOperationResults
+	azureOperations              chan model.AzureOperationResults
 	gotResultsCtx                context.Context
 	gotResultsSignal             context.CancelFunc
 	isRunningOnAws               bool
@@ -48,6 +51,7 @@ func NewResolver(
 	intentsHolder *intentsstore.IntentsHolder,
 	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
 	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+	azureIntentsHolder *azureintentsholder.AzureIntentsHolder,
 	dnsCache *dnscache.DNSCache,
 	incomingTrafficHolder *incomingtrafficholder.IncomingTrafficIntentsHolder,
 ) *Resolver {
@@ -63,7 +67,9 @@ func NewResolver(
 		kafkaMapperResults:           make(chan model.KafkaMapperResults, 200),
 		istioConnectionResults:       make(chan model.IstioConnectionResults, 200),
 		awsOperations:                make(chan model.AWSOperationResults, 200),
+		azureOperations:              make(chan model.AzureOperationResults, 200),
 		awsIntentsHolder:             awsIntentsHolder,
+		azureIntentsHolder:           azureIntentsHolder,
 		dnsCache:                     dnsCache,
 		isRunningOnAws:               isrunningonaws.Check(),
 	}
@@ -106,6 +112,10 @@ func (r *Resolver) RunForever(ctx context.Context) error {
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGrpCtx)
 		return runHandleLoop(errGrpCtx, r.awsOperations, r.handleAWSOperationReport)
+	})
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGrpCtx)
+		return runHandleLoop(errGrpCtx, r.azureOperations, r.handleAzureOperationReport)
 	})
 	err := errgrp.Wait()
 	if err != nil && !errors.Is(err, context.Canceled) {
