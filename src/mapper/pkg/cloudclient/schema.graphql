@@ -707,6 +707,13 @@ type FeatureFlags {
 	isCloudSecurityEnabled: Boolean
 }
 
+"""NEW findings"""
+enum FindingStatus {
+	OPEN
+	RESOLVED
+	IGNORED
+}
+
 type FindingSummary {
 	standard: RegulationStandard!
 	codeLabel: String!
@@ -719,6 +726,21 @@ type FindingSummary {
 	clusterCount: Int!
 	serviceCount: Int!
 	requirements: [FindingSummary!]
+}
+
+type FindingSummaryV2 {
+	standard: RegulationStandard!
+	code: RegulationCode!
+	codeLabel: String!
+	severity: Severity!
+	description: String!
+	validationDescription: String
+	status: FindingStatus!
+	serviceTotalCount: Int!
+	serviceOpenCount: Int!
+	clusterTotalCount: Int!
+	clusterOpenCount: Int!
+	requirements: [FindingSummaryV2!]
 }
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
@@ -926,6 +948,8 @@ input InputFeatureFlags {
 input InputFindingFilter {
 """ Findings filter """
 	severity: InputIDFilterValue
+""" Findings filter """
+	status: InputIDFilterValue
 """ Findings filter """
 	clusterIds: InputIDFilterValue
 """ Findings filter """
@@ -1741,6 +1765,11 @@ type Mutation {
 		id: ID!
 		userId: ID!
 	): ID!
+"""Ignore domain for organization"""
+	ignoreOrganizationDomain(
+		id: ID!
+		domain: String!
+	): Organization!
 	reportProtectedServicesSnapshot(
 		namespace: String!
 		services: [ProtectedServiceInput!]!
@@ -1857,11 +1886,13 @@ type Organization {
 type OrganizationSettings {
 	domains: [String!]
 	enforcedRegulations: [String!]
+	ignoredCloudDomains: [String!]
 }
 
 input OrganizationSettingsInput {
 	domains: [String!]
 	enforcedRegulations: [String]
+	ignoredCloudDomains: [String!]
 }
 
 input PaginationInput {
@@ -1950,6 +1981,10 @@ type Query {
 		filter: InputFindingFilter
 		tree: Boolean
 	): Dashboard!
+"""NEW findings"""
+	findingSummary(
+		filter: InputFindingFilter
+	): [FindingSummaryV2!]!
 """List integrations"""
 	integrations(
 		name: String
