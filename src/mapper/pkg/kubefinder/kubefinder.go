@@ -436,12 +436,18 @@ func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc 
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 
+	resolutionData := model.IdentityResolutionData{
+		IsService: lo.ToPtr(true),
+		ExtraInfo: lo.ToPtr("ResolveOtterizeIdentityForService"),
+	}
+
 	if len(pods) == 0 {
 		if ServiceIsAPIServer(svc.Name, svc.Namespace) {
 			return model.OtterizeServiceIdentity{
 				Name:              svc.Name,
 				Namespace:         svc.Namespace,
 				KubernetesService: &svc.Name,
+				ResolutionData:    &resolutionData,
 			}, true, nil
 		}
 
@@ -463,9 +469,10 @@ func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc 
 	}
 
 	dstSvcIdentity := model.OtterizeServiceIdentity{
-		Name:      dstService.Name,
-		Namespace: pod.Namespace,
-		Labels:    PodLabelsToOtterizeLabels(&pod),
+		Name:           dstService.Name,
+		Namespace:      pod.Namespace,
+		Labels:         PodLabelsToOtterizeLabels(&pod),
+		ResolutionData: &resolutionData,
 	}
 
 	if dstService.OwnerObject != nil {

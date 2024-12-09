@@ -205,25 +205,28 @@ func (v *IntOrStringInput) GetIntVal() nilable.Nilable[int] { return v.IntVal }
 func (v *IntOrStringInput) GetStrVal() nilable.Nilable[string] { return v.StrVal }
 
 type IntentInput struct {
-	Namespace           *string                   `json:"namespace"`
-	ClientName          *string                   `json:"clientName"`
-	ClientWorkloadKind  *string                   `json:"clientWorkloadKind"`
-	ServerName          *string                   `json:"serverName"`
-	ServerWorkloadKind  *string                   `json:"serverWorkloadKind"`
-	ServerAlias         *ServerAliasInput         `json:"serverAlias"`
-	ServerNamespace     *string                   `json:"serverNamespace"`
-	Type                *IntentType               `json:"type"`
-	Topics              []*KafkaConfigInput       `json:"topics"`
-	Resources           []*HTTPConfigInput        `json:"resources"`
-	DatabaseResources   []*DatabaseConfigInput    `json:"databaseResources"`
-	AwsActions          []*string                 `json:"awsActions"`
-	AzureRoles          []*string                 `json:"azureRoles"`
-	AzureActions        []*string                 `json:"azureActions"`
-	AzureDataActions    []*string                 `json:"azureDataActions"`
-	AzureKeyVaultPolicy *AzureKeyVaultPolicyInput `json:"azureKeyVaultPolicy"`
-	GcpPermissions      []*string                 `json:"gcpPermissions"`
-	Internet            *InternetConfigInput      `json:"internet"`
-	Status              *IntentStatusInput        `json:"status"`
+	Namespace            *string                   `json:"namespace"`
+	ClientName           *string                   `json:"clientName"`
+	ClientResolutionData *string                   `json:"clientResolutionData"`
+	ClientWorkloadKind   *string                   `json:"clientWorkloadKind"`
+	ServerName           *string                   `json:"serverName"`
+	ServerResolutionData *string                   `json:"serverResolutionData"`
+	ServerWorkloadKind   *string                   `json:"serverWorkloadKind"`
+	ServerAlias          *ServerAliasInput         `json:"serverAlias"`
+	ServerNamespace      *string                   `json:"serverNamespace"`
+	Type                 *IntentType               `json:"type"`
+	Topics               []*KafkaConfigInput       `json:"topics"`
+	Resources            []*HTTPConfigInput        `json:"resources"`
+	DatabaseResources    []*DatabaseConfigInput    `json:"databaseResources"`
+	AwsActions           []*string                 `json:"awsActions"`
+	AzureRoles           []*string                 `json:"azureRoles"`
+	AzureActions         []*string                 `json:"azureActions"`
+	AzureDataActions     []*string                 `json:"azureDataActions"`
+	AzureKeyVaultPolicy  *AzureKeyVaultPolicyInput `json:"azureKeyVaultPolicy"`
+	GcpPermissions       []*string                 `json:"gcpPermissions"`
+	Internet             *InternetConfigInput      `json:"internet"`
+	Status               *IntentStatusInput        `json:"status"`
+	ResolutionData       *string                   `json:"resolutionData"`
 }
 
 // GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -232,11 +235,17 @@ func (v *IntentInput) GetNamespace() *string { return v.Namespace }
 // GetClientName returns IntentInput.ClientName, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetClientName() *string { return v.ClientName }
 
+// GetClientResolutionData returns IntentInput.ClientResolutionData, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetClientResolutionData() *string { return v.ClientResolutionData }
+
 // GetClientWorkloadKind returns IntentInput.ClientWorkloadKind, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetClientWorkloadKind() *string { return v.ClientWorkloadKind }
 
 // GetServerName returns IntentInput.ServerName, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetServerName() *string { return v.ServerName }
+
+// GetServerResolutionData returns IntentInput.ServerResolutionData, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetServerResolutionData() *string { return v.ServerResolutionData }
 
 // GetServerWorkloadKind returns IntentInput.ServerWorkloadKind, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetServerWorkloadKind() *string { return v.ServerWorkloadKind }
@@ -284,6 +293,9 @@ func (v *IntentInput) GetInternet() *InternetConfigInput { return v.Internet }
 
 // GetStatus returns IntentInput.Status, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetStatus() *IntentStatusInput { return v.Status }
+
+// GetResolutionData returns IntentInput.ResolutionData, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetResolutionData() *string { return v.ResolutionData }
 
 type IntentStatusInput struct {
 	IstioStatus *IstioStatusInput `json:"istioStatus"`

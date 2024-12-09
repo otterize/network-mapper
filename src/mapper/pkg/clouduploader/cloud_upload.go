@@ -2,6 +2,7 @@ package clouduploader
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
@@ -61,6 +62,26 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 		}
 		if intent.Intent.Server.KubernetesService != nil {
 			toCloud.Intent.ServerAlias = &cloudclient.ServerAliasInput{Name: intent.Intent.Server.KubernetesService, Kind: lo.ToPtr(serviceidentity.KindService)}
+		}
+		if intent.Intent.Client.ResolutionData != nil && !lo.IsEmpty(*intent.Intent.Client.ResolutionData) {
+			jsonStr, err := json.Marshal(intent.Intent.Client.ResolutionData)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to marshal client resolution data")
+			} else {
+				toCloud.Intent.ClientResolutionData = lo.ToPtr(string(jsonStr))
+			}
+
+		}
+		if intent.Intent.Server.ResolutionData != nil && !lo.IsEmpty(*intent.Intent.Server.ResolutionData) {
+			jsonStr, err := json.Marshal(intent.Intent.Server.ResolutionData)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to marshal server resolution data")
+			} else {
+				toCloud.Intent.ServerResolutionData = lo.ToPtr(string(jsonStr))
+			}
+		}
+		if intent.Intent.ResolutionData != nil {
+			toCloud.Intent.ResolutionData = lo.ToPtr(*intent.Intent.ResolutionData)
 		}
 		// debug log all the fields of intent input one by one with their values
 		logrus.Debugf("intent ClientName: %s\t Namespace: %s\t ServerName: %s\t ServerNamespace: %s\t ClientWorkloadKind: %s\t ServerWorkloadKind: %s\t ServerAlias: %v", lo.FromPtr(toCloud.Intent.ClientName), lo.FromPtr(toCloud.Intent.Namespace), lo.FromPtr(toCloud.Intent.ServerName), lo.FromPtr(toCloud.Intent.ServerNamespace), lo.FromPtr(toCloud.Intent.ClientWorkloadKind), lo.FromPtr(toCloud.Intent.ServerWorkloadKind), lo.FromPtr(toCloud.Intent.ServerAlias))
