@@ -147,6 +147,8 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	if !ok {
 		return nil
 	}
+	dstSvcIdentity.ResolutionData.Host = lo.ToPtr(dest.Destination)
+	dstSvcIdentity.ResolutionData.Port = dest.DestinationPort
 
 	intent := model.Intent{
 		Client:         &srcSvcIdentity,
