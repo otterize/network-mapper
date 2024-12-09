@@ -68,6 +68,12 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 		}
 		if ok {
+			dstSvcIdentity.ResolutionData = &model.IdentityResolutionData{
+				Host:      lo.ToPtr(dest.Destination),
+				Port:      dest.DestinationPort,
+				IsService: lo.ToPtr(true),
+				ExtraInfo: lo.ToPtr("resolveDestIdentity"),
+			}
 			return dstSvcIdentity, true, nil
 		}
 	}
@@ -98,7 +104,17 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
-	dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := model.OtterizeServiceIdentity{
+		Name:      dstService.Name,
+		Namespace: destPod.Namespace,
+		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
+		ResolutionData: &model.IdentityResolutionData{
+			Host:      lo.ToPtr(dest.Destination),
+			Port:      dest.DestinationPort,
+			IsService: lo.ToPtr(false),
+			ExtraInfo: lo.ToPtr("resolveDestIdentity"),
+		},
+	}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -133,8 +149,9 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	}
 
 	intent := model.Intent{
-		Client: &srcSvcIdentity,
-		Server: &dstSvcIdentity,
+		Client:         &srcSvcIdentity,
+		Server:         &dstSvcIdentity,
+		ResolutionData: lo.ToPtr("addSocketScanServiceIntent"),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -170,8 +187,9 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 	}
 
 	intent := model.Intent{
-		Client: &srcSvcIdentity,
-		Server: dstSvcIdentity,
+		Client:         &srcSvcIdentity,
+		Server:         dstSvcIdentity,
+		ResolutionData: lo.ToPtr("addSocketScanPodIntent"),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -273,8 +291,9 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 	}
 
 	intent := model.Intent{
-		Client: &srcSvcIdentity,
-		Server: dstSvcIdentity,
+		Client:         &srcSvcIdentity,
+		Server:         dstSvcIdentity,
+		ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods"),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -477,8 +496,9 @@ func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdenti
 	}
 
 	intent := model.Intent{
-		Client: &srcIdentity,
-		Server: &destIdentity,
+		Client:         &srcIdentity,
+		Server:         &destIdentity,
+		ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult"),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -628,6 +648,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 					Operations: []model.KafkaOperation{operation},
 				},
 			},
+			ResolutionData: lo.ToPtr("handleReportKafkaMapperResults"),
 		}
 
 		updateTelemetriesCounters(SourceTypeKafkaMapper, intent)
@@ -681,10 +702,11 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 		}
 
 		intent := model.Intent{
-			Client:        &srcSvcIdentity,
-			Server:        &dstSvcIdentity,
-			Type:          lo.ToPtr(model.IntentTypeHTTP),
-			HTTPResources: []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
+			Client:         &srcSvcIdentity,
+			Server:         &dstSvcIdentity,
+			Type:           lo.ToPtr(model.IntentTypeHTTP),
+			HTTPResources:  []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
+			ResolutionData: lo.ToPtr("handleReportIstioConnectionResults"),
 		}
 
 		updateTelemetriesCounters(SourceTypeIstio, intent)

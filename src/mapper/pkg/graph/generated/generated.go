@@ -58,13 +58,22 @@ type ComplexityRoot struct {
 		Path    func(childComplexity int) int
 	}
 
+	IdentityResolutionData struct {
+		ExtraInfo   func(childComplexity int) int
+		Host        func(childComplexity int) int
+		IsService   func(childComplexity int) int
+		PodHostname func(childComplexity int) int
+		Port        func(childComplexity int) int
+	}
+
 	Intent struct {
-		AwsActions    func(childComplexity int) int
-		Client        func(childComplexity int) int
-		HTTPResources func(childComplexity int) int
-		KafkaTopics   func(childComplexity int) int
-		Server        func(childComplexity int) int
-		Type          func(childComplexity int) int
+		AwsActions     func(childComplexity int) int
+		Client         func(childComplexity int) int
+		HTTPResources  func(childComplexity int) int
+		KafkaTopics    func(childComplexity int) int
+		ResolutionData func(childComplexity int) int
+		Server         func(childComplexity int) int
+		Type           func(childComplexity int) int
 	}
 
 	KafkaConfig struct {
@@ -89,6 +98,7 @@ type ComplexityRoot struct {
 		Name              func(childComplexity int) int
 		Namespace         func(childComplexity int) int
 		PodOwnerKind      func(childComplexity int) int
+		ResolutionData    func(childComplexity int) int
 	}
 
 	PodLabel struct {
@@ -178,6 +188,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.HttpResource.Path(childComplexity), true
 
+	case "IdentityResolutionData.extraInfo":
+		if e.complexity.IdentityResolutionData.ExtraInfo == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.ExtraInfo(childComplexity), true
+
+	case "IdentityResolutionData.host":
+		if e.complexity.IdentityResolutionData.Host == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.Host(childComplexity), true
+
+	case "IdentityResolutionData.isService":
+		if e.complexity.IdentityResolutionData.IsService == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.IsService(childComplexity), true
+
+	case "IdentityResolutionData.podHostname":
+		if e.complexity.IdentityResolutionData.PodHostname == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.PodHostname(childComplexity), true
+
+	case "IdentityResolutionData.port":
+		if e.complexity.IdentityResolutionData.Port == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.Port(childComplexity), true
+
 	case "Intent.awsActions":
 		if e.complexity.Intent.AwsActions == nil {
 			break
@@ -205,6 +250,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Intent.KafkaTopics(childComplexity), true
+
+	case "Intent.resolutionData":
+		if e.complexity.Intent.ResolutionData == nil {
+			break
+		}
+
+		return e.complexity.Intent.ResolutionData(childComplexity), true
 
 	case "Intent.server":
 		if e.complexity.Intent.Server == nil {
@@ -359,6 +411,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OtterizeServiceIdentity.PodOwnerKind(childComplexity), true
+
+	case "OtterizeServiceIdentity.resolutionData":
+		if e.complexity.OtterizeServiceIdentity.ResolutionData == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.ResolutionData(childComplexity), true
 
 	case "PodLabel.key":
 		if e.complexity.PodLabel.Key == nil {
@@ -577,10 +636,19 @@ type GroupVersionKind {
     kind: String!
 }
 
+type IdentityResolutionData {
+    host: String
+    podHostname: String
+    port: Int
+    isService: Boolean
+    extraInfo: String
+}
+
 type OtterizeServiceIdentity {
     name: String!
     namespace: String!
     labels: [PodLabel!]
+    resolutionData: IdentityResolutionData
     """
     If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
     """
@@ -639,6 +707,7 @@ type Intent {
     client: OtterizeServiceIdentity!
     server: OtterizeServiceIdentity!
     type: IntentType
+    resolutionData: String
     kafkaTopics: [KafkaConfig!]
     httpResources: [HttpResource!]
     awsActions: [String!]
@@ -1197,6 +1266,211 @@ func (ec *executionContext) fieldContext_HttpResource_methods(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _IdentityResolutionData_host(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_host(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Host, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_host(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_podHostname(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_podHostname(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PodHostname, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_podHostname(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_port(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_port(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Port, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_port(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_isService(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_isService(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsService, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_isService(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_extraInfo(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_extraInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExtraInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_extraInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Intent_client(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Intent_client(ctx, field)
 	if err != nil {
@@ -1242,6 +1516,8 @@ func (ec *executionContext) fieldContext_Intent_client(ctx context.Context, fiel
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "resolutionData":
+				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
 				return ec.fieldContext_OtterizeServiceIdentity_podOwnerKind(ctx, field)
 			case "kubernetesService":
@@ -1298,6 +1574,8 @@ func (ec *executionContext) fieldContext_Intent_server(ctx context.Context, fiel
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "resolutionData":
+				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
 				return ec.fieldContext_OtterizeServiceIdentity_podOwnerKind(ctx, field)
 			case "kubernetesService":
@@ -1345,6 +1623,47 @@ func (ec *executionContext) fieldContext_Intent_type(ctx context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type IntentType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Intent_resolutionData(ctx context.Context, field graphql.CollectedField, obj *model.Intent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Intent_resolutionData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResolutionData, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Intent_resolutionData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Intent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2134,6 +2453,59 @@ func (ec *executionContext) fieldContext_OtterizeServiceIdentity_labels(ctx cont
 	return fc, nil
 }
 
+func (ec *executionContext) _OtterizeServiceIdentity_resolutionData(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResolutionData, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.IdentityResolutionData)
+	fc.Result = res
+	return ec.marshalOIdentityResolutionData2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIdentityResolutionData(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OtterizeServiceIdentity_resolutionData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "host":
+				return ec.fieldContext_IdentityResolutionData_host(ctx, field)
+			case "podHostname":
+				return ec.fieldContext_IdentityResolutionData_podHostname(ctx, field)
+			case "port":
+				return ec.fieldContext_IdentityResolutionData_port(ctx, field)
+			case "isService":
+				return ec.fieldContext_IdentityResolutionData_isService(ctx, field)
+			case "extraInfo":
+				return ec.fieldContext_IdentityResolutionData_extraInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type IdentityResolutionData", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OtterizeServiceIdentity_podOwnerKind(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_OtterizeServiceIdentity_podOwnerKind(ctx, field)
 	if err != nil {
@@ -2418,6 +2790,8 @@ func (ec *executionContext) fieldContext_Query_intents(ctx context.Context, fiel
 				return ec.fieldContext_Intent_server(ctx, field)
 			case "type":
 				return ec.fieldContext_Intent_type(ctx, field)
+			case "resolutionData":
+				return ec.fieldContext_Intent_resolutionData(ctx, field)
 			case "kafkaTopics":
 				return ec.fieldContext_Intent_kafkaTopics(ctx, field)
 			case "httpResources":
@@ -2660,6 +3034,8 @@ func (ec *executionContext) fieldContext_ServiceIntents_client(ctx context.Conte
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "resolutionData":
+				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
 				return ec.fieldContext_OtterizeServiceIdentity_podOwnerKind(ctx, field)
 			case "kubernetesService":
@@ -2716,6 +3092,8 @@ func (ec *executionContext) fieldContext_ServiceIntents_intents(ctx context.Cont
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "resolutionData":
+				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
 				return ec.fieldContext_OtterizeServiceIdentity_podOwnerKind(ctx, field)
 			case "kubernetesService":
@@ -5094,6 +5472,50 @@ func (ec *executionContext) _HttpResource(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var identityResolutionDataImplementors = []string{"IdentityResolutionData"}
+
+func (ec *executionContext) _IdentityResolutionData(ctx context.Context, sel ast.SelectionSet, obj *model.IdentityResolutionData) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, identityResolutionDataImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IdentityResolutionData")
+		case "host":
+			out.Values[i] = ec._IdentityResolutionData_host(ctx, field, obj)
+		case "podHostname":
+			out.Values[i] = ec._IdentityResolutionData_podHostname(ctx, field, obj)
+		case "port":
+			out.Values[i] = ec._IdentityResolutionData_port(ctx, field, obj)
+		case "isService":
+			out.Values[i] = ec._IdentityResolutionData_isService(ctx, field, obj)
+		case "extraInfo":
+			out.Values[i] = ec._IdentityResolutionData_extraInfo(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var intentImplementors = []string{"Intent"}
 
 func (ec *executionContext) _Intent(ctx context.Context, sel ast.SelectionSet, obj *model.Intent) graphql.Marshaler {
@@ -5117,6 +5539,8 @@ func (ec *executionContext) _Intent(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "type":
 			out.Values[i] = ec._Intent_type(ctx, field, obj)
+		case "resolutionData":
+			out.Values[i] = ec._Intent_resolutionData(ctx, field, obj)
 		case "kafkaTopics":
 			out.Values[i] = ec._Intent_kafkaTopics(ctx, field, obj)
 		case "httpResources":
@@ -5308,6 +5732,8 @@ func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel as
 			}
 		case "labels":
 			out.Values[i] = ec._OtterizeServiceIdentity_labels(ctx, field, obj)
+		case "resolutionData":
+			out.Values[i] = ec._OtterizeServiceIdentity_resolutionData(ctx, field, obj)
 		case "podOwnerKind":
 			out.Values[i] = ec._OtterizeServiceIdentity_podOwnerKind(ctx, field, obj)
 		case "kubernetesService":
@@ -6744,6 +7170,13 @@ func (ec *executionContext) marshalOHttpResource2ᚕgithubᚗcomᚋotterizeᚋne
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOIdentityResolutionData2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIdentityResolutionData(ctx context.Context, sel ast.SelectionSet, v *model.IdentityResolutionData) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._IdentityResolutionData(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint64(ctx context.Context, v interface{}) (*int64, error) {
