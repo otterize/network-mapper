@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/oriser/regroup"
-	mapperclient2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/prometheus"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,7 +37,7 @@ type Watcher interface {
 type baseWatcher struct {
 	mu           sync.Mutex
 	seen         SeenRecordsStore
-	mapperClient mapperclient2.MapperClient
+	mapperClient *mapperclient.Client
 }
 
 func (b *baseWatcher) flush() SeenRecordsStore {
@@ -61,8 +61,8 @@ func (b *baseWatcher) reportResults(ctx context.Context) error {
 	logrus.Infof("Reporting %d records", cRecords)
 	prometheus.IncrementKafkaTopicReports(cRecords)
 
-	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) mapperclient2.KafkaMapperResult {
-		return mapperclient2.KafkaMapperResult{
+	results := lo.MapToSlice(records, func(r AuthorizerRecord, t time.Time) mapperclient.KafkaMapperResult {
+		return mapperclient.KafkaMapperResult{
 			SrcIp:           r.Host,
 			ServerPodName:   r.Server.Name,
 			ServerNamespace: r.Server.Namespace,
@@ -72,7 +72,7 @@ func (b *baseWatcher) reportResults(ctx context.Context) error {
 		}
 	})
 
-	return b.mapperClient.ReportKafkaMapperResults(ctx, mapperclient2.KafkaMapperResults{Results: results})
+	return b.mapperClient.ReportKafkaMapperResults(ctx, mapperclient.KafkaMapperResults{Results: results})
 }
 
 func (b *baseWatcher) processLogRecord(kafkaServer types.NamespacedName, record string) {

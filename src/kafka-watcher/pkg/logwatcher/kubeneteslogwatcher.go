@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
@@ -28,7 +28,7 @@ type KubernetesLogWatcher struct {
 	kafkaServers []types.NamespacedName
 }
 
-func NewKubernetesLogWatcher(mapperClient mapperclient.MapperClient, kafkaServers []types.NamespacedName) (*KubernetesLogWatcher, error) {
+func NewKubernetesLogWatcher(mapperClient *mapperclient.Client, kafkaServers []types.NamespacedName) (*KubernetesLogWatcher, error) {
 	conf, err := rest.InClusterConfig()
 
 	if err != nil && !errors.Is(err, rest.ErrNotInCluster) {
