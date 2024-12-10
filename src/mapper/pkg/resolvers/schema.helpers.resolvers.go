@@ -248,33 +248,42 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 // ReportAWSOperation is the resolver for the reportAWSOperation field.
 func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model.AWSOperationResults) error {
 	for _, op := range operation {
-		logrus.Debugf("Received AWS operation: %+v", op)
-		srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, op.SrcIP)
+		var serviceIdentity model.OtterizeServiceIdentity
 
-		if err != nil {
-			logrus.Errorf("could not resolve %s to pod: %s", op.SrcIP, err.Error())
-			continue
-		}
+		if op.Client != nil {
+			serviceIdentity.Name = op.Client.Name
+			serviceIdentity.Namespace = op.Client.Namespace
+		} else if op.SrcIP != nil {
+			srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, *op.SrcIP)
 
-		serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+			if err != nil {
+				logrus.Errorf("could not resolve %s to pod: %s", op.SrcIP, err.Error())
+				continue
+			}
 
-		if err != nil {
-			logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
+			serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+
+			if err != nil {
+				logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
+				continue
+			}
+
+			serviceIdentity.Name = serviceId.Name
+			serviceIdentity.Namespace = srcPod.Namespace
+		} else {
+			logrus.Error("Invalid AWS operation report: both srcIP and client are nil")
 			continue
 		}
 
 		r.awsIntentsHolder.AddIntent(awsintentsholder.AWSIntent{
-			Client: model.OtterizeServiceIdentity{
-				Name:      serviceId.Name,
-				Namespace: srcPod.Namespace,
-			},
+			Client:  serviceIdentity,
 			Actions: op.Actions,
 			ARN:     op.Resource,
 		})
 
 		logrus.
-			WithField("client", serviceId.Name).
-			WithField("namespace", srcPod.Namespace).
+			WithField("clientName", serviceIdentity.Name).
+			WithField("clientNamespace", serviceIdentity.Namespace).
 			WithField("actions", op.Actions).
 			WithField("arn", op.Resource).
 			Debug("Discovered AWS intent")
