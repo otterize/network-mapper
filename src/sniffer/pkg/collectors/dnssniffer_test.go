@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"encoding/hex"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/nilable"
 	"testing"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/stretchr/testify/suite"
 )
 

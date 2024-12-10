@@ -1,7 +1,7 @@
 package collectors
 
 import (
-	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/otterize/nilable"
 	"github.com/sirupsen/logrus"
 	"time"

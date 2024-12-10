@@ -3,11 +3,11 @@ package sniffer
 import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/otterize/network-mapper/src/shared/isrunningonaws"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/collectors"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -19,10 +19,10 @@ type Sniffer struct {
 	socketScanner  *collectors.SocketScanner
 	tcpSniffer     *collectors.TCPSniffer
 	lastReportTime time.Time
-	mapperClient   mapperclient.MapperClient
+	mapperClient   *mapperclient.Client
 }
 
-func NewSniffer(mapperClient mapperclient.MapperClient) *Sniffer {
+func NewSniffer(mapperClient *mapperclient.Client) *Sniffer {
 	procFSIPResolver := ipresolver.NewProcFSIPResolver()
 	isRunningOnAws := isrunningonaws.Check()
 
