@@ -49,7 +49,7 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
 	}
-	svcIdentity.ResolutionData.ProcfsHostname = lo.ToPtr(src.SrcHostname)
+	svcIdentity.ResolutionData.ProcfsHostname = lo.Ternary(src.SrcHostname != "", lo.ToPtr(src.SrcHostname), nil)
 	return svcIdentity, nil
 }
 

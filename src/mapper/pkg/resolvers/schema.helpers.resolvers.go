@@ -320,6 +320,12 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 
 func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Context, dest model.Destination) (*model.OtterizeServiceIdentity, bool, error) {
 	destAddress := dest.Destination
+	resolutionData := model.IdentityResolutionData{
+		Host:      lo.ToPtr(destAddress),
+		LastSeen:  lo.ToPtr(dest.LastSeen.String()),
+		IsService: lo.ToPtr(true),
+		ExtraInfo: lo.ToPtr("resolveOtterizeIdentityForDestinationAddress"),
+	}
 	pods, serviceName, err := r.kubeFinder.ResolveServiceAddressToPods(ctx, destAddress)
 	if err != nil {
 		logrus.WithError(err).Warningf("Could not resolve service address %s", destAddress)
@@ -331,6 +337,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 			Name:              serviceName.Name,
 			Namespace:         serviceName.Namespace,
 			KubernetesService: &serviceName.Name,
+			ResolutionData:    &resolutionData,
 		}, true, nil
 	}
 
@@ -354,13 +361,16 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 
 	destPod := &filteredPods[0]
 
+	resolutionData.PodHostname = lo.ToPtr(destPod.Name)
+	resolutionData.Uptime = lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String())
+
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {
 		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
 		return nil, false, nil
 	}
 
-	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod), ResolutionData: &resolutionData}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
