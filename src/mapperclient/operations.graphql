@@ -1,0 +1,28 @@
+mutation reportCaptureResults($results: CaptureResults!) {
+    reportCaptureResults(results: $results)
+}
+
+mutation reportTCPCaptureResults($results: CaptureTCPResults!) {
+    reportTCPCaptureResults(results: $results)
+}
+
+mutation reportSocketScanResults($results: SocketScanResults!) {
+    reportSocketScanResults(results: $results)
+}
+
+mutation reportKafkaMapperResults($results: KafkaMapperResults!) {
+    reportKafkaMapperResults(results: $results)
+}
+
+mutation reportAWSOperation($operation: [AWSOperation!]!) {
+    reportAWSOperation(operation: $operation)
+}
+
+mutation reportAzureOperation($operation: [AzureOperation!]!) {
+    reportAzureOperation(operation: $operation)
+}
+
+
+query Health {
+    health
+}
