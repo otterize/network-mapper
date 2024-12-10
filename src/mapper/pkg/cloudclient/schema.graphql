@@ -252,6 +252,11 @@ type AzureResource {
 	resource: String!
 }
 
+type BasicEntity {
+	id: ID!
+	name: String!
+}
+
 """The `Boolean` scalar type represents `true` or `false`."""
 scalar Boolean
 
@@ -598,6 +603,7 @@ enum EdgeAccessStatusReason {
 	INTENTS_OPERATOR_NOT_ENFORCING_MISSING_APPLIED_INTENT
 	INTENTS_OPERATOR_NOT_ENFORCING_KAFKA_INTENTS_NOT_REQUIRED_FOR_TOPIC
 	MISSING_APPLIED_INTENT
+	MISSING_APPLIED_CLOUD_RESOURCE_INTENT
 	NOT_IN_PROTECTED_SERVICES
 	INTENTS_OPERATOR_NEVER_CONNECTED
 	NETWORK_MAPPER_NEVER_CONNECTED
@@ -705,13 +711,33 @@ input ExternallyManagedPolicyWorkloadInput {
 type FeatureFlags {
 	isCloudServicesDetectionEnabled: Boolean
 	isCloudSecurityEnabled: Boolean
+	useClientIntentsV2: Boolean
 }
 
-"""NEW findings"""
+type Finding {
+	hash: String!
+	service: BasicEntity!
+	serviceNamespace: BasicEntity
+	server: BasicEntity!
+	cluster: BasicEntity!
+	intentsOperatorState: IntentsOperatorState
+	clusterRelatedServices: [Service!]
+	reason: String!
+	status: FindingStatus!
+	ignoredReason: String
+	type: FindingType!
+}
+
 enum FindingStatus {
 	OPEN
 	RESOLVED
 	IGNORED
+}
+
+type FindingStatusHistory {
+	timestamp: Time!
+	status: FindingStatus!
+	reason: String
 }
 
 type FindingSummary {
@@ -728,6 +754,11 @@ type FindingSummary {
 	requirements: [FindingSummary!]
 }
 
+type FindingSummaryResponse {
+	findingSummaries: [FindingSummaryV2!]!
+	timestamp: Time!
+}
+
 type FindingSummaryV2 {
 	standard: RegulationStandard!
 	code: RegulationCode!
@@ -736,11 +767,18 @@ type FindingSummaryV2 {
 	description: String!
 	validationDescription: String
 	status: FindingStatus!
+	ignoredReason: String
 	serviceTotalCount: Int!
 	serviceOpenCount: Int!
 	clusterTotalCount: Int!
 	clusterOpenCount: Int!
 	requirements: [FindingSummaryV2!]
+}
+
+"""NEW findings"""
+enum FindingType {
+	SERVICE
+	CLUSTER
 }
 
 """The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point)."""
@@ -942,6 +980,7 @@ input InputAccessLogFilter {
 input InputFeatureFlags {
 	isCloudServicesDetectionEnabled: Boolean
 	isCloudSecurityEnabled: Boolean
+	useClientIntentsV2: Boolean
 }
 
 """ Findings filter """
@@ -960,6 +999,10 @@ input InputFindingFilter {
 	regulationIds: InputIDFilterValue
 """ Findings filter """
 	environmentIds: InputIDFilterValue
+""" Findings filter """
+	findingTypes: InputIDFilterValue
+""" Findings filter """
+	hashes: InputIDFilterValue
 }
 
 input InputIDFilterValue {
@@ -1124,8 +1167,10 @@ type Intent {
 input IntentInput {
 	namespace: String!
 	clientName: String!
+	clientResolutionData: String
 	clientWorkloadKind: String
 	serverName: String!
+	serverResolutionData: String
 	serverWorkloadKind: String
 	serverAlias: ServerAliasInput
 	serverNamespace: String
@@ -1141,6 +1186,7 @@ input IntentInput {
 	gcpPermissions: [String!]
 	internet: InternetConfigInput
 	status: IntentStatusInput
+	resolutionData: String
 }
 
 type IntentStatus {
@@ -1571,6 +1617,16 @@ type Mutation {
 		component: Component
 		errors: [Error!]!
 	): Boolean!
+	setFindingsIgnoredByHashes(
+		hashes: [String!]!
+		ignored: Boolean!
+		reason: String
+	): Boolean!
+	setFindingsIgnoredByControlIds(
+		controlIds: [RegulationCode!]!
+		ignored: Boolean!
+		reason: String
+	): Boolean!
 """Create a new generic integration"""
 	createGenericIntegration(
 		name: String!
@@ -1765,11 +1821,6 @@ type Mutation {
 		id: ID!
 		userId: ID!
 	): ID!
-"""Ignore domain for organization"""
-	ignoreOrganizationDomain(
-		id: ID!
-		domain: String!
-	): Organization!
 	reportProtectedServicesSnapshot(
 		namespace: String!
 		services: [ProtectedServiceInput!]!
@@ -1944,6 +1995,13 @@ type Query {
 		enableInternetIntents: Boolean
 		featureFlags: InputFeatureFlags
 	): ServiceClientIntents!
+""" Get service ClientIntents by filter """
+	clientIntents(
+		filter: InputServiceFilter!
+		lastSeenAfter: Time
+		clusterIds: [ID!]
+		featureFlags: InputFeatureFlags
+	): [ClientIntentsFileRepresentation!]!
 """Get access log"""
 	accessLog(
 		filter: InputAccessLogFilter
@@ -1984,7 +2042,16 @@ type Query {
 """NEW findings"""
 	findingSummary(
 		filter: InputFindingFilter
-	): [FindingSummaryV2!]!
+	): FindingSummaryResponse!
+	findingsV2(
+		filter: InputFindingFilter
+	): [Finding!]!
+	findingStatusHistory(
+		hash: String!
+	): [FindingStatusHistory!]!
+	findingSummaryStatusHistory(
+		leafControlIDs: [RegulationCode!]!
+	): [FindingStatusHistory!]!
 """List integrations"""
 	integrations(
 		name: String

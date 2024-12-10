@@ -5,8 +5,10 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"time"
 )
 
 func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
@@ -16,7 +18,11 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 	}
 
 	if ok {
-		return model.OtterizeServiceIdentity{Name: svc.Name, Namespace: svc.Namespace, KubernetesService: &svc.Name}, nil
+		resolutionData := model.IdentityResolutionData{
+			Host:        lo.ToPtr(src.SrcIP),
+			PodHostname: lo.ToPtr(src.SrcHostname),
+		}
+		return model.OtterizeServiceIdentity{Name: svc.Name, Namespace: svc.Namespace, KubernetesService: &svc.Name, ResolutionData: &resolutionData}, nil
 	}
 
 	srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, src.SrcIP)
@@ -39,7 +45,12 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 	// It may cause a bug because the function will not be able to modify the "src" object of the caller.
 	r.filterTargetsAccordingToPodCreationTime(src, srcPod)
 
-	return r.resolveInClusterIdentity(ctx, srcPod)
+	svcIdentity, err := r.resolveInClusterIdentity(ctx, srcPod)
+	if err != nil {
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
+	}
+	svcIdentity.ResolutionData.ProcfsHostname = lo.Ternary(src.SrcHostname != "", lo.ToPtr(src.SrcHostname), nil)
+	return svcIdentity, nil
 }
 
 func (r *Resolver) filterTargetsAccordingToPodCreationTime(src *model.RecordedDestinationsForSrc, srcPod *corev1.Pod) {
@@ -64,7 +75,18 @@ func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod
 		return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve pod %s to identity: %w", pod.Name, err)
 	}
 
-	modelSvcIdentity := model.OtterizeServiceIdentity{Name: svcIdentity.Name, Namespace: pod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(pod)}
+	modelSvcIdentity := model.OtterizeServiceIdentity{
+		Name:      svcIdentity.Name,
+		Namespace: pod.Namespace,
+		Labels:    kubefinder.PodLabelsToOtterizeLabels(pod),
+		ResolutionData: &model.IdentityResolutionData{
+			Host:        lo.ToPtr(pod.Status.PodIP),
+			PodHostname: lo.ToPtr(pod.Name),
+			IsService:   lo.ToPtr(false),
+			ExtraInfo:   lo.ToPtr("resolveInClusterIdentity"),
+			Uptime:      lo.ToPtr(time.Since(pod.CreationTimestamp.Time).String()),
+		},
+	}
 	if svcIdentity.OwnerObject != nil {
 		modelSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(svcIdentity.OwnerObject.GetObjectKind().GroupVersionKind())
 	}

@@ -50,13 +50,25 @@ type HTTPResource struct {
 	Methods []HTTPMethod `json:"methods,omitempty"`
 }
 
+type IdentityResolutionData struct {
+	Host           *string `json:"host,omitempty"`
+	PodHostname    *string `json:"podHostname,omitempty"`
+	ProcfsHostname *string `json:"procfsHostname,omitempty"`
+	Port           *int64  `json:"port,omitempty"`
+	IsService      *bool   `json:"isService,omitempty"`
+	Uptime         *string `json:"uptime,omitempty"`
+	LastSeen       *string `json:"lastSeen,omitempty"`
+	ExtraInfo      *string `json:"extraInfo,omitempty"`
+}
+
 type Intent struct {
-	Client        *OtterizeServiceIdentity `json:"client"`
-	Server        *OtterizeServiceIdentity `json:"server"`
-	Type          *IntentType              `json:"type,omitempty"`
-	KafkaTopics   []KafkaConfig            `json:"kafkaTopics,omitempty"`
-	HTTPResources []HTTPResource           `json:"httpResources,omitempty"`
-	AwsActions    []string                 `json:"awsActions,omitempty"`
+	Client         *OtterizeServiceIdentity `json:"client"`
+	Server         *OtterizeServiceIdentity `json:"server"`
+	Type           *IntentType              `json:"type,omitempty"`
+	ResolutionData *string                  `json:"resolutionData,omitempty"`
+	KafkaTopics    []KafkaConfig            `json:"kafkaTopics,omitempty"`
+	HTTPResources  []HTTPResource           `json:"httpResources,omitempty"`
+	AwsActions     []string                 `json:"awsActions,omitempty"`
 }
 
 type IstioConnection struct {
@@ -96,9 +108,10 @@ type Mutation struct {
 }
 
 type OtterizeServiceIdentity struct {
-	Name      string     `json:"name"`
-	Namespace string     `json:"namespace"`
-	Labels    []PodLabel `json:"labels,omitempty"`
+	Name           string                  `json:"name"`
+	Namespace      string                  `json:"namespace"`
+	Labels         []PodLabel              `json:"labels,omitempty"`
+	ResolutionData *IdentityResolutionData `json:"resolutionData,omitempty"`
 	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
 	PodOwnerKind *GroupVersionKind `json:"podOwnerKind,omitempty"`
 	// If the service identity was resolved from a Kubernetes service, its name.

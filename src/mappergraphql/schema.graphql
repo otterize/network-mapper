@@ -39,10 +39,22 @@ type GroupVersionKind {
     kind: String!
 }
 
+type IdentityResolutionData {
+    host: String
+    podHostname: String
+    procfsHostname: String
+    port: Int
+    isService: Boolean
+    uptime: String
+    lastSeen: String
+    extraInfo: String
+}
+
 type OtterizeServiceIdentity {
     name: String!
     namespace: String!
     labels: [PodLabel!]
+    resolutionData: IdentityResolutionData
     """
     If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
     """
@@ -101,6 +113,7 @@ type Intent {
     client: OtterizeServiceIdentity!
     server: OtterizeServiceIdentity!
     type: IntentType
+    resolutionData: String
     kafkaTopics: [KafkaConfig!]
     httpResources: [HttpResource!]
     awsActions: [String!]
