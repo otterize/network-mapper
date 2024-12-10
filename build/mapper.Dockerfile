@@ -20,6 +20,8 @@ RUN go test ./mapper/...
 FROM test as builder
 ARG TARGETOS
 ARG TARGETARCH
+
+RUN echo "Building for $TARGETOS/$TARGETARCH - Running on $(uname -m)"
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /main ./mapper/cmd
 
 # add version file
