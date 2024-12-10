@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -36,6 +37,17 @@ func (d *DNSCache) AddOrUpdateDNSData(dnsName string, ip string, ttl time.Durati
 func (d *DNSCache) GetResolvedIPs(dnsName string) []string {
 	entry := d.cache.Get(dnsName)
 	return entry
+}
+
+func (d *DNSCache) GetMatchingEntriesForWildcard(dnsName string) []string {
+	result := make([]string, 0)
+	dnsSuffix := strings.ReplaceAll(dnsName, "*", "") // Strip the wildcard, leave the '.example.com' suffix
+	for entry := range d.cache.items {
+		if strings.HasSuffix(entry, dnsSuffix) {
+			result = append(result, entry)
+		}
+	}
+	return result
 }
 
 // CacheValue holds the value and its expiration time

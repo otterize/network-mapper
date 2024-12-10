@@ -198,11 +198,12 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 		LastSeen: dest.LastSeen,
 		DNSName:  dest.Destination,
 	}
+
 	ip := "(unknown)"
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
 		intent.IPs = map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}}
-		ttl := 60 * time.Second
+		ttl := 300 * time.Second
 		if dest.TTL != nil {
 			ttl = time.Duration(*dest.TTL) * time.Second
 		}
