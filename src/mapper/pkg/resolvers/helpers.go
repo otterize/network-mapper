@@ -8,6 +8,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"time"
 )
 
 func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
@@ -44,7 +45,12 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 	// It may cause a bug because the function will not be able to modify the "src" object of the caller.
 	r.filterTargetsAccordingToPodCreationTime(src, srcPod)
 
-	return r.resolveInClusterIdentity(ctx, srcPod)
+	svcIdentity, err := r.resolveInClusterIdentity(ctx, srcPod)
+	if err != nil {
+		return model.OtterizeServiceIdentity{}, errors.Wrap(err)
+	}
+	svcIdentity.ResolutionData.ProcfsHostname = lo.ToPtr(src.SrcHostname)
+	return svcIdentity, nil
 }
 
 func (r *Resolver) filterTargetsAccordingToPodCreationTime(src *model.RecordedDestinationsForSrc, srcPod *corev1.Pod) {
@@ -78,6 +84,7 @@ func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod
 			PodHostname: lo.ToPtr(pod.Name),
 			IsService:   lo.ToPtr(false),
 			ExtraInfo:   lo.ToPtr("resolveInClusterIdentity"),
+			Uptime:      lo.ToPtr(time.Since(pod.CreationTimestamp.Time).String()),
 		},
 	}
 	if svcIdentity.OwnerObject != nil {

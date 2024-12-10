@@ -51,11 +51,14 @@ type HTTPResource struct {
 }
 
 type IdentityResolutionData struct {
-	Host        *string `json:"host,omitempty"`
-	PodHostname *string `json:"podHostname,omitempty"`
-	Port        *int64  `json:"port,omitempty"`
-	IsService   *bool   `json:"isService,omitempty"`
-	ExtraInfo   *string `json:"extraInfo,omitempty"`
+	Host           *string `json:"host,omitempty"`
+	PodHostname    *string `json:"podHostname,omitempty"`
+	ProcfsHostname *string `json:"procfsHostname,omitempty"`
+	Port           *int64  `json:"port,omitempty"`
+	IsService      *bool   `json:"isService,omitempty"`
+	Uptime         *string `json:"uptime,omitempty"`
+	LastSeen       *string `json:"lastSeen,omitempty"`
+	ExtraInfo      *string `json:"extraInfo,omitempty"`
 }
 
 type Intent struct {

@@ -59,11 +59,14 @@ type ComplexityRoot struct {
 	}
 
 	IdentityResolutionData struct {
-		ExtraInfo   func(childComplexity int) int
-		Host        func(childComplexity int) int
-		IsService   func(childComplexity int) int
-		PodHostname func(childComplexity int) int
-		Port        func(childComplexity int) int
+		ExtraInfo      func(childComplexity int) int
+		Host           func(childComplexity int) int
+		IsService      func(childComplexity int) int
+		LastSeen       func(childComplexity int) int
+		PodHostname    func(childComplexity int) int
+		Port           func(childComplexity int) int
+		ProcfsHostname func(childComplexity int) int
+		Uptime         func(childComplexity int) int
 	}
 
 	Intent struct {
@@ -209,6 +212,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.IdentityResolutionData.IsService(childComplexity), true
 
+	case "IdentityResolutionData.lastSeen":
+		if e.complexity.IdentityResolutionData.LastSeen == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.LastSeen(childComplexity), true
+
 	case "IdentityResolutionData.podHostname":
 		if e.complexity.IdentityResolutionData.PodHostname == nil {
 			break
@@ -222,6 +232,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.IdentityResolutionData.Port(childComplexity), true
+
+	case "IdentityResolutionData.procfsHostname":
+		if e.complexity.IdentityResolutionData.ProcfsHostname == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.ProcfsHostname(childComplexity), true
+
+	case "IdentityResolutionData.uptime":
+		if e.complexity.IdentityResolutionData.Uptime == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.Uptime(childComplexity), true
 
 	case "Intent.awsActions":
 		if e.complexity.Intent.AwsActions == nil {
@@ -639,8 +663,11 @@ type GroupVersionKind {
 type IdentityResolutionData {
     host: String
     podHostname: String
+    procfsHostname: String
     port: Int
     isService: Boolean
+    uptime: String
+    lastSeen: String
     extraInfo: String
 }
 
@@ -1348,6 +1375,47 @@ func (ec *executionContext) fieldContext_IdentityResolutionData_podHostname(ctx 
 	return fc, nil
 }
 
+func (ec *executionContext) _IdentityResolutionData_procfsHostname(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_procfsHostname(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProcfsHostname, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_procfsHostname(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _IdentityResolutionData_port(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IdentityResolutionData_port(ctx, field)
 	if err != nil {
@@ -1425,6 +1493,88 @@ func (ec *executionContext) fieldContext_IdentityResolutionData_isService(ctx co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_uptime(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_uptime(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Uptime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_uptime(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_lastSeen(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_lastSeen(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastSeen, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_lastSeen(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2493,10 +2643,16 @@ func (ec *executionContext) fieldContext_OtterizeServiceIdentity_resolutionData(
 				return ec.fieldContext_IdentityResolutionData_host(ctx, field)
 			case "podHostname":
 				return ec.fieldContext_IdentityResolutionData_podHostname(ctx, field)
+			case "procfsHostname":
+				return ec.fieldContext_IdentityResolutionData_procfsHostname(ctx, field)
 			case "port":
 				return ec.fieldContext_IdentityResolutionData_port(ctx, field)
 			case "isService":
 				return ec.fieldContext_IdentityResolutionData_isService(ctx, field)
+			case "uptime":
+				return ec.fieldContext_IdentityResolutionData_uptime(ctx, field)
+			case "lastSeen":
+				return ec.fieldContext_IdentityResolutionData_lastSeen(ctx, field)
 			case "extraInfo":
 				return ec.fieldContext_IdentityResolutionData_extraInfo(ctx, field)
 			}
@@ -5487,10 +5643,16 @@ func (ec *executionContext) _IdentityResolutionData(ctx context.Context, sel ast
 			out.Values[i] = ec._IdentityResolutionData_host(ctx, field, obj)
 		case "podHostname":
 			out.Values[i] = ec._IdentityResolutionData_podHostname(ctx, field, obj)
+		case "procfsHostname":
+			out.Values[i] = ec._IdentityResolutionData_procfsHostname(ctx, field, obj)
 		case "port":
 			out.Values[i] = ec._IdentityResolutionData_port(ctx, field, obj)
 		case "isService":
 			out.Values[i] = ec._IdentityResolutionData_isService(ctx, field, obj)
+		case "uptime":
+			out.Values[i] = ec._IdentityResolutionData_uptime(ctx, field, obj)
+		case "lastSeen":
+			out.Values[i] = ec._IdentityResolutionData_lastSeen(ctx, field, obj)
 		case "extraInfo":
 			out.Values[i] = ec._IdentityResolutionData_extraInfo(ctx, field, obj)
 		default:

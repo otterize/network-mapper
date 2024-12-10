@@ -68,12 +68,9 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 		}
 		if ok {
-			dstSvcIdentity.ResolutionData = &model.IdentityResolutionData{
-				Host:      lo.ToPtr(dest.Destination),
-				Port:      dest.DestinationPort,
-				IsService: lo.ToPtr(true),
-				ExtraInfo: lo.ToPtr("resolveDestIdentity"),
-			}
+			dstSvcIdentity.ResolutionData.Host = lo.ToPtr(dest.Destination)
+			dstSvcIdentity.ResolutionData.Port = dest.DestinationPort
+			dstSvcIdentity.ResolutionData.ExtraInfo = lo.ToPtr("resolveDestIdentity")
 			return dstSvcIdentity, true, nil
 		}
 	}
@@ -113,6 +110,8 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 			Port:      dest.DestinationPort,
 			IsService: lo.ToPtr(false),
 			ExtraInfo: lo.ToPtr("resolveDestIdentity"),
+			LastSeen:  lo.ToPtr(dest.LastSeen.String()),
+			Uptime:    lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
 		},
 	}
 	if dstService.OwnerObject != nil {
@@ -182,8 +181,20 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 	if err != nil {
 		return errors.Wrap(err)
 	}
-
-	dstSvcIdentity := &model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: destPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(destPod)}
+	dstSvcIdentity := &model.OtterizeServiceIdentity{
+		Name:      dstService.Name,
+		Namespace: destPod.Namespace,
+		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
+		ResolutionData: &model.IdentityResolutionData{
+			Host:        lo.ToPtr(dest.Destination),
+			PodHostname: lo.ToPtr(destPod.Name),
+			Port:        dest.DestinationPort,
+			IsService:   lo.ToPtr(false),
+			ExtraInfo:   lo.ToPtr("addSocketScanPodIntent"),
+			LastSeen:    lo.ToPtr(dest.LastSeen.String()),
+			Uptime:      lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
+		},
+	}
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -414,6 +425,7 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 	}
 
 	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
+	dstSvcIdentity.ResolutionData.Host = lo.ToPtr(destIP)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}

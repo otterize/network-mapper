@@ -42,8 +42,11 @@ type GroupVersionKind {
 type IdentityResolutionData {
     host: String
     podHostname: String
+    procfsHostname: String
     port: Int
     isService: Boolean
+    uptime: String
+    lastSeen: String
     extraInfo: String
 }
 
