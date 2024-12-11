@@ -519,6 +519,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputIstioConnectionResults,
 		ec.unmarshalInputKafkaMapperResult,
 		ec.unmarshalInputKafkaMapperResults,
+		ec.unmarshalInputNamespacedName,
 		ec.unmarshalInputRecordedDestinationsForSrc,
 		ec.unmarshalInputServerFilter,
 		ec.unmarshalInputSocketScanResults,
@@ -773,10 +774,16 @@ input IstioConnectionResults {
     results: [IstioConnection!]!
 }
 
+input NamespacedName {
+    name: String!
+    namespace: String!
+}
+
 input AWSOperation {
     resource: String!
     actions: [String!]!
-    srcIp: String!
+    srcIp: String
+    client: NamespacedName
 }
 
 input ServerFilter {
@@ -5041,7 +5048,7 @@ func (ec *executionContext) unmarshalInputAWSOperation(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"resource", "actions", "srcIp"}
+	fieldsInOrder := [...]string{"resource", "actions", "srcIp", "client"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5064,11 +5071,18 @@ func (ec *executionContext) unmarshalInputAWSOperation(ctx context.Context, obj 
 			it.Actions = data
 		case "srcIp":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIp"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.SrcIP = data
+		case "client":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("client"))
+			data, err := ec.unmarshalONamespacedName2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐNamespacedName(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Client = data
 		}
 	}
 
@@ -5425,6 +5439,40 @@ func (ec *executionContext) unmarshalInputKafkaMapperResults(ctx context.Context
 				return it, err
 			}
 			it.Results = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNamespacedName(ctx context.Context, obj interface{}) (model.NamespacedName, error) {
+	var it model.NamespacedName
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "namespace"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "namespace":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Namespace = data
 		}
 	}
 
@@ -7485,6 +7533,14 @@ func (ec *executionContext) marshalOKafkaOperation2ᚕgithubᚗcomᚋotterizeᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalONamespacedName2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐNamespacedName(ctx context.Context, v interface{}) (*model.NamespacedName, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNamespacedName(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOPodLabel2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐPodLabelᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PodLabel) graphql.Marshaler {

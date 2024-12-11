@@ -10,9 +10,10 @@ import (
 )
 
 type AWSOperation struct {
-	Resource string   `json:"resource"`
-	Actions  []string `json:"actions"`
-	SrcIP    string   `json:"srcIp"`
+	Resource string          `json:"resource"`
+	Actions  []string        `json:"actions"`
+	SrcIP    *string         `json:"srcIp,omitempty"`
+	Client   *NamespacedName `json:"client,omitempty"`
 }
 
 type AzureOperation struct {
@@ -105,6 +106,11 @@ type KafkaMapperResults struct {
 }
 
 type Mutation struct {
+}
+
+type NamespacedName struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 type OtterizeServiceIdentity struct {

@@ -152,10 +152,16 @@ input IstioConnectionResults {
     results: [IstioConnection!]!
 }
 
+input NamespacedName {
+    name: String!
+    namespace: String!
+}
+
 input AWSOperation {
     resource: String!
     actions: [String!]!
-    srcIp: String!
+    srcIp: String
+    client: NamespacedName
 }
 
 input ServerFilter {
