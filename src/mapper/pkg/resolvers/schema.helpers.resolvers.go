@@ -257,7 +257,7 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 			srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, *op.SrcIP)
 
 			if err != nil {
-				logrus.Errorf("could not resolve %s to pod: %s", op.SrcIP, err.Error())
+				logrus.Errorf("could not resolve IP %s to pod: %s", *op.SrcIP, err.Error())
 				continue
 			}
 
