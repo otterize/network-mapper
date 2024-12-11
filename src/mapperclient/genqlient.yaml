@@ -1,0 +1,10 @@
+schema:
+  - ../mappergraphql/schema.graphql
+operations:
+  - operations.graphql
+generated: generated.go
+bindings:
+  Time:
+    type: time.Time
+optional: generic
+optional_generic_type: github.com/otterize/nilable.Nilable

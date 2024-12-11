@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"encoding/hex"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/ipresolver"
 	"github.com/otterize/nilable"
 	"github.com/stretchr/testify/require"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 )
 
 func TestTCPSniffer_TestHandlePacketAWS(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
 	logwatcher2 "github.com/otterize/network-mapper/src/kafka-watcher/pkg/logwatcher"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"github.com/sirupsen/logrus"
@@ -46,7 +46,7 @@ func main() {
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 
-	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
+	mapperClient := mapperclient.New(viper.GetString(sharedconfig.MapperApiUrlKey))
 
 	mode := viper.GetString(config.KafkaLogReadModeKey)
 

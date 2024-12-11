@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/nxadm/tail"
 	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/config"
-	"github.com/otterize/network-mapper/src/kafka-watcher/pkg/mapperclient"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"io"
@@ -20,7 +20,7 @@ type LogFileWatcher struct {
 	server        types.NamespacedName
 }
 
-func NewLogFileWatcher(mapperClient mapperclient.MapperClient, authzFilePath string, server types.NamespacedName) (*LogFileWatcher, error) {
+func NewLogFileWatcher(mapperClient *mapperclient.Client, authzFilePath string, server types.NamespacedName) (*LogFileWatcher, error) {
 	w := &LogFileWatcher{
 		baseWatcher: baseWatcher{
 			mu:           sync.Mutex{},

@@ -10,6 +10,44 @@ import (
 	"github.com/otterize/nilable"
 )
 
+type AWSOperation struct {
+	Resource string   `json:"resource"`
+	Actions  []string `json:"actions"`
+	SrcIp    string   `json:"srcIp"`
+}
+
+// GetResource returns AWSOperation.Resource, and is useful for accessing the field via an interface.
+func (v *AWSOperation) GetResource() string { return v.Resource }
+
+// GetActions returns AWSOperation.Actions, and is useful for accessing the field via an interface.
+func (v *AWSOperation) GetActions() []string { return v.Actions }
+
+// GetSrcIp returns AWSOperation.SrcIp, and is useful for accessing the field via an interface.
+func (v *AWSOperation) GetSrcIp() string { return v.SrcIp }
+
+type AzureOperation struct {
+	Scope           string   `json:"scope"`
+	Actions         []string `json:"actions"`
+	DataActions     []string `json:"dataActions"`
+	ClientName      string   `json:"clientName"`
+	ClientNamespace string   `json:"clientNamespace"`
+}
+
+// GetScope returns AzureOperation.Scope, and is useful for accessing the field via an interface.
+func (v *AzureOperation) GetScope() string { return v.Scope }
+
+// GetActions returns AzureOperation.Actions, and is useful for accessing the field via an interface.
+func (v *AzureOperation) GetActions() []string { return v.Actions }
+
+// GetDataActions returns AzureOperation.DataActions, and is useful for accessing the field via an interface.
+func (v *AzureOperation) GetDataActions() []string { return v.DataActions }
+
+// GetClientName returns AzureOperation.ClientName, and is useful for accessing the field via an interface.
+func (v *AzureOperation) GetClientName() string { return v.ClientName }
+
+// GetClientNamespace returns AzureOperation.ClientNamespace, and is useful for accessing the field via an interface.
+func (v *AzureOperation) GetClientNamespace() string { return v.ClientNamespace }
+
 type CaptureResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
 }
@@ -55,6 +93,40 @@ type HealthResponse struct {
 // GetHealth returns HealthResponse.Health, and is useful for accessing the field via an interface.
 func (v *HealthResponse) GetHealth() bool { return v.Health }
 
+type KafkaMapperResult struct {
+	SrcIp           string    `json:"srcIp"`
+	ServerPodName   string    `json:"serverPodName"`
+	ServerNamespace string    `json:"serverNamespace"`
+	Topic           string    `json:"topic"`
+	Operation       string    `json:"operation"`
+	LastSeen        time.Time `json:"lastSeen"`
+}
+
+// GetSrcIp returns KafkaMapperResult.SrcIp, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetSrcIp() string { return v.SrcIp }
+
+// GetServerPodName returns KafkaMapperResult.ServerPodName, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetServerPodName() string { return v.ServerPodName }
+
+// GetServerNamespace returns KafkaMapperResult.ServerNamespace, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetServerNamespace() string { return v.ServerNamespace }
+
+// GetTopic returns KafkaMapperResult.Topic, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetTopic() string { return v.Topic }
+
+// GetOperation returns KafkaMapperResult.Operation, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetOperation() string { return v.Operation }
+
+// GetLastSeen returns KafkaMapperResult.LastSeen, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResult) GetLastSeen() time.Time { return v.LastSeen }
+
+type KafkaMapperResults struct {
+	Results []KafkaMapperResult `json:"results"`
+}
+
+// GetResults returns KafkaMapperResults.Results, and is useful for accessing the field via an interface.
+func (v *KafkaMapperResults) GetResults() []KafkaMapperResult { return v.Results }
+
 type RecordedDestinationsForSrc struct {
 	SrcIp        string        `json:"srcIp"`
 	SrcHostname  string        `json:"srcHostname"`
@@ -77,6 +149,22 @@ type SocketScanResults struct {
 // GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
 func (v *SocketScanResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
+// __reportAWSOperationInput is used internally by genqlient
+type __reportAWSOperationInput struct {
+	Operation []AWSOperation `json:"operation"`
+}
+
+// GetOperation returns __reportAWSOperationInput.Operation, and is useful for accessing the field via an interface.
+func (v *__reportAWSOperationInput) GetOperation() []AWSOperation { return v.Operation }
+
+// __reportAzureOperationInput is used internally by genqlient
+type __reportAzureOperationInput struct {
+	Operation []AzureOperation `json:"operation"`
+}
+
+// GetOperation returns __reportAzureOperationInput.Operation, and is useful for accessing the field via an interface.
+func (v *__reportAzureOperationInput) GetOperation() []AzureOperation { return v.Operation }
+
 // __reportCaptureResultsInput is used internally by genqlient
 type __reportCaptureResultsInput struct {
 	Results CaptureResults `json:"results"`
@@ -84,6 +172,14 @@ type __reportCaptureResultsInput struct {
 
 // GetResults returns __reportCaptureResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportCaptureResultsInput) GetResults() CaptureResults { return v.Results }
+
+// __reportKafkaMapperResultsInput is used internally by genqlient
+type __reportKafkaMapperResultsInput struct {
+	Results KafkaMapperResults `json:"results"`
+}
+
+// GetResults returns __reportKafkaMapperResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportKafkaMapperResultsInput) GetResults() KafkaMapperResults { return v.Results }
 
 // __reportSocketScanResultsInput is used internally by genqlient
 type __reportSocketScanResultsInput struct {
@@ -101,6 +197,22 @@ type __reportTCPCaptureResultsInput struct {
 // GetResults returns __reportTCPCaptureResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportTCPCaptureResultsInput) GetResults() CaptureTCPResults { return v.Results }
 
+// reportAWSOperationResponse is returned by reportAWSOperation on success.
+type reportAWSOperationResponse struct {
+	ReportAWSOperation bool `json:"reportAWSOperation"`
+}
+
+// GetReportAWSOperation returns reportAWSOperationResponse.ReportAWSOperation, and is useful for accessing the field via an interface.
+func (v *reportAWSOperationResponse) GetReportAWSOperation() bool { return v.ReportAWSOperation }
+
+// reportAzureOperationResponse is returned by reportAzureOperation on success.
+type reportAzureOperationResponse struct {
+	ReportAzureOperation bool `json:"reportAzureOperation"`
+}
+
+// GetReportAzureOperation returns reportAzureOperationResponse.ReportAzureOperation, and is useful for accessing the field via an interface.
+func (v *reportAzureOperationResponse) GetReportAzureOperation() bool { return v.ReportAzureOperation }
+
 // reportCaptureResultsResponse is returned by reportCaptureResults on success.
 type reportCaptureResultsResponse struct {
 	ReportCaptureResults bool `json:"reportCaptureResults"`
@@ -108,6 +220,16 @@ type reportCaptureResultsResponse struct {
 
 // GetReportCaptureResults returns reportCaptureResultsResponse.ReportCaptureResults, and is useful for accessing the field via an interface.
 func (v *reportCaptureResultsResponse) GetReportCaptureResults() bool { return v.ReportCaptureResults }
+
+// reportKafkaMapperResultsResponse is returned by reportKafkaMapperResults on success.
+type reportKafkaMapperResultsResponse struct {
+	ReportKafkaMapperResults bool `json:"reportKafkaMapperResults"`
+}
+
+// GetReportKafkaMapperResults returns reportKafkaMapperResultsResponse.ReportKafkaMapperResults, and is useful for accessing the field via an interface.
+func (v *reportKafkaMapperResultsResponse) GetReportKafkaMapperResults() bool {
+	return v.ReportKafkaMapperResults
+}
 
 // reportSocketScanResultsResponse is returned by reportSocketScanResults on success.
 type reportSocketScanResultsResponse struct {
@@ -158,6 +280,72 @@ func Health(
 	return &data_, err_
 }
 
+// The query or mutation executed by reportAWSOperation.
+const reportAWSOperation_Operation = `
+mutation reportAWSOperation ($operation: [AWSOperation!]!) {
+	reportAWSOperation(operation: $operation)
+}
+`
+
+func reportAWSOperation(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	operation []AWSOperation,
+) (*reportAWSOperationResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportAWSOperation",
+		Query:  reportAWSOperation_Operation,
+		Variables: &__reportAWSOperationInput{
+			Operation: operation,
+		},
+	}
+	var err_ error
+
+	var data_ reportAWSOperationResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by reportAzureOperation.
+const reportAzureOperation_Operation = `
+mutation reportAzureOperation ($operation: [AzureOperation!]!) {
+	reportAzureOperation(operation: $operation)
+}
+`
+
+func reportAzureOperation(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	operation []AzureOperation,
+) (*reportAzureOperationResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportAzureOperation",
+		Query:  reportAzureOperation_Operation,
+		Variables: &__reportAzureOperationInput{
+			Operation: operation,
+		},
+	}
+	var err_ error
+
+	var data_ reportAzureOperationResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by reportCaptureResults.
 const reportCaptureResults_Operation = `
 mutation reportCaptureResults ($results: CaptureResults!) {
@@ -180,6 +368,39 @@ func reportCaptureResults(
 	var err_ error
 
 	var data_ reportCaptureResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by reportKafkaMapperResults.
+const reportKafkaMapperResults_Operation = `
+mutation reportKafkaMapperResults ($results: KafkaMapperResults!) {
+	reportKafkaMapperResults(results: $results)
+}
+`
+
+func reportKafkaMapperResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results KafkaMapperResults,
+) (*reportKafkaMapperResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportKafkaMapperResults",
+		Query:  reportKafkaMapperResults_Operation,
+		Variables: &__reportKafkaMapperResultsInput{
+			Results: results,
+		},
+	}
+	var err_ error
+
+	var data_ reportKafkaMapperResultsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

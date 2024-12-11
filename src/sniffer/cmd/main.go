@@ -12,6 +12,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/otterize/network-mapper/src/shared/version"
 	"golang.org/x/sync/errgroup"
 	"net/http"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/sniffer"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -44,7 +44,7 @@ func main() {
 
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 
-	mapperClient := mapperclient.NewMapperClient(viper.GetString(sharedconfig.MapperApiUrlKey))
+	mapperClient := mapperclient.New(viper.GetString(sharedconfig.MapperApiUrlKey))
 
 	healthServer := echo.New()
 	healthServer.HideBanner = true

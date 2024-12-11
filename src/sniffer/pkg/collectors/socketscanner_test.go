@@ -3,8 +3,8 @@ package collectors
 import (
 	"fmt"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/otterize/network-mapper/src/mapperclient"
 	"github.com/otterize/network-mapper/src/sniffer/pkg/config"
-	"github.com/otterize/network-mapper/src/sniffer/pkg/mapperclient"
 	"github.com/otterize/nilable"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
