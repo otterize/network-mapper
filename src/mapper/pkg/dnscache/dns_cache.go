@@ -39,7 +39,7 @@ func (d *DNSCache) GetResolvedIPs(dnsName string) []string {
 	return entry
 }
 
-func (d *DNSCache) GetMatchingIPsForWildcard(dnsName string) []string {
+func (d *DNSCache) GetResolvedIPsForWildcard(dnsName string) []string {
 	dnsSuffix := strings.TrimPrefix(dnsName, "*") // Strip the wildcard, leave the '.example.com' suffix
 	result := make([]string, 0)
 	for entry := range d.cache.items {

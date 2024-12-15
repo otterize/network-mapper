@@ -164,9 +164,9 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 }
 
 func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]map[string]struct{}) bool {
-	resolvedIPs := make([]string, 0)
+	var resolvedIPs []string
 	if p.isWildcardDNS(dnsName) {
-		resolvedIPs = p.dnsCache.GetMatchingIPsForWildcard(dnsName)
+		resolvedIPs = p.dnsCache.GetResolvedIPsForWildcard(dnsName)
 	} else {
 		resolvedIPs = p.dnsCache.GetResolvedIPs(dnsName)
 	}
