@@ -166,10 +166,7 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]map[string]struct{}) bool {
 	resolvedIPs := make([]string, 0)
 	if p.isWildcardDNS(dnsName) {
-		matchingDNSNames := p.dnsCache.GetMatchingEntriesForWildcard(dnsName)
-		for _, name := range matchingDNSNames {
-			resolvedIPs = append(resolvedIPs, p.dnsCache.GetResolvedIPs(name)...)
-		}
+		resolvedIPs = p.dnsCache.GetMatchingIPsForWildcard(dnsName)
 	} else {
 		resolvedIPs = p.dnsCache.GetResolvedIPs(dnsName)
 	}
@@ -179,7 +176,7 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 		ips = make(map[string]struct{})
 	}
 
-	if len(resolvedIPs) == 0 {
+	if len(resolvedIPs) == 0 && !p.isWildcardDNS(dnsName) {
 		ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		logrus.WithField("dnsName", dnsName).Debug("DNS cache miss, resolving it ourselves")
