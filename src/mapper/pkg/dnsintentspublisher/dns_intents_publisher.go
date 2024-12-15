@@ -164,10 +164,14 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 }
 
 func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]map[string]struct{}) bool {
-	dnsNames := p.getDNSNameSlice(dnsName)
 	resolvedIPs := make([]string, 0)
-	for _, name := range dnsNames {
-		resolvedIPs = append(resolvedIPs, p.dnsCache.GetResolvedIPs(name)...)
+	if p.isWildcardDNS(dnsName) {
+		matchingDNSNames := p.dnsCache.GetMatchingEntriesForWildcard(dnsName)
+		for _, name := range matchingDNSNames {
+			resolvedIPs = append(resolvedIPs, p.dnsCache.GetResolvedIPs(name)...)
+		}
+	} else {
+		resolvedIPs = p.dnsCache.GetResolvedIPs(dnsName)
 	}
 
 	ips, ok := resolvedIPsMap[dnsName]
@@ -176,21 +180,19 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 	}
 
 	if len(resolvedIPs) == 0 {
-		ctxTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		logrus.WithField("dnsName", dnsName).Debug("DNS cache miss, resolving it ourselves")
-		for _, name := range dnsNames {
-			// Try to resolve it ourselves
-			ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, name)
-			if err != nil {
-				logrus.WithError(err).WithField("dnsName", name).Error("Failed to resolve DNS")
-				return false
-			}
+		// Try to resolve it ourselves
+		ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
+		if err != nil {
+			logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
+			return false
+		}
 
-			for _, ip := range ipaddrs {
-				ips[ip.String()] = struct{}{}
-				p.dnsCache.AddOrUpdateDNSData(name, ip.String(), 120*time.Second)
-			}
+		for _, ip := range ipaddrs {
+			ips[ip.String()] = struct{}{}
+			p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 120*time.Second)
 		}
 	} else {
 		logrus.WithField("dnsName", dnsName).Debug("DNS cache hit")
@@ -207,10 +209,6 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 	return true
 }
 
-func (p *Publisher) getDNSNameSlice(dnsName string) []string {
-	result := []string{dnsName}
-	if !strings.HasPrefix(dnsName, "*") {
-		return result
-	}
-	return p.dnsCache.GetMatchingEntriesForWildcard(dnsName)
+func (p *Publisher) isWildcardDNS(dnsName string) bool {
+	return strings.HasPrefix(dnsName, "*")
 }

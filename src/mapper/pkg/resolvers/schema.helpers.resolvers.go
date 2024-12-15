@@ -203,7 +203,7 @@ func (r *Resolver) handleDNSCaptureResultsAsExternalTraffic(_ context.Context, d
 	if dest.DestinationIP != nil {
 		ip = *dest.DestinationIP
 		intent.IPs = map[externaltrafficholder.IP]struct{}{externaltrafficholder.IP(*dest.DestinationIP): {}}
-		ttl := 300 * time.Second
+		ttl := 120 * time.Second
 		if dest.TTL != nil {
 			ttl = time.Duration(*dest.TTL) * time.Second
 		}

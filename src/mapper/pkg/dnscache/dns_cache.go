@@ -41,7 +41,7 @@ func (d *DNSCache) GetResolvedIPs(dnsName string) []string {
 
 func (d *DNSCache) GetMatchingEntriesForWildcard(dnsName string) []string {
 	result := make([]string, 0)
-	dnsSuffix := strings.ReplaceAll(dnsName, "*", "") // Strip the wildcard, leave the '.example.com' suffix
+	dnsSuffix := strings.TrimPrefix(dnsName, "*") // Strip the wildcard, leave the '.example.com' suffix
 	for entry := range d.cache.items {
 		if strings.HasSuffix(entry, dnsSuffix) {
 			result = append(result, entry)
