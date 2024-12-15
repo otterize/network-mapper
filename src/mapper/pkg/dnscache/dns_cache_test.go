@@ -83,6 +83,23 @@ func (s *DNSCacheTestSuite) TestTTL() {
 
 }
 
+func (s *DNSCacheTestSuite) TestWildcardIP() {
+	cache := NewDNSCache()
+	cache.AddOrUpdateDNSData("www.surf-forecast.com", IP1, 60*time.Second)
+	ips := cache.GetResolvedIPsForWildcard("*.surf-forecast.com")
+	s.Require().Len(ips, 1)
+	s.Require().Equal(ips[0], IP1)
+}
+
+func (s *DNSCacheTestSuite) TestMultipleWildcardIPs() {
+	cache := NewDNSCache()
+	cache.AddOrUpdateDNSData("www.surf-forecast.com", IP1, 60*time.Second)
+	cache.AddOrUpdateDNSData("api.surf-forecast.com", IP2, 60*time.Second)
+	ips := cache.GetResolvedIPsForWildcard("*.surf-forecast.com")
+	s.Require().Len(ips, 2)
+	s.Require().Equal(ips, []string{IP1, IP2})
+}
+
 func TestDNSCacheTestSuite(t *testing.T) {
 	suite.Run(t, new(DNSCacheTestSuite))
 }

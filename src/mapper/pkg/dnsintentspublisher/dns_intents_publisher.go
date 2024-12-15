@@ -13,6 +13,7 @@ import (
 	"net"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 	"time"
 )
 
@@ -163,19 +164,23 @@ func (p *Publisher) compareIntentsAndStatus(clientIntents otterizev2alpha1.Clien
 }
 
 func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]map[string]struct{}) bool {
-	resolvedIPs := p.dnsCache.GetResolvedIPs(dnsName)
+	var resolvedIPs []string
+	if p.isWildcardDNS(dnsName) {
+		resolvedIPs = p.dnsCache.GetResolvedIPsForWildcard(dnsName)
+	} else {
+		resolvedIPs = p.dnsCache.GetResolvedIPs(dnsName)
+	}
 
 	ips, ok := resolvedIPsMap[dnsName]
 	if !ok {
 		ips = make(map[string]struct{})
 	}
 
-	if len(resolvedIPs) == 0 {
-		// Try to resolve it ourselves
+	if len(resolvedIPs) == 0 && !p.isWildcardDNS(dnsName) {
 		ctxTimeout, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		logrus.WithField("dnsName", dnsName).Warn("DNS cache miss, resolving it ourselves")
-
+		logrus.WithField("dnsName", dnsName).Debug("DNS cache miss, resolving it ourselves")
+		// Try to resolve it ourselves
 		ipaddrs, err := p.resolver.LookupIPAddr(ctxTimeout, dnsName)
 		if err != nil {
 			logrus.WithError(err).WithField("dnsName", dnsName).Error("Failed to resolve DNS")
@@ -184,7 +189,7 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 
 		for _, ip := range ipaddrs {
 			ips[ip.String()] = struct{}{}
-			p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 10*time.Second)
+			p.dnsCache.AddOrUpdateDNSData(dnsName, ip.String(), 120*time.Second)
 		}
 	} else {
 		logrus.WithField("dnsName", dnsName).Debug("DNS cache hit")
@@ -199,4 +204,8 @@ func (p *Publisher) appendResolvedIps(dnsName string, resolvedIPsMap map[string]
 	}
 	resolvedIPsMap[dnsName] = ips
 	return true
+}
+
+func (p *Publisher) isWildcardDNS(dnsName string) bool {
+	return strings.HasPrefix(dnsName, "*")
 }
