@@ -11,9 +11,10 @@ import (
 )
 
 type AWSOperation struct {
-	Resource string   `json:"resource"`
-	Actions  []string `json:"actions"`
-	SrcIp    string   `json:"srcIp"`
+	Resource string                          `json:"resource"`
+	Actions  []string                        `json:"actions"`
+	SrcIp    nilable.Nilable[string]         `json:"srcIp"`
+	Client   nilable.Nilable[NamespacedName] `json:"client"`
 }
 
 // GetResource returns AWSOperation.Resource, and is useful for accessing the field via an interface.
@@ -23,7 +24,10 @@ func (v *AWSOperation) GetResource() string { return v.Resource }
 func (v *AWSOperation) GetActions() []string { return v.Actions }
 
 // GetSrcIp returns AWSOperation.SrcIp, and is useful for accessing the field via an interface.
-func (v *AWSOperation) GetSrcIp() string { return v.SrcIp }
+func (v *AWSOperation) GetSrcIp() nilable.Nilable[string] { return v.SrcIp }
+
+// GetClient returns AWSOperation.Client, and is useful for accessing the field via an interface.
+func (v *AWSOperation) GetClient() nilable.Nilable[NamespacedName] { return v.Client }
 
 type AzureOperation struct {
 	Scope           string   `json:"scope"`
@@ -126,6 +130,17 @@ type KafkaMapperResults struct {
 
 // GetResults returns KafkaMapperResults.Results, and is useful for accessing the field via an interface.
 func (v *KafkaMapperResults) GetResults() []KafkaMapperResult { return v.Results }
+
+type NamespacedName struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// GetName returns NamespacedName.Name, and is useful for accessing the field via an interface.
+func (v *NamespacedName) GetName() string { return v.Name }
+
+// GetNamespace returns NamespacedName.Namespace, and is useful for accessing the field via an interface.
+func (v *NamespacedName) GetNamespace() string { return v.Namespace }
 
 type RecordedDestinationsForSrc struct {
 	SrcIp        string        `json:"srcIp"`
