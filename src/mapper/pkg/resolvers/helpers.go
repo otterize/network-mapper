@@ -22,6 +22,15 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 			Host:        lo.ToPtr(src.SrcIP),
 			PodHostname: lo.ToPtr(src.SrcHostname),
 		}
+		pods, err := r.kubeFinder.ResolveServiceToPods(ctx, svc)
+		if err != nil && !errors.Is(err, kubefinder.ErrNoPodFound) {
+			return model.OtterizeServiceIdentity{}, errors.Errorf("could not resolve service %s to pods: %w", svc.Name, err)
+		}
+		// ignore services backed by host networking pods because it might as well be unrelated traffic (not from the control plane)
+		if len(pods) > 0 && lo.SomeBy(pods, func(pod corev1.Pod) bool { return pod.Spec.HostNetwork }) {
+			logrus.Debugf("control plane service is backed by a host networking pod, ignoring")
+			return model.OtterizeServiceIdentity{}, nil
+		}
 		return model.OtterizeServiceIdentity{Name: svc.Name, Namespace: svc.Namespace, KubernetesService: &svc.Name, ResolutionData: &resolutionData}, nil
 	}
 
