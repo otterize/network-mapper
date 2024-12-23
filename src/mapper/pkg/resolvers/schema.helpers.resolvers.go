@@ -106,12 +106,13 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		Namespace: destPod.Namespace,
 		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
 		ResolutionData: &model.IdentityResolutionData{
-			Host:      lo.ToPtr(dest.Destination),
-			Port:      dest.DestinationPort,
-			IsService: lo.ToPtr(false),
-			ExtraInfo: lo.ToPtr("resolveDestIdentity"),
-			LastSeen:  lo.ToPtr(dest.LastSeen.String()),
-			Uptime:    lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
+			Host:        lo.ToPtr(dest.Destination),
+			PodHostname: lo.ToPtr(destPod.Name),
+			Port:        dest.DestinationPort,
+			IsService:   lo.ToPtr(false),
+			ExtraInfo:   lo.ToPtr("resolveDestIdentity"),
+			LastSeen:    lo.ToPtr(dest.LastSeen.String()),
+			Uptime:      lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
 		},
 	}
 	if dstService.OwnerObject != nil {

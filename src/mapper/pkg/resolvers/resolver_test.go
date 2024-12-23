@@ -1474,6 +1474,35 @@ func (s *ResolverTestSuite) TestResolveOtterizeIdentityFilterSrcDestinationsByCr
 
 }
 
+func (s *ResolverTestSuite) TestDiscoverInternalSrcIdentityIgnoreControlPlaneIfBackedByHostNetworkPod() {
+
+	// get control plane service
+	controlPlaneService := &v1.Service{}
+	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: "kubernetes", Namespace: "default"}, controlPlaneService)
+	s.Require().NoError(err)
+
+	// get endpoints for control plane service
+	endpointsTest := &v1.Endpoints{}
+	err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: "kubernetes", Namespace: "default"}, endpointsTest)
+	s.Require().NoError(err)
+
+	// Add host network pod with the IP of the first endpoint
+	pod := s.AddPodWithHostNetwork("pod", endpointsTest.Subsets[0].Addresses[0].IP, map[string]string{"app": "test"}, nil, true)
+
+	// Test source ip is pod ip
+	identity, err := s.resolver.discoverInternalSrcIdentity(context.Background(),
+		&model.RecordedDestinationsForSrc{
+			SrcIP: pod.Status.PodIP,
+			Destinations: []model.Destination{
+				{
+					Destination: "8.8.8.8",
+				},
+			},
+		})
+	s.Require().Equal(SourceIsHostNetworkPodError, err)
+	s.Require().Empty(identity)
+}
+
 func TestRunSuite(t *testing.T) {
 	suite.Run(t, new(ResolverTestSuite))
 }

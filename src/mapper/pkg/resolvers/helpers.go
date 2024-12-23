@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var SourceIsHostNetworkPodError = errors.NewSentinelError("source is a host network pod, ignoring")
+
 func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	svc, ok, err := r.kubeFinder.ResolveIPToControlPlane(ctx, src.SrcIP)
 	if err != nil {
@@ -21,6 +23,13 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 		resolutionData := model.IdentityResolutionData{
 			Host:        lo.ToPtr(src.SrcIP),
 			PodHostname: lo.ToPtr(src.SrcHostname),
+		}
+		isHostNetworkIp, err := r.kubeFinder.IsIpHostNetworkIp(ctx, src.SrcIP)
+		if err != nil {
+			return model.OtterizeServiceIdentity{}, errors.Wrap(err)
+		}
+		if isHostNetworkIp {
+			return model.OtterizeServiceIdentity{}, SourceIsHostNetworkPodError
 		}
 		return model.OtterizeServiceIdentity{Name: svc.Name, Namespace: svc.Namespace, KubernetesService: &svc.Name, ResolutionData: &resolutionData}, nil
 	}
