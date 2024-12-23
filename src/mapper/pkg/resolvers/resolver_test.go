@@ -1484,6 +1484,7 @@ func (s *ResolverTestSuite) TestDiscoverInternalSrcIdentityIgnoreControlPlaneIfB
 	// get endpoints for control plane service
 	endpointsTest := &v1.Endpoints{}
 	err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: "kubernetes", Namespace: "default"}, endpointsTest)
+	s.Require().NoError(err)
 
 	// Add host network pod as a target for the control plane service
 	pod := s.AddPodWithHostNetwork("pod", endpointsTest.Subsets[0].Addresses[0].IP, map[string]string{"app": "test"}, nil, true)
@@ -1507,7 +1508,7 @@ func (s *ResolverTestSuite) TestDiscoverInternalSrcIdentityIgnoreControlPlaneIfB
 				},
 			},
 		})
-	s.Require().Equal(err, controlPlaneBackedByAHostNetworkPodError)
+	s.Require().Equal(controlPlaneBackedByAHostNetworkPodError, err)
 	s.Require().Empty(identity)
 
 	// Test source ip is pod ip
@@ -1520,7 +1521,7 @@ func (s *ResolverTestSuite) TestDiscoverInternalSrcIdentityIgnoreControlPlaneIfB
 				},
 			},
 		})
-	s.Require().Equal(err, controlPlaneBackedByAHostNetworkPodError)
+	s.Require().Equal(controlPlaneBackedByAHostNetworkPodError, err)
 	s.Require().Empty(identity)
 }
 
