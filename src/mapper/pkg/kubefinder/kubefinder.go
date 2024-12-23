@@ -238,6 +238,16 @@ func (k *KubeFinder) ResolveServiceToPods(ctx context.Context, svc *corev1.Servi
 	return pods, nil
 }
 
+func (k *KubeFinder) IsIpHostNetworkIp(ctx context.Context, ip string) (bool, error) {
+	var podsWithHostNetwork corev1.PodList
+	err := k.client.List(ctx, &podsWithHostNetwork, client.MatchingFields{podIPIncludingHostNetworkIndexField: ip})
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	return lo.SomeBy(podsWithHostNetwork.Items, func(pod corev1.Pod) bool { return pod.Spec.HostNetwork }), nil
+}
+
 func (k *KubeFinder) ResolveIPToPod(ctx context.Context, ip string) (*corev1.Pod, error) {
 	var pods corev1.PodList
 	err := k.client.List(ctx, &pods, client.MatchingFields{podIPIndexField: ip})
