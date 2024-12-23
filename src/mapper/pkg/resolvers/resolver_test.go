@@ -1474,6 +1474,56 @@ func (s *ResolverTestSuite) TestResolveOtterizeIdentityFilterSrcDestinationsByCr
 
 }
 
+func (s *ResolverTestSuite) TestDiscoverInternalSrcIdentityIgnoreControlPlaneIfBackedByHostNetworkPod() {
+
+	// get control plane service
+	controlPlaneService := &v1.Service{}
+	err := s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: "kubernetes", Namespace: "default"}, controlPlaneService)
+	s.Require().NoError(err)
+
+	// get endpoints for control plane service
+	endpointsTest := &v1.Endpoints{}
+	err = s.Mgr.GetClient().Get(context.Background(), types.NamespacedName{Name: "kubernetes", Namespace: "default"}, endpointsTest)
+
+	// Add host network pod as a target for the control plane service
+	pod := s.AddPodWithHostNetwork("pod", endpointsTest.Subsets[0].Addresses[0].IP, map[string]string{"app": "test"}, nil, true)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+	endpointsTest.Subsets[0].Addresses[0].TargetRef = &v1.ObjectReference{
+		Kind:      "Pod",
+		Name:      pod.Name,
+		Namespace: pod.Namespace,
+	}
+	err = s.Mgr.GetClient().Update(context.Background(), endpointsTest)
+	s.Require().NoError(err)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Test source ip is service ip
+	identity, err := s.resolver.discoverInternalSrcIdentity(context.Background(),
+		&model.RecordedDestinationsForSrc{
+			SrcIP: controlPlaneService.Spec.ClusterIP,
+			Destinations: []model.Destination{
+				{
+					Destination: "8.8.8.8",
+				},
+			},
+		})
+	s.Require().Equal(err, controlPlaneBackedByAHostNetworkPodError)
+	s.Require().Empty(identity)
+
+	// Test source ip is pod ip
+	identity, err = s.resolver.discoverInternalSrcIdentity(context.Background(),
+		&model.RecordedDestinationsForSrc{
+			SrcIP: pod.Status.PodIP,
+			Destinations: []model.Destination{
+				{
+					Destination: "8.8.8.8",
+				},
+			},
+		})
+	s.Require().Equal(err, controlPlaneBackedByAHostNetworkPodError)
+	s.Require().Empty(identity)
+}
+
 func TestRunSuite(t *testing.T) {
 	suite.Run(t, new(ResolverTestSuite))
 }

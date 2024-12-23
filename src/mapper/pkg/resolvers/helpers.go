@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var controlPlaneBackedByAHostNetworkPodError = errors.NewSentinelError("control plane service is backed by a host networking pod, ignoring")
+
 func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
 	svc, ok, err := r.kubeFinder.ResolveIPToControlPlane(ctx, src.SrcIP)
 	if err != nil {
@@ -28,8 +30,7 @@ func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.R
 		}
 		// ignore services backed by host networking pods because it might as well be unrelated traffic (not from the control plane)
 		if len(pods) > 0 && lo.SomeBy(pods, func(pod corev1.Pod) bool { return pod.Spec.HostNetwork }) {
-			logrus.Debugf("control plane service is backed by a host networking pod, ignoring")
-			return model.OtterizeServiceIdentity{}, nil
+			return model.OtterizeServiceIdentity{}, controlPlaneBackedByAHostNetworkPodError
 		}
 		return model.OtterizeServiceIdentity{Name: svc.Name, Namespace: svc.Namespace, KubernetesService: &svc.Name, ResolutionData: &resolutionData}, nil
 	}
