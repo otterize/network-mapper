@@ -446,13 +446,13 @@ func (r *Resolver) resolveOtterizeIdentityForExternalAccessDestination(ctx conte
 	}
 
 	dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destService, dest.LastSeen)
-	dstSvcIdentity.ResolutionData.Host = lo.ToPtr(destIP)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
 	if !ok {
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
+	dstSvcIdentity.ResolutionData.Host = lo.ToPtr(destIP)
 
 	return dstSvcIdentity, true, nil
 }
