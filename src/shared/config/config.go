@@ -17,8 +17,6 @@ const (
 	DebugDefault                 = false
 	PrometheusMetricsPortKey     = "metrics-port"
 	PrometheusMetricsPortDefault = 2112
-	HealthProbesPortKey          = "health-probes-port"
-	HealthProbesPortDefault      = "57921"
 	TelemetryErrorsAPIKeyKey     = "telemetry-errors-api-key"
 	TelemetryErrorsAPIKeyDefault = "d86195588a41fa03aa6711993bb1c765"
 	EnableTCPKey                 = "enable-tcp"
@@ -44,7 +42,6 @@ func init() {
 	viper.SetDefault(MapperApiUrlKey, MapperApiUrlDefault)
 	viper.SetDefault(DebugKey, DebugDefault)
 	viper.SetDefault(PrometheusMetricsPortKey, PrometheusMetricsPortDefault)
-	viper.SetDefault(HealthProbesPortKey, HealthProbesPortDefault)
 	viper.SetDefault(TelemetryErrorsAPIKeyKey, TelemetryErrorsAPIKeyDefault)
 	viper.SetDefault(EnableTCPKey, EnableTCPSnifferDefault)
 	viper.SetDefault(EnableSocketScannerKey, EnableSocketScannerDefault)
