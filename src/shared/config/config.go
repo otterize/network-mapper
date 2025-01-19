@@ -18,7 +18,7 @@ const (
 	PrometheusMetricsPortKey     = "metrics-port"
 	PrometheusMetricsPortDefault = 2112
 	HealthProbesPortKey          = "health-probes-port"
-	HealthProbesPortDefault      = "57921"
+	HealthProbesPortDefault      = "9090"
 	TelemetryErrorsAPIKeyKey     = "telemetry-errors-api-key"
 	TelemetryErrorsAPIKeyDefault = "d86195588a41fa03aa6711993bb1c765"
 	EnableTCPKey                 = "enable-tcp"
