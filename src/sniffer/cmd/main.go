@@ -45,6 +45,7 @@ func main() {
 	ctrl.SetLogger(logrusr.New(logrus.StandardLogger()))
 
 	mapperClient := mapperclient.New(viper.GetString(sharedconfig.MapperApiUrlKey))
+	healthProbesPort := viper.GetInt(sharedconfig.HealthProbesPortKey)
 
 	healthServer := echo.New()
 	healthServer.HideBanner = true
@@ -77,7 +78,7 @@ func main() {
 	errgrp.Go(func() error {
 		logrus.Debug("Started health server")
 		defer errorreporter.AutoNotify()
-		return healthServer.Start(":9090")
+		return healthServer.Start(fmt.Sprintf(":%d", healthProbesPort))
 	})
 
 	logrus.Debug("Starting sniffer")
