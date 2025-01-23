@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const LinkerdSidecarContainerName = "linkerd-proxy"
+
 var SourceIsHostNetworkPodError = errors.NewSentinelError("source is a host network pod, ignoring")
 
 func (r *Resolver) discoverInternalSrcIdentity(ctx context.Context, src *model.RecordedDestinationsForSrc) (model.OtterizeServiceIdentity, error) {
@@ -89,11 +91,12 @@ func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod
 		Namespace: pod.Namespace,
 		Labels:    kubefinder.PodLabelsToOtterizeLabels(pod),
 		ResolutionData: &model.IdentityResolutionData{
-			Host:        lo.ToPtr(pod.Status.PodIP),
-			PodHostname: lo.ToPtr(pod.Name),
-			IsService:   lo.ToPtr(false),
-			ExtraInfo:   lo.ToPtr("resolveInClusterIdentity"),
-			Uptime:      lo.ToPtr(time.Since(pod.CreationTimestamp.Time).String()),
+			Host:              lo.ToPtr(pod.Status.PodIP),
+			PodHostname:       lo.ToPtr(pod.Name),
+			IsService:         lo.ToPtr(false),
+			ExtraInfo:         lo.ToPtr("resolveInClusterIdentity"),
+			Uptime:            lo.ToPtr(time.Since(pod.CreationTimestamp.Time).String()),
+			HasLinkerdSidecar: lo.ToPtr(hasLinkerdSidecar(pod)),
 		},
 	}
 	if svcIdentity.OwnerObject != nil {
@@ -101,4 +104,13 @@ func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod
 	}
 
 	return modelSvcIdentity, nil
+}
+
+func hasLinkerdSidecar(pod *corev1.Pod) bool {
+	for _, container := range pod.Spec.Containers {
+		if container.Name == LinkerdSidecarContainerName {
+			return true
+		}
+	}
+	return false
 }

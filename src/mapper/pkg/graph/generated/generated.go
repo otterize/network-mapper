@@ -59,14 +59,15 @@ type ComplexityRoot struct {
 	}
 
 	IdentityResolutionData struct {
-		ExtraInfo      func(childComplexity int) int
-		Host           func(childComplexity int) int
-		IsService      func(childComplexity int) int
-		LastSeen       func(childComplexity int) int
-		PodHostname    func(childComplexity int) int
-		Port           func(childComplexity int) int
-		ProcfsHostname func(childComplexity int) int
-		Uptime         func(childComplexity int) int
+		ExtraInfo         func(childComplexity int) int
+		HasLinkerdSidecar func(childComplexity int) int
+		Host              func(childComplexity int) int
+		IsService         func(childComplexity int) int
+		LastSeen          func(childComplexity int) int
+		PodHostname       func(childComplexity int) int
+		Port              func(childComplexity int) int
+		ProcfsHostname    func(childComplexity int) int
+		Uptime            func(childComplexity int) int
 	}
 
 	Intent struct {
@@ -197,6 +198,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.IdentityResolutionData.ExtraInfo(childComplexity), true
+
+	case "IdentityResolutionData.hasLinkerdSidecar":
+		if e.complexity.IdentityResolutionData.HasLinkerdSidecar == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.HasLinkerdSidecar(childComplexity), true
 
 	case "IdentityResolutionData.host":
 		if e.complexity.IdentityResolutionData.Host == nil {
@@ -670,6 +678,7 @@ type IdentityResolutionData {
     uptime: String
     lastSeen: String
     extraInfo: String
+    hasLinkerdSidecar: Boolean
 }
 
 type OtterizeServiceIdentity {
@@ -1623,6 +1632,47 @@ func (ec *executionContext) fieldContext_IdentityResolutionData_extraInfo(ctx co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_hasLinkerdSidecar(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_hasLinkerdSidecar(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasLinkerdSidecar, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_hasLinkerdSidecar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2662,6 +2712,8 @@ func (ec *executionContext) fieldContext_OtterizeServiceIdentity_resolutionData(
 				return ec.fieldContext_IdentityResolutionData_lastSeen(ctx, field)
 			case "extraInfo":
 				return ec.fieldContext_IdentityResolutionData_extraInfo(ctx, field)
+			case "hasLinkerdSidecar":
+				return ec.fieldContext_IdentityResolutionData_hasLinkerdSidecar(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IdentityResolutionData", field.Name)
 		},
@@ -5703,6 +5755,8 @@ func (ec *executionContext) _IdentityResolutionData(ctx context.Context, sel ast
 			out.Values[i] = ec._IdentityResolutionData_lastSeen(ctx, field, obj)
 		case "extraInfo":
 			out.Values[i] = ec._IdentityResolutionData_extraInfo(ctx, field, obj)
+		case "hasLinkerdSidecar":
+			out.Values[i] = ec._IdentityResolutionData_hasLinkerdSidecar(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

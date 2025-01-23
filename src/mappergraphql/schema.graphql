@@ -48,6 +48,7 @@ type IdentityResolutionData {
     uptime: String
     lastSeen: String
     extraInfo: String
+    hasLinkerdSidecar: Boolean
 }
 
 type OtterizeServiceIdentity {
