@@ -106,13 +106,14 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		Namespace: destPod.Namespace,
 		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
 		ResolutionData: &model.IdentityResolutionData{
-			Host:        lo.ToPtr(dest.Destination),
-			PodHostname: lo.ToPtr(destPod.Name),
-			Port:        dest.DestinationPort,
-			IsService:   lo.ToPtr(false),
-			ExtraInfo:   lo.ToPtr("resolveDestIdentity"),
-			LastSeen:    lo.ToPtr(dest.LastSeen.String()),
-			Uptime:      lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
+			Host:              lo.ToPtr(dest.Destination),
+			PodHostname:       lo.ToPtr(destPod.Name),
+			Port:              dest.DestinationPort,
+			IsService:         lo.ToPtr(false),
+			ExtraInfo:         lo.ToPtr("resolveDestIdentity"),
+			LastSeen:          lo.ToPtr(dest.LastSeen.String()),
+			Uptime:            lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
+			HasLinkerdSidecar: lo.ToPtr(hasLinkerdSidecar(destPod)),
 		},
 	}
 	if dstService.OwnerObject != nil {
@@ -187,13 +188,14 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 		Namespace: destPod.Namespace,
 		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
 		ResolutionData: &model.IdentityResolutionData{
-			Host:        lo.ToPtr(dest.Destination),
-			PodHostname: lo.ToPtr(destPod.Name),
-			Port:        dest.DestinationPort,
-			IsService:   lo.ToPtr(false),
-			ExtraInfo:   lo.ToPtr("addSocketScanPodIntent"),
-			LastSeen:    lo.ToPtr(dest.LastSeen.String()),
-			Uptime:      lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
+			Host:              lo.ToPtr(dest.Destination),
+			PodHostname:       lo.ToPtr(destPod.Name),
+			Port:              dest.DestinationPort,
+			IsService:         lo.ToPtr(false),
+			ExtraInfo:         lo.ToPtr("addSocketScanPodIntent"),
+			LastSeen:          lo.ToPtr(dest.LastSeen.String()),
+			Uptime:            lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
+			HasLinkerdSidecar: lo.ToPtr(hasLinkerdSidecar(destPod)),
 		},
 	}
 	if dstService.OwnerObject != nil {
@@ -374,7 +376,7 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 
 	resolutionData.PodHostname = lo.ToPtr(destPod.Name)
 	resolutionData.Uptime = lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String())
-
+	resolutionData.HasLinkerdSidecar = lo.ToPtr(hasLinkerdSidecar(destPod))
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {
 		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
