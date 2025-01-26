@@ -124,7 +124,7 @@ jobs:
   build-sniffer-arm64:
     if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
     name: Build
-    runs-on: macos-14
+    runs-on: depot-ubuntu-22.04-arm
     outputs:
       registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
 
@@ -136,6 +136,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Install Docker GitHub Actions
+
+
 
       - name: Set up Docker Buildx
         id: buildx
