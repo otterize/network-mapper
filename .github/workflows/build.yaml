@@ -27,7 +27,6 @@ jobs:
       matrix:
         service:
           - mapper
-          - sniffer
           - kafka-watcher
 
     steps:
@@ -67,6 +66,105 @@ jobs:
           push: true
           network: host
           platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            "VERSION=0.0.${{ github.run_id }}"
+
+  build-sniffer-amd64:
+    if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
+
+    steps:
+      - id: registry
+        run: echo "registry=${{ env.REGISTRY }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+        with:
+          driver-opts: network=host
+
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: _json_key_base64
+          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: otterize
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Test & Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: src/
+          file: build/sniffer.Dockerfile
+          tags: ${{ env.REGISTRY }}/sniffer:${{ github.sha }}
+          push: true
+          network: host
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            "VERSION=0.0.${{ github.run_id }}"
+  
+
+  build-sniffer-arm64:
+    if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
+    name: Build
+    runs-on: macos-14
+    outputs:
+      registry: ${{ steps.registry.outputs.registry }} # workaround since env is not available outside of steps, i.e. in calling external workflows like we later do in e2e-test
+
+    steps:
+      - id: registry
+        run: echo "registry=${{ env.REGISTRY }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+        with:
+          driver-opts: network=host
+
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: _json_key_base64
+          password: ${{ secrets.B64_GCLOUD_SERVICE_ACCOUNT_JSON }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: otterize
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Test & Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: src/
+          file: build/sniffer.Dockerfile
+          tags: ${{ env.REGISTRY }}/sniffer:${{ github.sha }}
+          push: true
+          network: host
+          platforms: linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -125,6 +223,8 @@ jobs:
 
     needs:
       - build
+      - build-sniffer-arm64
+      - build-sniffer-amd64
 
   tag-latest:
     name: Tag latest
