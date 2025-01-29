@@ -6,11 +6,9 @@ import (
 	"github.com/bombsimon/logrusr/v3"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	otterizev2alpha1 "github.com/otterize/intents-operator/src/operator/api/v2alpha1"
-	mutatingwebhookconfiguration "github.com/otterize/intents-operator/src/operator/controllers/mutating_webhook_controller"
 	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/clusterutils"
 	"github.com/otterize/intents-operator/src/shared/errors"
-	"github.com/otterize/intents-operator/src/shared/filters"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
@@ -20,8 +18,6 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
-	"github.com/otterize/network-mapper/src/mapper/pkg/mapperwebhooks"
-	"github.com/otterize/network-mapper/src/mapper/pkg/pod_webhook"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
@@ -31,8 +27,6 @@ import (
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -166,51 +160,6 @@ func main() {
 	initCtx, cancelFn := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
-
-	if viper.GetBool(config.EnableAWSVisibilityWebHookKey) {
-		logrus.Infoln("Registering AWS visibility mutating webhook")
-
-		webhookHandler, err := pod_webhook.NewInjectDNSConfigToPodWebhook(
-			mgr.GetClient(),
-			admission.NewDecoder(mgr.GetScheme()),
-		)
-
-		if err != nil {
-			logrus.WithError(err).Panic("unable to create webhook handler")
-		}
-
-		mgr.GetWebhookServer().Register(
-			"/mutate-v1-pod",
-			&webhook.Admission{
-				Handler: webhookHandler,
-			},
-		)
-
-		if viper.GetBool(config.CreateWebhookCertificateKey) {
-			// create webhook server certificate
-			logrus.Infoln("Creating self signing certs for webhook")
-			podNamespace, err := kubeutils.GetCurrentNamespace()
-
-			if err != nil {
-				logrus.WithError(err).Panic("unable to get pod namespace")
-			}
-
-			certBundle, err :=
-				mapperwebhooks.GenerateSelfSignedCertificate("otterize-network-mapper-webhook-service", podNamespace)
-			if err != nil {
-				logrus.WithError(err).Panic("unable to create self signed certs for webhook")
-			}
-			err = mapperwebhooks.WriteCertToFiles(certBundle)
-			if err != nil {
-				logrus.WithError(err).Panic("failed writing certs to file system")
-			}
-
-			reconciler := mutatingwebhookconfiguration.NewMutatingWebhookConfigsReconciler(mgr.GetClient(), mgr.GetScheme(), certBundle.CertPem, filters.NetworkMapperLabelPredicate())
-			if err = reconciler.SetupWithManager(mgr); err != nil {
-				logrus.WithField("controller", "MutatingWebhookConfigs").WithError(err).Panic("unable to create controller")
-			}
-		}
-	}
 
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
