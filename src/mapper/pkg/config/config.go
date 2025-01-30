@@ -26,8 +26,6 @@ const (
 	ExternalTrafficCaptureEnabledDefault  = true
 	CreateWebhookCertificateKey           = "create-webhook-certificate"
 	CreateWebhookCertificateDefault       = true
-	EnableAWSVisibilityWebHookKey         = "enable-aws-visibility-webhook"
-	EnableAWSVisibilityWebHookDefault     = false
 	DNSCacheItemsMaxCapacityKey           = "dns-cache-items-max-capacity"
 	DNSCacheItemsMaxCapacityDefault       = 100000
 	DNSClientIntentsUpdateIntervalKey     = "dns-client-intents-update-interval"
@@ -68,7 +66,6 @@ func init() {
 	viper.SetDefault(OTelMetricKey, OTelMetricDefault)
 	viper.SetDefault(ExternalTrafficCaptureEnabledKey, ExternalTrafficCaptureEnabledDefault)
 	viper.SetDefault(CreateWebhookCertificateKey, CreateWebhookCertificateDefault)
-	viper.SetDefault(EnableAWSVisibilityWebHookKey, EnableAWSVisibilityWebHookDefault)
 	viper.SetDefault(DNSCacheItemsMaxCapacityKey, DNSCacheItemsMaxCapacityDefault)
 	viper.SetDefault(DNSClientIntentsUpdateIntervalKey, DNSClientIntentsUpdateIntervalDefault)
 	viper.SetDefault(DNSClientIntentsUpdateEnabledKey, DNSClientIntentsUpdateEnabledDefault)
