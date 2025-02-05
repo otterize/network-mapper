@@ -107,7 +107,6 @@ For more platforms, see [the installation guide](https://docs.otterize.com/insta
 * Sniffer - the sniffer is deployed to each node using a DaemonSet, and is responsible for capturing node-local DNS traffic and inspecting open connections.
 * Kafka watcher - the Kafka watcher is deployed once per cluster and is responsible for detecting accesses to Kafka topics, which services perform those accesses and which operations they use.
 * Istio watcher - the Istio watcher is part of the Mapper and queries Istio Envoy sidecars for HTTP traffic statistics, which are used to detect HTTP traffic with paths. Currently, the Istio watcher has a limitation where it reports all HTTP traffic seen by the sidecar since it was started, regardless of when it was seen.
-* AWS IAM visibility - The AWS IAM visibility components are optionally deployed with `--set aws.visibility.enabled=true`. Label pods with `network-mapper.otterize.com/aws-visibility: true`, and if connected to Otterize Cloud, the Cloud will combine the information to put together a map of accesses to AWS resources, which you can export as ClientIntents yamls for use with the [Intents Operator](https://github.com/otterize/intents-operator).
 
 ### DNS responses
 
@@ -126,10 +125,6 @@ The watcher is only able to parse Kafka logs when Kafka servers' Authorizer logg
 ### Istio sidecar metrics
 
 The Istio watcher, part of the Network mapper periodically queries for all pods with the `security.istio.io/tlsMode` label, queries each pod's Istio sidecar for metrics about connections, and deduces connections with HTTP paths between pods covered by the Istio service mesh.
-
-### AWS IAM visibility
-
-AWS IAM visibility consists of several components: a HTTP proxy that proxies AWS traffic for pods which you opt-in on using the label `network-mapper.otterize.com/aws-visibility: true`, a webhook admission controller that patches Pods with that label as they are admitted to add a certificate for the HTTP proxy and direct DNS traffic for amazonaws.com to a DNS server belonging to the network mapper, and finally said DNS server which responds only to amazonaws.com requests and forwards the rest to the cluster's DNS server.
 
 ### Service name resolution
 
