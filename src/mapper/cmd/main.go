@@ -14,6 +14,7 @@ import (
 	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
@@ -166,6 +167,7 @@ func main() {
 	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
 	azureIntentsHolder := azureintentsholder.New()
+	trafficCollector := traffic.NewCollector()
 
 	resolver := resolvers.NewResolver(
 		kubeFinder,
@@ -176,6 +178,7 @@ func main() {
 		azureIntentsHolder,
 		dnsCache,
 		incomingTrafficIntentsHolder,
+		trafficCollector,
 	)
 	resolver.Register(mapperServer)
 

@@ -307,6 +307,19 @@ func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation mod
 	return nil
 }
 
+func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.TrafficLevelResults) error {
+	for _, report := range results.Results {
+		r.trafficCollector.Add(
+			report.SrcIP,
+			report.DstIP,
+			int(report.BytesSent),
+			int(report.Flows),
+		)
+	}
+
+	return nil
+}
+
 func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, dest model.Destination, srcSvcIdentity model.OtterizeServiceIdentity) error {
 	dstSvcIdentity, ok, err := r.resolveOtterizeIdentityForDestinationAddress(ctx, dest)
 	if err != nil {

@@ -93,6 +93,7 @@ type ComplexityRoot struct {
 		ReportKafkaMapperResults     func(childComplexity int, results model.KafkaMapperResults) int
 		ReportSocketScanResults      func(childComplexity int, results model.SocketScanResults) int
 		ReportTCPCaptureResults      func(childComplexity int, results model.CaptureTCPResults) int
+		ReportTrafficLevelResults    func(childComplexity int, results model.TrafficLevelResults) int
 		ResetCapture                 func(childComplexity int) int
 	}
 
@@ -131,6 +132,7 @@ type MutationResolver interface {
 	ReportIstioConnectionResults(ctx context.Context, results model.IstioConnectionResults) (bool, error)
 	ReportAWSOperation(ctx context.Context, operation []model.AWSOperation) (bool, error)
 	ReportAzureOperation(ctx context.Context, operation []model.AzureOperation) (bool, error)
+	ReportTrafficLevelResults(ctx context.Context, results model.TrafficLevelResults) (bool, error)
 }
 type QueryResolver interface {
 	ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error)
@@ -402,6 +404,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ReportTCPCaptureResults(childComplexity, args["results"].(model.CaptureTCPResults)), true
 
+	case "Mutation.reportTrafficLevelResults":
+		if e.complexity.Mutation.ReportTrafficLevelResults == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reportTrafficLevelResults_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ReportTrafficLevelResults(childComplexity, args["results"].(model.TrafficLevelResults)), true
+
 	case "Mutation.resetCapture":
 		if e.complexity.Mutation.ResetCapture == nil {
 			break
@@ -531,6 +545,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRecordedDestinationsForSrc,
 		ec.unmarshalInputServerFilter,
 		ec.unmarshalInputSocketScanResults,
+		ec.unmarshalInputTrafficLevelResult,
+		ec.unmarshalInputTrafficLevelResults,
 	)
 	first := true
 
@@ -808,6 +824,18 @@ input AzureOperation {
     clientNamespace: String!
 }
 
+input TrafficLevelResult {
+    srcIP: String!
+    dstIP: String!
+
+    bytesSent: Int!
+    flows: Int!
+}
+
+input TrafficLevelResults {
+    results: [TrafficLevelResult!]!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -845,7 +873,9 @@ type Mutation {
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
     reportAWSOperation(operation: [AWSOperation!]!): Boolean!
     reportAzureOperation(operation: [AzureOperation!]!): Boolean!
-}`, BuiltIn: false},
+    reportTrafficLevelResults(results: TrafficLevelResults!): Boolean!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -950,6 +980,21 @@ func (ec *executionContext) field_Mutation_reportTCPCaptureResults_args(ctx cont
 	if tmp, ok := rawArgs["results"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
 		arg0, err = ec.unmarshalNCaptureTCPResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐCaptureTCPResults(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["results"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reportTrafficLevelResults_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.TrafficLevelResults
+	if tmp, ok := rawArgs["results"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+		arg0, err = ec.unmarshalNTrafficLevelResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTrafficLevelResults(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2519,6 +2564,61 @@ func (ec *executionContext) fieldContext_Mutation_reportAzureOperation(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_reportAzureOperation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reportTrafficLevelResults(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_reportTrafficLevelResults(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ReportTrafficLevelResults(rctx, fc.Args["results"].(model.TrafficLevelResults))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reportTrafficLevelResults(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reportTrafficLevelResults_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5633,6 +5733,81 @@ func (ec *executionContext) unmarshalInputSocketScanResults(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTrafficLevelResult(ctx context.Context, obj interface{}) (model.TrafficLevelResult, error) {
+	var it model.TrafficLevelResult
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"srcIP", "dstIP", "bytesSent", "flows"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "srcIP":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcIP"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SrcIP = data
+		case "dstIP":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dstIP"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DstIP = data
+		case "bytesSent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bytesSent"))
+			data, err := ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BytesSent = data
+		case "flows":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("flows"))
+			data, err := ec.unmarshalNInt2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Flows = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTrafficLevelResults(ctx context.Context, obj interface{}) (model.TrafficLevelResults, error) {
+	var it model.TrafficLevelResults
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"results"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "results":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("results"))
+			data, err := ec.unmarshalNTrafficLevelResult2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTrafficLevelResultᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Results = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5946,6 +6121,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "reportAzureOperation":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reportAzureOperation(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reportTrafficLevelResults":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reportTrafficLevelResults(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -6721,6 +6903,21 @@ func (ec *executionContext) marshalNHttpResource2githubᚗcomᚋotterizeᚋnetwo
 	return ec._HttpResource(ctx, sel, &v)
 }
 
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNIntent2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐIntent(ctx context.Context, sel ast.SelectionSet, v model.Intent) graphql.Marshaler {
 	return ec._Intent(ctx, sel, &v)
 }
@@ -7034,6 +7231,33 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNTrafficLevelResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTrafficLevelResult(ctx context.Context, v interface{}) (model.TrafficLevelResult, error) {
+	res, err := ec.unmarshalInputTrafficLevelResult(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNTrafficLevelResult2ᚕgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTrafficLevelResultᚄ(ctx context.Context, v interface{}) ([]model.TrafficLevelResult, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.TrafficLevelResult, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTrafficLevelResult2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTrafficLevelResult(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNTrafficLevelResults2githubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTrafficLevelResults(ctx context.Context, v interface{}) (model.TrafficLevelResults, error) {
+	res, err := ec.unmarshalInputTrafficLevelResults(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

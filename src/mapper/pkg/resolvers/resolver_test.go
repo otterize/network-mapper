@@ -9,6 +9,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -71,6 +72,7 @@ func (s *ResolverTestSuite) SetupTest() {
 		s.azureIntentsHolder,
 		dnsCache,
 		s.incomingTrafficIntentsHolder,
+		traffic.NewCollector(),
 	)
 
 	resolver.Register(e)
