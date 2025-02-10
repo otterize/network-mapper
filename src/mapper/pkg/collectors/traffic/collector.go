@@ -1,13 +1,13 @@
 package traffic
 
 import (
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 type trafficLevelKey struct {
-	sourceIP      types.NamespacedName
-	destinationIP types.NamespacedName
+	source      serviceidentity.ServiceIdentity
+	destination serviceidentity.ServiceIdentity
 }
 
 type trafficLevel struct {
@@ -20,24 +20,32 @@ type Collector struct {
 }
 
 func NewCollector() *Collector {
-	return &Collector{}
+	return &Collector{
+		trafficLevels: make(map[trafficLevelKey]*trafficLevel),
+	}
 }
 
-func (c *Collector) Add(sourceIP, destinationIP string, bytes, flows int) {
-	//trafficKey := trafficLevelKey{
-	//	source:      source.AsNamespacedName(),
-	//	destination: destination.AsNamespacedName(),
-	//}
-	//
-	//value, found := c.trafficLevels[trafficKey]
-	//
-	//if !found {
-	//	value = &trafficLevel{}
-	//	c.trafficLevels[trafficKey] = value
-	//}
-	//
-	//value.bytes += bytes
-	//value.flows += flows
+func (c *Collector) Add(source, destination serviceidentity.ServiceIdentity, bytes, flows int) {
+	trafficKey := trafficLevelKey{
+		source:      source,
+		destination: destination,
+	}
 
-	logrus.Warnf("Traffic level: %+v", 0)
+	value, found := c.trafficLevels[trafficKey]
+
+	if !found {
+		value = &trafficLevel{}
+		c.trafficLevels[trafficKey] = value
+	}
+
+	value.bytes += bytes
+	value.flows += flows
+
+	logrus.Infof(
+		"Traffic levels: %s - %s: %d bytes, %d flows",
+		source.String(),
+		destination.String(),
+		value.bytes,
+		value.flows,
+	)
 }
