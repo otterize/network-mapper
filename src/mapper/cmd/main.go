@@ -162,12 +162,17 @@ func main() {
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
+	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed to initialize cloud client")
+	}
+
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
 	azureIntentsHolder := azureintentsholder.New()
-	trafficCollector := traffic.NewCollector()
+	trafficCollector := traffic.NewCollector(cloudClient)
 
 	resolver := resolvers.NewResolver(
 		kubeFinder,
@@ -185,11 +190,6 @@ func main() {
 	metricsServer := echo.New()
 	metricsServer.HideBanner = true
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
-
-	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed to initialize cloud client")
-	}
 
 	if viper.GetBool(config.EnableIstioCollectionKey) {
 		istioWatcher, err := istiowatcher.NewWatcher(resolver.Mutation())

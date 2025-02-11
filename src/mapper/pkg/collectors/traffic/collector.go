@@ -1,7 +1,9 @@
 package traffic
 
 import (
+	"context"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,11 +18,13 @@ type trafficLevel struct {
 }
 
 type Collector struct {
+	client        cloudclient.CloudClient
 	trafficLevels map[trafficLevelKey]*trafficLevel
 }
 
-func NewCollector() *Collector {
+func NewCollector(client cloudclient.CloudClient) *Collector {
 	return &Collector{
+		client:        client,
 		trafficLevels: make(map[trafficLevelKey]*trafficLevel),
 	}
 }
@@ -48,4 +52,19 @@ func (c *Collector) Add(source, destination serviceidentity.ServiceIdentity, byt
 		value.bytes,
 		value.flows,
 	)
+
+	err := c.client.ReportTrafficLevels(
+		context.TODO(),
+		source.Name,
+		source.Namespace,
+		destination.Name,
+		destination.Namespace,
+		cloudclient.TrafficLevelInput{
+			Data:  value.bytes,
+			Flows: value.flows,
+		},
+	)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to update traffic info")
+	}
 }

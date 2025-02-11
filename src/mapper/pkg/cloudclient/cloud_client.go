@@ -15,6 +15,14 @@ type CloudClient interface {
 	ReportIncomingTrafficDiscoveredIntents(ctx context.Context, intents []IncomingTrafficDiscoveredIntentInput) error
 	ReportK8sServices(ctx context.Context, namespace string, services []K8sServiceInput) error
 	ReportK8sIngresses(ctx context.Context, namespace string, ingresses []K8sIngressInput) error
+	ReportTrafficLevels(
+		ctx context.Context,
+		source string,
+		sourceNamespace string,
+		destination string,
+		destinationNamespace string,
+		trafficCounter TrafficLevelInput,
+	) error
 }
 
 type CloudClientImpl struct {
@@ -90,6 +98,32 @@ func (c *CloudClientImpl) ReportK8sIngresses(ctx context.Context, namespace stri
 	logrus.Debug("Uploading k8s ingresses to cloud, count: ", len(ingresses))
 
 	_, err := ReportK8sIngresses(ctx, c.client, namespace, ingresses)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportTrafficLevels(
+	ctx context.Context,
+	source string,
+	sourceNamespace string,
+	destination string,
+	destinationNamespace string,
+	trafficCounter TrafficLevelInput,
+) error {
+	logrus.Debug("Uploading traffic info to cloud")
+
+	_, err := UpdateTrafficInfo(
+		ctx,
+		c.client,
+		source,
+		sourceNamespace,
+		destination,
+		destinationNamespace,
+		trafficCounter,
+	)
 	if err != nil {
 		return errors.Wrap(err)
 	}

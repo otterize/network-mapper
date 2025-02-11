@@ -913,6 +913,26 @@ type SessionAffinityConfig struct {
 // GetClientIP returns SessionAffinityConfig.ClientIP, and is useful for accessing the field via an interface.
 func (v *SessionAffinityConfig) GetClientIP() nilable.Nilable[ClientIPConfig] { return v.ClientIP }
 
+type TrafficLevelInput struct {
+	Data  int `json:"data"`
+	Flows int `json:"flows"`
+}
+
+// GetData returns TrafficLevelInput.Data, and is useful for accessing the field via an interface.
+func (v *TrafficLevelInput) GetData() int { return v.Data }
+
+// GetFlows returns TrafficLevelInput.Flows, and is useful for accessing the field via an interface.
+func (v *TrafficLevelInput) GetFlows() int { return v.Flows }
+
+// UpdateTrafficInfoResponse is returned by UpdateTrafficInfo on success.
+type UpdateTrafficInfoResponse struct {
+	// Update service
+	ReportTrafficLevels bool `json:"reportTrafficLevels"`
+}
+
+// GetReportTrafficLevels returns UpdateTrafficInfoResponse.ReportTrafficLevels, and is useful for accessing the field via an interface.
+func (v *UpdateTrafficInfoResponse) GetReportTrafficLevels() bool { return v.ReportTrafficLevels }
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -972,6 +992,30 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __UpdateTrafficInfoInput is used internally by genqlient
+type __UpdateTrafficInfoInput struct {
+	SourceName           string            `json:"sourceName"`
+	SourceNamesapce      string            `json:"sourceNamesapce"`
+	Destination          string            `json:"destination"`
+	DestinationNamespace string            `json:"destinationNamespace"`
+	TrafficCounter       TrafficLevelInput `json:"trafficCounter"`
+}
+
+// GetSourceName returns __UpdateTrafficInfoInput.SourceName, and is useful for accessing the field via an interface.
+func (v *__UpdateTrafficInfoInput) GetSourceName() string { return v.SourceName }
+
+// GetSourceNamesapce returns __UpdateTrafficInfoInput.SourceNamesapce, and is useful for accessing the field via an interface.
+func (v *__UpdateTrafficInfoInput) GetSourceNamesapce() string { return v.SourceNamesapce }
+
+// GetDestination returns __UpdateTrafficInfoInput.Destination, and is useful for accessing the field via an interface.
+func (v *__UpdateTrafficInfoInput) GetDestination() string { return v.Destination }
+
+// GetDestinationNamespace returns __UpdateTrafficInfoInput.DestinationNamespace, and is useful for accessing the field via an interface.
+func (v *__UpdateTrafficInfoInput) GetDestinationNamespace() string { return v.DestinationNamespace }
+
+// GetTrafficCounter returns __UpdateTrafficInfoInput.TrafficCounter, and is useful for accessing the field via an interface.
+func (v *__UpdateTrafficInfoInput) GetTrafficCounter() TrafficLevelInput { return v.TrafficCounter }
 
 // The query or mutation executed by ReportComponentStatus.
 const ReportComponentStatus_Operation = `
@@ -1164,6 +1208,47 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateTrafficInfo.
+const UpdateTrafficInfo_Operation = `
+mutation UpdateTrafficInfo ($sourceName: String!, $sourceNamesapce: String!, $destination: String!, $destinationNamespace: String!, $trafficCounter: TrafficLevelInput!) {
+	reportTrafficLevels(sourceName: $sourceName, sourceNamespace: $sourceNamesapce, destinationName: $destination, destinationNamespace: $destinationNamespace, trafficCounter: $trafficCounter)
+}
+`
+
+func UpdateTrafficInfo(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	sourceName string,
+	sourceNamesapce string,
+	destination string,
+	destinationNamespace string,
+	trafficCounter TrafficLevelInput,
+) (*UpdateTrafficInfoResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateTrafficInfo",
+		Query:  UpdateTrafficInfo_Operation,
+		Variables: &__UpdateTrafficInfoInput{
+			SourceName:           sourceName,
+			SourceNamesapce:      sourceNamesapce,
+			Destination:          destination,
+			DestinationNamespace: destinationNamespace,
+			TrafficCounter:       trafficCounter,
+		},
+	}
+	var err_ error
+
+	var data_ UpdateTrafficInfoResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

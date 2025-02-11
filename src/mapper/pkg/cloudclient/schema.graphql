@@ -148,6 +148,7 @@ type AccessGraphEdge {
 	accessStatus: EdgeAccessStatus!
 	accessStatuses: EdgeAccessStatuses!
 	findings: [CallFinding!]!
+	traffic: TrafficCounter!
 }
 
 """ Access graph filter """
@@ -177,6 +178,7 @@ type AccessLogEdge {
 	originIntent: Intent!
 	dns: String!
 	accessStatus: EdgeAccessStatus!
+	traffic: TrafficCounter!
 }
 
 enum AllowExternalTrafficPolicy {
@@ -1894,6 +1896,14 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+"""Update service"""
+	reportTrafficLevels(
+		sourceName: String!
+		sourceNamespace: String!
+		destinationName: String!
+		destinationNamespace: String!
+		trafficCounter: TrafficLevelInput!
+	): Boolean!
 	saveOnboardingFeedback(
 		userEmail: String!
 		feedback: String!
@@ -2571,6 +2581,16 @@ type TimeRange {
 input TimeRangeInput {
 	from: Time
 	to: Time
+}
+
+type TrafficCounter {
+	data: Int!
+	flows: Int!
+}
+
+input TrafficLevelInput {
+	data: Int!
+	flows: Int!
 }
 
 enum TutorialEvent {
