@@ -1,66 +1,91 @@
 package traffic
 
 import (
+	"context"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
-	"github.com/sirupsen/logrus"
+	"time"
 )
 
-type trafficLevelKey struct {
-	source      serviceidentity.ServiceIdentity
-	destination serviceidentity.ServiceIdentity
+type TrafficLevelKey struct {
+	Source      serviceidentity.ServiceIdentity
+	Destination serviceidentity.ServiceIdentity
 }
 
-type trafficLevel struct {
-	bytes int
-	flows int
+type TrafficLevelData struct {
+	Bytes int
+	Flows int
+	at    time.Time
 }
+
+type TrafficLevelCounter map[TrafficLevelKey][]TrafficLevelData
+type TrafficLevelMap map[TrafficLevelKey]TrafficLevelData
+type TrafficLevelCallbackFunc func(context.Context, TrafficLevelMap)
 
 type Collector struct {
-	trafficLevels map[trafficLevelKey]*trafficLevel
+	trafficLevels TrafficLevelCounter
+	callbacks     []TrafficLevelCallbackFunc
 }
 
 func NewCollector() *Collector {
 	return &Collector{
-		trafficLevels: make(map[trafficLevelKey]*trafficLevel),
+		trafficLevels: make(TrafficLevelCounter),
 	}
 }
 
 func (c *Collector) Add(source, destination serviceidentity.ServiceIdentity, bytes, flows int) {
-	trafficKey := trafficLevelKey{
-		source:      source,
-		destination: destination,
+	trafficKey := TrafficLevelKey{
+		Source:      source,
+		Destination: destination,
 	}
 
-	value, found := c.trafficLevels[trafficKey]
+	c.trafficLevels[trafficKey] = append(c.trafficLevels[trafficKey], TrafficLevelData{
+		Bytes: bytes,
+		Flows: flows,
+		at:    time.Now(),
+	})
+}
 
-	if !found {
-		value = &trafficLevel{}
-		c.trafficLevels[trafficKey] = value
+func (c *Collector) RegisterNotifyTraffic(callback TrafficLevelCallbackFunc) {
+	c.callbacks = append(c.callbacks, callback)
+}
+
+func (c *Collector) PeriodicUpload(ctx context.Context, interval time.Duration) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(interval):
+			for _, callback := range c.callbacks {
+				callback(ctx, c.getTrafficMap())
+			}
+		}
+	}
+}
+
+func (c *Collector) getTrafficMap() TrafficLevelMap {
+	trafficLevelMap := make(TrafficLevelMap)
+
+	for k, v := range c.trafficLevels {
+		var averageBytes, averageFlows int
+		var count int
+
+		for _, data := range v {
+			if time.Since(data.at) < time.Hour {
+				averageBytes += data.Bytes
+				averageFlows += data.Flows
+				count++
+			} else {
+				c.trafficLevels[k] = c.trafficLevels[k][1:]
+			}
+		}
+
+		if count > 0 {
+			trafficLevelMap[k] = TrafficLevelData{
+				Bytes: averageBytes / count,
+				Flows: averageFlows / count,
+			}
+		}
 	}
 
-	value.bytes += bytes
-	value.flows += flows
-
-	logrus.Infof(
-		"Traffic levels: %s - %s: %d bytes, %d flows",
-		source.String(),
-		destination.String(),
-		value.bytes,
-		value.flows,
-	)
-
-	//err := c.client.ReportTrafficLevels(
-	//	context.TODO(),
-	//	source.Name,
-	//	source.Namespace,
-	//	destination.Name,
-	//	destination.Namespace,
-	//	cloudclient.TrafficLevelInput{
-	//		Data:  value.bytes,
-	//		Flows: value.flows,
-	//	},
-	//)
-	//if err != nil {
-	//	logrus.WithError(err).Error("Failed to update traffic info")
-	//}
+	return trafficLevelMap
 }

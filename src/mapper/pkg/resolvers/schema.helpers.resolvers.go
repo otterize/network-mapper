@@ -310,8 +310,6 @@ func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation mod
 
 func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.TrafficLevelResults) error {
 	for _, report := range results.Results {
-		logrus.Infof("Traffic level report: %s %s", report.SrcIP, report.DstIP)
-
 		sourceIdentity, err := r.resolveIPToIdentity(ctx, report.SrcIP)
 
 		if err != nil {

@@ -213,6 +213,7 @@ func main() {
 		}
 		awsIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAWSIntents)
 		azureIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAzureIntents)
+		trafficCollector.RegisterNotifyTraffic(cloudUploader.NotifyTrafficLevels)
 
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 
@@ -271,6 +272,11 @@ func main() {
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		azureIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		trafficCollector.PeriodicUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 
