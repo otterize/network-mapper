@@ -162,17 +162,12 @@ func main() {
 	defer cancelFn()
 	mgr.GetCache().WaitForCacheSync(initCtx) // needed to let the manager initialize before used in intentsHolder
 
-	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed to initialize cloud client")
-	}
-
 	intentsHolder := intentsstore.NewIntentsHolder()
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
 	azureIntentsHolder := azureintentsholder.New()
-	trafficCollector := traffic.NewCollector(cloudClient)
+	trafficCollector := traffic.NewCollector()
 
 	resolver := resolvers.NewResolver(
 		kubeFinder,
@@ -204,6 +199,10 @@ func main() {
 	}
 
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
+	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed to initialize cloud client")
+	}
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
 
