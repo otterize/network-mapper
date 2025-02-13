@@ -66,23 +66,25 @@ func (c *Collector) getTrafficMap() TrafficLevelMap {
 	trafficLevelMap := make(TrafficLevelMap)
 
 	for k, v := range c.trafficLevels {
-		var averageBytes, averageFlows int
+		var sumBytes, sumFlows int
 		var count int
 
 		for _, data := range v {
 			if time.Since(data.at) < time.Hour {
-				averageBytes += data.Bytes
-				averageFlows += data.Flows
+				// count only data within the last hour
+				sumBytes += data.Bytes
+				sumFlows += data.Flows
 				count++
 			} else {
+				// drop data older than an hour
 				c.trafficLevels[k] = c.trafficLevels[k][1:]
 			}
 		}
 
 		if count > 0 {
 			trafficLevelMap[k] = TrafficLevelData{
-				Bytes: averageBytes / count,
-				Flows: averageFlows / count,
+				Bytes: sumBytes / count,
+				Flows: sumFlows / count,
 			}
 		}
 	}
