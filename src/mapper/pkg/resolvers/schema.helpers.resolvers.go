@@ -57,12 +57,12 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destination, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
-	destSvc, foundSvc, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
+func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
+	destSvc, isTargetService, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
-	if foundSvc {
+	if isTargetService {
 		dstSvcIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, destSvc, lastSeen)
 		if err != nil {
 			return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
@@ -70,7 +70,7 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		if ok {
 			dstSvcIdentity.ResolutionData.Host = lo.ToPtr(dest.Destination)
 			dstSvcIdentity.ResolutionData.Port = dest.DestinationPort
-			dstSvcIdentity.ResolutionData.ExtraInfo = lo.ToPtr("resolveDestIdentity")
+			dstSvcIdentity.ResolutionData.ExtraInfo = lo.ToPtr("resolveDestIdentityTCP")
 			return dstSvcIdentity, true, nil
 		}
 	}
@@ -95,6 +95,13 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
+	// If the mapper runs on AWS - pod ip addresses can be reused. In this case we ignore the traffic if service is not at least 5 minutes old.
+	fiveMinutesAgo := dest.LastSeen.Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
+	if destPod.CreationTimestamp.Time.After(fiveMinutesAgo) {
+		logrus.Debugf("Pod %s is not up at least %d minutes, ignoring", destPod.Name, int(viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey).Minutes()))
+		return model.OtterizeServiceIdentity{}, false, nil
+	}
+
 	dstService, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, destPod)
 	if err != nil {
 		logrus.WithError(err).Debugf("Could not resolve pod %s to identity", destPod.Name)
@@ -110,7 +117,7 @@ func (r *Resolver) resolveDestIdentity(ctx context.Context, dest model.Destinati
 			PodHostname:       lo.ToPtr(destPod.Name),
 			Port:              dest.DestinationPort,
 			IsService:         lo.ToPtr(false),
-			ExtraInfo:         lo.ToPtr("resolveDestIdentity"),
+			ExtraInfo:         lo.ToPtr("resolveDestIdentityTCP"),
 			LastSeen:          lo.ToPtr(dest.LastSeen.String()),
 			Uptime:            lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
 			HasLinkerdSidecar: lo.ToPtr(hasLinkerdSidecar(destPod)),
@@ -523,7 +530,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 
 func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
 	lastSeen := dest.LastSeen
-	destIdentity, ok, err := r.resolveDestIdentity(ctx, dest, lastSeen)
+	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen)
 	if err != nil {
 		logrus.WithError(err).Error("could not resolve destination identity")
 		return
