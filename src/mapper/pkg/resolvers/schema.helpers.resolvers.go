@@ -97,8 +97,8 @@ func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destin
 
 	// If the mapper runs on AWS - pod ip addresses can be reused. In this case we ignore the traffic if service is not at least 5 minutes old.
 	fiveMinutesAgo := dest.LastSeen.Add(-viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey))
-	if destPod.CreationTimestamp.Time.Before(fiveMinutesAgo) {
-		logrus.Debugf("Pod %s was created after capture time %s, ignoring", destPod.Name, dest.LastSeen)
+	if destPod.CreationTimestamp.Time.After(fiveMinutesAgo) {
+		logrus.Debugf("Pod %s is not up at least %d minutes, ignoring", destPod.Name, int(viper.GetDuration(config.TimeServerHasToLiveBeforeWeTrustItKey).Minutes()))
 		return model.OtterizeServiceIdentity{}, false, nil
 	}
 
