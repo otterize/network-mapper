@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -1503,6 +1504,75 @@ func (s *ResolverTestSuite) TestDiscoverInternalSrcIdentityIgnoreControlPlaneIfB
 		})
 	s.Require().Equal(SourceIsHostNetworkPodError, err)
 	s.Require().Empty(identity)
+}
+
+func (s *ResolverTestSuite) TestReportTCPResultsIgnoreTargetsWithShortUptime() {
+	srcPodIP := "1.1.1.3"
+	_ = s.AddPod("pod3", srcPodIP, nil, nil)
+	targetPodIP := "1.1.1.2"
+	targetServiceIp := "10.0.0.37"
+	s.AddDeploymentWithService("service1", []string{targetPodIP}, map[string]string{"app": "service1"}, targetServiceIp)
+	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
+
+	// Report TCP results of traffic from src pod to target pod with short uptime
+	packetBadTimingBeforePodsCreation := time.Now().Add(config.TimeServerHasToLiveBeforeWeTrustItDefault).Add(-time.Minute)
+	err := s.resolver.handleReportTCPCaptureResults(context.Background(), model.CaptureTCPResults{
+		Results: []model.RecordedDestinationsForSrc{
+			{
+				SrcIP: srcPodIP,
+				Destinations: []model.Destination{
+					{
+						Destination:     targetPodIP,
+						DestinationIP:   &targetPodIP,
+						DestinationPort: lo.ToPtr(int64(80)),
+						LastSeen:        packetBadTimingBeforePodsCreation,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Len(s.intentsHolder.GetNewIntentsSinceLastGet(), 0)
+
+	// Report TCP results of traffic from src pod to target pod with good uptime
+	packetGoodTimingAfterPodsCreation := time.Now().Add(config.TimeServerHasToLiveBeforeWeTrustItDefault).Add(time.Minute)
+	err = s.resolver.handleReportTCPCaptureResults(context.Background(), model.CaptureTCPResults{
+		Results: []model.RecordedDestinationsForSrc{
+			{
+				SrcIP: srcPodIP,
+				Destinations: []model.Destination{
+					{
+						Destination:     targetPodIP,
+						DestinationIP:   &targetPodIP,
+						DestinationPort: lo.ToPtr(int64(80)),
+						LastSeen:        packetGoodTimingAfterPodsCreation,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Len(s.intentsHolder.GetNewIntentsSinceLastGet(), 1)
+
+	// Report TCP results of traffic from src pod to target service with short uptime
+	err = s.resolver.handleReportTCPCaptureResults(context.Background(), model.CaptureTCPResults{
+		Results: []model.RecordedDestinationsForSrc{
+			{
+				SrcIP: srcPodIP,
+				Destinations: []model.Destination{
+					{
+						Destination:     targetServiceIp,
+						DestinationIP:   &targetServiceIp,
+						DestinationPort: lo.ToPtr(int64(80)),
+						LastSeen:        packetBadTimingBeforePodsCreation,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Len(s.intentsHolder.GetNewIntentsSinceLastGet(), 1)
+
 }
 
 func TestRunSuite(t *testing.T) {
