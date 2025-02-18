@@ -276,8 +276,8 @@ func (c *CloudUploader) NotifyTrafficLevels(ctx context.Context, trafficLevels t
 			trafficPair.Destination.Name,
 			trafficPair.Destination.Namespace,
 			cloudclient.TrafficLevelInput{
-				Data:  trafficData.Bytes,
-				Flows: trafficData.Flows,
+				DataBytesPerSecond:  trafficData.Bytes,
+				FlowsCountPerSecond: trafficData.Flows,
 			},
 		)
 		if err != nil {

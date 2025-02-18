@@ -148,7 +148,7 @@ type AccessGraphEdge {
 	accessStatus: EdgeAccessStatus!
 	accessStatuses: EdgeAccessStatuses!
 	findings: [CallFinding!]!
-	traffic: TrafficCounter!
+	traffic: TrafficLevel!
 }
 
 """ Access graph filter """
@@ -178,7 +178,6 @@ type AccessLogEdge {
 	originIntent: Intent!
 	dns: String!
 	accessStatus: EdgeAccessStatus!
-	traffic: TrafficCounter!
 }
 
 enum AllowExternalTrafficPolicy {
@@ -1898,11 +1897,11 @@ type Mutation {
 	): Boolean!
 """Update service"""
 	reportTrafficLevels(
-		sourceName: String!
-		sourceNamespace: String!
-		destinationName: String!
-		destinationNamespace: String!
-		trafficCounter: TrafficLevelInput!
+		clientName: String!
+		clientNamespace: String!
+		serverName: String!
+		serverNamespace: String!
+		trafficLevel: TrafficLevelInput!
 	): Boolean!
 	saveOnboardingFeedback(
 		userEmail: String!
@@ -2583,14 +2582,14 @@ input TimeRangeInput {
 	to: Time
 }
 
-type TrafficCounter {
-	data: Int!
-	flows: Int!
+type TrafficLevel {
+	dataBytesPerSecond: Int!
+	flowsCountPerSecond: Int!
 }
 
 input TrafficLevelInput {
-	data: Int!
-	flows: Int!
+	dataBytesPerSecond: Int!
+	flowsCountPerSecond: Int!
 }
 
 enum TutorialEvent {

@@ -107,22 +107,22 @@ func (c *CloudClientImpl) ReportK8sIngresses(ctx context.Context, namespace stri
 
 func (c *CloudClientImpl) ReportTrafficLevels(
 	ctx context.Context,
-	source string,
-	sourceNamespace string,
-	destination string,
-	destinationNamespace string,
-	trafficCounter TrafficLevelInput,
+	clientName string,
+	clientNamespace string,
+	serverName string,
+	serverNamespace string,
+	trafficLevel TrafficLevelInput,
 ) error {
 	logrus.Debug("Uploading traffic info to cloud")
 
-	_, err := UpdateTrafficInfo(
+	_, err := ReportTrafficLevels(
 		ctx,
 		c.client,
-		source,
-		sourceNamespace,
-		destination,
-		destinationNamespace,
-		trafficCounter,
+		clientName,
+		clientNamespace,
+		serverName,
+		serverNamespace,
+		trafficLevel,
 	)
 	if err != nil {
 		return errors.Wrap(err)

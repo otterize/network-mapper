@@ -23,17 +23,17 @@ mutation ReportK8sIngresses($namespace: String!, $ingresses: [K8sIngressInput!]!
     reportK8sIngresses(namespace: $namespace, ingresses: $ingresses)
 }
 
-mutation UpdateTrafficInfo(
-    $sourceName: String!,
-    $sourceNamesapce: String!,
-    $destination: String!,
-    $destinationNamespace: String!,
-    $trafficCounter: TrafficLevelInput!
+mutation ReportTrafficLevels(
+    $clientName: String!,
+    $clientNamespace: String!,
+    $serverName: String!,
+    $serverNamespace: String!,
+    $trafficLevel: TrafficLevelInput!
 ) {
     reportTrafficLevels(
-        sourceName: $sourceName,
-        sourceNamespace: $sourceNamesapce,
-        destinationName: $destination,
-        destinationNamespace: $destinationNamespace,
-        trafficCounter: $trafficCounter)
+        clientName: $clientName,
+        clientNamespace: $clientNamespace,
+        serverName: $serverName,
+        serverNamespace: $serverNamespace,
+        trafficLevel: $trafficLevel)
 }
