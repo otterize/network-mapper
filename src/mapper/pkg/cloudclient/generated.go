@@ -852,6 +852,15 @@ type ReportK8sServicesResponse struct {
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
 
+// ReportTrafficLevelsResponse is returned by ReportTrafficLevels on success.
+type ReportTrafficLevelsResponse struct {
+	// Update service
+	ReportTrafficLevels bool `json:"reportTrafficLevels"`
+}
+
+// GetReportTrafficLevels returns ReportTrafficLevelsResponse.ReportTrafficLevels, and is useful for accessing the field via an interface.
+func (v *ReportTrafficLevelsResponse) GetReportTrafficLevels() bool { return v.ReportTrafficLevels }
+
 type SelectorKeyValueInput struct {
 	Key   nilable.Nilable[string] `json:"key"`
 	Value nilable.Nilable[string] `json:"value"`
@@ -913,6 +922,17 @@ type SessionAffinityConfig struct {
 // GetClientIP returns SessionAffinityConfig.ClientIP, and is useful for accessing the field via an interface.
 func (v *SessionAffinityConfig) GetClientIP() nilable.Nilable[ClientIPConfig] { return v.ClientIP }
 
+type TrafficLevelInput struct {
+	DataBytesPerSecond  int `json:"dataBytesPerSecond"`
+	FlowsCountPerSecond int `json:"flowsCountPerSecond"`
+}
+
+// GetDataBytesPerSecond returns TrafficLevelInput.DataBytesPerSecond, and is useful for accessing the field via an interface.
+func (v *TrafficLevelInput) GetDataBytesPerSecond() int { return v.DataBytesPerSecond }
+
+// GetFlowsCountPerSecond returns TrafficLevelInput.FlowsCountPerSecond, and is useful for accessing the field via an interface.
+func (v *TrafficLevelInput) GetFlowsCountPerSecond() int { return v.FlowsCountPerSecond }
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -972,6 +992,30 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __ReportTrafficLevelsInput is used internally by genqlient
+type __ReportTrafficLevelsInput struct {
+	ClientName      string            `json:"clientName"`
+	ClientNamespace string            `json:"clientNamespace"`
+	ServerName      string            `json:"serverName"`
+	ServerNamespace string            `json:"serverNamespace"`
+	TrafficLevel    TrafficLevelInput `json:"trafficLevel"`
+}
+
+// GetClientName returns __ReportTrafficLevelsInput.ClientName, and is useful for accessing the field via an interface.
+func (v *__ReportTrafficLevelsInput) GetClientName() string { return v.ClientName }
+
+// GetClientNamespace returns __ReportTrafficLevelsInput.ClientNamespace, and is useful for accessing the field via an interface.
+func (v *__ReportTrafficLevelsInput) GetClientNamespace() string { return v.ClientNamespace }
+
+// GetServerName returns __ReportTrafficLevelsInput.ServerName, and is useful for accessing the field via an interface.
+func (v *__ReportTrafficLevelsInput) GetServerName() string { return v.ServerName }
+
+// GetServerNamespace returns __ReportTrafficLevelsInput.ServerNamespace, and is useful for accessing the field via an interface.
+func (v *__ReportTrafficLevelsInput) GetServerNamespace() string { return v.ServerNamespace }
+
+// GetTrafficLevel returns __ReportTrafficLevelsInput.TrafficLevel, and is useful for accessing the field via an interface.
+func (v *__ReportTrafficLevelsInput) GetTrafficLevel() TrafficLevelInput { return v.TrafficLevel }
 
 // The query or mutation executed by ReportComponentStatus.
 const ReportComponentStatus_Operation = `
@@ -1164,6 +1208,47 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportTrafficLevels.
+const ReportTrafficLevels_Operation = `
+mutation ReportTrafficLevels ($clientName: String!, $clientNamespace: String!, $serverName: String!, $serverNamespace: String!, $trafficLevel: TrafficLevelInput!) {
+	reportTrafficLevels(clientName: $clientName, clientNamespace: $clientNamespace, serverName: $serverName, serverNamespace: $serverNamespace, trafficLevel: $trafficLevel)
+}
+`
+
+func ReportTrafficLevels(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	clientName string,
+	clientNamespace string,
+	serverName string,
+	serverNamespace string,
+	trafficLevel TrafficLevelInput,
+) (*ReportTrafficLevelsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportTrafficLevels",
+		Query:  ReportTrafficLevels_Operation,
+		Variables: &__ReportTrafficLevelsInput{
+			ClientName:      clientName,
+			ClientNamespace: clientNamespace,
+			ServerName:      serverName,
+			ServerNamespace: serverNamespace,
+			TrafficLevel:    trafficLevel,
+		},
+	}
+	var err_ error
+
+	var data_ ReportTrafficLevelsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

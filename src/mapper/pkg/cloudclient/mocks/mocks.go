@@ -118,3 +118,17 @@ func (mr *MockCloudClientMockRecorder) ReportK8sServices(ctx, namespace, service
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sServices", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sServices), ctx, namespace, services)
 }
+
+// ReportTrafficLevels mocks base method.
+func (m *MockCloudClient) ReportTrafficLevels(ctx context.Context, source, sourceNamespace, destination, destinationNamespace string, trafficCounter cloudclient.TrafficLevelInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportTrafficLevels", ctx, source, sourceNamespace, destination, destinationNamespace, trafficCounter)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportTrafficLevels indicates an expected call of ReportTrafficLevels.
+func (mr *MockCloudClientMockRecorder) ReportTrafficLevels(ctx, source, sourceNamespace, destination, destinationNamespace, trafficCounter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportTrafficLevels", reflect.TypeOf((*MockCloudClient)(nil).ReportTrafficLevels), ctx, source, sourceNamespace, destination, destinationNamespace, trafficCounter)
+}

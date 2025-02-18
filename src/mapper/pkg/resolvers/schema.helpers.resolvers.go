@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetriesgql"
 	"github.com/otterize/intents-operator/src/shared/telemetries/telemetrysender"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
@@ -309,6 +310,33 @@ func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation mod
 			Name:      op.ClientName,
 			Namespace: op.ClientNamespace,
 		}, op)
+	}
+
+	return nil
+}
+
+func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.TrafficLevelResults) error {
+	for _, report := range results.Results {
+		sourceIdentity, err := r.resolveIPToIdentity(ctx, report.SrcIP)
+
+		if err != nil {
+			logrus.WithError(err).Errorf("Could not resolve source IP %s to identity", report.SrcIP)
+			continue
+		}
+
+		destinationIdentity, err := r.resolveIPToIdentity(ctx, report.DstIP)
+
+		if err != nil {
+			logrus.WithError(err).Errorf("Could not resolve destination IP %s to identity", report.DstIP)
+			continue
+		}
+
+		r.trafficCollector.Add(
+			sourceIdentity,
+			destinationIdentity,
+			int(report.BytesSent),
+			int(report.Flows),
+		)
 	}
 
 	return nil
@@ -782,4 +810,51 @@ func runHandleLoop[T Results](ctx context.Context, resultsChan chan T, handleFun
 			}
 		}
 	}
+}
+
+func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (serviceidentity.ServiceIdentity, error) {
+	var identity serviceidentity.ServiceIdentity
+	isPod, err := r.kubeFinder.IsPodIp(ctx, ip)
+
+	if err != nil {
+		logrus.WithError(err).Errorf("could not determine if %s is a pod", ip)
+		return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
+	}
+
+	if isPod {
+		sourcePod, err := r.kubeFinder.ResolveIPToPod(ctx, ip)
+
+		if err != nil {
+			logrus.WithError(err).Errorf("could not resolve source pod for %s", ip)
+			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
+		}
+
+		identity, err = r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, sourcePod)
+
+		if err != nil {
+			logrus.WithError(err).Errorf("could not resolve source identity for %s", ip)
+			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
+		}
+	} else {
+		sourceService, ok, err := r.kubeFinder.ResolveIPToService(ctx, ip)
+
+		if !ok || err != nil {
+			logrus.WithError(err).Errorf("could not resolve source service for %s", ip)
+			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
+		}
+
+		otrSourceIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, sourceService, time.Now())
+
+		if !ok || err != nil {
+			logrus.WithError(err).Errorf("could not resolve source identity for %s", ip)
+			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
+		}
+		identity = serviceidentity.ServiceIdentity{
+			Name:      otrSourceIdentity.Name,
+			Namespace: otrSourceIdentity.Namespace,
+			Kind:      "Service",
+		}
+	}
+
+	return identity, nil
 }
