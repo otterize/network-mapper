@@ -13,6 +13,7 @@ type AWSIntent struct {
 	Client  model.OtterizeServiceIdentity `json:"client"`
 	Actions []string
 	ARN     string
+	IamRole string
 }
 
 type AWSIntentKey struct {

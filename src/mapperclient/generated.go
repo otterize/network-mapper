@@ -14,6 +14,7 @@ type AWSOperation struct {
 	Resource string                          `json:"resource"`
 	Actions  []string                        `json:"actions"`
 	SrcIp    nilable.Nilable[string]         `json:"srcIp"`
+	IamRole  nilable.Nilable[string]         `json:"iamRole"`
 	Client   nilable.Nilable[NamespacedName] `json:"client"`
 }
 
@@ -25,6 +26,9 @@ func (v *AWSOperation) GetActions() []string { return v.Actions }
 
 // GetSrcIp returns AWSOperation.SrcIp, and is useful for accessing the field via an interface.
 func (v *AWSOperation) GetSrcIp() nilable.Nilable[string] { return v.SrcIp }
+
+// GetIamRole returns AWSOperation.IamRole, and is useful for accessing the field via an interface.
+func (v *AWSOperation) GetIamRole() nilable.Nilable[string] { return v.IamRole }
 
 // GetClient returns AWSOperation.Client, and is useful for accessing the field via an interface.
 func (v *AWSOperation) GetClient() nilable.Nilable[NamespacedName] { return v.Client }

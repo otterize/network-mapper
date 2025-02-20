@@ -290,6 +290,7 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 			Client:  serviceIdentity,
 			Actions: op.Actions,
 			ARN:     op.Resource,
+			IamRole: lo.FromPtr(op.IamRole),
 		})
 
 		logrus.
@@ -297,13 +298,14 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 			WithField("clientNamespace", serviceIdentity.Namespace).
 			WithField("actions", op.Actions).
 			WithField("arn", op.Resource).
+			WithField("iam role", op.IamRole).
 			Debug("Discovered AWS intent")
 	}
 
 	return nil
 }
 
-func (r *Resolver) handleAzureOperationReport(ctx context.Context, operation model.AzureOperationResults) error {
+func (r *Resolver) handleAzureOperationReport(_ context.Context, operation model.AzureOperationResults) error {
 	for _, op := range operation {
 		r.azureIntentsHolder.AddOperation(model.OtterizeServiceIdentity{
 			Name:      op.ClientName,
