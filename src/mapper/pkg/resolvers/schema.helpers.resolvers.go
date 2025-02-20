@@ -320,14 +320,20 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 		sourceIdentity, err := r.resolveIPToIdentity(ctx, report.SrcIP)
 
 		if err != nil {
-			logrus.WithError(err).Errorf("Could not resolve source IP %s to identity", report.SrcIP)
+			logrus.
+				WithField("ip", report.SrcIP).
+				WithError(err).
+				Errorf("Could not resolve source IP %s to identity", report.SrcIP)
 			continue
 		}
 
 		destinationIdentity, err := r.resolveIPToIdentity(ctx, report.DstIP)
 
 		if err != nil {
-			logrus.WithError(err).Errorf("Could not resolve destination IP %s to identity", report.DstIP)
+			logrus.
+				WithField("ip", report.DstIP).
+				WithError(err).
+				Errorf("Could not resolve destination IP %s to identity", report.DstIP)
 			continue
 		}
 
