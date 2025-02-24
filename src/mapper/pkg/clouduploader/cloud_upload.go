@@ -268,21 +268,21 @@ func (c *CloudUploader) NotifyTrafficLevels(ctx context.Context, trafficLevels t
 		return
 	}
 
+	var inputs []cloudclient.TrafficLevelInput
 	for trafficPair, trafficData := range trafficLevels {
-		err := c.client.ReportTrafficLevels(
-			ctx,
-			trafficPair.Source.Name,
-			trafficPair.Source.Namespace,
-			trafficPair.Destination.Name,
-			trafficPair.Destination.Namespace,
-			cloudclient.TrafficLevelInput{
-				DataBytesPerSecond:  trafficData.Bytes,
-				FlowsCountPerSecond: trafficData.Flows,
-			},
-		)
-		if err != nil {
-			logrus.WithError(err).Error("Failed to update traffic info")
-		}
+		inputs = append(inputs, cloudclient.TrafficLevelInput{
+			ClientName:          trafficPair.Source.Name,
+			ClientNamespace:     trafficPair.Source.Namespace,
+			ServerName:          trafficPair.Destination.Name,
+			ServerNamespace:     trafficPair.Destination.Namespace,
+			DataBytesPerSecond:  trafficData.Bytes,
+			FlowsCountPerSecond: trafficData.Flows,
+		})
+	}
+
+	err := c.client.ReportTrafficLevels(ctx, inputs)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report traffic levels to cloud")
 	}
 }
 

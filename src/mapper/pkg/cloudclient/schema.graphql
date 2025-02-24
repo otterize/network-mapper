@@ -1897,11 +1897,7 @@ type Mutation {
 	): Boolean!
 """Update service"""
 	reportTrafficLevels(
-		clientName: String!
-		clientNamespace: String!
-		serverName: String!
-		serverNamespace: String!
-		trafficLevel: TrafficLevelInput!
+		trafficLevels: [TrafficLevelInput!]!
 	): Boolean!
 	saveOnboardingFeedback(
 		userEmail: String!
@@ -2588,6 +2584,10 @@ type TrafficLevel {
 }
 
 input TrafficLevelInput {
+	clientName: String!
+	clientNamespace: String!
+	serverName: String!
+	serverNamespace: String!
 	dataBytesPerSecond: Int!
 	flowsCountPerSecond: Int!
 }
