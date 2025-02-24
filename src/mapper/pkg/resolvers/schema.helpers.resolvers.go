@@ -323,7 +323,7 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 			logrus.
 				WithField("ip", report.SrcIP).
 				WithError(err).
-				Errorf("Could not resolve source IP %s to identity", report.SrcIP)
+				Error("Could not resolve source IP to identity")
 			continue
 		}
 
@@ -333,7 +333,7 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 			logrus.
 				WithField("ip", report.DstIP).
 				WithError(err).
-				Errorf("Could not resolve destination IP %s to identity", report.DstIP)
+				Error("Could not resolve destination IP to identity")
 			continue
 		}
 
@@ -823,7 +823,7 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 	isPod, err := r.kubeFinder.IsPodIp(ctx, ip)
 
 	if err != nil {
-		logrus.WithError(err).Errorf("could not determine if %s is a pod", ip)
+		logrus.WithField("ip", ip).WithError(err).Error("could not determine if IP is a pod")
 		return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 	}
 
@@ -831,28 +831,28 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 		sourcePod, err := r.kubeFinder.ResolveIPToPod(ctx, ip)
 
 		if err != nil {
-			logrus.WithError(err).Errorf("could not resolve source pod for %s", ip)
+			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source pod")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 
 		identity, err = r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, sourcePod)
 
 		if err != nil {
-			logrus.WithError(err).Errorf("could not resolve source identity for %s", ip)
+			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source identity")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 	} else {
 		sourceService, ok, err := r.kubeFinder.ResolveIPToService(ctx, ip)
 
 		if !ok || err != nil {
-			logrus.WithError(err).Errorf("could not resolve source service for %s", ip)
+			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source service")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 
 		otrSourceIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, sourceService, time.Now())
 
 		if !ok || err != nil {
-			logrus.WithError(err).Errorf("could not resolve source identity for %s", ip)
+			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source identity")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 		identity = serviceidentity.ServiceIdentity{
