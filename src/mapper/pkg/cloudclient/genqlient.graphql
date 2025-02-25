@@ -22,3 +22,9 @@ mutation ReportK8sServices($namespace: String!, $services: [K8sServiceInput!]!) 
 mutation ReportK8sIngresses($namespace: String!, $ingresses: [K8sIngressInput!]!) {
     reportK8sIngresses(namespace: $namespace, ingresses: $ingresses)
 }
+
+mutation ReportTrafficLevels(
+    $trafficLevels: [TrafficLevelInput!]!
+) {
+    reportTrafficLevels(trafficLevels: $trafficLevels)
+}

@@ -31,3 +31,7 @@ func (c AzureOperationResults) Length() int {
 func (c CaptureTCPResults) Length() int {
 	return len(c.Results)
 }
+
+func (c TrafficLevelResults) Length() int {
+	return len(c.Results)
+}

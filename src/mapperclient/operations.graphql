@@ -22,6 +22,10 @@ mutation reportAzureOperation($operation: [AzureOperation!]!) {
     reportAzureOperation(operation: $operation)
 }
 
+mutation reportTrafficLevelResults($results: TrafficLevelResults!) {
+    reportTrafficLevelResults(results: $results)
+}
+
 
 query Health {
     health

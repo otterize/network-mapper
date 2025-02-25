@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine as buildenv
+FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine AS buildenv
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
 WORKDIR /src
@@ -9,10 +9,10 @@ RUN go mod download
 
 COPY . .
 
-FROM buildenv as test
+FROM buildenv AS test
 RUN go test ./kafka-watcher/...
 
-FROM test as builder
+FROM test AS builder
 ARG TARGETOS
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /main ./kafka-watcher/cmd
