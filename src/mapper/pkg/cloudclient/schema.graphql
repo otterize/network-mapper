@@ -1224,6 +1224,7 @@ input IntentInput {
 	topics: [KafkaConfigInput!]
 	resources: [HTTPConfigInput!]
 	databaseResources: [DatabaseConfigInput!]
+	awsRole: String
 	awsActions: [String!]
 	azureRoles: [String!]
 	azureActions: [String!]
@@ -1883,6 +1884,10 @@ type Mutation {
 	reportServiceMetadata(
 		serviceMeta: ReportServiceMetadataInput!
 	): Boolean!
+"""update multiple service metadata from operator"""
+	reportServicesMetadata(
+		servicesMeta: [ReportServiceMetadataInput!]!
+	): Boolean!
 """Bulk Update services"""
 	addTagsToServices(
 		ids: [ID!]!
@@ -2358,6 +2363,7 @@ type Service {
 	id: ID!
 	name: String!
 	tags: [String!]
+	metadata: ServiceMetadata
 	workloadKind: String
 	aliases: [ServerAlias!]
 	namespace: Namespace
@@ -2432,8 +2438,13 @@ enum ServiceInternalTrafficPolicy {
 	LOCAL
 }
 
+type ServiceMetadata {
+	awsRoles: [String!]
+}
+
 input ServiceMetadataInput {
 	tags: [String!]
+	awsRoles: [String!]
 }
 
 enum ServiceType {

@@ -213,6 +213,7 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 					Namespace:  &intent.Client.Namespace,
 					ServerName: &intent.ARN,
 					Type:       &intentType,
+					AwsRole:    lo.ToPtr(intent.IamRole),
 					AwsActions: lo.ToSlicePtr(intent.Actions),
 				},
 			}
