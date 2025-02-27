@@ -808,6 +808,7 @@ input AWSOperation {
     resource: String!
     actions: [String!]!
     srcIp: String
+    iamRole: String
     client: NamespacedName
 }
 
@@ -5200,7 +5201,7 @@ func (ec *executionContext) unmarshalInputAWSOperation(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"resource", "actions", "srcIp", "client"}
+	fieldsInOrder := [...]string{"resource", "actions", "srcIp", "iamRole", "client"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5228,6 +5229,13 @@ func (ec *executionContext) unmarshalInputAWSOperation(ctx context.Context, obj 
 				return it, err
 			}
 			it.SrcIP = data
+		case "iamRole":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("iamRole"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IamRole = data
 		case "client":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("client"))
 			data, err := ec.unmarshalONamespacedName2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐNamespacedName(ctx, v)
