@@ -148,6 +148,7 @@ type AccessGraphEdge {
 	accessStatus: EdgeAccessStatus!
 	accessStatuses: EdgeAccessStatuses!
 	findings: [CallFinding!]!
+	traffic: TrafficLevel!
 }
 
 """ Access graph filter """
@@ -399,8 +400,10 @@ type Cluster {
 type ClusterConfiguration {
 	globalDefaultDeny: Boolean!
 	istioGlobalDefaultDeny: Boolean!
+	linkerdGlobalDefaultDeny: Boolean!
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
+	useLinkerdPoliciesInAccessGraphStates: Boolean!
 	useKafkaACLsInAccessGraphStates: Boolean!
 	useAWSIAMInAccessGraphStates: Boolean!
 	useGCPIAMInAccessGraphStates: Boolean!
@@ -412,8 +415,10 @@ type ClusterConfiguration {
 input ClusterConfigurationInput {
 	globalDefaultDeny: Boolean!
 	istioGlobalDefaultDeny: Boolean
+	linkerdGlobalDefaultDeny: Boolean
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
+	useLinkerdPoliciesInAccessGraphStates: Boolean!
 	useKafkaACLsInAccessGraphStates: Boolean!
 	useAWSIAMInAccessGraphStates: Boolean
 	useGCPIAMInAccessGraphStates: Boolean
@@ -581,9 +586,19 @@ input DiscoveredIntentInput {
 	intent: IntentInput!
 }
 
+input EBPFDiagnostics {
+	containerImage: String
+	executable: String
+	executableHash: String
+	programName: String
+	podName: String
+	podNamespace: String
+}
+
 type EdgeAccessStatus {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
+	useLinkerdPoliciesInAccessGraphStates: Boolean!
 	useKafkaPoliciesInAccessGraphStates: Boolean!
 	verdict: EdgeAccessStatusVerdict!
 	reason: EdgeAccessStatusReason!
@@ -645,6 +660,7 @@ type EdgeAccessStatuses {
 	gcpIam: EdgeAccessStatus!
 	azureIAM: EdgeAccessStatus!
 	database: EdgeAccessStatus!
+	linkerdPolicies: EdgeAccessStatus!
 }
 
 type Environment {
@@ -693,6 +709,8 @@ enum EventType {
 	PROTECTED_SERVICE_APPLIED
 	PROTECTED_SERVICE_DELETED
 	ACTIVE
+	EBPF_ATTACHED
+	EBPF_ATTACH_FAILED
 }
 
 input ExternalTrafficDiscoveredIntentInput {
@@ -859,11 +877,13 @@ input GitHubRepoInfoInput {
 type GitHubSettings {
 	isActive: Boolean!
 	repoFilterPairs: [GitHubRepoFilterPair!]!
+	enableAutoMerge: Boolean!
 }
 
 input GitHubSettingsInput {
 	isActive: Boolean!
 	repoFilterPairs: [GitHubRepoFilterPairInput!]!
+	enableAutoMerge: Boolean
 }
 
 type GitLabRepoFilterPair {
@@ -1068,6 +1088,13 @@ input InputTimeFilterValue {
 	operator: TimeFilterOperators!
 }
 
+input InputValidateIDFilter {
+	clusterIds: InputIDFilterValue
+	serviceIds: InputIDFilterValue
+	namespaceIds: InputIDFilterValue
+	environmentIds: InputIDFilterValue
+}
+
 """ Workload/Resource inventory filter """
 input InputWorkloadInventoryFilter {
 """ Workload/Resource inventory filter """
@@ -1242,6 +1269,7 @@ type IntentsOperatorConfiguration {
 	networkPolicyEnforcementEnabled: Boolean!
 	kafkaACLEnforcementEnabled: Boolean!
 	istioPolicyEnforcementEnabled: Boolean!
+	linkerdPolicyEnforcementEnabled: Boolean!
 	awsIAMPolicyEnforcementEnabled: Boolean!
 	gcpIAMPolicyEnforcementEnabled: Boolean!
 	azureIAMPolicyEnforcementEnabled: Boolean!
@@ -1257,6 +1285,7 @@ input IntentsOperatorConfigurationInput {
 	networkPolicyEnforcementEnabled: Boolean
 	kafkaACLEnforcementEnabled: Boolean
 	istioPolicyEnforcementEnabled: Boolean
+	linkerdPolicyEnforcementEnabled: Boolean
 	protectedServicesEnabled: Boolean
 	egressNetworkPolicyEnforcementEnabled: Boolean
 	awsIAMPolicyEnforcementEnabled: Boolean
@@ -1866,6 +1895,10 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+"""Update service"""
+	reportTrafficLevels(
+		trafficLevels: [TrafficLevelInput!]!
+	): Boolean!
 	saveOnboardingFeedback(
 		userEmail: String!
 		feedback: String!
@@ -2005,6 +2038,9 @@ type Query {
 	accessGraph(
 		filter: InputAccessGraphFilter
 	): AccessGraph!
+	accessGraphServices(
+		filter: InputAccessGraphFilter
+	): [Service!]!
 	serviceAccessGraph(
 		id: ID!
 	): ServiceAccessGraph!
@@ -2058,6 +2094,10 @@ type Query {
 	oneEnvironment(
 		name: String!
 	): Environment!
+"""Validate existing ID filters and return valid filters"""
+	validateFilters(
+		filter: InputValidateIDFilter!
+	): ValidIDFilter!
 	findings(
 		filter: InputFindingFilter
 		tree: Boolean
@@ -2104,12 +2144,6 @@ type Query {
 	testDatabaseVisibilityConnection(
 		databaseInfo: DatabaseInfoInput!
 	): TestDatabaseConnectionResponse!
-	clientIntentEventsForWorkload(
-		id: ID!
-	): [ClientIntentEvent!]
-	clientIntentStatusForWorkload(
-		id: ID!
-	): ClientIntentStatus
 """List user invites"""
 	invites(
 		email: String
@@ -2359,6 +2393,7 @@ type ServiceAccessStatus {
 	useNetworkPoliciesInAccessGraphStates: Boolean!
 	useKafkaACLsInAccessGraphStates: Boolean!
 	useIstioPoliciesInAccessGraphStates: Boolean!
+	useLinkerdPoliciesInAccessGraphStates: Boolean!
 	protectionStatus: ServerProtectionStatus!
 	protectionStatuses: ServerProtectionStatuses!
 	blockingStatus: ServerBlockingStatus!
@@ -2501,11 +2536,14 @@ enum TelemetryComponentType {
 	CREDENTIALS_OPERATOR
 	NETWORK_MAPPER
 	CLI
+	NODE_AGENT
 }
 
 input TelemetryData {
 	eventType: EventType!
 	count: Int
+	error: String
+	ebpf: EBPFDiagnostics
 }
 
 input TelemetryInput {
@@ -2538,6 +2576,20 @@ type TimeRange {
 input TimeRangeInput {
 	from: Time
 	to: Time
+}
+
+type TrafficLevel {
+	dataBytesPerSecond: Int!
+	flowsCountPerSecond: Int!
+}
+
+input TrafficLevelInput {
+	clientName: String!
+	clientNamespace: String!
+	serverName: String!
+	serverNamespace: String!
+	dataBytesPerSecond: Int!
+	flowsCountPerSecond: Int!
 }
 
 enum TutorialEvent {
@@ -2604,6 +2656,15 @@ type UserTutorial {
 	isCompleted: Boolean!
 	step: String!
 	stepSeen: String!
+}
+
+""" Used to validate ID based filters """
+type ValidIDFilter {
+	clusterIds: IDFilterValue
+	serviceIds: IDFilterValue
+	namespaceIds: IDFilterValue
+	regulationIds: IDFilterValue
+	environmentIds: IDFilterValue
 }
 
 type Workload {

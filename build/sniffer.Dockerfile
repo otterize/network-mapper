@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 golang:1.22.1-alpine as buildenv
+FROM --platform=linux/amd64 golang:1.22.1-alpine AS buildenv
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
 WORKDIR /src
@@ -9,12 +9,12 @@ RUN go mod download
 
 COPY . .
 
-FROM buildenv as test
+FROM buildenv AS test
 RUN go test ./sniffer/... && echo dep > /dep
 
 # We start from the base image again, only this time it's using the target arch instead of always amd64. This is done to make the build faster.
 # Unlike the mapper, it can't be amd64 throughout and use Go's cross-compilation, since the sniffer depends on libpcap (C library).
-FROM golang:1.22.1-alpine as builder
+FROM golang:1.22.1-alpine AS builder
 COPY --from=test /dep /dep
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
@@ -29,7 +29,7 @@ RUN go build -trimpath -o /main ./sniffer/cmd
 ARG VERSION
 RUN echo -n $VERSION > /version
 
-FROM alpine as release
+FROM alpine AS release
 RUN apk add --no-cache ca-certificates libpcap
 WORKDIR /
 COPY --from=builder /main /main

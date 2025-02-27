@@ -14,6 +14,7 @@ import (
 	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/azureintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
@@ -166,6 +167,7 @@ func main() {
 	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
 	azureIntentsHolder := azureintentsholder.New()
+	trafficCollector := traffic.NewCollector()
 
 	resolver := resolvers.NewResolver(
 		kubeFinder,
@@ -176,17 +178,13 @@ func main() {
 		azureIntentsHolder,
 		dnsCache,
 		incomingTrafficIntentsHolder,
+		trafficCollector,
 	)
 	resolver.Register(mapperServer)
 
 	metricsServer := echo.New()
 	metricsServer.HideBanner = true
 	metricsServer.GET("/metrics", echoprometheus.NewHandler())
-
-	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
-	if err != nil {
-		logrus.WithError(err).Panic("Failed to initialize cloud client")
-	}
 
 	if viper.GetBool(config.EnableIstioCollectionKey) {
 		istioWatcher, err := istiowatcher.NewWatcher(resolver.Mutation())
@@ -201,6 +199,10 @@ func main() {
 	}
 
 	cloudUploaderConfig := clouduploader.ConfigFromViper()
+	cloudClient, cloudEnabled, err := cloudclient.NewClient(errGroupCtx)
+	if err != nil {
+		logrus.WithError(err).Panic("Failed to initialize cloud client")
+	}
 	if cloudEnabled {
 		cloudUploader := clouduploader.NewCloudUploader(intentsHolder, cloudUploaderConfig, cloudClient)
 
@@ -211,6 +213,7 @@ func main() {
 		}
 		awsIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAWSIntents)
 		azureIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAzureIntents)
+		trafficCollector.RegisterNotifyTraffic(cloudUploader.NotifyTrafficLevels)
 
 		go cloudUploader.PeriodicStatusReport(errGroupCtx)
 
@@ -269,6 +272,11 @@ func main() {
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		azureIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		trafficCollector.PeriodicUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 

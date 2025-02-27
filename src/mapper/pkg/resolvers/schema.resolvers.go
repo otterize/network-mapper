@@ -121,6 +121,18 @@ func (r *mutationResolver) ReportAzureOperation(ctx context.Context, operation [
 	}
 }
 
+// ReportTrafficLevelResults is the resolver for the reportTrafficLevelResults field.
+func (r *mutationResolver) ReportTrafficLevelResults(ctx context.Context, results model.TrafficLevelResults) (bool, error) {
+	select {
+	case r.trafficLevelsResults <- results:
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		return false, nil
+	}
+}
+
 // ServiceIntents is the resolver for the serviceIntents field.
 func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string, includeLabels []string, includeAllLabels *bool) ([]model.ServiceIntents, error) {
 	shouldIncludeAllLabels := false

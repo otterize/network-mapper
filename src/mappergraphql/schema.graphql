@@ -178,6 +178,18 @@ input AzureOperation {
     clientNamespace: String!
 }
 
+input TrafficLevelResult {
+    srcIP: String!
+    dstIP: String!
+
+    bytesSent: Int!
+    flows: Int!
+}
+
+input TrafficLevelResults {
+    results: [TrafficLevelResult!]!
+}
+
 type Query {
     """
     Kept for backwards compatibility with CLI -
@@ -215,4 +227,5 @@ type Mutation {
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
     reportAWSOperation(operation: [AWSOperation!]!): Boolean!
     reportAzureOperation(operation: [AzureOperation!]!): Boolean!
+    reportTrafficLevelResults(results: TrafficLevelResults!): Boolean!
 }
