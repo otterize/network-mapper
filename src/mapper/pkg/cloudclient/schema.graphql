@@ -384,6 +384,10 @@ type ClientIntentsRow {
 	calledServerId: ID
 }
 
+type CloudIam {
+	awsRoles: [String!]
+}
+
 type Cluster {
 	id: ID!
 	name: String!
@@ -2369,7 +2373,7 @@ type Service {
 	id: ID!
 	name: String!
 	tags: [String!]
-	metadata: ServiceMetadata
+	cloudIam: CloudIam
 	workloadKind: String
 	aliases: [ServerAlias!]
 	namespace: Namespace
@@ -2442,10 +2446,6 @@ input ServiceIdentityInput {
 enum ServiceInternalTrafficPolicy {
 	CLUSTER
 	LOCAL
-}
-
-type ServiceMetadata {
-	awsRoles: [String!]
 }
 
 input ServiceMetadataInput {
@@ -2593,6 +2593,7 @@ input TimeRangeInput {
 type TrafficLevel {
 	dataBytesPerSecond: Int!
 	flowsCountPerSecond: Int!
+	lastReportedAt: Time!
 }
 
 input TrafficLevelInput {
