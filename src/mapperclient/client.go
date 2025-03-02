@@ -56,6 +56,11 @@ func (c *Client) ReportSocketScanResults(ctx context.Context, results SocketScan
 	return errors.Wrap(err)
 }
 
+func (c *Client) ReportTrafficLevels(ctx context.Context, results TrafficLevelResults) error {
+	_, err := reportTrafficLevelResults(ctx, c.client, results)
+	return errors.Wrap(err)
+}
+
 func (c *Client) Health(ctx context.Context) error {
 	_, err := Health(ctx, c.client)
 	return errors.Wrap(err)

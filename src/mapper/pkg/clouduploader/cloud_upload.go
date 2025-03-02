@@ -6,6 +6,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"time"
@@ -260,6 +261,29 @@ func (c *CloudUploader) NotifyAzureIntents(ctx context.Context, ops []model.Azur
 
 	if err != nil {
 		logrus.WithError(err).Error("Failed to report discovered intents to cloud")
+	}
+}
+
+func (c *CloudUploader) NotifyTrafficLevels(ctx context.Context, trafficLevels traffic.TrafficLevelMap) {
+	if len(trafficLevels) == 0 {
+		return
+	}
+
+	var inputs []cloudclient.TrafficLevelInput
+	for trafficPair, trafficData := range trafficLevels {
+		inputs = append(inputs, cloudclient.TrafficLevelInput{
+			ClientName:          trafficPair.Source.Name,
+			ClientNamespace:     trafficPair.Source.Namespace,
+			ServerName:          trafficPair.Destination.Name,
+			ServerNamespace:     trafficPair.Destination.Namespace,
+			DataBytesPerSecond:  trafficData.Bytes,
+			FlowsCountPerSecond: trafficData.Flows,
+		})
+	}
+
+	err := c.client.ReportTrafficLevels(ctx, inputs)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report traffic levels to cloud")
 	}
 }
 

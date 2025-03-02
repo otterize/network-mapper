@@ -154,6 +154,17 @@ type SocketScanResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
 }
 
+type TrafficLevelResult struct {
+	SrcIP     string `json:"srcIP"`
+	DstIP     string `json:"dstIP"`
+	BytesSent int64  `json:"bytesSent"`
+	Flows     int64  `json:"flows"`
+}
+
+type TrafficLevelResults struct {
+	Results []TrafficLevelResult `json:"results"`
+}
+
 type HTTPMethod string
 
 const (

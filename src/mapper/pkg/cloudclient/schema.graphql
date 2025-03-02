@@ -148,6 +148,7 @@ type AccessGraphEdge {
 	accessStatus: EdgeAccessStatus!
 	accessStatuses: EdgeAccessStatuses!
 	findings: [CallFinding!]!
+	traffic: TrafficLevel!
 }
 
 """ Access graph filter """
@@ -1900,6 +1901,10 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+"""Update service"""
+	reportTrafficLevels(
+		trafficLevels: [TrafficLevelInput!]!
+	): Boolean!
 	saveOnboardingFeedback(
 		userEmail: String!
 		feedback: String!
@@ -2583,6 +2588,20 @@ type TimeRange {
 input TimeRangeInput {
 	from: Time
 	to: Time
+}
+
+type TrafficLevel {
+	dataBytesPerSecond: Int!
+	flowsCountPerSecond: Int!
+}
+
+input TrafficLevelInput {
+	clientName: String!
+	clientNamespace: String!
+	serverName: String!
+	serverNamespace: String!
+	dataBytesPerSecond: Int!
+	flowsCountPerSecond: Int!
 }
 
 enum TutorialEvent {

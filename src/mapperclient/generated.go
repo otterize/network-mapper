@@ -168,6 +168,32 @@ type SocketScanResults struct {
 // GetResults returns SocketScanResults.Results, and is useful for accessing the field via an interface.
 func (v *SocketScanResults) GetResults() []RecordedDestinationsForSrc { return v.Results }
 
+type TrafficLevelResult struct {
+	SrcIP     string `json:"srcIP"`
+	DstIP     string `json:"dstIP"`
+	BytesSent int    `json:"bytesSent"`
+	Flows     int    `json:"flows"`
+}
+
+// GetSrcIP returns TrafficLevelResult.SrcIP, and is useful for accessing the field via an interface.
+func (v *TrafficLevelResult) GetSrcIP() string { return v.SrcIP }
+
+// GetDstIP returns TrafficLevelResult.DstIP, and is useful for accessing the field via an interface.
+func (v *TrafficLevelResult) GetDstIP() string { return v.DstIP }
+
+// GetBytesSent returns TrafficLevelResult.BytesSent, and is useful for accessing the field via an interface.
+func (v *TrafficLevelResult) GetBytesSent() int { return v.BytesSent }
+
+// GetFlows returns TrafficLevelResult.Flows, and is useful for accessing the field via an interface.
+func (v *TrafficLevelResult) GetFlows() int { return v.Flows }
+
+type TrafficLevelResults struct {
+	Results []TrafficLevelResult `json:"results"`
+}
+
+// GetResults returns TrafficLevelResults.Results, and is useful for accessing the field via an interface.
+func (v *TrafficLevelResults) GetResults() []TrafficLevelResult { return v.Results }
+
 // __reportAWSOperationInput is used internally by genqlient
 type __reportAWSOperationInput struct {
 	Operation []AWSOperation `json:"operation"`
@@ -215,6 +241,14 @@ type __reportTCPCaptureResultsInput struct {
 
 // GetResults returns __reportTCPCaptureResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportTCPCaptureResultsInput) GetResults() CaptureTCPResults { return v.Results }
+
+// __reportTrafficLevelResultsInput is used internally by genqlient
+type __reportTrafficLevelResultsInput struct {
+	Results TrafficLevelResults `json:"results"`
+}
+
+// GetResults returns __reportTrafficLevelResultsInput.Results, and is useful for accessing the field via an interface.
+func (v *__reportTrafficLevelResultsInput) GetResults() TrafficLevelResults { return v.Results }
 
 // reportAWSOperationResponse is returned by reportAWSOperation on success.
 type reportAWSOperationResponse struct {
@@ -268,6 +302,16 @@ type reportTCPCaptureResultsResponse struct {
 // GetReportTCPCaptureResults returns reportTCPCaptureResultsResponse.ReportTCPCaptureResults, and is useful for accessing the field via an interface.
 func (v *reportTCPCaptureResultsResponse) GetReportTCPCaptureResults() bool {
 	return v.ReportTCPCaptureResults
+}
+
+// reportTrafficLevelResultsResponse is returned by reportTrafficLevelResults on success.
+type reportTrafficLevelResultsResponse struct {
+	ReportTrafficLevelResults bool `json:"reportTrafficLevelResults"`
+}
+
+// GetReportTrafficLevelResults returns reportTrafficLevelResultsResponse.ReportTrafficLevelResults, and is useful for accessing the field via an interface.
+func (v *reportTrafficLevelResultsResponse) GetReportTrafficLevelResults() bool {
+	return v.ReportTrafficLevelResults
 }
 
 // The query or mutation executed by Health.
@@ -486,6 +530,39 @@ func reportTCPCaptureResults(
 	var err_ error
 
 	var data_ reportTCPCaptureResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by reportTrafficLevelResults.
+const reportTrafficLevelResults_Operation = `
+mutation reportTrafficLevelResults ($results: TrafficLevelResults!) {
+	reportTrafficLevelResults(results: $results)
+}
+`
+
+func reportTrafficLevelResults(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	results TrafficLevelResults,
+) (*reportTrafficLevelResultsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportTrafficLevelResults",
+		Query:  reportTrafficLevelResults_Operation,
+		Variables: &__reportTrafficLevelResultsInput{
+			Results: results,
+		},
+	}
+	var err_ error
+
+	var data_ reportTrafficLevelResultsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
