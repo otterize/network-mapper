@@ -13,6 +13,7 @@ type AWSOperation struct {
 	Resource string          `json:"resource"`
 	Actions  []string        `json:"actions"`
 	SrcIP    *string         `json:"srcIp,omitempty"`
+	IamRole  *string         `json:"iamRole,omitempty"`
 	Client   *NamespacedName `json:"client,omitempty"`
 }
 

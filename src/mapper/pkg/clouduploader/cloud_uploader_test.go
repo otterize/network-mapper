@@ -3,6 +3,7 @@ package clouduploader
 import (
 	"context"
 	"errors"
+	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"testing"
 	"time"
@@ -23,17 +24,19 @@ var (
 
 type CloudUploaderTestSuite struct {
 	suite.Suite
-	testNamespace  string
-	intentsHolder  *intentsstore.IntentsHolder
-	incomingHolder *incomingtrafficholder.IncomingTrafficIntentsHolder
-	cloudUploader  *CloudUploader
-	clientMock     *cloudclientmocks.MockCloudClient
+	testNamespace    string
+	intentsHolder    *intentsstore.IntentsHolder
+	awsIntentsHolder *awsintentsholder.AWSIntentsHolder
+	incomingHolder   *incomingtrafficholder.IncomingTrafficIntentsHolder
+	cloudUploader    *CloudUploader
+	clientMock       *cloudclientmocks.MockCloudClient
 }
 
 func (s *CloudUploaderTestSuite) SetupTest() {
 	s.testNamespace = "test-namespace"
 	s.intentsHolder = intentsstore.NewIntentsHolder()
 	s.incomingHolder = incomingtrafficholder.NewIncomingTrafficIntentsHolder()
+	s.awsIntentsHolder = awsintentsholder.New()
 }
 
 func (s *CloudUploaderTestSuite) BeforeTest(_, testName string) {
@@ -48,6 +51,17 @@ func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, d
 		model.Intent{
 			Client: &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
 			Server: &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
+		},
+	)
+}
+
+func (s *CloudUploaderTestSuite) addAwsIntent(source string, srcNamespace string, actions []string, arn string, role string) {
+	s.awsIntentsHolder.AddIntent(
+		awsintentsholder.AWSIntent{
+			Client:  model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
+			Actions: actions,
+			ARN:     arn,
+			IamRole: role,
 		},
 	)
 }
@@ -272,6 +286,49 @@ func (s *CloudUploaderTestSuite) TestReportMapperComponent() {
 	s.clientMock.EXPECT().ReportComponentStatus(gomock.Any(), cloudclient.ComponentTypeNetworkMapper).Times(1)
 
 	s.cloudUploader.reportStatus(context.Background())
+}
+
+func (s *CloudUploaderTestSuite) TestNotifyAWSIntents() {
+	clientName := "client1"
+	resoureArn := "arn:aws:s3:::bucket"
+	awsRole := "role"
+	awsActions := []string{"s3:GetObject"}
+	intentType := cloudclient.IntentTypeAws
+	s.addAwsIntent(clientName, s.testNamespace, awsActions, resoureArn, awsRole)
+
+	intents1 := []cloudclient.IntentInput{
+		{
+			ClientName: lo.ToPtr(clientName),
+			ServerName: lo.ToPtr(resoureArn),
+			Namespace:  lo.ToPtr(s.testNamespace),
+			Type:       lo.ToPtr(intentType),
+			AwsRole:    lo.ToPtr(awsRole),
+			AwsActions: []*string{lo.ToPtr("s3:GetObject")},
+		},
+	}
+
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents1)).Return(nil).Times(1)
+
+	s.cloudUploader.NotifyAWSIntents(context.Background(), s.awsIntentsHolder.GetNewIntentsSinceLastGet())
+
+	// Test with empty role - should send nil
+
+	s.addAwsIntent(clientName, s.testNamespace, awsActions, resoureArn, "")
+
+	intents2 := []cloudclient.IntentInput{
+		{
+			ClientName: lo.ToPtr(clientName),
+			ServerName: lo.ToPtr(resoureArn),
+			Namespace:  lo.ToPtr(s.testNamespace),
+			Type:       lo.ToPtr(intentType),
+			AwsRole:    nil,
+			AwsActions: []*string{lo.ToPtr("s3:GetObject")},
+		},
+	}
+
+	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents2)).Return(nil).Times(1)
+
+	s.cloudUploader.NotifyAWSIntents(context.Background(), s.awsIntentsHolder.GetNewIntentsSinceLastGet())
 }
 
 func TestRunSuite(t *testing.T) {

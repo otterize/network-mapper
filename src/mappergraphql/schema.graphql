@@ -162,6 +162,7 @@ input AWSOperation {
     resource: String!
     actions: [String!]!
     srcIp: String
+    iamRole: String
     client: NamespacedName
 }
 
