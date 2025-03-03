@@ -132,6 +132,35 @@ input AWSVisibilitySettingsInput {
 	regions: [String!]!
 }
 
+type AccessApprovalRuleset {
+	id: ID!
+	origin: AccessApprovalRulesetFilter!
+	target: AccessApprovalRulesetFilter!
+	action: AccessApprovalRulesetAction!
+}
+
+enum AccessApprovalRulesetAction {
+	AUTO_APPROVE
+	AUTO_DENY
+	REQUIRE_APPROVAL
+}
+
+type AccessApprovalRulesetFilter {
+	clusterIds: IDFilterValue
+	serviceIds: IDFilterValue
+	namespaceIds: IDFilterValue
+	environmentIds: IDFilterValue
+}
+
+enum AccessApprovalRulesetFilterValue {
+	ANY
+}
+
+type AccessApprovalRulesetSummary {
+	environment: Environment!
+	count: Int!
+}
+
 type AccessGraph {
 	filter: AccessGraphFilter!
 """Clusters for which there are results"""
@@ -201,6 +230,39 @@ enum ApiMethod {
 	PUT
 	PATCH
 	DELETE
+}
+
+"""applied intents request"""
+input AppliedIntentsRequestApprovalData {
+"""applied intents request"""
+	approved: Boolean!
+"""applied intents request"""
+	reason: String!
+}
+
+type AppliedIntentsRequestStatus {
+	id: ID!
+"""client"""
+	service: Service!
+	timestamp: Time!
+	status: AppliedIntentsRequestStatusLabel!
+	reason: String
+}
+
+enum AppliedIntentsRequestStatusLabel {
+	PENDING
+	APPROVED
+	DENIED
+}
+
+type AppliedIntentsRequestWithDetails {
+	id: ID!
+	clientService: Service!
+	serverServices: [Service!]!
+	timestamp: Time!
+	status: AppliedIntentsRequestStatusLabel!
+	reason: String
+	clientIntents: ClientIntentsFileRepresentation!
 }
 
 enum AwsIamStep {
@@ -577,6 +639,11 @@ input DatabaseVisibilitySettingsInput {
 
 enum DatabaseVisibilitySource {
 	GCP_PUBSUB
+}
+
+type DefaultIntentsApprovalActionByEnv {
+	environmentId: ID!
+	action: AccessApprovalRulesetAction!
 }
 
 type DetectedCloudServer {
@@ -985,6 +1052,40 @@ input IngressControllerConfigInput {
 	kind: String!
 }
 
+"""Ruleset"""
+input InputAccessApprovalRuleset {
+"""Ruleset"""
+	id: ID
+"""Ruleset"""
+	origin: InputAccessApprovalRulesetConfigFilter!
+"""Ruleset"""
+	target: InputAccessApprovalRulesetConfigFilter!
+"""Ruleset"""
+	action: AccessApprovalRulesetAction!
+}
+
+input InputAccessApprovalRulesetConfigFilter {
+	clusterIds: InputIDFilterValue
+	serviceIds: InputIDFilterValue
+	namespaceIds: InputIDFilterValue
+}
+
+""" Ruleset filter """
+input InputAccessApprovalRulesetFilter {
+""" Ruleset filter """
+	environmentIds: InputIDFilterValue
+""" Ruleset filter """
+	environmentNames: InputIDFilterValue
+""" Ruleset filter """
+	namespaceIds: InputIDFilterValue
+""" Ruleset filter """
+	clusterIds: InputIDFilterValue
+""" Ruleset filter """
+	serviceIds: InputIDFilterValue
+""" Ruleset filter """
+	actions: InputIDFilterValue
+}
+
 input InputAccessGraphFilter {
 	clusterIds: InputIDFilterValue
 	serviceIds: InputIDFilterValue
@@ -1015,6 +1116,27 @@ input InputAccessLogFilter {
 	accessVerdicts: InputIDFilterValue
 """ Access log filter """
 	accessStatusReasons: InputIDFilterValue
+}
+
+""" Applied intents request filter """
+input InputAppliedIntentsRequestFilter {
+""" Applied intents request filter """
+	requestIds: InputIDFilterValue
+""" Applied intents request filter """
+	clusterIds: InputIDFilterValue
+""" Applied intents request filter """
+	serviceIds: InputIDFilterValue
+""" Applied intents request filter """
+	namespaceIds: InputIDFilterValue
+""" Applied intents request filter """
+	environmentIds: InputIDFilterValue
+""" Applied intents request filter """
+	approvalStatuses: InputIDFilterValue
+}
+
+input InputDefaultIntentsApprovalActionByEnv {
+	environmentId: ID!
+	action: AccessApprovalRulesetAction!
 }
 
 input InputFeatureFlags {
@@ -1240,6 +1362,11 @@ input IntentInput {
 	internet: InternetConfigInput
 	status: IntentStatusInput
 	resolutionData: String
+}
+
+input IntentRequestInput {
+	requestId: ID!
+	intent: IntentInput!
 }
 
 type IntentStatus {
@@ -1616,6 +1743,19 @@ input MetadataEntry {
 type Mutation {
 """This is just a placeholder since currently GraphQL does not allow empty types"""
 	dummy: Boolean
+"""applied intents requests"""
+	reportAppliedIntentsRequest(
+		intents: [IntentRequestInput!]!
+	): Boolean!
+	updateIntentsApprovalStatus(
+		id: ID!
+		result: AppliedIntentsRequestApprovalData!
+	): Boolean!
+"""rulesets"""
+	createOrUpdateAccessApprovalRulesets(
+		environmentId: ID!
+		rules: [InputAccessApprovalRuleset!]!
+	): Boolean!
 """Register certificate-request details for kubernetes pod owner, returns the service associated with this pod owner"""
 	registerKubernetesPodOwnerCertificateRequest(
 		podOwner: NamespacedPodOwner!
@@ -2003,12 +2143,14 @@ type OrganizationSettings {
 	domains: [String!]
 	enforcedRegulations: [String!]
 	ignoredCloudDomains: [String!]
+	defaultIntentsApprovalActionByEnv: [DefaultIntentsApprovalActionByEnv!]!
 }
 
 input OrganizationSettingsInput {
 	domains: [String!]
 	enforcedRegulations: [String]
 	ignoredCloudDomains: [String!]
+	defaultIntentsApprovalActionByEnv: [InputDefaultIntentsApprovalActionByEnv!]
 }
 
 input PaginationInput {
@@ -2079,6 +2221,19 @@ type Query {
 	accessLog(
 		filter: InputAccessLogFilter
 	): AccessLog!
+"""applied intents requests"""
+	appliedIntentsRequestStatus(
+		filter: InputAppliedIntentsRequestFilter
+	): [AppliedIntentsRequestStatus!]!
+	appliedIntentsRequestWithDetails(
+		id: ID!
+		featureFlags: InputFeatureFlags
+	): AppliedIntentsRequestWithDetails!
+"""rulesets"""
+	accessApprovalRulesetSummary: [AccessApprovalRulesetSummary!]!
+	accessApprovalRulesetList(
+		filter: InputAccessApprovalRulesetFilter
+	): [AccessApprovalRuleset!]!
 """Get cluster"""
 	cluster(
 		id: ID!
