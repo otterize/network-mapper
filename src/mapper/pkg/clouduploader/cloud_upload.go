@@ -208,7 +208,7 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 		ctx,
 		lo.Map(intents, func(intent awsintentsholder.AWSIntent, _ int) *cloudclient.DiscoveredIntentInput {
 			var awsRole *string
-			if intents[0].IamRole != "" {
+			if intent.IamRole != "" {
 				awsRole = lo.ToPtr(intent.IamRole)
 			}
 			toCloud := &cloudclient.DiscoveredIntentInput{
