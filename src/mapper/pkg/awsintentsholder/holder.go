@@ -85,7 +85,7 @@ func (h *AWSIntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval t
 				continue
 			}
 
-			intents := h.getNewIntentsSinceLastGet()
+			intents := h.GetNewIntentsSinceLastGet()
 			if len(intents) == 0 {
 				continue
 			}
@@ -97,7 +97,7 @@ func (h *AWSIntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval t
 	}
 }
 
-func (h *AWSIntentsHolder) getNewIntentsSinceLastGet() []AWSIntent {
+func (h *AWSIntentsHolder) GetNewIntentsSinceLastGet() []AWSIntent {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 

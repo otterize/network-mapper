@@ -207,6 +207,10 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 	err := c.client.ReportDiscoveredIntents(
 		ctx,
 		lo.Map(intents, func(intent awsintentsholder.AWSIntent, _ int) *cloudclient.DiscoveredIntentInput {
+			var awsRole *string
+			if intents[0].IamRole != "" {
+				awsRole = lo.ToPtr(intent.IamRole)
+			}
 			toCloud := &cloudclient.DiscoveredIntentInput{
 				DiscoveredAt: &now,
 				Intent: &cloudclient.IntentInput{
@@ -214,7 +218,7 @@ func (c *CloudUploader) NotifyAWSIntents(ctx context.Context, intents []awsinten
 					Namespace:  &intent.Client.Namespace,
 					ServerName: &intent.ARN,
 					Type:       &intentType,
-					AwsRole:    lo.ToPtr(intent.IamRole),
+					AwsRole:    awsRole,
 					AwsActions: lo.ToSlicePtr(intent.Actions),
 				},
 			}
