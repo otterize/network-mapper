@@ -9,6 +9,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared"
 	"github.com/otterize/intents-operator/src/shared/clusterutils"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/intents-operator/src/shared/k8sconf"
 	"github.com/otterize/intents-operator/src/shared/telemetries/componentinfo"
 	"github.com/otterize/intents-operator/src/shared/telemetries/errorreporter"
 	istiowatcher "github.com/otterize/network-mapper/src/istio-watcher/pkg/watcher"
@@ -53,7 +54,6 @@ import (
 	"github.com/spf13/viper"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	clientconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -115,7 +115,7 @@ func main() {
 			BindAddress: "0",
 		},
 	}
-	mgr, err := manager.New(clientconfig.GetConfigOrDie(), options)
+	mgr, err := manager.New(k8sconf.KubernetesConfigOrDie(), options)
 	if err != nil {
 		logrus.Panicf("unable to set up overall controller manager: %s", err)
 	}
