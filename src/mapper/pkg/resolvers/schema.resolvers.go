@@ -121,6 +121,20 @@ func (r *mutationResolver) ReportAzureOperation(ctx context.Context, operation [
 	}
 }
 
+// ReportGCPOperation is the resolver for the reportGCPOperation field.
+func (r *mutationResolver) ReportGCPOperation(ctx context.Context, operation []model.GCPOperation) (bool, error) {
+	select {
+	case r.gcpOperations <- operation:
+		prometheus.IncrementGCPOperationReports(len(operation))
+		return true, nil
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		prometheus.IncrementGCPOperationDrops(len(operation))
+		return false, nil
+	}
+}
+
 // ReportTrafficLevelResults is the resolver for the reportTrafficLevelResults field.
 func (r *mutationResolver) ReportTrafficLevelResults(ctx context.Context, results model.TrafficLevelResults) (bool, error) {
 	select {

@@ -22,6 +22,12 @@ func (c AWSOperationResults) Length() int {
 	return len(c)
 }
 
+type GCPOperationResults []GCPOperation
+
+func (c GCPOperationResults) Length() int {
+	return len(c)
+}
+
 type AzureOperationResults []AzureOperation
 
 func (c AzureOperationResults) Length() int {

@@ -18,6 +18,10 @@ mutation reportAWSOperation($operation: [AWSOperation!]!) {
     reportAWSOperation(operation: $operation)
 }
 
+mutation reportGCPOperation($operation: [GCPOperation!]!) {
+    reportGCPOperation(operation: $operation)
+}
+
 mutation reportAzureOperation($operation: [AzureOperation!]!) {
     reportAzureOperation(operation: $operation)
 }

@@ -31,6 +31,11 @@ func (c *Client) ReportAWSOperation(ctx context.Context, operation []AWSOperatio
 	return errors.Wrap(err)
 }
 
+func (c *Client) ReportGCPOperation(ctx context.Context, operation []GCPOperation) error {
+	_, err := reportGCPOperation(ctx, c.client, operation)
+	return errors.Wrap(err)
+}
+
 func (c *Client) ReportAzureOperation(ctx context.Context, operation []AzureOperation) error {
 	_, err := reportAzureOperation(ctx, c.client, operation)
 	return errors.Wrap(err)

@@ -8,6 +8,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"time"
 
@@ -253,6 +254,38 @@ func (c *CloudUploader) NotifyAzureIntents(ctx context.Context, ops []model.Azur
 				Type:             &intentType,
 				AzureActions:     lo.ToSlicePtr(op.Actions),
 				AzureDataActions: lo.ToSlicePtr(op.DataActions),
+			},
+		}
+		return toCloud
+	})
+
+	err := c.client.ReportDiscoveredIntents(
+		ctx,
+		intents,
+	)
+
+	if err != nil {
+		logrus.WithError(err).Error("Failed to report discovered intents to cloud")
+	}
+}
+
+func (c *CloudUploader) NotifyGCPIntents(ctx context.Context, ops []gcpintentsholder.GCPIntent) {
+	if len(ops) == 0 {
+		return
+	}
+
+	intentType := cloudclient.IntentTypeGcp
+	now := time.Now()
+
+	intents := lo.Map(ops, func(op gcpintentsholder.GCPIntent, _ int) *cloudclient.DiscoveredIntentInput {
+		toCloud := &cloudclient.DiscoveredIntentInput{
+			DiscoveredAt: &now,
+			Intent: &cloudclient.IntentInput{
+				ClientName:     &op.Client.Name,
+				Namespace:      &op.Client.Namespace,
+				ServerName:     &op.Resource,
+				Type:           &intentType,
+				GcpPermissions: lo.ToSlicePtr(op.Permissions),
 			},
 		}
 		return toCloud

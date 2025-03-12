@@ -19,6 +19,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnsintentspublisher"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
@@ -166,6 +167,7 @@ func main() {
 	externalTrafficIntentsHolder := externaltrafficholder.NewExternalTrafficIntentsHolder()
 	incomingTrafficIntentsHolder := incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	awsIntentsHolder := awsintentsholder.New()
+	gcpIntentsHolder := gcpintentsholder.New()
 	azureIntentsHolder := azureintentsholder.New()
 	trafficCollector := traffic.NewCollector()
 
@@ -175,6 +177,7 @@ func main() {
 		intentsHolder,
 		externalTrafficIntentsHolder,
 		awsIntentsHolder,
+		gcpIntentsHolder,
 		azureIntentsHolder,
 		dnsCache,
 		incomingTrafficIntentsHolder,
@@ -212,6 +215,7 @@ func main() {
 			incomingTrafficIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyIncomingTrafficIntents)
 		}
 		awsIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAWSIntents)
+		gcpIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyGCPIntents)
 		azureIntentsHolder.RegisterNotifyIntents(cloudUploader.NotifyAzureIntents)
 		trafficCollector.RegisterNotifyTraffic(cloudUploader.NotifyTrafficLevels)
 
@@ -267,6 +271,11 @@ func main() {
 	errgrp.Go(func() error {
 		defer errorreporter.AutoNotify()
 		awsIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
+		return nil
+	})
+	errgrp.Go(func() error {
+		defer errorreporter.AutoNotify()
+		gcpIntentsHolder.PeriodicIntentsUpload(errGroupCtx, cloudUploaderConfig.UploadInterval)
 		return nil
 	})
 	errgrp.Go(func() error {

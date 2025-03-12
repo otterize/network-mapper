@@ -5,6 +5,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/exp/slices"
 	"testing"
 	"time"
 )
@@ -97,7 +98,10 @@ func (s *DNSCacheTestSuite) TestMultipleWildcardIPs() {
 	cache.AddOrUpdateDNSData("api.surf-forecast.com", IP2, 60*time.Second)
 	ips := cache.GetResolvedIPsForWildcard("*.surf-forecast.com")
 	s.Require().Len(ips, 2)
-	s.Require().Equal(ips, []string{IP1, IP2})
+	slices.Sort(ips)
+	compIps := []string{IP1, IP2}
+	slices.Sort(compIps)
+	s.Require().Equal(ips, compIps)
 }
 
 func TestDNSCacheTestSuite(t *testing.T) {

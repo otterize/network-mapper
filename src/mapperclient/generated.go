@@ -93,6 +93,25 @@ func (v *Destination) GetTTL() nilable.Nilable[int] { return v.TTL }
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
 
+type GCPOperation struct {
+	Resource    string                          `json:"resource"`
+	Permissions []string                        `json:"permissions"`
+	SrcIp       nilable.Nilable[string]         `json:"srcIp"`
+	Client      nilable.Nilable[NamespacedName] `json:"client"`
+}
+
+// GetResource returns GCPOperation.Resource, and is useful for accessing the field via an interface.
+func (v *GCPOperation) GetResource() string { return v.Resource }
+
+// GetPermissions returns GCPOperation.Permissions, and is useful for accessing the field via an interface.
+func (v *GCPOperation) GetPermissions() []string { return v.Permissions }
+
+// GetSrcIp returns GCPOperation.SrcIp, and is useful for accessing the field via an interface.
+func (v *GCPOperation) GetSrcIp() nilable.Nilable[string] { return v.SrcIp }
+
+// GetClient returns GCPOperation.Client, and is useful for accessing the field via an interface.
+func (v *GCPOperation) GetClient() nilable.Nilable[NamespacedName] { return v.Client }
+
 // HealthResponse is returned by Health on success.
 type HealthResponse struct {
 	Health bool `json:"health"`
@@ -218,6 +237,14 @@ type __reportCaptureResultsInput struct {
 // GetResults returns __reportCaptureResultsInput.Results, and is useful for accessing the field via an interface.
 func (v *__reportCaptureResultsInput) GetResults() CaptureResults { return v.Results }
 
+// __reportGCPOperationInput is used internally by genqlient
+type __reportGCPOperationInput struct {
+	Operation []GCPOperation `json:"operation"`
+}
+
+// GetOperation returns __reportGCPOperationInput.Operation, and is useful for accessing the field via an interface.
+func (v *__reportGCPOperationInput) GetOperation() []GCPOperation { return v.Operation }
+
 // __reportKafkaMapperResultsInput is used internally by genqlient
 type __reportKafkaMapperResultsInput struct {
 	Results KafkaMapperResults `json:"results"`
@@ -273,6 +300,14 @@ type reportCaptureResultsResponse struct {
 
 // GetReportCaptureResults returns reportCaptureResultsResponse.ReportCaptureResults, and is useful for accessing the field via an interface.
 func (v *reportCaptureResultsResponse) GetReportCaptureResults() bool { return v.ReportCaptureResults }
+
+// reportGCPOperationResponse is returned by reportGCPOperation on success.
+type reportGCPOperationResponse struct {
+	ReportGCPOperation bool `json:"reportGCPOperation"`
+}
+
+// GetReportGCPOperation returns reportGCPOperationResponse.ReportGCPOperation, and is useful for accessing the field via an interface.
+func (v *reportGCPOperationResponse) GetReportGCPOperation() bool { return v.ReportGCPOperation }
 
 // reportKafkaMapperResultsResponse is returned by reportKafkaMapperResults on success.
 type reportKafkaMapperResultsResponse struct {
@@ -431,6 +466,39 @@ func reportCaptureResults(
 	var err_ error
 
 	var data_ reportCaptureResultsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by reportGCPOperation.
+const reportGCPOperation_Operation = `
+mutation reportGCPOperation ($operation: [GCPOperation!]!) {
+	reportGCPOperation(operation: $operation)
+}
+`
+
+func reportGCPOperation(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	operation []GCPOperation,
+) (*reportGCPOperationResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "reportGCPOperation",
+		Query:  reportGCPOperation_Operation,
+		Variables: &__reportGCPOperationInput{
+			Operation: operation,
+		},
+	}
+	var err_ error
+
+	var data_ reportGCPOperationResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

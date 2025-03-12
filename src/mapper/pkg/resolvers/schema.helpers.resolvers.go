@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
@@ -301,6 +302,52 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 			WithField("arn", op.Resource).
 			WithField("iam role", op.IamRole).
 			Debug("Discovered AWS intent")
+	}
+
+	return nil
+}
+
+func (r *Resolver) handleGCPOperationReport(ctx context.Context, operation model.GCPOperationResults) error {
+	for _, op := range operation {
+		var serviceIdentity model.OtterizeServiceIdentity
+
+		if op.Client != nil {
+			serviceIdentity.Name = op.Client.Name
+			serviceIdentity.Namespace = op.Client.Namespace
+		} else if op.SrcIP != nil {
+			srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, *op.SrcIP)
+
+			if err != nil {
+				logrus.Errorf("could not resolve IP %s to pod: %s", *op.SrcIP, err.Error())
+				continue
+			}
+
+			serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
+
+			if err != nil {
+				logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
+				continue
+			}
+
+			serviceIdentity.Name = serviceId.Name
+			serviceIdentity.Namespace = srcPod.Namespace
+		} else {
+			logrus.Error("Invalid GCP operation report: both srcIP and client are nil")
+			continue
+		}
+
+		r.gcpIntentsHolder.AddIntent(gcpintentsholder.GCPIntent{
+			Client:      serviceIdentity,
+			Permissions: op.Permissions,
+			Resource:    op.Resource,
+		})
+
+		logrus.
+			WithField("clientName", serviceIdentity.Name).
+			WithField("clientNamespace", serviceIdentity.Namespace).
+			WithField("permissions", op.Permissions).
+			WithField("arn", op.Resource).
+			Debug("Discovered GCP intent")
 	}
 
 	return nil

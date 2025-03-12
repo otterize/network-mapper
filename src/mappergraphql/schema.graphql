@@ -166,6 +166,13 @@ input AWSOperation {
     client: NamespacedName
 }
 
+input GCPOperation {
+    resource: String!
+    permissions: [String!]!
+    srcIp: String
+    client: NamespacedName
+}
+
 input ServerFilter {
     name: String!
     namespace: String!
@@ -228,5 +235,6 @@ type Mutation {
     reportIstioConnectionResults(results: IstioConnectionResults!): Boolean!
     reportAWSOperation(operation: [AWSOperation!]!): Boolean!
     reportAzureOperation(operation: [AzureOperation!]!): Boolean!
+    reportGCPOperation(operation: [GCPOperation!]!): Boolean!
     reportTrafficLevelResults(results: TrafficLevelResults!): Boolean!
 }
