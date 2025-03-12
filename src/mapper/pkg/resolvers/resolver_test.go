@@ -13,6 +13,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
@@ -42,6 +43,7 @@ type ResolverTestSuite struct {
 	kubeFinder                   *kubefinder.KubeFinder
 	intentsHolder                *intentsstore.IntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	gcpIntentsHolder             *gcpintentsholder.GCPIntentsHolder
 	azureIntentsHolder           *azureintentsholder.AzureIntentsHolder
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	incomingTrafficIntentsHolder *incomingtrafficholder.IncomingTrafficIntentsHolder
@@ -61,6 +63,7 @@ func (s *ResolverTestSuite) SetupTest() {
 	s.externalTrafficIntentsHolder = externaltrafficholder.NewExternalTrafficIntentsHolder()
 	s.incomingTrafficIntentsHolder = incomingtrafficholder.NewIncomingTrafficIntentsHolder()
 	s.awsIntentsHolder = awsintentsholder.New()
+	s.gcpIntentsHolder = gcpintentsholder.New()
 	s.azureIntentsHolder = azureintentsholder.New()
 	dnsCache := dnscache.NewDNSCache()
 
@@ -70,6 +73,7 @@ func (s *ResolverTestSuite) SetupTest() {
 		s.intentsHolder,
 		s.externalTrafficIntentsHolder,
 		s.awsIntentsHolder,
+		s.gcpIntentsHolder,
 		s.azureIntentsHolder,
 		dnsCache,
 		s.incomingTrafficIntentsHolder,
