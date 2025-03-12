@@ -817,6 +817,7 @@ type FeatureFlags {
 	enableFindingsV2: Boolean
 	useTypedIntentsCTE: Boolean
 	enableInternetIntentsSuggestions: Boolean
+	enableIAMIntentsSuggestions: Boolean
 }
 
 type Finding {
@@ -1146,6 +1147,7 @@ input InputFeatureFlags {
 	enableFindingsV2: Boolean
 	useTypedIntentsCTE: Boolean
 	enableInternetIntentsSuggestions: Boolean
+	enableIAMIntentsSuggestions: Boolean
 }
 
 """ Findings filter """

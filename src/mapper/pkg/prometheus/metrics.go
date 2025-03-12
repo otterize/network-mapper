@@ -57,6 +57,15 @@ var (
 		Help: "The total number of AWS operations reported that were dropped for performance",
 	})
 
+	gcpReports = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "gcp_reports",
+		Help: "The total number of GCP operations reported",
+	})
+	gcpReportsDrops = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "gcp_dropped_reports",
+		Help: "The total number of GCP operations reported that were dropped for performance",
+	})
+
 	azureReports = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "azure_reports",
 		Help: "The total number of Azure operations reported",
@@ -95,6 +104,10 @@ func IncrementAWSOperationReports(count int) {
 	awsReports.Add(float64(count))
 }
 
+func IncrementGCPOperationReports(count int) {
+	gcpReports.Add(float64(count))
+}
+
 func IncrementSocketScanDrops(count int) {
 	socketScanDrops.Add(float64(count))
 }
@@ -115,9 +128,14 @@ func IncrementAWSOperationDrops(count int) {
 	awsReportsDrops.Add(float64(count))
 }
 
+func IncrementGCPOperationDrops(count int) {
+	gcpReportsDrops.Add(float64(count))
+}
+
 func IncrementAzureOperationReports(count int) {
 	azureReports.Add(float64(count))
 }
+
 func IncrementAzureOperationDrops(count int) {
 	azureReportsDrops.Add(float64(count))
 }

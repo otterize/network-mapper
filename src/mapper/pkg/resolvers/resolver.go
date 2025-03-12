@@ -12,6 +12,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/collectors/traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache"
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/generated"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
@@ -32,6 +33,7 @@ type Resolver struct {
 	externalTrafficIntentsHolder *externaltrafficholder.ExternalTrafficIntentsHolder
 	incomingTrafficHolder        *incomingtrafficholder.IncomingTrafficIntentsHolder
 	awsIntentsHolder             *awsintentsholder.AWSIntentsHolder
+	gcpIntentsHolder             *gcpintentsholder.GCPIntentsHolder
 	azureIntentsHolder           *azureintentsholder.AzureIntentsHolder
 	dnsCache                     *dnscache.DNSCache
 	trafficCollector             *traffic.Collector
@@ -41,6 +43,7 @@ type Resolver struct {
 	kafkaMapperResults           chan model.KafkaMapperResults
 	istioConnectionResults       chan model.IstioConnectionResults
 	awsOperations                chan model.AWSOperationResults
+	gcpOperations                chan model.GCPOperationResults
 	azureOperations              chan model.AzureOperationResults
 	trafficLevelsResults         chan model.TrafficLevelResults
 	gotResultsCtx                context.Context
@@ -54,6 +57,7 @@ func NewResolver(
 	intentsHolder *intentsstore.IntentsHolder,
 	externalTrafficHolder *externaltrafficholder.ExternalTrafficIntentsHolder,
 	awsIntentsHolder *awsintentsholder.AWSIntentsHolder,
+	gcpIntentsHolder *gcpintentsholder.GCPIntentsHolder,
 	azureIntentsHolder *azureintentsholder.AzureIntentsHolder,
 	dnsCache *dnscache.DNSCache,
 	incomingTrafficHolder *incomingtrafficholder.IncomingTrafficIntentsHolder,
@@ -74,6 +78,7 @@ func NewResolver(
 		azureOperations:              make(chan model.AzureOperationResults, 200),
 		trafficLevelsResults:         make(chan model.TrafficLevelResults, 200),
 		awsIntentsHolder:             awsIntentsHolder,
+		gcpIntentsHolder:             gcpIntentsHolder,
 		azureIntentsHolder:           azureIntentsHolder,
 		trafficCollector:             trafficCollector,
 		dnsCache:                     dnsCache,
@@ -118,6 +123,10 @@ func (r *Resolver) RunForever(ctx context.Context) error {
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGrpCtx)
 		return runHandleLoop(errGrpCtx, r.awsOperations, r.handleAWSOperationReport)
+	})
+	errgrp.Go(func() error {
+		defer bugsnag.AutoNotify(errGrpCtx)
+		return runHandleLoop(errGrpCtx, r.gcpOperations, r.handleGCPOperationReport)
 	})
 	errgrp.Go(func() error {
 		defer bugsnag.AutoNotify(errGrpCtx)

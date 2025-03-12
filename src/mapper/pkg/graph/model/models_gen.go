@@ -41,6 +41,13 @@ type Destination struct {
 	LastSeen        time.Time `json:"lastSeen"`
 }
 
+type GCPOperation struct {
+	Resource    string          `json:"resource"`
+	Permissions []string        `json:"permissions"`
+	SrcIP       *string         `json:"srcIp,omitempty"`
+	Client      *NamespacedName `json:"client,omitempty"`
+}
+
 type GroupVersionKind struct {
 	Group   *string `json:"group,omitempty"`
 	Version string  `json:"version"`
