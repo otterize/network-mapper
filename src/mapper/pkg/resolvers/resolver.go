@@ -76,6 +76,7 @@ func NewResolver(
 		istioConnectionResults:       make(chan model.IstioConnectionResults, 200),
 		awsOperations:                make(chan model.AWSOperationResults, 200),
 		azureOperations:              make(chan model.AzureOperationResults, 200),
+		gcpOperations:                make(chan model.GCPOperationResults, 200),
 		trafficLevelsResults:         make(chan model.TrafficLevelResults, 200),
 		awsIntentsHolder:             awsIntentsHolder,
 		gcpIntentsHolder:             gcpIntentsHolder,
