@@ -308,6 +308,8 @@ func (r *Resolver) handleAWSOperationReport(ctx context.Context, operation model
 }
 
 func (r *Resolver) handleGCPOperationReport(ctx context.Context, operation model.GCPOperationResults) error {
+	logger := logrus.WithField("resolver", "gcp")
+
 	for _, op := range operation {
 		var serviceIdentity model.OtterizeServiceIdentity
 
@@ -318,21 +320,27 @@ func (r *Resolver) handleGCPOperationReport(ctx context.Context, operation model
 			srcPod, err := r.kubeFinder.ResolveIPToPod(ctx, *op.SrcIP)
 
 			if err != nil {
-				logrus.Errorf("could not resolve IP %s to pod: %s", *op.SrcIP, err.Error())
+				logger.
+					WithError(err).
+					WithField("srcIP", *op.SrcIP).
+					Error("could not resolve IP to pod")
 				continue
 			}
 
 			serviceId, err := r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, srcPod)
 
 			if err != nil {
-				logrus.Errorf("could not resolve pod %s to identity: %s", srcPod.Name, err.Error())
+				logger.
+					WithError(err).
+					WithField("podName", srcPod.Name).
+					Error("could not resolve pod to identity")
 				continue
 			}
 
 			serviceIdentity.Name = serviceId.Name
 			serviceIdentity.Namespace = srcPod.Namespace
 		} else {
-			logrus.Error("Invalid GCP operation report: both srcIP and client are nil")
+			logger.Error("Invalid GCP operation report: both srcIP and client are nil")
 			continue
 		}
 
@@ -342,11 +350,11 @@ func (r *Resolver) handleGCPOperationReport(ctx context.Context, operation model
 			Resource:    op.Resource,
 		})
 
-		logrus.
+		logger.
 			WithField("clientName", serviceIdentity.Name).
 			WithField("clientNamespace", serviceIdentity.Namespace).
 			WithField("permissions", op.Permissions).
-			WithField("arn", op.Resource).
+			WithField("resource", op.Resource).
 			Debug("Discovered GCP intent")
 	}
 
