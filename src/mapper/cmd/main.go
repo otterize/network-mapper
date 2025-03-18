@@ -244,9 +244,11 @@ func main() {
 			logrus.WithError(err).Panic("unable to create namespace reconciler")
 		}
 
-		metricsCollectorPodReconciler := metrics_collection_traffic.NewPodReconciler(mgr.GetClient(), serviceidresolver.NewResolver(mgr.GetClient()), cloudClient)
+		metricsCollectionTrafficHandler := metrics_collection_traffic.NewMetricsCollectionTrafficHandler(mgr.GetClient(), serviceidresolver.NewResolver(mgr.GetClient()), cloudClient)
+
+		metricsCollectorPodReconciler := metrics_collection_traffic.NewPodReconciler(metricsCollectionTrafficHandler)
 		if err = metricsCollectorPodReconciler.SetupWithManager(mgr); err != nil {
-			logrus.WithError(err).Panic("unable to create service reconciler")
+			logrus.WithError(err).Panic("unable to create pod reconciler")
 		}
 	}
 
