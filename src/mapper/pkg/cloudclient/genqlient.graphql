@@ -23,6 +23,10 @@ mutation ReportK8sIngresses($namespace: String!, $ingresses: [K8sIngressInput!]!
     reportK8sIngresses(namespace: $namespace, ingresses: $ingresses)
 }
 
+mutation ReportK8sResourceEligibleForMetricsCollection($namespace: String!, $reason: EligibleForMetricsCollectionReason!, $resources: [K8sResourceEligibleForMetricsCollectionInput!]!) {
+    reportK8sResourceEligibleForMetricsCollection(namespace: $namespace, reason: $reason, resources: $resources)
+}
+
 mutation ReportTrafficLevels(
     $trafficLevels: [TrafficLevelInput!]!
 ) {

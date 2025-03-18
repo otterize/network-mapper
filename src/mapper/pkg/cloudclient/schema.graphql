@@ -743,6 +743,11 @@ type EdgeAccessStatuses {
 	linkerdPolicies: EdgeAccessStatus!
 }
 
+enum EligibleForMetricsCollectionReason {
+	POD_ANNOTATIONS
+	SERVICE_ANNOTATIONS
+}
+
 type Environment {
 	id: ID!
 	name: String!
@@ -1468,6 +1473,7 @@ input IntentsOperatorConfigurationInput {
 	awsALBLoadBalancerExemptionEnabled: Boolean
 	allowExternalTrafficPolicy: AllowExternalTrafficPolicy
 	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
+	automateThirdPartyNetworkPolicies: AllowExternalTrafficPolicy
 }
 
 type IntentsOperatorState {
@@ -1565,6 +1571,12 @@ enum K8sPortProtocol {
 	TCP
 	UDP
 	SCTP
+}
+
+input K8sResourceEligibleForMetricsCollectionInput {
+	namespace: String!
+	name: String!
+	kind: String!
 }
 
 input K8sResourceIngressInput {
@@ -2030,6 +2042,11 @@ type Mutation {
 	reportK8sIngresses(
 		namespace: String!
 		ingresses: [K8sIngressInput!]!
+	): Boolean!
+	reportK8sResourceEligibleForMetricsCollection(
+		namespace: String!
+		reason: EligibleForMetricsCollectionReason!
+		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
 	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!

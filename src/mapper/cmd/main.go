@@ -22,6 +22,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/labelreporter"
+	"github.com/otterize/network-mapper/src/mapper/pkg/metrics_collection_traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
@@ -241,6 +242,11 @@ func main() {
 		namespaceReconciler := labelreporter.NewNamespaceReconciler(mgr.GetClient(), cloudClient)
 		if err := namespaceReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create namespace reconciler")
+		}
+
+		metricsCollectorPodReconciler := metrics_collection_traffic.NewPodReconciler(mgr.GetClient(), serviceidresolver.NewResolver(mgr.GetClient()), cloudClient)
+		if err = metricsCollectorPodReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create service reconciler")
 		}
 	}
 
