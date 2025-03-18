@@ -250,6 +250,16 @@ func main() {
 		if err = metricsCollectorPodReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create pod reconciler")
 		}
+
+		metricsCollectorServiceReconciler := metrics_collection_traffic.NewServiceReconciler(metricsCollectionTrafficHandler)
+		if err = metricsCollectorServiceReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create service reconciler")
+		}
+
+		metricsCollectorEndpointsReconciler := metrics_collection_traffic.NewEndpointsReconciler(metricsCollectionTrafficHandler)
+		if err = metricsCollectorEndpointsReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create endpoints reconciler")
+		}
 	}
 
 	if viper.GetBool(config.OTelEnabledKey) {
