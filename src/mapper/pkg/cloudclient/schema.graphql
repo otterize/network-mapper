@@ -734,6 +734,11 @@ type EdgeAccessStatuses {
 	linkerdPolicies: EdgeAccessStatus!
 }
 
+enum EligibleForMetricsCollectionReason {
+	POD_ANNOTATIONS
+	SERVICE_ANNOTATIONS
+}
+
 type Environment {
 	id: ID!
 	name: String!
@@ -782,6 +787,7 @@ enum EventType {
 	ACTIVE
 	EBPF_ATTACHED
 	EBPF_ATTACH_FAILED
+	EBPF_PROCESSING_ERROR
 }
 
 input ExternalTrafficDiscoveredIntentInput {
@@ -1211,6 +1217,25 @@ input InputServiceFilter {
 	integrationIds: [ID!]
 }
 
+input InputTerraformAwsPolicyInfo {
+	arn: String!
+	address: String!
+}
+
+input InputTerraformAwsRoleInfo {
+	arn: String!
+	address: String!
+	inlinePolicy: String!
+	attachedPolicies: [InputTerraformAwsPolicyInfo!]
+}
+
+input InputTerraformResourceInfo {
+	modulePath: String!
+	gitOriginUrl: String!
+	gitCommitHash: String!
+	awsRoles: [InputTerraformAwsRoleInfo!]
+}
+
 input InputTimeFilterValue {
 	value: Time!
 	operator: TimeFilterOperators!
@@ -1432,6 +1457,7 @@ input IntentsOperatorConfigurationInput {
 	awsALBLoadBalancerExemptionEnabled: Boolean
 	allowExternalTrafficPolicy: AllowExternalTrafficPolicy
 	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
+	automateThirdPartyNetworkPolicies: AllowExternalTrafficPolicy
 }
 
 type IntentsOperatorState {
@@ -1529,6 +1555,12 @@ enum K8sPortProtocol {
 	TCP
 	UDP
 	SCTP
+}
+
+input K8sResourceEligibleForMetricsCollectionInput {
+	namespace: String!
+	name: String!
+	kind: String!
 }
 
 input K8sResourceIngressInput {
@@ -1992,6 +2024,11 @@ type Mutation {
 		namespace: String!
 		ingresses: [K8sIngressInput!]!
 	): Boolean!
+	reportK8sResourceEligibleForMetricsCollection(
+		namespace: String!
+		reason: EligibleForMetricsCollectionReason!
+		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
+	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
@@ -2047,6 +2084,10 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+"""report terraform resources from Otterize CLI"""
+	reportTerraformResources(
+		resourceInfo: InputTerraformResourceInfo!
+	): TerraformResourceInfo!
 """Update service"""
 	reportTrafficLevels(
 		trafficLevels: [TrafficLevelInput!]!
@@ -2385,6 +2426,12 @@ type Query {
 	serviceByIdentity(
 		identity: ServiceIdentityInput!
 	): Service!
+"""get terraform resource by git identity"""
+	terraformResourceByIdentity(
+		modulePath: String!
+		gitOriginUrl: String!
+		gitCommitHash: String!
+	): TerraformResourceInfo!
 """List users"""
 	users: [User!]!
 """Get user"""
@@ -2718,6 +2765,25 @@ input TelemetryData {
 input TelemetryInput {
 	component: Component!
 	data: TelemetryData!
+}
+
+type TerraformAwsPolicyInfo {
+	arn: String!
+	address: String!
+}
+
+type TerraformAwsRoleInfo {
+	arn: String!
+	address: String!
+	inlinePolicy: String!
+	attachedPolicies: [TerraformAwsPolicyInfo!]
+}
+
+type TerraformResourceInfo {
+	modulePath: String!
+	gitOriginUrl: String!
+	gitCommitHash: String!
+	awsRoles: [TerraformAwsRoleInfo!]
 }
 
 type TestDatabaseConnectionResponse {
