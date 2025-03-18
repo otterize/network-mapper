@@ -1,6 +1,7 @@
 package metrics_collection_traffic
 
 import (
+	"bytes"
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
@@ -17,13 +18,17 @@ type MetricsCollectionTrafficHandler struct {
 	client.Client
 	serviceIdResolver *serviceidresolver.Resolver
 	otterizeCloud     cloudclient.CloudClient
+	cache             *MetricsCollectionTrafficCache
 }
 
 func NewMetricsCollectionTrafficHandler(client client.Client, serviceIdResolver *serviceidresolver.Resolver, otterizeCloud cloudclient.CloudClient) *MetricsCollectionTrafficHandler {
+	cache := NewMetricsCollectionTrafficCache()
+
 	return &MetricsCollectionTrafficHandler{
 		Client:            client,
 		serviceIdResolver: serviceIdResolver,
 		otterizeCloud:     otterizeCloud,
+		cache:             cache,
 	}
 }
 
@@ -108,12 +113,23 @@ func (r *MetricsCollectionTrafficHandler) reportToCloud(ctx context.Context, nam
 		return item.Name
 	})
 
-	// TODO: Add cache and report to cloud only if something changed
-
-	err := r.otterizeCloud.ReportK8sResourceEligibleForMetricsCollection(ctx, namespace, reason, pods)
+	newCacheValue, err := r.cache.GenerateValue(pods)
 	if err != nil {
 		return errors.Wrap(err)
 	}
+
+	currentCacheValue, found := r.cache.Get(namespace, reason)
+	if found && bytes.Equal(currentCacheValue, newCacheValue) {
+		// current cache value is same as the new one, no need to report
+		return nil
+	}
+
+	err = r.otterizeCloud.ReportK8sResourceEligibleForMetricsCollection(ctx, namespace, reason, pods)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	r.cache.Set(namespace, reason, newCacheValue)
 
 	return nil
 }
