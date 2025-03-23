@@ -87,9 +87,10 @@ func (r *Resolver) resolveInClusterIdentity(ctx context.Context, pod *corev1.Pod
 	}
 
 	modelSvcIdentity := model.OtterizeServiceIdentity{
-		Name:      svcIdentity.Name,
-		Namespace: pod.Namespace,
-		Labels:    kubefinder.PodLabelsToOtterizeLabels(pod),
+		Name:                        svcIdentity.Name,
+		Namespace:                   pod.Namespace,
+		Labels:                      kubefinder.PodLabelsToOtterizeLabels(pod),
+		NameResolvedUsingAnnotation: svcIdentity.ResolvedUsingOverrideAnnotation,
 		ResolutionData: &model.IdentityResolutionData{
 			Host:              lo.ToPtr(pod.Status.PodIP),
 			PodHostname:       lo.ToPtr(pod.Name),

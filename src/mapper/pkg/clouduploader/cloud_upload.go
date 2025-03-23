@@ -43,11 +43,13 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 		toCloud := &cloudclient.DiscoveredIntentInput{
 			DiscoveredAt: lo.ToPtr(intent.Timestamp),
 			Intent: &cloudclient.IntentInput{
-				ClientName:      &intent.Intent.Client.Name,
-				Namespace:       &intent.Intent.Client.Namespace,
-				ServerName:      &intent.Intent.Server.Name,
-				ServerNamespace: &intent.Intent.Server.Namespace,
-				Type:            modelIntentTypeToAPI(intent.Intent.Type),
+				ClientName:                        &intent.Intent.Client.Name,
+				Namespace:                         &intent.Intent.Client.Namespace,
+				ClientNameResolvedUsingAnnotation: intent.Intent.Client.NameResolvedUsingAnnotation,
+				ServerName:                        &intent.Intent.Server.Name,
+				ServerNamespace:                   &intent.Intent.Server.Namespace,
+				ServerNameResolvedUsingAnnotation: intent.Intent.Server.NameResolvedUsingAnnotation,
+				Type:                              modelIntentTypeToAPI(intent.Intent.Type),
 				Topics: lo.Map(intent.Intent.KafkaTopics,
 					func(item model.KafkaConfig, _ int) *cloudclient.KafkaConfigInput {
 						return lo.ToPtr(modelKafkaConfToAPI(item))

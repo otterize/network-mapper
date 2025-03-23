@@ -111,9 +111,10 @@ func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destin
 	}
 
 	dstSvcIdentity := model.OtterizeServiceIdentity{
-		Name:      dstService.Name,
-		Namespace: destPod.Namespace,
-		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
+		Name:                        dstService.Name,
+		Namespace:                   destPod.Namespace,
+		Labels:                      kubefinder.PodLabelsToOtterizeLabels(destPod),
+		NameResolvedUsingAnnotation: dstService.ResolvedUsingOverrideAnnotation,
 		ResolutionData: &model.IdentityResolutionData{
 			Host:              lo.ToPtr(dest.Destination),
 			PodHostname:       lo.ToPtr(destPod.Name),
@@ -193,9 +194,10 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 		return errors.Wrap(err)
 	}
 	dstSvcIdentity := &model.OtterizeServiceIdentity{
-		Name:      dstService.Name,
-		Namespace: destPod.Namespace,
-		Labels:    kubefinder.PodLabelsToOtterizeLabels(destPod),
+		Name:                        dstService.Name,
+		Namespace:                   destPod.Namespace,
+		Labels:                      kubefinder.PodLabelsToOtterizeLabels(destPod),
+		NameResolvedUsingAnnotation: dstService.ResolvedUsingOverrideAnnotation,
 		ResolutionData: &model.IdentityResolutionData{
 			Host:              lo.ToPtr(dest.Destination),
 			PodHostname:       lo.ToPtr(destPod.Name),
@@ -487,6 +489,9 @@ func (r *Resolver) resolveOtterizeIdentityForDestinationAddress(ctx context.Cont
 	}
 	if serviceName.Name != "" {
 		dstSvcIdentity.KubernetesService = &serviceName.Name
+	}
+	if dstSvcIdentity.NameResolvedUsingAnnotation != nil {
+		dstSvcIdentity.NameResolvedUsingAnnotation = dstService.ResolvedUsingOverrideAnnotation
 	}
 	return dstSvcIdentity, true, nil
 }
@@ -823,8 +828,8 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 			continue
 		}
 
-		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(srcPod)}
-		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(dstPod)}
+		srcSvcIdentity := model.OtterizeServiceIdentity{Name: srcService.Name, Namespace: srcPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(srcPod), NameResolvedUsingAnnotation: srcService.ResolvedUsingOverrideAnnotation}
+		dstSvcIdentity := model.OtterizeServiceIdentity{Name: dstService.Name, Namespace: dstPod.Namespace, Labels: kubefinder.PodLabelsToOtterizeLabels(dstPod), NameResolvedUsingAnnotation: dstService.ResolvedUsingOverrideAnnotation}
 		if srcService.OwnerObject != nil {
 			srcSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(srcService.OwnerObject.GetObjectKind().GroupVersionKind())
 		}
