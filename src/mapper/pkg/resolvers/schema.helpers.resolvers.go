@@ -380,7 +380,7 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 			logrus.
 				WithField("ip", report.SrcIP).
 				WithError(err).
-				Error("Could not resolve source IP to identity")
+				Debug("could not resolve source IP to identity")
 			continue
 		}
 
@@ -390,7 +390,7 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 			logrus.
 				WithField("ip", report.DstIP).
 				WithError(err).
-				Error("Could not resolve destination IP to identity")
+				Debug("could not resolve destination IP to identity")
 			continue
 		}
 
@@ -400,8 +400,8 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 				WithContext(ctx).
 				WithField("sourceIP", report.SrcIP).
 				WithField("destinationIP", report.DstIP).
-				WithField("sourceIdentity", sourceIdentity).
-				WithField("destinationIdentity", destinationIdentity).
+				WithField("sourceIdentity", sourceIdentity.String()).
+				WithField("destinationIdentity", destinationIdentity.String()).
 				Error("invalid traffic level report")
 			continue
 		}
@@ -892,7 +892,6 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 	isPod, err := r.kubeFinder.IsPodIp(ctx, ip)
 
 	if err != nil {
-		logrus.WithField("ip", ip).WithError(err).Error("could not determine if IP is a pod")
 		return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 	}
 
@@ -900,14 +899,12 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 		sourcePod, err := r.kubeFinder.ResolveIPToPod(ctx, ip)
 
 		if err != nil {
-			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source pod")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 
 		identity, err = r.serviceIdResolver.ResolvePodToServiceIdentity(ctx, sourcePod)
 
 		if err != nil {
-			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source identity")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 	} else {
@@ -916,7 +913,6 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 			err = errors.New("no mapping between IP and service")
 		}
 		if err != nil {
-			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source service")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 
@@ -925,7 +921,6 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 			err = errors.New("no mapping between service and otterize identity")
 		}
 		if err != nil {
-			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source identity")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 
