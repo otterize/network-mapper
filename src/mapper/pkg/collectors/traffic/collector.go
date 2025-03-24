@@ -7,8 +7,10 @@ import (
 )
 
 type TrafficLevelKey struct {
-	Source      serviceidentity.ServiceIdentity
-	Destination serviceidentity.ServiceIdentity
+	SourceName           string
+	SourceNamespace      string
+	DestinationName      string
+	DestinationNamespace string
 }
 
 type TrafficLevelData struct {
@@ -34,8 +36,10 @@ func NewCollector() *Collector {
 
 func (c *Collector) Add(source, destination serviceidentity.ServiceIdentity, bytes, flows int) {
 	trafficKey := TrafficLevelKey{
-		Source:      source,
-		Destination: destination,
+		SourceName:           source.Name,
+		SourceNamespace:      source.Namespace,
+		DestinationName:      destination.Name,
+		DestinationNamespace: destination.Namespace,
 	}
 
 	c.trafficLevels[trafficKey] = append(c.trafficLevels[trafficKey], TrafficLevelData{
