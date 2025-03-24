@@ -126,7 +126,7 @@ type OtterizeServiceIdentity struct {
 	Name                        string                  `json:"name"`
 	Namespace                   string                  `json:"namespace"`
 	Labels                      []PodLabel              `json:"labels,omitempty"`
-	NameResolvedUsingAnnotation *bool                   `json:"nameResolvedUsingAnnotations,omitempty"`
+	NameResolvedUsingAnnotation *bool                   `json:"nameResolvedUsingAnnotation,omitempty"`
 	ResolutionData              *IdentityResolutionData `json:"resolutionData,omitempty"`
 	// If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
 	PodOwnerKind *GroupVersionKind `json:"podOwnerKind,omitempty"`
