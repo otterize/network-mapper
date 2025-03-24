@@ -394,6 +394,18 @@ func (r *Resolver) handleTrafficLevelReport(ctx context.Context, results model.T
 			continue
 		}
 
+		if sourceIdentity.Name == "" || destinationIdentity.Name == "" || sourceIdentity.Namespace == "" || destinationIdentity.Namespace == "" {
+			// catches a bug where the source or destination identity is not set, without any other errors
+			logrus.
+				WithContext(ctx).
+				WithField("sourceIP", report.SrcIP).
+				WithField("destinationIP", report.DstIP).
+				WithField("sourceIdentity", sourceIdentity).
+				WithField("destinationIdentity", destinationIdentity).
+				Error("invalid traffic level report")
+			continue
+		}
+
 		r.trafficCollector.Add(
 			sourceIdentity,
 			destinationIdentity,
