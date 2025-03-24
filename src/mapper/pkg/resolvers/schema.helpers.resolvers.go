@@ -912,18 +912,23 @@ func (r *Resolver) resolveIPToIdentity(ctx context.Context, ip string) (servicei
 		}
 	} else {
 		sourceService, ok, err := r.kubeFinder.ResolveIPToService(ctx, ip)
-
-		if !ok || err != nil {
+		if !ok {
+			err = errors.New("no mapping between IP and service")
+		}
+		if err != nil {
 			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source service")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
 
 		otrSourceIdentity, ok, err := r.kubeFinder.ResolveOtterizeIdentityForService(ctx, sourceService, time.Now())
-
-		if !ok || err != nil {
+		if !ok {
+			err = errors.New("no mapping between service and otterize identity")
+		}
+		if err != nil {
 			logrus.WithField("ip", ip).WithError(err).Error("could not resolve source identity")
 			return serviceidentity.ServiceIdentity{}, errors.Wrap(err)
 		}
+
 		identity = serviceidentity.ServiceIdentity{
 			Name:      otrSourceIdentity.Name,
 			Namespace: otrSourceIdentity.Namespace,
