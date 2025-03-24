@@ -483,10 +483,11 @@ func (k *KubeFinder) ResolveOtterizeIdentityForService(ctx context.Context, svc 
 	resolutionData.Uptime = lo.ToPtr(time.Since(pod.CreationTimestamp.Time).String())
 
 	dstSvcIdentity := model.OtterizeServiceIdentity{
-		Name:           dstService.Name,
-		Namespace:      pod.Namespace,
-		Labels:         PodLabelsToOtterizeLabels(&pod),
-		ResolutionData: &resolutionData,
+		Name:                        dstService.Name,
+		Namespace:                   pod.Namespace,
+		Labels:                      PodLabelsToOtterizeLabels(&pod),
+		ResolutionData:              &resolutionData,
+		NameResolvedUsingAnnotation: dstService.ResolvedUsingOverrideAnnotation,
 	}
 
 	if dstService.OwnerObject != nil {

@@ -99,12 +99,13 @@ type ComplexityRoot struct {
 	}
 
 	OtterizeServiceIdentity struct {
-		KubernetesService func(childComplexity int) int
-		Labels            func(childComplexity int) int
-		Name              func(childComplexity int) int
-		Namespace         func(childComplexity int) int
-		PodOwnerKind      func(childComplexity int) int
-		ResolutionData    func(childComplexity int) int
+		KubernetesService           func(childComplexity int) int
+		Labels                      func(childComplexity int) int
+		Name                        func(childComplexity int) int
+		NameResolvedUsingAnnotation func(childComplexity int) int
+		Namespace                   func(childComplexity int) int
+		PodOwnerKind                func(childComplexity int) int
+		ResolutionData              func(childComplexity int) int
 	}
 
 	PodLabel struct {
@@ -458,6 +459,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.OtterizeServiceIdentity.Name(childComplexity), true
 
+	case "OtterizeServiceIdentity.nameResolvedUsingAnnotation":
+		if e.complexity.OtterizeServiceIdentity.NameResolvedUsingAnnotation == nil {
+			break
+		}
+
+		return e.complexity.OtterizeServiceIdentity.NameResolvedUsingAnnotation(childComplexity), true
+
 	case "OtterizeServiceIdentity.namespace":
 		if e.complexity.OtterizeServiceIdentity.Namespace == nil {
 			break
@@ -716,6 +724,7 @@ type OtterizeServiceIdentity {
     name: String!
     namespace: String!
     labels: [PodLabel!]
+    nameResolvedUsingAnnotation: Boolean
     resolutionData: IdentityResolutionData
     """
     If the service identity was resolved from a pod owner, the GroupVersionKind of the pod owner.
@@ -1807,6 +1816,8 @@ func (ec *executionContext) fieldContext_Intent_client(ctx context.Context, fiel
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "nameResolvedUsingAnnotation":
+				return ec.fieldContext_OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx, field)
 			case "resolutionData":
 				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
@@ -1865,6 +1876,8 @@ func (ec *executionContext) fieldContext_Intent_server(ctx context.Context, fiel
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "nameResolvedUsingAnnotation":
+				return ec.fieldContext_OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx, field)
 			case "resolutionData":
 				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
@@ -2854,6 +2867,47 @@ func (ec *executionContext) fieldContext_OtterizeServiceIdentity_labels(ctx cont
 	return fc, nil
 }
 
+func (ec *executionContext) _OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NameResolvedUsingAnnotation, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OtterizeServiceIdentity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _OtterizeServiceIdentity_resolutionData(ctx context.Context, field graphql.CollectedField, obj *model.OtterizeServiceIdentity) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 	if err != nil {
@@ -3443,6 +3497,8 @@ func (ec *executionContext) fieldContext_ServiceIntents_client(ctx context.Conte
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "nameResolvedUsingAnnotation":
+				return ec.fieldContext_OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx, field)
 			case "resolutionData":
 				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
@@ -3501,6 +3557,8 @@ func (ec *executionContext) fieldContext_ServiceIntents_intents(ctx context.Cont
 				return ec.fieldContext_OtterizeServiceIdentity_namespace(ctx, field)
 			case "labels":
 				return ec.fieldContext_OtterizeServiceIdentity_labels(ctx, field)
+			case "nameResolvedUsingAnnotation":
+				return ec.fieldContext_OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx, field)
 			case "resolutionData":
 				return ec.fieldContext_OtterizeServiceIdentity_resolutionData(ctx, field)
 			case "podOwnerKind":
@@ -6334,6 +6392,8 @@ func (ec *executionContext) _OtterizeServiceIdentity(ctx context.Context, sel as
 			}
 		case "labels":
 			out.Values[i] = ec._OtterizeServiceIdentity_labels(ctx, field, obj)
+		case "nameResolvedUsingAnnotation":
+			out.Values[i] = ec._OtterizeServiceIdentity_nameResolvedUsingAnnotation(ctx, field, obj)
 		case "resolutionData":
 			out.Values[i] = ec._OtterizeServiceIdentity_resolutionData(ctx, field, obj)
 		case "podOwnerKind":

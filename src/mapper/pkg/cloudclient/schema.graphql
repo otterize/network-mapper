@@ -156,6 +156,12 @@ enum AccessApprovalRulesetFilterValue {
 	ANY
 }
 
+type AccessApprovalRulesetResources {
+	clusters: [Cluster!]!
+	services: [Service!]!
+	namespaces: [Namespace!]!
+}
+
 type AccessApprovalRulesetSummary {
 	environment: Environment!
 	count: Int!
@@ -242,6 +248,8 @@ input AppliedIntentsRequestApprovalData {
 
 type AppliedIntentsRequestStatus {
 	id: ID!
+	resourceId: String!
+	generation: Int!
 """client"""
 	service: Service!
 	timestamp: Time!
@@ -253,6 +261,7 @@ enum AppliedIntentsRequestStatusLabel {
 	PENDING
 	APPROVED
 	DENIED
+	STALE
 }
 
 type AppliedIntentsRequestWithDetails {
@@ -782,6 +791,7 @@ enum EventType {
 	ACTIVE
 	EBPF_ATTACHED
 	EBPF_ATTACH_FAILED
+	EBPF_PROCESSING_ERROR
 }
 
 input ExternalTrafficDiscoveredIntentInput {
@@ -1056,7 +1066,7 @@ input IngressControllerConfigInput {
 """Ruleset"""
 input InputAccessApprovalRuleset {
 """Ruleset"""
-	id: ID
+	id: ID!
 """Ruleset"""
 	origin: InputAccessApprovalRulesetConfigFilter!
 """Ruleset"""
@@ -1211,6 +1221,25 @@ input InputServiceFilter {
 	integrationIds: [ID!]
 }
 
+input InputTerraformAwsPolicyInfo {
+	arn: String!
+	address: String!
+}
+
+input InputTerraformAwsRoleInfo {
+	arn: String!
+	address: String!
+	inlinePolicy: String!
+	attachedPolicies: [InputTerraformAwsPolicyInfo!]
+}
+
+input InputTerraformResourceInfo {
+	modulePath: String!
+	gitOriginUrl: String!
+	gitCommitHash: String!
+	awsRoles: [InputTerraformAwsRoleInfo!]
+}
+
 input InputTimeFilterValue {
 	value: Time!
 	operator: TimeFilterOperators!
@@ -1345,9 +1374,11 @@ input IntentInput {
 	clientName: String!
 	clientResolutionData: String
 	clientWorkloadKind: String
+	clientNameResolvedUsingAnnotation: Boolean
 	serverName: String!
 	serverResolutionData: String
 	serverWorkloadKind: String
+	serverNameResolvedUsingAnnotation: Boolean
 	serverAlias: ServerAliasInput
 	serverNamespace: String
 	type: IntentType
@@ -1367,8 +1398,13 @@ input IntentInput {
 }
 
 input IntentRequestInput {
-	requestId: ID!
+	resourceGeneration: IntentRequestResourceGeneration!
 	intent: IntentInput!
+}
+
+input IntentRequestResourceGeneration {
+	resourceId: String!
+	generation: Int!
 }
 
 type IntentStatus {
@@ -1753,8 +1789,11 @@ type Mutation {
 		id: ID!
 		result: AppliedIntentsRequestApprovalData!
 	): Boolean!
+	syncPendingRequestStatuses(
+		intentResourceGeneration: [IntentRequestResourceGeneration!]!
+	): [AppliedIntentsRequestStatus!]!
 """rulesets"""
-	createOrUpdateAccessApprovalRulesets(
+	saveAccessApprovalRulesets(
 		environmentId: ID!
 		rules: [InputAccessApprovalRuleset!]!
 	): Boolean!
@@ -2047,6 +2086,10 @@ type Mutation {
 	sendCLITelemetries(
 		telemetries: [CLITelemetry!]!
 	): Boolean!
+"""report terraform resources from Otterize CLI"""
+	reportTerraformResources(
+		resourceInfo: InputTerraformResourceInfo!
+	): TerraformResourceInfo!
 """Update service"""
 	reportTrafficLevels(
 		trafficLevels: [TrafficLevelInput!]!
@@ -2235,7 +2278,7 @@ type Query {
 	accessApprovalRulesetSummary: [AccessApprovalRulesetSummary!]!
 	accessApprovalRulesetList(
 		filter: InputAccessApprovalRulesetFilter
-	): [AccessApprovalRuleset!]!
+	): RulesetsWithResources!
 """Get cluster"""
 	cluster(
 		id: ID!
@@ -2385,6 +2428,12 @@ type Query {
 	serviceByIdentity(
 		identity: ServiceIdentityInput!
 	): Service!
+"""get terraform resource by git identity"""
+	terraformResourceByIdentity(
+		modulePath: String!
+		gitOriginUrl: String!
+		gitCommitHash: String!
+	): TerraformResourceInfo!
 """List users"""
 	users: [User!]!
 """Get user"""
@@ -2450,6 +2499,11 @@ type Resource {
 enum RowDiff {
 	ADDED
 	REMOVED
+}
+
+type RulesetsWithResources {
+	rulesets: [AccessApprovalRuleset!]!
+	resources: AccessApprovalRulesetResources!
 }
 
 input SelectorKeyValueInput {
@@ -2718,6 +2772,25 @@ input TelemetryData {
 input TelemetryInput {
 	component: Component!
 	data: TelemetryData!
+}
+
+type TerraformAwsPolicyInfo {
+	arn: String!
+	address: String!
+}
+
+type TerraformAwsRoleInfo {
+	arn: String!
+	address: String!
+	inlinePolicy: String!
+	attachedPolicies: [TerraformAwsPolicyInfo!]
+}
+
+type TerraformResourceInfo {
+	modulePath: String!
+	gitOriginUrl: String!
+	gitCommitHash: String!
+	awsRoles: [TerraformAwsRoleInfo!]
 }
 
 type TestDatabaseConnectionResponse {
