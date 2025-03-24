@@ -311,10 +311,10 @@ func (c *CloudUploader) NotifyTrafficLevels(ctx context.Context, trafficLevels t
 	var inputs []cloudclient.TrafficLevelInput
 	for trafficPair, trafficData := range trafficLevels {
 		inputs = append(inputs, cloudclient.TrafficLevelInput{
-			ClientName:          trafficPair.Source.Name,
-			ClientNamespace:     trafficPair.Source.Namespace,
-			ServerName:          trafficPair.Destination.Name,
-			ServerNamespace:     trafficPair.Destination.Namespace,
+			ClientName:          trafficPair.SourceName,
+			ClientNamespace:     trafficPair.SourceNamespace,
+			ServerName:          trafficPair.DestinationName,
+			ServerNamespace:     trafficPair.DestinationNamespace,
 			DataBytesPerSecond:  trafficData.Bytes,
 			FlowsCountPerSecond: trafficData.Flows,
 		})
