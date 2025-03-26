@@ -12,6 +12,7 @@ require (
 	github.com/bombsimon/logrusr/v3 v3.0.0
 	github.com/bugsnag/bugsnag-go/v2 v2.2.0
 	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru/v2 v2.0.7

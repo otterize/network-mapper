@@ -2042,6 +2042,9 @@ type Mutation {
 		id: ID!
 		environmentId: ID
 	): Namespace!
+	reportNetworkPolicy(
+		policy: NetworkPolicyReportInput!
+	): Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2169,6 +2172,22 @@ input NetworkPolicyInput {
 	serverName: String!
 	externalNetworkTrafficPolicy: Boolean!
 	spec: NetworkPolicySpecInput
+}
+
+enum NetworkPolicyKind {
+	NETWORK_POLICY
+	CILIUM_NETWORK_POLICY
+	OTTERIZE_MANAGED_NETWORK_POLICY
+}
+
+input NetworkPolicyReportInput {
+	name: String!
+	namespace: String
+	kind: NetworkPolicyKind!
+	content: String!
+	mainScopeWorkloads: [WorkloadIdentityInput!]
+	egressWorkloads: [WorkloadIdentityInput!]
+	ingressWorkloads: [WorkloadIdentityInput!]
 }
 
 input NetworkPolicySpecInput {
@@ -2916,6 +2935,13 @@ type Workload {
 	types: [ServiceType!]!
 	inboundStatus: ServerProtectionStatusVerdict!
 	outboundStatus: EdgeAccessStatusVerdict!
+}
+
+input WorkloadIdentityInput {
+	name: String!
+	namespace: String!
+	kind: String
+	resolvedUsingAnnotation: Boolean
 }
 
 enum WorkloadTag {

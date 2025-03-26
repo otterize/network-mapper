@@ -788,6 +788,51 @@ const (
 	LoadBalancerIPModeProxy LoadBalancerIPMode = "PROXY"
 )
 
+type NetworkPolicyKind string
+
+const (
+	NetworkPolicyKindNetworkPolicy                NetworkPolicyKind = "NETWORK_POLICY"
+	NetworkPolicyKindCiliumNetworkPolicy          NetworkPolicyKind = "CILIUM_NETWORK_POLICY"
+	NetworkPolicyKindOtterizeManagedNetworkPolicy NetworkPolicyKind = "OTTERIZE_MANAGED_NETWORK_POLICY"
+)
+
+type NetworkPolicyReportInput struct {
+	Name               string                  `json:"name"`
+	Namespace          nilable.Nilable[string] `json:"namespace"`
+	Kind               NetworkPolicyKind       `json:"kind"`
+	Content            string                  `json:"content"`
+	MainScopeWorkloads []WorkloadIdentityInput `json:"mainScopeWorkloads"`
+	EgressWorkloads    []WorkloadIdentityInput `json:"egressWorkloads"`
+	IngressWorkloads   []WorkloadIdentityInput `json:"ingressWorkloads"`
+}
+
+// GetName returns NetworkPolicyReportInput.Name, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetName() string { return v.Name }
+
+// GetNamespace returns NetworkPolicyReportInput.Namespace, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetNamespace() nilable.Nilable[string] { return v.Namespace }
+
+// GetKind returns NetworkPolicyReportInput.Kind, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetKind() NetworkPolicyKind { return v.Kind }
+
+// GetContent returns NetworkPolicyReportInput.Content, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetContent() string { return v.Content }
+
+// GetMainScopeWorkloads returns NetworkPolicyReportInput.MainScopeWorkloads, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetMainScopeWorkloads() []WorkloadIdentityInput {
+	return v.MainScopeWorkloads
+}
+
+// GetEgressWorkloads returns NetworkPolicyReportInput.EgressWorkloads, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetEgressWorkloads() []WorkloadIdentityInput {
+	return v.EgressWorkloads
+}
+
+// GetIngressWorkloads returns NetworkPolicyReportInput.IngressWorkloads, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyReportInput) GetIngressWorkloads() []WorkloadIdentityInput {
+	return v.IngressWorkloads
+}
+
 type PathType string
 
 const (
@@ -867,6 +912,14 @@ type ReportK8sServicesResponse struct {
 
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
+
+// ReportNetworkPolicyResponse is returned by ReportNetworkPolicy on success.
+type ReportNetworkPolicyResponse struct {
+	ReportNetworkPolicy bool `json:"reportNetworkPolicy"`
+}
+
+// GetReportNetworkPolicy returns ReportNetworkPolicyResponse.ReportNetworkPolicy, and is useful for accessing the field via an interface.
+func (v *ReportNetworkPolicyResponse) GetReportNetworkPolicy() bool { return v.ReportNetworkPolicy }
 
 // ReportTrafficLevelsResponse is returned by ReportTrafficLevels on success.
 type ReportTrafficLevelsResponse struct {
@@ -965,6 +1018,27 @@ func (v *TrafficLevelInput) GetDataBytesPerSecond() int { return v.DataBytesPerS
 // GetFlowsCountPerSecond returns TrafficLevelInput.FlowsCountPerSecond, and is useful for accessing the field via an interface.
 func (v *TrafficLevelInput) GetFlowsCountPerSecond() int { return v.FlowsCountPerSecond }
 
+type WorkloadIdentityInput struct {
+	Name                    string                  `json:"name"`
+	Namespace               string                  `json:"namespace"`
+	Kind                    nilable.Nilable[string] `json:"kind"`
+	ResolvedUsingAnnotation nilable.Nilable[bool]   `json:"resolvedUsingAnnotation"`
+}
+
+// GetName returns WorkloadIdentityInput.Name, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentityInput) GetName() string { return v.Name }
+
+// GetNamespace returns WorkloadIdentityInput.Namespace, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentityInput) GetNamespace() string { return v.Namespace }
+
+// GetKind returns WorkloadIdentityInput.Kind, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentityInput) GetKind() nilable.Nilable[string] { return v.Kind }
+
+// GetResolvedUsingAnnotation returns WorkloadIdentityInput.ResolvedUsingAnnotation, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentityInput) GetResolvedUsingAnnotation() nilable.Nilable[bool] {
+	return v.ResolvedUsingAnnotation
+}
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -1024,6 +1098,14 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __ReportNetworkPolicyInput is used internally by genqlient
+type __ReportNetworkPolicyInput struct {
+	Policy NetworkPolicyReportInput `json:"policy"`
+}
+
+// GetPolicy returns __ReportNetworkPolicyInput.Policy, and is useful for accessing the field via an interface.
+func (v *__ReportNetworkPolicyInput) GetPolicy() NetworkPolicyReportInput { return v.Policy }
 
 // __ReportTrafficLevelsInput is used internally by genqlient
 type __ReportTrafficLevelsInput struct {
@@ -1224,6 +1306,39 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportNetworkPolicy.
+const ReportNetworkPolicy_Operation = `
+mutation ReportNetworkPolicy ($policy: NetworkPolicyReportInput!) {
+	reportNetworkPolicy(policy: $policy)
+}
+`
+
+func ReportNetworkPolicy(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	policy NetworkPolicyReportInput,
+) (*ReportNetworkPolicyResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportNetworkPolicy",
+		Query:  ReportNetworkPolicy_Operation,
+		Variables: &__ReportNetworkPolicyInput{
+			Policy: policy,
+		},
+	}
+	var err_ error
+
+	var data_ ReportNetworkPolicyResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
