@@ -15,6 +15,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"strings"
@@ -276,21 +277,51 @@ func (k *KubeFinder) ResolveIPToControlPlane(ctx context.Context, ip string) (*c
 		return &svc, true, nil
 	}
 
-	var endpoints corev1.Endpoints
-	err = k.client.Get(ctx, types.NamespacedName{Name: apiServerName, Namespace: apiServerNamespace}, &endpoints)
+	matching, err := k.isIPMatchingControlPlaneEndpoints(ctx, ip)
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
 
+	if !matching {
+		return nil, false, nil
+	}
+
+	return &svc, true, nil
+}
+
+func (k *KubeFinder) isIPMatchingControlPlaneEndpoints(ctx context.Context, ip string) (bool, error) {
+	var endpoints corev1.Endpoints
+	err := k.client.Get(ctx, types.NamespacedName{Name: apiServerName, Namespace: apiServerNamespace}, &endpoints)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	parsedIP := net.ParseIP(ip)
+	controlPlaneCIDRPrefixLength := viper.GetInt(config.ControlPlaneIPv4CidrPrefixLength)
+
 	for _, subset := range endpoints.Subsets {
-		for _, address := range subset.Addresses {
-			if address.IP == ip {
-				return &svc, true, nil
+		for _, endpointAddress := range subset.Addresses {
+			// check for exact match
+			if endpointAddress.IP == ip {
+				return true, nil
+			}
+
+			// check if IP matches the control plane CIDR
+			parsedEndpointIP := net.ParseIP(endpointAddress.IP)
+			if parsedIP.To4() != nil && parsedEndpointIP.To4() != nil {
+				_, endpointNetwork, err := net.ParseCIDR(fmt.Sprintf("%s/%d", parsedEndpointIP.To4().String(), controlPlaneCIDRPrefixLength))
+				if err != nil {
+					return false, errors.Wrap(err)
+				}
+
+				if endpointNetwork.Contains(parsedIP) {
+					return true, nil
+				}
 			}
 		}
 	}
 
-	return nil, false, nil
+	return false, nil
 }
 
 func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {

@@ -3,10 +3,13 @@ package kubefinder
 import (
 	"context"
 	"fmt"
+	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/shared/testbase"
 	"github.com/samber/lo"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
+	"net"
 	"testing"
 )
 
@@ -36,6 +39,37 @@ func (s *KubeFinderTestSuite) TestResolveIpToPod() {
 	s.Require().NoError(err)
 	s.Require().Equal("test-pod", pod.Name)
 
+}
+
+func (s *KubeFinderTestSuite) TestResolveIpToControlPlane() {
+	endpoints := s.GetAPIServerEndpoints()
+	endpointIP := endpoints.Subsets[0].Addresses[0].IP
+	pod, found, err := s.kubeFinder.ResolveIPToControlPlane(context.Background(), endpointIP)
+	s.Require().NoError(err)
+	s.Require().True(found)
+	s.Require().Equal("kubernetes", pod.Name)
+	s.Require().Equal("default", pod.Namespace)
+}
+
+func (s *KubeFinderTestSuite) TestResolveIpToControlPlaneSubnet() {
+	endpoints := s.GetAPIServerEndpoints()
+	endpointIP := endpoints.Subsets[0].Addresses[0].IP
+	viper.Set(config.ControlPlaneIPv4CidrPrefixLength, "28")
+	defer func() {
+		viper.Set(config.ControlPlaneIPv4CidrPrefixLength, config.ControlPlaneIPv4CidrPrefixLengthDefault)
+	}()
+
+	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/28", endpointIP))
+	s.Require().NoError(err)
+
+	// iterate over IPs in the same subnet (only increment the last byte for simplicity)
+	for ip := subnet.IP.Mask(subnet.Mask).To4(); subnet.Contains(ip); ip[3]++ {
+		pod, found, err := s.kubeFinder.ResolveIPToControlPlane(context.Background(), ip.String())
+		s.Require().NoError(err)
+		s.Require().True(found)
+		s.Require().Equal("kubernetes", pod.Name)
+		s.Require().Equal("default", pod.Namespace)
+	}
 }
 
 func (s *KubeFinderTestSuite) TestResolveServiceAddressToIps() {
