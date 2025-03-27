@@ -9,33 +9,37 @@ import (
 )
 
 const (
-	ClusterDomainKey                      = "cluster-domain"
-	ClusterDomainDefault                  = kubeutils.DefaultClusterDomain
-	CloudApiAddrKey                       = "api-address"
-	CloudApiAddrDefault                   = "https://app.otterize.com/api"
-	UploadIntervalSecondsKey              = "upload-interval-seconds"
-	UploadIntervalSecondsDefault          = 60
-	UploadBatchSizeKey                    = "upload-batch-size"
-	UploadBatchSizeDefault                = 500
-	ExcludedNamespacesKey                 = "exclude-namespaces"
-	OTelEnabledKey                        = "enable-otel-export"
-	OTelEnabledDefault                    = false
-	OTelMetricKey                         = "otel-metric-name"
-	OTelMetricDefault                     = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
-	ExternalTrafficCaptureEnabledKey      = "capture-external-traffic-enabled"
-	ExternalTrafficCaptureEnabledDefault  = true
-	CreateWebhookCertificateKey           = "create-webhook-certificate"
-	CreateWebhookCertificateDefault       = true
-	DNSCacheItemsMaxCapacityKey           = "dns-cache-items-max-capacity"
-	DNSCacheItemsMaxCapacityDefault       = 100000
-	DNSClientIntentsUpdateIntervalKey     = "dns-client-intents-update-interval"
-	DNSClientIntentsUpdateIntervalDefault = 100 * time.Millisecond
-	DNSClientIntentsUpdateEnabledKey      = "dns-client-intents-update-enabled"
-	DNSClientIntentsUpdateEnabledDefault  = true
-	ServiceCacheTTLDurationKey            = "service-cache-ttl-duration"
-	ServiceCacheTTLDurationDefault        = 1 * time.Minute
-	ServiceCacheSizeKey                   = "service-cache-size"
-	ServiceCacheSizeDefault               = 10000
+	ClusterDomainKey                                = "cluster-domain"
+	ClusterDomainDefault                            = kubeutils.DefaultClusterDomain
+	CloudApiAddrKey                                 = "api-address"
+	CloudApiAddrDefault                             = "https://app.otterize.com/api"
+	UploadIntervalSecondsKey                        = "upload-interval-seconds"
+	UploadIntervalSecondsDefault                    = 60
+	UploadBatchSizeKey                              = "upload-batch-size"
+	UploadBatchSizeDefault                          = 500
+	ExcludedNamespacesKey                           = "exclude-namespaces"
+	OTelEnabledKey                                  = "enable-otel-export"
+	OTelEnabledDefault                              = false
+	OTelMetricKey                                   = "otel-metric-name"
+	OTelMetricDefault                               = "traces_service_graph_request_total" // same as expected in otel-collector-contrib's servicegraphprocessor
+	ExternalTrafficCaptureEnabledKey                = "capture-external-traffic-enabled"
+	ExternalTrafficCaptureEnabledDefault            = true
+	CreateWebhookCertificateKey                     = "create-webhook-certificate"
+	CreateWebhookCertificateDefault                 = true
+	DNSCacheItemsMaxCapacityKey                     = "dns-cache-items-max-capacity"
+	DNSCacheItemsMaxCapacityDefault                 = 100000
+	DNSClientIntentsUpdateIntervalKey               = "dns-client-intents-update-interval"
+	DNSClientIntentsUpdateIntervalDefault           = 100 * time.Millisecond
+	DNSClientIntentsUpdateEnabledKey                = "dns-client-intents-update-enabled"
+	DNSClientIntentsUpdateEnabledDefault            = true
+	ServiceCacheTTLDurationKey                      = "service-cache-ttl-duration"
+	ServiceCacheTTLDurationDefault                  = 1 * time.Minute
+	ServiceCacheSizeKey                             = "service-cache-size"
+	ServiceCacheSizeDefault                         = 10000
+	MetricsCollectionTrafficCacheTTLDurationKey     = "metrics-collection-traffic-cache-ttl-duration"
+	MetricsCollectionTrafficCacheTTLDurationDefault = 5 * time.Minute
+	MetricsCollectionTrafficCacheSizeKey            = "metrics-collection-traffic-cache-size"
+	MetricsCollectionTrafficCacheSizeDefault        = 10000
 
 	EnableIstioCollectionKey                  = "enable-istio-collection"
 	EnableIstioCollectionDefault              = false
@@ -79,6 +83,8 @@ func init() {
 	viper.SetDefault(EnableIstioCollectionKey, EnableIstioCollectionDefault)
 	viper.SetDefault(ServiceCacheTTLDurationKey, ServiceCacheTTLDurationDefault)
 	viper.SetDefault(ServiceCacheSizeKey, ServiceCacheSizeDefault)
+	viper.SetDefault(MetricsCollectionTrafficCacheTTLDurationKey, MetricsCollectionTrafficCacheTTLDurationDefault)
+	viper.SetDefault(MetricsCollectionTrafficCacheSizeKey, MetricsCollectionTrafficCacheSizeDefault)
 	viper.SetDefault(TimeServerHasToLiveBeforeWeTrustItKey, TimeServerHasToLiveBeforeWeTrustItDefault)
 	viper.SetDefault(ControlPlaneIPv4CidrPrefixLength, ControlPlaneIPv4CidrPrefixLengthDefault)
 
