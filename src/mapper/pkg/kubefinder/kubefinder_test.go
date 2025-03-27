@@ -55,6 +55,9 @@ func (s *KubeFinderTestSuite) TestResolveIpToControlPlaneSubnet() {
 	endpoints := s.GetAPIServerEndpoints()
 	endpointIP := endpoints.Subsets[0].Addresses[0].IP
 	viper.Set(config.ControlPlaneIPv4CidrPrefixLength, "28")
+	defer func() {
+		viper.Set(config.ControlPlaneIPv4CidrPrefixLength, config.ControlPlaneIPv4CidrPrefixLengthDefault)
+	}()
 
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/28", endpointIP))
 	s.Require().NoError(err)
