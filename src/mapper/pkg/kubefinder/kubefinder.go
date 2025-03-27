@@ -296,23 +296,25 @@ func (k *KubeFinder) isIPMatchingControlPlaneEndpoints(ctx context.Context, ip s
 		return false, errors.Wrap(err)
 	}
 
-	subnetMask := viper.GetString(config.ControlPlaneIPv4CidrSubnetMask)
-	ipAddr := net.ParseIP(ip)
+	parsedIP := net.ParseIP(ip)
+	controlPlaneCIDRPrefixLength := viper.GetInt(config.ControlPlaneIPv4CidrPrefixLength)
 
 	for _, subset := range endpoints.Subsets {
-		for _, address := range subset.Addresses {
-			if address.IP == ip {
+		for _, endpointAddress := range subset.Addresses {
+			// check for exact match
+			if endpointAddress.IP == ip {
 				return true, nil
 			}
 
-			isIPv4 := len(net.ParseIP(address.IP)) == net.IPv4len
-			if isIPv4 {
-				_, network, err := net.ParseCIDR(fmt.Sprintf("%s/%s", address.IP, subnetMask))
+			// check if IP matches the control plane CIDR
+			parsedEndpointIP := net.ParseIP(endpointAddress.IP)
+			if parsedIP.To4() != nil && parsedEndpointIP.To4() != nil {
+				_, endpointNetwork, err := net.ParseCIDR(fmt.Sprintf("%s/%d", parsedEndpointIP.To4().String(), controlPlaneCIDRPrefixLength))
 				if err != nil {
 					return false, errors.Wrap(err)
 				}
 
-				if network.Contains(ipAddr) {
+				if endpointNetwork.Contains(parsedIP) {
 					return true, nil
 				}
 			}
