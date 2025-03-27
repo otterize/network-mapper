@@ -48,6 +48,9 @@ const (
 	MetricFetchTimeoutDefault                 = 10 * time.Second
 	TimeServerHasToLiveBeforeWeTrustItKey     = "time-server-has-to-live-before-we-trust-it"
 	TimeServerHasToLiveBeforeWeTrustItDefault = 5 * time.Minute
+
+	ControlPlaneIPv4CidrSubnetMask        = "control-plane-ipv4-cidr-subnet-mask"
+	ControlPlaneIPv4CidrSubnetMaskDefault = "/32"
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -77,5 +80,7 @@ func init() {
 	viper.SetDefault(ServiceCacheTTLDurationKey, ServiceCacheTTLDurationDefault)
 	viper.SetDefault(ServiceCacheSizeKey, ServiceCacheSizeDefault)
 	viper.SetDefault(TimeServerHasToLiveBeforeWeTrustItKey, TimeServerHasToLiveBeforeWeTrustItDefault)
+	viper.SetDefault(ControlPlaneIPv4CidrSubnetMask, ControlPlaneIPv4CidrSubnetMaskDefault)
+
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }

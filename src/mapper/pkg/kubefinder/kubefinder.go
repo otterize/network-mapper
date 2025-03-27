@@ -15,6 +15,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"strings"
@@ -276,21 +277,49 @@ func (k *KubeFinder) ResolveIPToControlPlane(ctx context.Context, ip string) (*c
 		return &svc, true, nil
 	}
 
-	var endpoints corev1.Endpoints
-	err = k.client.Get(ctx, types.NamespacedName{Name: apiServerName, Namespace: apiServerNamespace}, &endpoints)
+	matching, err := k.isIPMatchingControlPlaneEndpoints(ctx, ip)
 	if err != nil {
 		return nil, false, errors.Wrap(err)
 	}
 
+	if !matching {
+		return nil, false, nil
+	}
+
+	return &svc, true, nil
+}
+
+func (k *KubeFinder) isIPMatchingControlPlaneEndpoints(ctx context.Context, ip string) (bool, error) {
+	var endpoints corev1.Endpoints
+	err := k.client.Get(ctx, types.NamespacedName{Name: apiServerName, Namespace: apiServerNamespace}, &endpoints)
+	if err != nil {
+		return false, errors.Wrap(err)
+	}
+
+	subnetMask := viper.GetString(config.ControlPlaneIPv4CidrSubnetMask)
+	ipAddr := net.ParseIP(ip)
+
 	for _, subset := range endpoints.Subsets {
 		for _, address := range subset.Addresses {
 			if address.IP == ip {
-				return &svc, true, nil
+				return true, nil
+			}
+
+			isIPv4 := len(net.ParseIP(address.IP)) == net.IPv4len
+			if isIPv4 {
+				_, network, err := net.ParseCIDR(fmt.Sprintf("%s/%s", address.IP, subnetMask))
+				if err != nil {
+					return false, errors.Wrap(err)
+				}
+
+				if network.Contains(ipAddr) {
+					return true, nil
+				}
 			}
 		}
 	}
 
-	return nil, false, nil
+	return false, nil
 }
 
 func (k *KubeFinder) ResolveIPToExternalAccessService(ctx context.Context, ip string, port int) (*corev1.Service, bool, error) {
