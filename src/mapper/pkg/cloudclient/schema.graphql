@@ -2042,6 +2042,10 @@ type Mutation {
 		id: ID!
 		environmentId: ID
 	): Namespace!
+	reportNamespaceLabels(
+		name: String!
+		labels: [LabelInput!]
+	): Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2116,6 +2120,9 @@ type Mutation {
 		userTutorialId: ID!
 		tutorialName: TutorialName!
 		step: String!
+	): Boolean!
+	reportWorkloadsLabels(
+		workloadLabels: [WorkloadLabelsInput!]!
 	): Boolean!
 }
 
@@ -2916,6 +2923,18 @@ type Workload {
 	types: [ServiceType!]!
 	inboundStatus: ServerProtectionStatusVerdict!
 	outboundStatus: EdgeAccessStatusVerdict!
+}
+
+input WorkloadIdentifier {
+	namespace: String!
+	name: String!
+	kind: String
+	nameResolvedUsingAnnotation: Boolean
+}
+
+input WorkloadLabelsInput {
+	workload: WorkloadIdentifier!
+	labels: [LabelInput!]
 }
 
 enum WorkloadTag {

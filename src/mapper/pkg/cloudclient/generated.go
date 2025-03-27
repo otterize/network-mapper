@@ -781,6 +781,17 @@ const (
 	KafkaOperationIdempotentWrite KafkaOperation = "IDEMPOTENT_WRITE"
 )
 
+type LabelInput struct {
+	Key   string                  `json:"key"`
+	Value nilable.Nilable[string] `json:"value"`
+}
+
+// GetKey returns LabelInput.Key, and is useful for accessing the field via an interface.
+func (v *LabelInput) GetKey() string { return v.Key }
+
+// GetValue returns LabelInput.Value, and is useful for accessing the field via an interface.
+func (v *LabelInput) GetValue() nilable.Nilable[string] { return v.Value }
+
 type LoadBalancerIPMode string
 
 const (
@@ -868,6 +879,16 @@ type ReportK8sServicesResponse struct {
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
 
+// ReportNamespaceLabelsResponse is returned by ReportNamespaceLabels on success.
+type ReportNamespaceLabelsResponse struct {
+	ReportNamespaceLabels bool `json:"reportNamespaceLabels"`
+}
+
+// GetReportNamespaceLabels returns ReportNamespaceLabelsResponse.ReportNamespaceLabels, and is useful for accessing the field via an interface.
+func (v *ReportNamespaceLabelsResponse) GetReportNamespaceLabels() bool {
+	return v.ReportNamespaceLabels
+}
+
 // ReportTrafficLevelsResponse is returned by ReportTrafficLevels on success.
 type ReportTrafficLevelsResponse struct {
 	// Update service
@@ -876,6 +897,16 @@ type ReportTrafficLevelsResponse struct {
 
 // GetReportTrafficLevels returns ReportTrafficLevelsResponse.ReportTrafficLevels, and is useful for accessing the field via an interface.
 func (v *ReportTrafficLevelsResponse) GetReportTrafficLevels() bool { return v.ReportTrafficLevels }
+
+// ReportWorkloadsLabelsResponse is returned by ReportWorkloadsLabels on success.
+type ReportWorkloadsLabelsResponse struct {
+	ReportWorkloadsLabels bool `json:"reportWorkloadsLabels"`
+}
+
+// GetReportWorkloadsLabels returns ReportWorkloadsLabelsResponse.ReportWorkloadsLabels, and is useful for accessing the field via an interface.
+func (v *ReportWorkloadsLabelsResponse) GetReportWorkloadsLabels() bool {
+	return v.ReportWorkloadsLabels
+}
 
 type SelectorKeyValueInput struct {
 	Key   nilable.Nilable[string] `json:"key"`
@@ -965,6 +996,38 @@ func (v *TrafficLevelInput) GetDataBytesPerSecond() int { return v.DataBytesPerS
 // GetFlowsCountPerSecond returns TrafficLevelInput.FlowsCountPerSecond, and is useful for accessing the field via an interface.
 func (v *TrafficLevelInput) GetFlowsCountPerSecond() int { return v.FlowsCountPerSecond }
 
+type WorkloadIdentifier struct {
+	Namespace                   string                  `json:"namespace"`
+	Name                        string                  `json:"name"`
+	Kind                        nilable.Nilable[string] `json:"kind"`
+	NameResolvedUsingAnnotation nilable.Nilable[bool]   `json:"nameResolvedUsingAnnotation"`
+}
+
+// GetNamespace returns WorkloadIdentifier.Namespace, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentifier) GetNamespace() string { return v.Namespace }
+
+// GetName returns WorkloadIdentifier.Name, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentifier) GetName() string { return v.Name }
+
+// GetKind returns WorkloadIdentifier.Kind, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentifier) GetKind() nilable.Nilable[string] { return v.Kind }
+
+// GetNameResolvedUsingAnnotation returns WorkloadIdentifier.NameResolvedUsingAnnotation, and is useful for accessing the field via an interface.
+func (v *WorkloadIdentifier) GetNameResolvedUsingAnnotation() nilable.Nilable[bool] {
+	return v.NameResolvedUsingAnnotation
+}
+
+type WorkloadLabelsInput struct {
+	Workload WorkloadIdentifier `json:"workload"`
+	Labels   []LabelInput       `json:"labels"`
+}
+
+// GetWorkload returns WorkloadLabelsInput.Workload, and is useful for accessing the field via an interface.
+func (v *WorkloadLabelsInput) GetWorkload() WorkloadIdentifier { return v.Workload }
+
+// GetLabels returns WorkloadLabelsInput.Labels, and is useful for accessing the field via an interface.
+func (v *WorkloadLabelsInput) GetLabels() []LabelInput { return v.Labels }
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -1025,6 +1088,18 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
 
+// __ReportNamespaceLabelsInput is used internally by genqlient
+type __ReportNamespaceLabelsInput struct {
+	Name   string       `json:"name"`
+	Labels []LabelInput `json:"labels"`
+}
+
+// GetName returns __ReportNamespaceLabelsInput.Name, and is useful for accessing the field via an interface.
+func (v *__ReportNamespaceLabelsInput) GetName() string { return v.Name }
+
+// GetLabels returns __ReportNamespaceLabelsInput.Labels, and is useful for accessing the field via an interface.
+func (v *__ReportNamespaceLabelsInput) GetLabels() []LabelInput { return v.Labels }
+
 // __ReportTrafficLevelsInput is used internally by genqlient
 type __ReportTrafficLevelsInput struct {
 	TrafficLevels []TrafficLevelInput `json:"trafficLevels"`
@@ -1032,6 +1107,16 @@ type __ReportTrafficLevelsInput struct {
 
 // GetTrafficLevels returns __ReportTrafficLevelsInput.TrafficLevels, and is useful for accessing the field via an interface.
 func (v *__ReportTrafficLevelsInput) GetTrafficLevels() []TrafficLevelInput { return v.TrafficLevels }
+
+// __ReportWorkloadsLabelsInput is used internally by genqlient
+type __ReportWorkloadsLabelsInput struct {
+	WorkloadLabels []WorkloadLabelsInput `json:"workloadLabels"`
+}
+
+// GetWorkloadLabels returns __ReportWorkloadsLabelsInput.WorkloadLabels, and is useful for accessing the field via an interface.
+func (v *__ReportWorkloadsLabelsInput) GetWorkloadLabels() []WorkloadLabelsInput {
+	return v.WorkloadLabels
+}
 
 // The query or mutation executed by ReportComponentStatus.
 const ReportComponentStatus_Operation = `
@@ -1235,6 +1320,41 @@ func ReportK8sServices(
 	return &data_, err_
 }
 
+// The query or mutation executed by ReportNamespaceLabels.
+const ReportNamespaceLabels_Operation = `
+mutation ReportNamespaceLabels ($name: String!, $labels: [LabelInput!]!) {
+	reportNamespaceLabels(name: $name, labels: $labels)
+}
+`
+
+func ReportNamespaceLabels(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	name string,
+	labels []LabelInput,
+) (*ReportNamespaceLabelsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportNamespaceLabels",
+		Query:  ReportNamespaceLabels_Operation,
+		Variables: &__ReportNamespaceLabelsInput{
+			Name:   name,
+			Labels: labels,
+		},
+	}
+	var err_ error
+
+	var data_ ReportNamespaceLabelsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by ReportTrafficLevels.
 const ReportTrafficLevels_Operation = `
 mutation ReportTrafficLevels ($trafficLevels: [TrafficLevelInput!]!) {
@@ -1257,6 +1377,39 @@ func ReportTrafficLevels(
 	var err_ error
 
 	var data_ ReportTrafficLevelsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportWorkloadsLabels.
+const ReportWorkloadsLabels_Operation = `
+mutation ReportWorkloadsLabels ($workloadLabels: [WorkloadLabelsInput!]!) {
+	reportWorkloadsLabels(workloadLabels: $workloadLabels)
+}
+`
+
+func ReportWorkloadsLabels(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	workloadLabels []WorkloadLabelsInput,
+) (*ReportWorkloadsLabelsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportWorkloadsLabels",
+		Query:  ReportWorkloadsLabels_Operation,
+		Variables: &__ReportWorkloadsLabelsInput{
+			WorkloadLabels: workloadLabels,
+		},
+	}
+	var err_ error
+
+	var data_ ReportWorkloadsLabelsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
