@@ -197,7 +197,8 @@ func (s *PodReconcilerTestSuite) TestPodReconciler_Cache() {
 	s.cloudClient.EXPECT().ReportWorkloadsLabels(gomock.Any(), expectedWorkloadLabelsInput).Return(nil)
 
 	res, err = s.reconciler.Reconcile(context.Background(), req)
-
+	s.NoError(err)
+	s.Require().True(res.IsZero())
 }
 
 func (s *PodReconcilerTestSuite) TestPodReconciler_SyncOnce() {
