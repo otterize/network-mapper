@@ -6,6 +6,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/nilable"
 	"github.com/samber/lo"
+	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,6 +50,10 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	for key, value := range namespace.Labels {
 		labels = append(labels, cloudclient.LabelInput{Key: key, Value: nilable.From(value)})
 	}
+
+	slices.SortFunc(labels, func(i, j cloudclient.LabelInput) bool {
+		return i.Key < j.Key
+	})
 
 	err = r.cloudClient.ReportNamespaceLabels(ctx, namespace.Name, labels)
 	if err != nil {

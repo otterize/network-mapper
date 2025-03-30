@@ -116,10 +116,7 @@ func (r *PodReconciler) syncPodsInNamespace(ctx context.Context, namespace strin
 			continue
 		}
 		identityInput := serviceIdentityToServiceIdentityInput(serviceIdentity)
-		labelsInput := make([]cloudclient.LabelInput, 0)
-		for key, value := range pod.Labels {
-			labelsInput = append(labelsInput, cloudclient.LabelInput{Key: key, Value: nilable.From(value)})
-		}
+		labelsInput := r.labelsToLabelInput(pod.Labels)
 		input := cloudclient.ReportServiceMetadataInput{
 			Identity: identityInput,
 			Metadata: cloudclient.ServiceMetadataInput{Labels: labelsInput},
@@ -127,7 +124,12 @@ func (r *PodReconciler) syncPodsInNamespace(ctx context.Context, namespace strin
 		serviceIdentityToReportInput[serviceIdentityToCacheKey(serviceIdentity)] = input
 	}
 
-	err = r.cloudClient.ReportWorkloadsLabels(ctx, lo.Values(serviceIdentityToReportInput))
+	inputs := lo.Values(serviceIdentityToReportInput)
+	slices.SortFunc(inputs, func(a, b cloudclient.ReportServiceMetadataInput) bool {
+		return a.Identity.Name < b.Identity.Name
+	})
+
+	err = r.cloudClient.ReportWorkloadsLabels(ctx, inputs)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -161,6 +163,17 @@ func (r *PodReconciler) reportWorkloadLabelsWithCache(ctx context.Context, servi
 func (r *PodReconciler) reportWorkloadLabels(ctx context.Context, serviceIdentity serviceidentity.ServiceIdentity, labels map[string]string) error {
 	serviceIdentityInput := serviceIdentityToServiceIdentityInput(serviceIdentity)
 
+	labelsInput := r.labelsToLabelInput(labels)
+
+	workloadLabelInput := cloudclient.ReportServiceMetadataInput{
+		Identity: serviceIdentityInput,
+		Metadata: cloudclient.ServiceMetadataInput{Labels: labelsInput},
+	}
+
+	return errors.Wrap(r.cloudClient.ReportWorkloadsLabels(ctx, []cloudclient.ReportServiceMetadataInput{workloadLabelInput}))
+}
+
+func (r *PodReconciler) labelsToLabelInput(labels map[string]string) []cloudclient.LabelInput {
 	labelsInput := make([]cloudclient.LabelInput, 0)
 	for key, value := range labels {
 		labelsInput = append(labelsInput, cloudclient.LabelInput{Key: key, Value: nilable.From(value)})
@@ -169,13 +182,7 @@ func (r *PodReconciler) reportWorkloadLabels(ctx context.Context, serviceIdentit
 	slices.SortFunc(labelsInput, func(a, b cloudclient.LabelInput) bool {
 		return a.Key < b.Key
 	})
-
-	workloadLabelInput := cloudclient.ReportServiceMetadataInput{
-		Identity: serviceIdentityInput,
-		Metadata: cloudclient.ServiceMetadataInput{Labels: labelsInput},
-	}
-
-	return errors.Wrap(r.cloudClient.ReportWorkloadsLabels(ctx, []cloudclient.ReportServiceMetadataInput{workloadLabelInput}))
+	return labelsInput
 }
 
 func serviceIdentityToCacheKey(identity serviceidentity.ServiceIdentity) serviceIdentityKey {
