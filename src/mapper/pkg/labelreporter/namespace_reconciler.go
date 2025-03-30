@@ -17,9 +17,10 @@ type NamespaceReconciler struct {
 	cloudClient cloudclient.CloudClient
 }
 
-func NewNamespaceReconciler(client client.Client) *NamespaceReconciler {
+func NewNamespaceReconciler(client client.Client, cloudClient cloudclient.CloudClient) *NamespaceReconciler {
 	return &NamespaceReconciler{
-		Client: client,
+		Client:      client,
+		cloudClient: cloudClient,
 	}
 }
 
@@ -40,11 +41,11 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, errors.Wrap(err)
 	}
 
-	if len(namespace.Labels) == 0 {
+	if !namespace.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
 	}
 
-	labels := make([]cloudclient.LabelInput, 0, len(namespace.Labels))
+	labels := make([]cloudclient.LabelInput, 0)
 	for key, value := range namespace.Labels {
 		labels = append(labels, cloudclient.LabelInput{Key: key, Value: nilable.From(value)})
 	}

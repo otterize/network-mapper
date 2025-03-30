@@ -2121,9 +2121,6 @@ type Mutation {
 		tutorialName: TutorialName!
 		step: String!
 	): Boolean!
-	reportWorkloadsLabels(
-		workloadLabels: [WorkloadLabelsInput!]!
-	): Boolean!
 }
 
 type Namespace {
@@ -2659,6 +2656,7 @@ input ServiceIdentityInput {
 	name: String!
 	namespace: String!
 	kind: String!
+	nameResolvedUsingAnnotation: Boolean
 }
 
 enum ServiceInternalTrafficPolicy {
@@ -2669,6 +2667,7 @@ enum ServiceInternalTrafficPolicy {
 input ServiceMetadataInput {
 	tags: [String!]
 	awsRoles: [String!]
+	labels: [LabelInput!]
 }
 
 enum ServiceType {
@@ -2923,18 +2922,6 @@ type Workload {
 	types: [ServiceType!]!
 	inboundStatus: ServerProtectionStatusVerdict!
 	outboundStatus: EdgeAccessStatusVerdict!
-}
-
-input WorkloadIdentifier {
-	namespace: String!
-	name: String!
-	kind: String
-	nameResolvedUsingAnnotation: Boolean
-}
-
-input WorkloadLabelsInput {
-	workload: WorkloadIdentifier!
-	labels: [LabelInput!]
 }
 
 enum WorkloadTag {

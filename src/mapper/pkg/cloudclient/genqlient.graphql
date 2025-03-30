@@ -33,6 +33,6 @@ mutation ReportNamespaceLabels($name: String!, $labels: [LabelInput!]!) {
     reportNamespaceLabels(name: $name, labels: $labels)
 }
 
-mutation ReportWorkloadsLabels($workloadLabels: [WorkloadLabelsInput!]!) {
-    reportWorkloadsLabels(workloadLabels: $workloadLabels)
+mutation ReportWorkloadsLabels($workloadsLabels: [ReportServiceMetadataInput!]!) {
+    reportServicesMetadata(servicesMeta: $workloadsLabels)
 }
