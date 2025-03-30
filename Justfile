@@ -44,7 +44,7 @@ build-mapper-image:
     set -euxo pipefail
     cd src/
     docker buildx build \
-        --platform linux/arm64 \
+        --platform linux/amd64,linux/arm64 \
         -t otterize/network-mapper:{{image-tag}} \
         -f ../build/mapper.Dockerfile \
         .
