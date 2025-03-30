@@ -2,7 +2,6 @@ package labelreporter
 
 import (
 	"context"
-	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
@@ -11,37 +10,34 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
-	"hash/crc32"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sort"
 	"sync"
+	"time"
 )
 
-type serviceIdentityKey string
-type labelsChecksum uint32
+const (
+	cacheTTL  = 5 * time.Hour
+	cacheSize = 1000
+)
 
 type PodReconciler struct {
 	client.Client
 	cloudClient       cloudclient.CloudClient
 	serviceIDResolver serviceidresolver.ServiceResolver
-	cache             *lru.Cache[serviceIdentityKey, labelsChecksum]
+	cache             *serviceIdLabelsCache
 	once              sync.Once
 }
 
-func NewPodReconciler(client client.Client, cloudClient cloudclient.CloudClient, resolver serviceidresolver.ServiceResolver) (*PodReconciler, error) {
-	cache, err := lru.New[serviceIdentityKey, labelsChecksum](1000)
-	if err != nil {
-		return nil, errors.Wrap(err)
-	}
+func NewPodReconciler(client client.Client, cloudClient cloudclient.CloudClient, resolver serviceidresolver.ServiceResolver) *PodReconciler {
 	return &PodReconciler{
 		Client:            client,
 		cloudClient:       cloudClient,
 		serviceIDResolver: resolver,
-		cache:             cache,
-	}, nil
+		cache:             newServiceIdLabelsCache(cacheSize, cacheTTL),
+	}
 }
 
 func (r *PodReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -140,34 +136,25 @@ func (r *PodReconciler) syncPodsInNamespace(ctx context.Context, namespace strin
 		labels := lo.SliceToMap(input.Metadata.Labels, func(label cloudclient.LabelInput) (string, string) {
 			return label.Key, label.Value.Item
 		})
-		err := r.addToCache(key, r.checksumLabels(labels))
-		if err != nil {
-			return errors.Wrap(err)
-		}
+		r.cache.Add(key, checksumLabels(labels))
 	}
 
 	return nil
 }
 
 func (r *PodReconciler) reportWorkloadLabelsWithCache(ctx context.Context, serviceIdentity serviceidentity.ServiceIdentity, labels map[string]string) error {
-	cached, err := r.isCached(serviceIdentity, labels)
-	if err != nil {
-		return errors.Wrap(err)
-	}
+	svcIDKey, labelVal := serviceIdentityToCacheKey(serviceIdentity), checksumLabels(labels)
+	cached := r.cache.IsCached(svcIDKey, labelVal)
 	if cached {
 		return nil
 	}
 
-	err = r.reportWorkloadLabels(ctx, serviceIdentity, labels)
+	err := r.reportWorkloadLabels(ctx, serviceIdentity, labels)
 	if err != nil {
 		return errors.Wrap(err)
 	}
 
-	err = r.addToCache(serviceIdentityToCacheKey(serviceIdentity), r.checksumLabels(labels))
-	if err != nil {
-		return errors.Wrap(err)
-	}
-
+	r.cache.Add(serviceIdentityToCacheKey(serviceIdentity), checksumLabels(labels))
 	return nil
 }
 
@@ -189,53 +176,6 @@ func (r *PodReconciler) reportWorkloadLabels(ctx context.Context, serviceIdentit
 	}
 
 	return errors.Wrap(r.cloudClient.ReportWorkloadsLabels(ctx, []cloudclient.ReportServiceMetadataInput{workloadLabelInput}))
-}
-
-func (r *PodReconciler) isCached(serviceIdentity serviceidentity.ServiceIdentity, labels map[string]string) (bool, error) {
-	serviceIdentityKey := serviceIdentityToCacheKey(serviceIdentity)
-
-	labelHash := r.checksumLabels(labels)
-
-	val, found := r.cache.Get(serviceIdentityKey)
-
-	if found && val == labelHash {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (r *PodReconciler) checksumLabels(labels map[string]string) labelsChecksum {
-	labelKeys := make([]string, 0, len(labels))
-	for key := range labels {
-		labelKeys = append(labelKeys, key)
-	}
-	sort.Strings(labelKeys)
-	labelString := ""
-	for _, key := range labelKeys {
-		labelString += key + labels[key]
-	}
-
-	labelHash := crc32.ChecksumIEEE([]byte(labelString))
-	return labelsChecksum(labelHash)
-}
-
-func (r *PodReconciler) addToCache(key serviceIdentityKey, checksum labelsChecksum) error {
-	r.cache.Add(key, checksum)
-	return nil
-}
-
-func serviceIdentityToServiceIdentityInput(identity serviceidentity.ServiceIdentity) cloudclient.ServiceIdentityInput {
-	wi := cloudclient.ServiceIdentityInput{
-		Namespace: identity.Namespace,
-		Name:      identity.Name,
-		Kind:      identity.Kind,
-	}
-	if identity.ResolvedUsingOverrideAnnotation != nil {
-		wi.NameResolvedUsingAnnotation = nilable.From(*identity.ResolvedUsingOverrideAnnotation)
-	}
-
-	return wi
 }
 
 func serviceIdentityToCacheKey(identity serviceidentity.ServiceIdentity) serviceIdentityKey {

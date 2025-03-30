@@ -33,7 +33,7 @@ func (s *PodReconcilerTestSuite) SetupTest() {
 	s.cloudClient = cloudclientmocks.NewMockCloudClient(controller)
 	s.k8sClient = mocks.NewK8sClient(controller)
 	s.serviceIDResolver = serviceidresolvermocks.NewMockServiceResolver(controller)
-	s.reconciler, _ = NewPodReconciler(s.k8sClient, s.cloudClient, s.serviceIDResolver)
+	s.reconciler = NewPodReconciler(s.k8sClient, s.cloudClient, s.serviceIDResolver)
 }
 
 func (s *PodReconcilerTestSuite) disableSyncOnce() {

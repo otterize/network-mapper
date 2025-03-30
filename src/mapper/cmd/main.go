@@ -233,10 +233,7 @@ func main() {
 			logrus.WithError(err).Panic("unable to create service reconciler")
 		}
 
-		podReconciler, err := labelreporter.NewPodReconciler(mgr.GetClient(), cloudClient, serviceIdResolver)
-		if err != nil {
-			logrus.WithError(err).Panic("unable to create pod reconciler")
-		}
+		podReconciler := labelreporter.NewPodReconciler(mgr.GetClient(), cloudClient, serviceIdResolver)
 		if err := podReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create pod reconciler")
 		}
