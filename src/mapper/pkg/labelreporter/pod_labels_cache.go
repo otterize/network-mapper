@@ -3,8 +3,6 @@ package labelreporter
 import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
-	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/nilable"
 	"hash/crc32"
 	"sort"
 	"time"
@@ -51,15 +49,6 @@ func checksumLabels(labels map[string]string) labelsChecksum {
 	return labelsChecksum(labelHash)
 }
 
-func serviceIdentityToServiceIdentityInput(identity serviceidentity.ServiceIdentity) cloudclient.ServiceIdentityInput {
-	wi := cloudclient.ServiceIdentityInput{
-		Namespace: identity.Namespace,
-		Name:      identity.Name,
-		Kind:      identity.Kind,
-	}
-	if identity.ResolvedUsingOverrideAnnotation != nil {
-		wi.NameResolvedUsingAnnotation = nilable.From(*identity.ResolvedUsingOverrideAnnotation)
-	}
-
-	return wi
+func serviceIdentityToCacheKey(identity serviceidentity.ServiceIdentity) serviceIdentityKey {
+	return serviceIdentityKey(identity.GetNameWithKind())
 }

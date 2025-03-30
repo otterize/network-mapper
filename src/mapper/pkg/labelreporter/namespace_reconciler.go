@@ -4,9 +4,7 @@ import (
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/nilable"
 	"github.com/samber/lo"
-	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,14 +44,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	labels := make([]cloudclient.LabelInput, 0)
-	for key, value := range namespace.Labels {
-		labels = append(labels, cloudclient.LabelInput{Key: key, Value: nilable.From(value)})
-	}
-
-	slices.SortFunc(labels, func(i, j cloudclient.LabelInput) bool {
-		return i.Key < j.Key
-	})
+	labels := labelsToLabelInput(namespace.Labels)
 
 	err = r.cloudClient.ReportNamespaceLabels(ctx, namespace.Name, labels)
 	if err != nil {
