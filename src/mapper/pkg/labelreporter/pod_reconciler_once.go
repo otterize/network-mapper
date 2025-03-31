@@ -41,6 +41,7 @@ func (r *PodReconciler) syncPodsInNamespace(ctx context.Context, namespace strin
 			return errors.Wrap(err)
 		}
 		if _, ok := serviceIdentityToReportInput[serviceIdentityToCacheKey(serviceIdentity)]; ok {
+			// For multi-pod workloads, we only need to report the labels once
 			continue
 		}
 		identityInput := serviceIdentityToServiceIdentityInput(serviceIdentity)
