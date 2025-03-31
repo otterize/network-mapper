@@ -16,6 +16,7 @@ type CloudClient interface {
 	ReportK8sServices(ctx context.Context, namespace string, services []K8sServiceInput) error
 	ReportK8sIngresses(ctx context.Context, namespace string, ingresses []K8sIngressInput) error
 	ReportTrafficLevels(ctx context.Context, trafficLevels []TrafficLevelInput) error
+	ReportNetworkPolicies(ctx context.Context, namespace string, policies []NetworkPolicyInput) error
 }
 
 type CloudClientImpl struct {
@@ -108,6 +109,28 @@ func (c *CloudClientImpl) ReportTrafficLevels(
 		ctx,
 		c.client,
 		trafficLevels,
+	)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportNetworkPolicies(
+	ctx context.Context,
+	namespace string,
+	policies []NetworkPolicyInput,
+) error {
+	logrus.WithField("namespace", namespace).
+		WithField("count", len(policies)).
+		Infof("Reporting network policies")
+
+	_, err := ReportNetworkPolicies(
+		ctx,
+		c.client,
+		namespace,
+		policies,
 	)
 	if err != nil {
 		return errors.Wrap(err)

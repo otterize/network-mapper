@@ -28,3 +28,7 @@ mutation ReportTrafficLevels(
 ) {
     reportTrafficLevels(trafficLevels: $trafficLevels)
 }
+
+mutation ReportNetworkPolicies($namespace: String!, $networkPolicies: [NetworkPolicyInput!]!) {
+    reportNetworkPolicies(namespace: $namespace, networkPolicies: $networkPolicies)
+}

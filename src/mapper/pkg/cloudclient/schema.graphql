@@ -1198,6 +1198,24 @@ input InputIntegrationAccessGraphFilter {
 	serviceFilterType: IDFilterOperators
 }
 
+""" Network policies filter """
+input InputNetworkPolicyFilter {
+""" Network policies filter """
+	search: String
+""" Network policies filter """
+	clusterIds: InputIDFilterValue
+""" Network policies filter """
+	namespaceIds: InputIDFilterValue
+""" Network policies filter """
+	environmentIds: InputIDFilterValue
+""" Network policies filter """
+	networkPolicyIds: InputIDFilterValue
+""" Network policies filter """
+	policyKinds: InputIDFilterValue
+""" Network policies filter """
+	since: InputTimeFilterValue
+}
+
 input InputResourceInventoryFilter {
 	serviceIds: InputIDFilterValue
 	environmentIds: InputIDFilterValue
@@ -1503,11 +1521,6 @@ type Invite {
 enum InviteStatus {
 	PENDING
 	ACCEPTED
-}
-
-input IpBlockInput {
-	cidr: String!
-	except: [String!]
 }
 
 enum IpFamilyPolicy {
@@ -1997,10 +2010,6 @@ type Mutation {
 		intents: [IntentInput!]!
 		ossClusterId: String
 	): Boolean!
-	reportNetworkPolicies(
-		namespace: String!
-		policies: [NetworkPolicyInput!]!
-	): Boolean!
 	reportExternallyAccessibleServices(
 		namespace: String!
 		services: [ExternallyAccessibleServiceInput!]!
@@ -2042,6 +2051,14 @@ type Mutation {
 		id: ID!
 		environmentId: ID
 	): Namespace!
+	reportNamespaceLabels(
+		name: String!
+		labels: [LabelInput!]
+	): Boolean!
+	reportNetworkPolicies(
+		namespace: String!
+		networkPolicies: [NetworkPolicyInput!]
+	): Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2159,20 +2176,39 @@ enum NetworkPoliciesStep {
 	COMPLETED
 }
 
-input NetworkPolicyEgressRuleInput {
-	to: [PeerInput!]!
+type NetworkPolicy {
+	id: ID!
+	name: String!
+	kind: NetworkPolicyKind!
+	cluster: Cluster!
+	namespace: Namespace
+	environment: Environment!
+	hits: Int!
+	workloads: [NetworkPolicyWorkload!]!
+	workloadsAffected: Int!
+	spec: String!
+	lastUsed: Time!
 }
 
 input NetworkPolicyInput {
-	namespace: String!
 	name: String!
-	serverName: String!
-	externalNetworkTrafficPolicy: Boolean!
-	spec: NetworkPolicySpecInput
+	yaml: String!
 }
 
-input NetworkPolicySpecInput {
-	egress: [NetworkPolicyEgressRuleInput!]
+enum NetworkPolicyKind {
+	NETWORK_POLICY
+	CILIUM_NETWORK_POLICY
+}
+
+enum NetworkPolicyScope {
+	PRIMARY
+	EGRESS
+	INGRESS
+}
+
+type NetworkPolicyWorkload {
+	scope: NetworkPolicyScope!
+	service: Service!
 }
 
 type Organization {
@@ -2212,10 +2248,6 @@ enum PathType {
 	IMPLEMENTATION_SPECIFIC
 	PREFIX
 	EXACT
-}
-
-input PeerInput {
-	ipBlock: IpBlockInput!
 }
 
 input PortStatusInput {
@@ -2262,6 +2294,10 @@ type Query {
 		targetServiceId: ID!
 		lastSeenAfter: Time!
 	): [String!]!
+	edgeNetworkPolicies(
+		clientServiceId: ID!
+		serverServiceId: ID!
+	): [NetworkPolicy!]!
 """Get access log"""
 	accessLog(
 		filter: InputAccessLogFilter
@@ -2387,6 +2423,12 @@ type Query {
 		clusterId: ID
 		name: String
 	): Namespace!
+	networkPolicy(
+		id: ID!
+	): NetworkPolicy
+	networkPolicies(
+		filter: InputNetworkPolicyFilter
+	): [NetworkPolicy!]!
 """List organizations"""
 	organizations: [Organization!]!
 """Get organization"""
@@ -2589,6 +2631,7 @@ type Service {
 	aliases: [ServerAlias!]
 	namespace: Namespace
 	environment: Environment!
+	networkPolicies: [NetworkPolicy!]
 """If service is Kafka, its KafkaServerConfig."""
 	kafkaServerConfig: KafkaServerConfig
 	certificateInformation: CertificateInformation
@@ -2652,6 +2695,7 @@ input ServiceIdentityInput {
 	name: String!
 	namespace: String!
 	kind: String!
+	nameResolvedUsingAnnotation: Boolean
 }
 
 enum ServiceInternalTrafficPolicy {
@@ -2662,6 +2706,7 @@ enum ServiceInternalTrafficPolicy {
 input ServiceMetadataInput {
 	tags: [String!]
 	awsRoles: [String!]
+	labels: [LabelInput!]
 }
 
 enum ServiceType {

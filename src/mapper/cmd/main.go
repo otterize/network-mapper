@@ -21,6 +21,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/networkpolicyreport"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
@@ -229,6 +230,11 @@ func main() {
 		serviceReconciler := resourcevisibility.NewServiceReconciler(mgr.GetClient(), cloudClient, kubeFinder)
 		if err := serviceReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create service reconciler")
+		}
+
+		netpolReconciler := networkpolicyreport.NewNetworkPolicyReconciler(mgr.GetClient(), cloudClient)
+		if err := netpolReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create network policy reconciler")
 		}
 	}
 

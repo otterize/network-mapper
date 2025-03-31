@@ -788,6 +788,17 @@ const (
 	LoadBalancerIPModeProxy LoadBalancerIPMode = "PROXY"
 )
 
+type NetworkPolicyInput struct {
+	Name string `json:"name"`
+	Yaml string `json:"yaml"`
+}
+
+// GetName returns NetworkPolicyInput.Name, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyInput) GetName() string { return v.Name }
+
+// GetYaml returns NetworkPolicyInput.Yaml, and is useful for accessing the field via an interface.
+func (v *NetworkPolicyInput) GetYaml() string { return v.Yaml }
+
 type PathType string
 
 const (
@@ -867,6 +878,16 @@ type ReportK8sServicesResponse struct {
 
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
+
+// ReportNetworkPoliciesResponse is returned by ReportNetworkPolicies on success.
+type ReportNetworkPoliciesResponse struct {
+	ReportNetworkPolicies bool `json:"reportNetworkPolicies"`
+}
+
+// GetReportNetworkPolicies returns ReportNetworkPoliciesResponse.ReportNetworkPolicies, and is useful for accessing the field via an interface.
+func (v *ReportNetworkPoliciesResponse) GetReportNetworkPolicies() bool {
+	return v.ReportNetworkPolicies
+}
 
 // ReportTrafficLevelsResponse is returned by ReportTrafficLevels on success.
 type ReportTrafficLevelsResponse struct {
@@ -1024,6 +1045,20 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __ReportNetworkPoliciesInput is used internally by genqlient
+type __ReportNetworkPoliciesInput struct {
+	Namespace       string               `json:"namespace"`
+	NetworkPolicies []NetworkPolicyInput `json:"networkPolicies"`
+}
+
+// GetNamespace returns __ReportNetworkPoliciesInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportNetworkPoliciesInput) GetNamespace() string { return v.Namespace }
+
+// GetNetworkPolicies returns __ReportNetworkPoliciesInput.NetworkPolicies, and is useful for accessing the field via an interface.
+func (v *__ReportNetworkPoliciesInput) GetNetworkPolicies() []NetworkPolicyInput {
+	return v.NetworkPolicies
+}
 
 // __ReportTrafficLevelsInput is used internally by genqlient
 type __ReportTrafficLevelsInput struct {
@@ -1224,6 +1259,41 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportNetworkPolicies.
+const ReportNetworkPolicies_Operation = `
+mutation ReportNetworkPolicies ($namespace: String!, $networkPolicies: [NetworkPolicyInput!]!) {
+	reportNetworkPolicies(namespace: $namespace, networkPolicies: $networkPolicies)
+}
+`
+
+func ReportNetworkPolicies(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	namespace string,
+	networkPolicies []NetworkPolicyInput,
+) (*ReportNetworkPoliciesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportNetworkPolicies",
+		Query:  ReportNetworkPolicies_Operation,
+		Variables: &__ReportNetworkPoliciesInput{
+			Namespace:       namespace,
+			NetworkPolicies: networkPolicies,
+		},
+	}
+	var err_ error
+
+	var data_ ReportNetworkPoliciesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
