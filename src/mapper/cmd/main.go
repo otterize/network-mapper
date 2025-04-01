@@ -21,6 +21,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/labelreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
@@ -170,10 +171,11 @@ func main() {
 	gcpIntentsHolder := gcpintentsholder.New()
 	azureIntentsHolder := azureintentsholder.New()
 	trafficCollector := traffic.NewCollector()
+	serviceIdResolver := serviceidresolver.NewResolver(mgr.GetClient())
 
 	resolver := resolvers.NewResolver(
 		kubeFinder,
-		serviceidresolver.NewResolver(mgr.GetClient()),
+		serviceIdResolver,
 		intentsHolder,
 		externalTrafficIntentsHolder,
 		awsIntentsHolder,
@@ -229,6 +231,16 @@ func main() {
 		serviceReconciler := resourcevisibility.NewServiceReconciler(mgr.GetClient(), cloudClient, kubeFinder)
 		if err := serviceReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create service reconciler")
+		}
+
+		podReconciler := labelreporter.NewPodReconciler(mgr.GetClient(), cloudClient, serviceIdResolver)
+		if err := podReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create pod reconciler")
+		}
+
+		namespaceReconciler := labelreporter.NewNamespaceReconciler(mgr.GetClient(), cloudClient)
+		if err := namespaceReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create namespace reconciler")
 		}
 	}
 

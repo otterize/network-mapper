@@ -28,3 +28,11 @@ mutation ReportTrafficLevels(
 ) {
     reportTrafficLevels(trafficLevels: $trafficLevels)
 }
+
+mutation ReportNamespaceLabels($name: String!, $labels: [LabelInput!]!) {
+    reportNamespaceLabels(name: $name, labels: $labels)
+}
+
+mutation ReportWorkloadsLabels($workloadsLabels: [ReportServiceMetadataInput!]!) {
+    reportServicesMetadata(servicesMeta: $workloadsLabels)
+}

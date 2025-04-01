@@ -781,6 +781,17 @@ const (
 	KafkaOperationIdempotentWrite KafkaOperation = "IDEMPOTENT_WRITE"
 )
 
+type LabelInput struct {
+	Key   string                  `json:"key"`
+	Value nilable.Nilable[string] `json:"value"`
+}
+
+// GetKey returns LabelInput.Key, and is useful for accessing the field via an interface.
+func (v *LabelInput) GetKey() string { return v.Key }
+
+// GetValue returns LabelInput.Value, and is useful for accessing the field via an interface.
+func (v *LabelInput) GetValue() nilable.Nilable[string] { return v.Value }
+
 type LoadBalancerIPMode string
 
 const (
@@ -868,6 +879,27 @@ type ReportK8sServicesResponse struct {
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
 
+// ReportNamespaceLabelsResponse is returned by ReportNamespaceLabels on success.
+type ReportNamespaceLabelsResponse struct {
+	ReportNamespaceLabels bool `json:"reportNamespaceLabels"`
+}
+
+// GetReportNamespaceLabels returns ReportNamespaceLabelsResponse.ReportNamespaceLabels, and is useful for accessing the field via an interface.
+func (v *ReportNamespaceLabelsResponse) GetReportNamespaceLabels() bool {
+	return v.ReportNamespaceLabels
+}
+
+type ReportServiceMetadataInput struct {
+	Identity ServiceIdentityInput `json:"identity"`
+	Metadata ServiceMetadataInput `json:"metadata"`
+}
+
+// GetIdentity returns ReportServiceMetadataInput.Identity, and is useful for accessing the field via an interface.
+func (v *ReportServiceMetadataInput) GetIdentity() ServiceIdentityInput { return v.Identity }
+
+// GetMetadata returns ReportServiceMetadataInput.Metadata, and is useful for accessing the field via an interface.
+func (v *ReportServiceMetadataInput) GetMetadata() ServiceMetadataInput { return v.Metadata }
+
 // ReportTrafficLevelsResponse is returned by ReportTrafficLevels on success.
 type ReportTrafficLevelsResponse struct {
 	// Update service
@@ -876,6 +908,17 @@ type ReportTrafficLevelsResponse struct {
 
 // GetReportTrafficLevels returns ReportTrafficLevelsResponse.ReportTrafficLevels, and is useful for accessing the field via an interface.
 func (v *ReportTrafficLevelsResponse) GetReportTrafficLevels() bool { return v.ReportTrafficLevels }
+
+// ReportWorkloadsLabelsResponse is returned by ReportWorkloadsLabels on success.
+type ReportWorkloadsLabelsResponse struct {
+	// update multiple service metadata from operator
+	ReportServicesMetadata bool `json:"reportServicesMetadata"`
+}
+
+// GetReportServicesMetadata returns ReportWorkloadsLabelsResponse.ReportServicesMetadata, and is useful for accessing the field via an interface.
+func (v *ReportWorkloadsLabelsResponse) GetReportServicesMetadata() bool {
+	return v.ReportServicesMetadata
+}
 
 type SelectorKeyValueInput struct {
 	Key   nilable.Nilable[string] `json:"key"`
@@ -917,12 +960,48 @@ const (
 	ServiceExternalTrafficPolicyLocal   ServiceExternalTrafficPolicy = "LOCAL"
 )
 
+type ServiceIdentityInput struct {
+	Name                        string                `json:"name"`
+	Namespace                   string                `json:"namespace"`
+	Kind                        string                `json:"kind"`
+	NameResolvedUsingAnnotation nilable.Nilable[bool] `json:"nameResolvedUsingAnnotation"`
+}
+
+// GetName returns ServiceIdentityInput.Name, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetName() string { return v.Name }
+
+// GetNamespace returns ServiceIdentityInput.Namespace, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetNamespace() string { return v.Namespace }
+
+// GetKind returns ServiceIdentityInput.Kind, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetKind() string { return v.Kind }
+
+// GetNameResolvedUsingAnnotation returns ServiceIdentityInput.NameResolvedUsingAnnotation, and is useful for accessing the field via an interface.
+func (v *ServiceIdentityInput) GetNameResolvedUsingAnnotation() nilable.Nilable[bool] {
+	return v.NameResolvedUsingAnnotation
+}
+
 type ServiceInternalTrafficPolicy string
 
 const (
 	ServiceInternalTrafficPolicyCluster ServiceInternalTrafficPolicy = "CLUSTER"
 	ServiceInternalTrafficPolicyLocal   ServiceInternalTrafficPolicy = "LOCAL"
 )
+
+type ServiceMetadataInput struct {
+	Tags     []string     `json:"tags"`
+	AwsRoles []string     `json:"awsRoles"`
+	Labels   []LabelInput `json:"labels"`
+}
+
+// GetTags returns ServiceMetadataInput.Tags, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetTags() []string { return v.Tags }
+
+// GetAwsRoles returns ServiceMetadataInput.AwsRoles, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetAwsRoles() []string { return v.AwsRoles }
+
+// GetLabels returns ServiceMetadataInput.Labels, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetLabels() []LabelInput { return v.Labels }
 
 type SessionAffinity string
 
@@ -1025,6 +1104,18 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
 
+// __ReportNamespaceLabelsInput is used internally by genqlient
+type __ReportNamespaceLabelsInput struct {
+	Name   string       `json:"name"`
+	Labels []LabelInput `json:"labels"`
+}
+
+// GetName returns __ReportNamespaceLabelsInput.Name, and is useful for accessing the field via an interface.
+func (v *__ReportNamespaceLabelsInput) GetName() string { return v.Name }
+
+// GetLabels returns __ReportNamespaceLabelsInput.Labels, and is useful for accessing the field via an interface.
+func (v *__ReportNamespaceLabelsInput) GetLabels() []LabelInput { return v.Labels }
+
 // __ReportTrafficLevelsInput is used internally by genqlient
 type __ReportTrafficLevelsInput struct {
 	TrafficLevels []TrafficLevelInput `json:"trafficLevels"`
@@ -1032,6 +1123,16 @@ type __ReportTrafficLevelsInput struct {
 
 // GetTrafficLevels returns __ReportTrafficLevelsInput.TrafficLevels, and is useful for accessing the field via an interface.
 func (v *__ReportTrafficLevelsInput) GetTrafficLevels() []TrafficLevelInput { return v.TrafficLevels }
+
+// __ReportWorkloadsLabelsInput is used internally by genqlient
+type __ReportWorkloadsLabelsInput struct {
+	WorkloadsLabels []ReportServiceMetadataInput `json:"workloadsLabels"`
+}
+
+// GetWorkloadsLabels returns __ReportWorkloadsLabelsInput.WorkloadsLabels, and is useful for accessing the field via an interface.
+func (v *__ReportWorkloadsLabelsInput) GetWorkloadsLabels() []ReportServiceMetadataInput {
+	return v.WorkloadsLabels
+}
 
 // The query or mutation executed by ReportComponentStatus.
 const ReportComponentStatus_Operation = `
@@ -1235,6 +1336,41 @@ func ReportK8sServices(
 	return &data_, err_
 }
 
+// The query or mutation executed by ReportNamespaceLabels.
+const ReportNamespaceLabels_Operation = `
+mutation ReportNamespaceLabels ($name: String!, $labels: [LabelInput!]!) {
+	reportNamespaceLabels(name: $name, labels: $labels)
+}
+`
+
+func ReportNamespaceLabels(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	name string,
+	labels []LabelInput,
+) (*ReportNamespaceLabelsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportNamespaceLabels",
+		Query:  ReportNamespaceLabels_Operation,
+		Variables: &__ReportNamespaceLabelsInput{
+			Name:   name,
+			Labels: labels,
+		},
+	}
+	var err_ error
+
+	var data_ ReportNamespaceLabelsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by ReportTrafficLevels.
 const ReportTrafficLevels_Operation = `
 mutation ReportTrafficLevels ($trafficLevels: [TrafficLevelInput!]!) {
@@ -1257,6 +1393,39 @@ func ReportTrafficLevels(
 	var err_ error
 
 	var data_ ReportTrafficLevelsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportWorkloadsLabels.
+const ReportWorkloadsLabels_Operation = `
+mutation ReportWorkloadsLabels ($workloadsLabels: [ReportServiceMetadataInput!]!) {
+	reportServicesMetadata(servicesMeta: $workloadsLabels)
+}
+`
+
+func ReportWorkloadsLabels(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	workloadsLabels []ReportServiceMetadataInput,
+) (*ReportWorkloadsLabelsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportWorkloadsLabels",
+		Query:  ReportWorkloadsLabels_Operation,
+		Variables: &__ReportWorkloadsLabelsInput{
+			WorkloadsLabels: workloadsLabels,
+		},
+	}
+	var err_ error
+
+	var data_ ReportWorkloadsLabelsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

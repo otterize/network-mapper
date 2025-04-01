@@ -2042,6 +2042,10 @@ type Mutation {
 		id: ID!
 		environmentId: ID
 	): Namespace!
+	reportNamespaceLabels(
+		name: String!
+		labels: [LabelInput!]
+	): Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2652,6 +2656,7 @@ input ServiceIdentityInput {
 	name: String!
 	namespace: String!
 	kind: String!
+	nameResolvedUsingAnnotation: Boolean
 }
 
 enum ServiceInternalTrafficPolicy {
@@ -2662,6 +2667,7 @@ enum ServiceInternalTrafficPolicy {
 input ServiceMetadataInput {
 	tags: [String!]
 	awsRoles: [String!]
+	labels: [LabelInput!]
 }
 
 enum ServiceType {
