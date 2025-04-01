@@ -900,6 +900,16 @@ func (v *ReportNamespaceLabelsResponse) GetReportNamespaceLabels() bool {
 	return v.ReportNamespaceLabels
 }
 
+// ReportNetworkPoliciesResponse is returned by ReportNetworkPolicies on success.
+type ReportNetworkPoliciesResponse struct {
+	ReportNetworkPolicies bool `json:"reportNetworkPolicies"`
+}
+
+// GetReportNetworkPolicies returns ReportNetworkPoliciesResponse.ReportNetworkPolicies, and is useful for accessing the field via an interface.
+func (v *ReportNetworkPoliciesResponse) GetReportNetworkPolicies() bool {
+	return v.ReportNetworkPolicies
+}
+
 type ReportServiceMetadataInput struct {
 	Identity ServiceIdentityInput `json:"identity"`
 	Metadata ServiceMetadataInput `json:"metadata"`
@@ -910,16 +920,6 @@ func (v *ReportServiceMetadataInput) GetIdentity() ServiceIdentityInput { return
 
 // GetMetadata returns ReportServiceMetadataInput.Metadata, and is useful for accessing the field via an interface.
 func (v *ReportServiceMetadataInput) GetMetadata() ServiceMetadataInput { return v.Metadata }
-
-// ReportNetworkPoliciesResponse is returned by ReportNetworkPolicies on success.
-type ReportNetworkPoliciesResponse struct {
-	ReportNetworkPolicies bool `json:"reportNetworkPolicies"`
-}
-
-// GetReportNetworkPolicies returns ReportNetworkPoliciesResponse.ReportNetworkPolicies, and is useful for accessing the field via an interface.
-func (v *ReportNetworkPoliciesResponse) GetReportNetworkPolicies() bool {
-	return v.ReportNetworkPolicies
-}
 
 // ReportTrafficLevelsResponse is returned by ReportTrafficLevels on success.
 type ReportTrafficLevelsResponse struct {
@@ -1124,6 +1124,32 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __ReportNamespaceLabelsInput is used internally by genqlient
+type __ReportNamespaceLabelsInput struct {
+	Name   string       `json:"name"`
+	Labels []LabelInput `json:"labels"`
+}
+
+// GetName returns __ReportNamespaceLabelsInput.Name, and is useful for accessing the field via an interface.
+func (v *__ReportNamespaceLabelsInput) GetName() string { return v.Name }
+
+// GetLabels returns __ReportNamespaceLabelsInput.Labels, and is useful for accessing the field via an interface.
+func (v *__ReportNamespaceLabelsInput) GetLabels() []LabelInput { return v.Labels }
+
+// __ReportNetworkPoliciesInput is used internally by genqlient
+type __ReportNetworkPoliciesInput struct {
+	Namespace       string               `json:"namespace"`
+	NetworkPolicies []NetworkPolicyInput `json:"networkPolicies"`
+}
+
+// GetNamespace returns __ReportNetworkPoliciesInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportNetworkPoliciesInput) GetNamespace() string { return v.Namespace }
+
+// GetNetworkPolicies returns __ReportNetworkPoliciesInput.NetworkPolicies, and is useful for accessing the field via an interface.
+func (v *__ReportNetworkPoliciesInput) GetNetworkPolicies() []NetworkPolicyInput {
+	return v.NetworkPolicies
+}
 
 // __ReportTrafficLevelsInput is used internally by genqlient
 type __ReportTrafficLevelsInput struct {
@@ -1334,6 +1360,76 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportNamespaceLabels.
+const ReportNamespaceLabels_Operation = `
+mutation ReportNamespaceLabels ($name: String!, $labels: [LabelInput!]!) {
+	reportNamespaceLabels(name: $name, labels: $labels)
+}
+`
+
+func ReportNamespaceLabels(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	name string,
+	labels []LabelInput,
+) (*ReportNamespaceLabelsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportNamespaceLabels",
+		Query:  ReportNamespaceLabels_Operation,
+		Variables: &__ReportNamespaceLabelsInput{
+			Name:   name,
+			Labels: labels,
+		},
+	}
+	var err_ error
+
+	var data_ ReportNamespaceLabelsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportNetworkPolicies.
+const ReportNetworkPolicies_Operation = `
+mutation ReportNetworkPolicies ($namespace: String!, $networkPolicies: [NetworkPolicyInput!]!) {
+	reportNetworkPolicies(namespace: $namespace, networkPolicies: $networkPolicies)
+}
+`
+
+func ReportNetworkPolicies(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	namespace string,
+	networkPolicies []NetworkPolicyInput,
+) (*ReportNetworkPoliciesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportNetworkPolicies",
+		Query:  ReportNetworkPolicies_Operation,
+		Variables: &__ReportNetworkPoliciesInput{
+			Namespace:       namespace,
+			NetworkPolicies: networkPolicies,
+		},
+	}
+	var err_ error
+
+	var data_ ReportNetworkPoliciesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

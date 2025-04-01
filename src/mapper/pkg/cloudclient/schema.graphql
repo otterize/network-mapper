@@ -215,6 +215,7 @@ type AccessLogEdge {
 	accessStatus: EdgeAccessStatus!
 }
 
+""" This enum should be removed after removing allowExternalTrafficPolicy from IntentsOperatorConfigurationInput, it is here for backward compatibility """
 enum AllowExternalTrafficPolicy {
 	OFF
 	ALWAYS
@@ -272,6 +273,12 @@ type AppliedIntentsRequestWithDetails {
 	status: AppliedIntentsRequestStatusLabel!
 	reason: String
 	clientIntents: ClientIntentsFileRepresentation!
+}
+
+enum AutomateThirdPartyNetworkPolicy {
+	OFF
+	ALWAYS
+	IF_BLOCKED_BY_OTTERIZE
 }
 
 enum AwsIamStep {
@@ -722,6 +729,8 @@ enum EdgeAccessStatusReason {
 	BLOCKED_BY_DEFAULT_DENY_MISSING_EXTERNAL_TRAFFIC_POLICY
 	BLOCKED_BY_APPLIED_INTENTS_MISSING_EXTERNAL_TRAFFIC_POLICY
 	ALLOWED_BY_EXTERNALLY_MANAGED_NETWORK_POLICY
+	ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
+	WOULD_BE_ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
 }
 
 enum EdgeAccessStatusVerdict {
@@ -741,6 +750,11 @@ type EdgeAccessStatuses {
 	azureIAM: EdgeAccessStatus!
 	database: EdgeAccessStatus!
 	linkerdPolicies: EdgeAccessStatus!
+}
+
+enum EligibleForMetricsCollectionReason {
+	POD_ANNOTATIONS
+	SERVICE_ANNOTATIONS
 }
 
 type Environment {
@@ -1486,6 +1500,8 @@ input IntentsOperatorConfigurationInput {
 	awsALBLoadBalancerExemptionEnabled: Boolean
 	allowExternalTrafficPolicy: AllowExternalTrafficPolicy
 	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
+	automateThirdPartyNetworkPolicies: AutomateThirdPartyNetworkPolicy
+	prometheusServerConfigs: [PrometheusServerConfigInput!]
 }
 
 type IntentsOperatorState {
@@ -1578,6 +1594,12 @@ enum K8sPortProtocol {
 	TCP
 	UDP
 	SCTP
+}
+
+input K8sResourceEligibleForMetricsCollectionInput {
+	namespace: String!
+	name: String!
+	kind: String!
 }
 
 input K8sResourceIngressInput {
@@ -2040,6 +2062,11 @@ type Mutation {
 		namespace: String!
 		ingresses: [K8sIngressInput!]!
 	): Boolean!
+	reportK8sResourceEligibleForMetricsCollection(
+		namespace: String!
+		reason: EligibleForMetricsCollectionReason!
+		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
+	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
@@ -2069,6 +2096,9 @@ type Mutation {
 		name: String
 		imageURL: String
 		settings: OrganizationSettingsInput
+	): Organization!
+	updateDomainsDefaultRole(
+		defaultRole: OrgMembershipRole!
 	): Organization!
 """Remove user from organization"""
 	removeUserFromOrganization(
@@ -2211,6 +2241,11 @@ type NetworkPolicyWorkload {
 	service: Service!
 }
 
+enum OrgMembershipRole {
+	ADMIN
+	VIEWER
+}
+
 type Organization {
 	id: ID!
 	name: String!
@@ -2225,6 +2260,7 @@ type OrganizationSettings {
 	enforcedRegulations: [String!]
 	ignoredCloudDomains: [String!]
 	defaultIntentsApprovalActionByEnv: [DefaultIntentsApprovalActionByEnv!]!
+	domainsDefaultRole: OrgMembershipRole!
 }
 
 input OrganizationSettingsInput {
@@ -2254,6 +2290,12 @@ input PortStatusInput {
 	port: Int!
 	protocol: K8sPortProtocol!
 	error: String
+}
+
+input PrometheusServerConfigInput {
+	name: String!
+	namespace: String!
+	kind: String!
 }
 
 input ProtectedServiceInput {
