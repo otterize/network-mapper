@@ -16,6 +16,8 @@ type CloudClient interface {
 	ReportK8sServices(ctx context.Context, namespace string, services []K8sServiceInput) error
 	ReportK8sIngresses(ctx context.Context, namespace string, ingresses []K8sIngressInput) error
 	ReportTrafficLevels(ctx context.Context, trafficLevels []TrafficLevelInput) error
+	ReportNamespaceLabels(ctx context.Context, namespace string, labels []LabelInput) error
+	ReportWorkloadsLabels(ctx context.Context, workloadsLabels []ReportServiceMetadataInput) error
 	ReportNetworkPolicies(ctx context.Context, namespace string, policies []NetworkPolicyInput) error
 }
 
@@ -109,6 +111,37 @@ func (c *CloudClientImpl) ReportTrafficLevels(
 		ctx,
 		c.client,
 		trafficLevels,
+	)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportNamespaceLabels(ctx context.Context, namespace string, labels []LabelInput) error {
+	logrus.Debugf("Uploading namespace %s labels to cloud", namespace)
+
+	_, err := ReportNamespaceLabels(
+		ctx,
+		c.client,
+		namespace,
+		labels,
+	)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportWorkloadsLabels(ctx context.Context, workloadsLabels []ReportServiceMetadataInput) error {
+	logrus.Debugf("Uploading workloads labels to cloud")
+
+	_, err := ReportWorkloadsLabels(
+		ctx,
+		c.client,
+		workloadsLabels,
 	)
 	if err != nil {
 		return errors.Wrap(err)

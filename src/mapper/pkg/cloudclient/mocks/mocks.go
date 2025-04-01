@@ -119,6 +119,20 @@ func (mr *MockCloudClientMockRecorder) ReportK8sServices(ctx, namespace, service
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sServices", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sServices), ctx, namespace, services)
 }
 
+// ReportNamespaceLabels mocks base method.
+func (m *MockCloudClient) ReportNamespaceLabels(ctx context.Context, namespace string, labels []cloudclient.LabelInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportNamespaceLabels", ctx, namespace, labels)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportNamespaceLabels indicates an expected call of ReportNamespaceLabels.
+func (mr *MockCloudClientMockRecorder) ReportNamespaceLabels(ctx, namespace, labels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportNamespaceLabels", reflect.TypeOf((*MockCloudClient)(nil).ReportNamespaceLabels), ctx, namespace, labels)
+}
+
 // ReportNetworkPolicies mocks base method.
 func (m *MockCloudClient) ReportNetworkPolicies(ctx context.Context, namespace string, policies []cloudclient.NetworkPolicyInput) error {
 	m.ctrl.T.Helper()
@@ -145,4 +159,18 @@ func (m *MockCloudClient) ReportTrafficLevels(ctx context.Context, trafficLevels
 func (mr *MockCloudClientMockRecorder) ReportTrafficLevels(ctx, trafficLevels interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportTrafficLevels", reflect.TypeOf((*MockCloudClient)(nil).ReportTrafficLevels), ctx, trafficLevels)
+}
+
+// ReportWorkloadsLabels mocks base method.
+func (m *MockCloudClient) ReportWorkloadsLabels(ctx context.Context, workloadsLabels []cloudclient.ReportServiceMetadataInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportWorkloadsLabels", ctx, workloadsLabels)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportWorkloadsLabels indicates an expected call of ReportWorkloadsLabels.
+func (mr *MockCloudClientMockRecorder) ReportWorkloadsLabels(ctx, workloadsLabels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportWorkloadsLabels", reflect.TypeOf((*MockCloudClient)(nil).ReportWorkloadsLabels), ctx, workloadsLabels)
 }
