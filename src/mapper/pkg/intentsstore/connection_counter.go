@@ -1,6 +1,7 @@
 package intentsstore
 
 import (
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 )
@@ -75,4 +76,51 @@ func (c *ConnectionCounter) shouldHandleIntentAsSrcPortCount(intent model.Intent
 		(*(intent.ResolutionData) == "addSocketScanServiceIntent" ||
 			*intent.ResolutionData == "addSocketScanPodIntent" ||
 			*intent.ResolutionData == "handleInternalTrafficTCPResult")
+}
+
+func (c *ConnectionCounter) GetConnectionCountDiff(other *ConnectionCounter) (cloudclient.ConnectionsCount, bool) {
+	if c.countMethod == CountMethodUnset || other.countMethod == CountMethodUnset {
+		return cloudclient.ConnectionsCount{}, false
+	}
+
+	currentCount, _ := c.GetConnectionCount()
+	otherCount, _ := other.GetConnectionCount()
+
+	if c.countMethod != other.countMethod {
+		return cloudclient.ConnectionsCount{
+			Current: lo.ToPtr(currentCount),
+			Added:   lo.ToPtr(currentCount),
+			Removed: lo.ToPtr(otherCount),
+		}, true
+	}
+
+	// For here onwards we can assume that both counters use the same counting method
+	if c.countMethod == CountMethodDNS {
+		return cloudclient.ConnectionsCount{
+			Current: lo.ToPtr(currentCount),
+			Added:   lo.ToPtr(currentCount),
+			Removed: lo.ToPtr(otherCount),
+		}, true
+	}
+
+	var missingFromSelfCount, missingFromOtherCount int
+
+	for key := range c.SourcePorts {
+		if _, ok := other.SourcePorts[key]; !ok {
+			missingFromOtherCount += 1
+		}
+	}
+
+	for key := range other.SourcePorts {
+		if _, ok := c.SourcePorts[key]; !ok {
+			missingFromSelfCount += 1
+		}
+	}
+
+	return cloudclient.ConnectionsCount{
+		Current: lo.ToPtr(len(c.SourcePorts)),
+		Added:   lo.ToPtr(missingFromOtherCount),
+		Removed: lo.ToPtr(missingFromSelfCount),
+	}, true
+
 }

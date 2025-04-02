@@ -46,6 +46,21 @@ const (
 	ComponentTypeNetworkMapper       ComponentType = "NETWORK_MAPPER"
 )
 
+type ConnectionsCount struct {
+	Current *int `json:"current"`
+	Removed *int `json:"removed"`
+	Added   *int `json:"added"`
+}
+
+// GetCurrent returns ConnectionsCount.Current, and is useful for accessing the field via an interface.
+func (v *ConnectionsCount) GetCurrent() *int { return v.Current }
+
+// GetRemoved returns ConnectionsCount.Removed, and is useful for accessing the field via an interface.
+func (v *ConnectionsCount) GetRemoved() *int { return v.Removed }
+
+// GetAdded returns ConnectionsCount.Added, and is useful for accessing the field via an interface.
+func (v *ConnectionsCount) GetAdded() *int { return v.Added }
+
 type DNSIPPairInput struct {
 	DnsName *string   `json:"dnsName"`
 	Ips     []*string `json:"ips"`
@@ -237,7 +252,7 @@ type IntentInput struct {
 	Internet                          *InternetConfigInput      `json:"internet"`
 	Status                            *IntentStatusInput        `json:"status"`
 	ResolutionData                    *string                   `json:"resolutionData"`
-	ConnectionsCount                  *int                      `json:"connectionsCount"`
+	ConnectionsCount                  *ConnectionsCount         `json:"connectionsCount"`
 }
 
 // GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -322,7 +337,7 @@ func (v *IntentInput) GetStatus() *IntentStatusInput { return v.Status }
 func (v *IntentInput) GetResolutionData() *string { return v.ResolutionData }
 
 // GetConnectionsCount returns IntentInput.ConnectionsCount, and is useful for accessing the field via an interface.
-func (v *IntentInput) GetConnectionsCount() *int { return v.ConnectionsCount }
+func (v *IntentInput) GetConnectionsCount() *ConnectionsCount { return v.ConnectionsCount }
 
 type IntentStatusInput struct {
 	IstioStatus *IstioStatusInput `json:"istioStatus"`

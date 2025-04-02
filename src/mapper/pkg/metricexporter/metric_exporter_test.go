@@ -44,7 +44,7 @@ func (o *MetricExporterTestSuite) addIntent(source string, srcNamespace string, 
 			Client: &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
 			Server: &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 		},
-		make([]*int64, 0),
+		make([]int64, 0),
 	)
 }
 

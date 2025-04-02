@@ -1,6 +1,7 @@
 package intentsstore
 
 import (
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/suite"
@@ -16,6 +17,13 @@ type TestCase struct {
 	SetupInput               []CounterInput
 	TestIntent               CounterInput
 	ExpectedConnectionsCount int
+}
+
+type DiffTestCase struct {
+	Description              string
+	CurrentSetupInput        []CounterInput
+	PrevSetupInput           []CounterInput
+	ExpectedConnectionsCount cloudclient.ConnectionsCount
 }
 
 func (s *ConnectionCounterTestSuite) TestCounter() {
@@ -195,6 +203,157 @@ func (s *ConnectionCounterTestSuite) TestCounter_InvalidForTypes() {
 			counter.AddConnection(testCase.TestIntent)
 			_, isValid := counter.GetConnectionCount()
 			s.Falsef(isValid, "%s is not a valid intent type", *testCase.TestIntent.Intent.ResolutionData)
+		})
+	}
+}
+
+func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
+	testCases := []DiffTestCase{
+		{
+			Description: "Current count by DNS previous by DNS - all connections are new",
+			PrevSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					SourcePorts: make([]int64, 0),
+				},
+			},
+			CurrentSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					SourcePorts: make([]int64, 0),
+				},
+			},
+			ExpectedConnectionsCount: cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(1),
+				Added:   lo.ToPtr(1),
+				Removed: lo.ToPtr(1),
+			},
+		},
+		{
+			Description: "Current count by TCP previous by TCP - same port, should count as existing connection",
+			PrevSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(1)},
+				},
+			},
+			CurrentSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(1)},
+				},
+			},
+			ExpectedConnectionsCount: cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(1),
+				Added:   lo.ToPtr(0),
+				Removed: lo.ToPtr(0),
+			},
+		},
+		{
+			Description: "Current count by TCP previous by TCP - different port, should count as new connection",
+			PrevSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(10)},
+				},
+			},
+			CurrentSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(1)},
+				},
+			},
+			ExpectedConnectionsCount: cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(1),
+				Added:   lo.ToPtr(1),
+				Removed: lo.ToPtr(1),
+			},
+		},
+		{
+			Description: "Current count by TCP previous by TCP - mixed of same and different port, should be smart diff",
+			PrevSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(1), int64(10), int64(100)},
+				},
+			},
+			CurrentSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(100), int64(200)},
+				},
+			},
+			ExpectedConnectionsCount: cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(2),
+				Added:   lo.ToPtr(1),
+				Removed: lo.ToPtr(2),
+			},
+		},
+		{
+			Description: "Current count by TCP previous by DNS - all connections are new",
+			PrevSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					SourcePorts: make([]int64, 0),
+				},
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					SourcePorts: make([]int64, 0),
+				},
+			},
+			CurrentSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(1)},
+				},
+			},
+			ExpectedConnectionsCount: cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(1),
+				Added:   lo.ToPtr(1),
+				Removed: lo.ToPtr(2),
+			},
+		},
+		{
+			Description: "Current count by DNS previous by TCP - all connections are new",
+			PrevSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					SourcePorts: []int64{int64(1)},
+				},
+			},
+			CurrentSetupInput: []CounterInput{
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					SourcePorts: make([]int64, 0),
+				},
+				{
+					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					SourcePorts: make([]int64, 0),
+				},
+			},
+			ExpectedConnectionsCount: cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(2),
+				Added:   lo.ToPtr(2),
+				Removed: lo.ToPtr(1),
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		s.Run(testCase.Description, func() {
+			prevCounter := NewConnectionCounter()
+			lo.ForEach(testCase.PrevSetupInput, func(input CounterInput, _ int) {
+				prevCounter.AddConnection(input)
+			})
+
+			currentCounter := NewConnectionCounter()
+			lo.ForEach(testCase.CurrentSetupInput, func(input CounterInput, _ int) {
+				currentCounter.AddConnection(input)
+			})
+
+			diff, isValid := currentCounter.GetConnectionCountDiff(prevCounter)
+			s.True(isValid, "Expected connection count diff to be valid")
+			s.Equal(testCase.ExpectedConnectionsCount, diff)
 		})
 	}
 }

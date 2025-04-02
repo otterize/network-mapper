@@ -53,7 +53,7 @@ func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, d
 			Server:         &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
 			ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult"),
 		},
-		[]*int64{lo.ToPtr(int64(20205))},
+		[]int64{int64(20205)},
 	)
 }
 
@@ -84,7 +84,7 @@ func intentInput(clientName string, namespace string, serverName string, serverN
 		Topics:           []*cloudclient.KafkaConfigInput{},
 		Resources:        []*cloudclient.HTTPConfigInput{},
 		ResolutionData:   lo.ToPtr("handleInternalTrafficTCPResult"),
-		ConnectionsCount: lo.ToPtr(1),
+		ConnectionsCount: lo.ToPtr(cloudclient.ConnectionsCount{Current: lo.ToPtr(1), Added: lo.ToPtr(1), Removed: lo.ToPtr(0)}),
 	}
 }
 
@@ -155,7 +155,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 		},
 	}
 
-	s.intentsHolder.AddIntent(testTimestamp, discoveredProduce, make([]*int64, 0))
+	s.intentsHolder.AddIntent(testTimestamp, discoveredProduce, make([]int64, 0))
 
 	discoveredConsume := model.Intent{
 		Client: &model.OtterizeServiceIdentity{Name: "client1", Namespace: s.testNamespace},
@@ -170,7 +170,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 		HTTPResources: []model.HTTPResource{},
 	}
 
-	s.intentsHolder.AddIntent(testTimestamp, discoveredConsume, make([]*int64, 0))
+	s.intentsHolder.AddIntent(testTimestamp, discoveredConsume, make([]int64, 0))
 	cloudIntent := []cloudclient.IntentInput{
 		{
 			ClientName:      lo.ToPtr("client1"),
@@ -195,7 +195,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
 
 	newTimestamp := testTimestamp.Add(time.Hour)
-	s.intentsHolder.AddIntent(newTimestamp, discoveredProduce, make([]*int64, 0))
+	s.intentsHolder.AddIntent(newTimestamp, discoveredProduce, make([]int64, 0))
 
 	produceOnly := []cloudclient.IntentInput{
 		{
@@ -254,6 +254,8 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
 
+	// We will upload the same intent twice, so we expect the add count to be 0
+	intents[0].ConnectionsCount.Added = lo.ToPtr(0)
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
