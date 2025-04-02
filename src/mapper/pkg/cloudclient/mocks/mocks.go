@@ -105,6 +105,20 @@ func (mr *MockCloudClientMockRecorder) ReportK8sIngresses(ctx, namespace, ingres
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sIngresses", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sIngresses), ctx, namespace, ingresses)
 }
 
+// ReportK8sResourceEligibleForMetricsCollection mocks base method.
+func (m *MockCloudClient) ReportK8sResourceEligibleForMetricsCollection(ctx context.Context, namespace string, reason cloudclient.EligibleForMetricsCollectionReason, resources []cloudclient.K8sResourceEligibleForMetricsCollectionInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportK8sResourceEligibleForMetricsCollection", ctx, namespace, reason, resources)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportK8sResourceEligibleForMetricsCollection indicates an expected call of ReportK8sResourceEligibleForMetricsCollection.
+func (mr *MockCloudClientMockRecorder) ReportK8sResourceEligibleForMetricsCollection(ctx, namespace, reason, resources interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sResourceEligibleForMetricsCollection", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sResourceEligibleForMetricsCollection), ctx, namespace, reason, resources)
+}
+
 // ReportK8sServices mocks base method.
 func (m *MockCloudClient) ReportK8sServices(ctx context.Context, namespace string, services []cloudclient.K8sServiceInput) error {
 	m.ctrl.T.Helper()

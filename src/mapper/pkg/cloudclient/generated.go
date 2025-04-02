@@ -93,6 +93,13 @@ func (v *DiscoveredIntentInput) GetDiscoveredAt() *time.Time { return v.Discover
 // GetIntent returns DiscoveredIntentInput.Intent, and is useful for accessing the field via an interface.
 func (v *DiscoveredIntentInput) GetIntent() *IntentInput { return v.Intent }
 
+type EligibleForMetricsCollectionReason string
+
+const (
+	EligibleForMetricsCollectionReasonPodAnnotations     EligibleForMetricsCollectionReason = "POD_ANNOTATIONS"
+	EligibleForMetricsCollectionReasonServiceAnnotations EligibleForMetricsCollectionReason = "SERVICE_ANNOTATIONS"
+)
+
 type ExternalTrafficDiscoveredIntentInput struct {
 	DiscoveredAt time.Time                  `json:"discoveredAt"`
 	Intent       ExternalTrafficIntentInput `json:"intent"`
@@ -479,6 +486,21 @@ const (
 	K8sPortProtocolUdp  K8sPortProtocol = "UDP"
 	K8sPortProtocolSctp K8sPortProtocol = "SCTP"
 )
+
+type K8sResourceEligibleForMetricsCollectionInput struct {
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	Kind      string `json:"kind"`
+}
+
+// GetNamespace returns K8sResourceEligibleForMetricsCollectionInput.Namespace, and is useful for accessing the field via an interface.
+func (v *K8sResourceEligibleForMetricsCollectionInput) GetNamespace() string { return v.Namespace }
+
+// GetName returns K8sResourceEligibleForMetricsCollectionInput.Name, and is useful for accessing the field via an interface.
+func (v *K8sResourceEligibleForMetricsCollectionInput) GetName() string { return v.Name }
+
+// GetKind returns K8sResourceEligibleForMetricsCollectionInput.Kind, and is useful for accessing the field via an interface.
+func (v *K8sResourceEligibleForMetricsCollectionInput) GetKind() string { return v.Kind }
 
 type K8sResourceIngressInput struct {
 	Spec   K8sResourceIngressSpecInput                    `json:"spec"`
@@ -882,6 +904,16 @@ type ReportK8sIngressesResponse struct {
 // GetReportK8sIngresses returns ReportK8sIngressesResponse.ReportK8sIngresses, and is useful for accessing the field via an interface.
 func (v *ReportK8sIngressesResponse) GetReportK8sIngresses() bool { return v.ReportK8sIngresses }
 
+// ReportK8sResourceEligibleForMetricsCollectionResponse is returned by ReportK8sResourceEligibleForMetricsCollection on success.
+type ReportK8sResourceEligibleForMetricsCollectionResponse struct {
+	ReportK8sResourceEligibleForMetricsCollection bool `json:"reportK8sResourceEligibleForMetricsCollection"`
+}
+
+// GetReportK8sResourceEligibleForMetricsCollection returns ReportK8sResourceEligibleForMetricsCollectionResponse.ReportK8sResourceEligibleForMetricsCollection, and is useful for accessing the field via an interface.
+func (v *ReportK8sResourceEligibleForMetricsCollectionResponse) GetReportK8sResourceEligibleForMetricsCollection() bool {
+	return v.ReportK8sResourceEligibleForMetricsCollection
+}
+
 // ReportK8sServicesResponse is returned by ReportK8sServices on success.
 type ReportK8sServicesResponse struct {
 	ReportK8sServices bool `json:"reportK8sServices"`
@@ -1113,6 +1145,28 @@ func (v *__ReportK8sIngressesInput) GetNamespace() string { return v.Namespace }
 // GetIngresses returns __ReportK8sIngressesInput.Ingresses, and is useful for accessing the field via an interface.
 func (v *__ReportK8sIngressesInput) GetIngresses() []K8sIngressInput { return v.Ingresses }
 
+// __ReportK8sResourceEligibleForMetricsCollectionInput is used internally by genqlient
+type __ReportK8sResourceEligibleForMetricsCollectionInput struct {
+	Namespace string                                         `json:"namespace"`
+	Reason    EligibleForMetricsCollectionReason             `json:"reason"`
+	Resources []K8sResourceEligibleForMetricsCollectionInput `json:"resources"`
+}
+
+// GetNamespace returns __ReportK8sResourceEligibleForMetricsCollectionInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__ReportK8sResourceEligibleForMetricsCollectionInput) GetNamespace() string {
+	return v.Namespace
+}
+
+// GetReason returns __ReportK8sResourceEligibleForMetricsCollectionInput.Reason, and is useful for accessing the field via an interface.
+func (v *__ReportK8sResourceEligibleForMetricsCollectionInput) GetReason() EligibleForMetricsCollectionReason {
+	return v.Reason
+}
+
+// GetResources returns __ReportK8sResourceEligibleForMetricsCollectionInput.Resources, and is useful for accessing the field via an interface.
+func (v *__ReportK8sResourceEligibleForMetricsCollectionInput) GetResources() []K8sResourceEligibleForMetricsCollectionInput {
+	return v.Resources
+}
+
 // __ReportK8sServicesInput is used internally by genqlient
 type __ReportK8sServicesInput struct {
 	Namespace string            `json:"namespace"`
@@ -1325,6 +1379,43 @@ func ReportK8sIngresses(
 	var err_ error
 
 	var data_ ReportK8sIngressesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportK8sResourceEligibleForMetricsCollection.
+const ReportK8sResourceEligibleForMetricsCollection_Operation = `
+mutation ReportK8sResourceEligibleForMetricsCollection ($namespace: String!, $reason: EligibleForMetricsCollectionReason!, $resources: [K8sResourceEligibleForMetricsCollectionInput!]!) {
+	reportK8sResourceEligibleForMetricsCollection(namespace: $namespace, reason: $reason, resources: $resources)
+}
+`
+
+func ReportK8sResourceEligibleForMetricsCollection(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	namespace string,
+	reason EligibleForMetricsCollectionReason,
+	resources []K8sResourceEligibleForMetricsCollectionInput,
+) (*ReportK8sResourceEligibleForMetricsCollectionResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportK8sResourceEligibleForMetricsCollection",
+		Query:  ReportK8sResourceEligibleForMetricsCollection_Operation,
+		Variables: &__ReportK8sResourceEligibleForMetricsCollectionInput{
+			Namespace: namespace,
+			Reason:    reason,
+			Resources: resources,
+		},
+	}
+	var err_ error
+
+	var data_ ReportK8sResourceEligibleForMetricsCollectionResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

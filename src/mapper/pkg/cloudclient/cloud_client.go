@@ -18,6 +18,7 @@ type CloudClient interface {
 	ReportTrafficLevels(ctx context.Context, trafficLevels []TrafficLevelInput) error
 	ReportNamespaceLabels(ctx context.Context, namespace string, labels []LabelInput) error
 	ReportWorkloadsLabels(ctx context.Context, workloadsLabels []ReportServiceMetadataInput) error
+	ReportK8sResourceEligibleForMetricsCollection(ctx context.Context, namespace string, reason EligibleForMetricsCollectionReason, resources []K8sResourceEligibleForMetricsCollectionInput) error
 	ReportNetworkPolicies(ctx context.Context, namespace string, policies []NetworkPolicyInput) error
 }
 
@@ -94,6 +95,17 @@ func (c *CloudClientImpl) ReportK8sIngresses(ctx context.Context, namespace stri
 	logrus.Debug("Uploading k8s ingresses to cloud, count: ", len(ingresses))
 
 	_, err := ReportK8sIngresses(ctx, c.client, namespace, ingresses)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportK8sResourceEligibleForMetricsCollection(ctx context.Context, namespace string, reason EligibleForMetricsCollectionReason, resources []K8sResourceEligibleForMetricsCollectionInput) error {
+	logrus.Debug("Uploading k8s metrics collector resource to cloud, count: ", len(resources))
+
+	_, err := ReportK8sResourceEligibleForMetricsCollection(ctx, c.client, namespace, reason, resources)
 	if err != nil {
 		return errors.Wrap(err)
 	}

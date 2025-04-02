@@ -2067,6 +2067,11 @@ type Mutation {
 		reason: EligibleForMetricsCollectionReason!
 		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
 	): Boolean!
+	reportK8sResourceEligibleForMetricsCollection(
+		namespace: String!
+		reason: EligibleForMetricsCollectionReason!
+		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
+	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
 		serverConfigs: [KafkaServerConfigInput!]!
