@@ -143,7 +143,7 @@ func (s *DNSSniffer) HandlePacket(packet gopacket.Packet) {
 				}
 
 				if !s.isRunningOnAWS {
-					s.addCapturedRequest(ip.DstIP.String(), "", hostName, answer.IP.String(), captureTime, nilable.From(int(answer.TTL)), nil)
+					s.addCapturedRequest(ip.DstIP.String(), "", hostName, answer.IP.String(), captureTime, nilable.From(int(answer.TTL)), nil, nil)
 					continue
 				}
 				hostname, ok := s.resolver.ResolveIP(ip.DstIP.String())
@@ -203,7 +203,7 @@ func (s *DNSSniffer) RefreshHostsMapping() error {
 			logrus.Debugf("IP %s was resolved to %s, but now resolves to %s. skipping packet", p.srcIp, p.srcHostname, hostname)
 			continue
 		}
-		s.addCapturedRequest(p.srcIp, hostname, p.destHostnameOrIP, p.destIPFromDNS, p.time, p.ttl, nil)
+		s.addCapturedRequest(p.srcIp, hostname, p.destHostnameOrIP, p.destIPFromDNS, p.time, p.ttl, nil, nil)
 	}
 	s.pending = make([]pendingCapture, 0)
 	return nil

@@ -27,6 +27,7 @@ type pendingTCPCapture struct {
 	srcHostname string
 	destIp      string
 	destPort    int
+	srcPort     int
 	time        time.Time
 	ttl         nilable.Nilable[int]
 }
@@ -87,12 +88,12 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 		return
 	}
 
-	dstPort, portFound, err := s.getDestPort(packet, ip)
+	srcPort, dstPort, portsFound, err := s.getSrcAndDestPort(packet, ip)
 	if err != nil {
 		logrus.Debugf("Failed to parse TCP/UDP port: %s", err)
 		return
 	}
-	if !portFound {
+	if !portsFound {
 		logrus.Debugf("Port not found, skipping packet")
 		return
 	}
@@ -101,7 +102,7 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 	srcIP := ip.SrcIP.String()
 	dstIP := ip.DstIP.String()
 	if !s.isRunningOnAWS {
-		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort)
+		s.addCapturedRequest(srcIP, "", dstIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort, &srcPort)
 		return
 	}
 
@@ -113,7 +114,7 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 		if ok {
 			destNameOrIP = destHostname
 		}
-		s.addCapturedRequest(srcIP, "", destNameOrIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort)
+		s.addCapturedRequest(srcIP, "", destNameOrIP, dstIP, captureTime, nilable.FromPtr[int](nil), &dstPort, &srcPort)
 		return
 	}
 
@@ -126,33 +127,36 @@ func (s *TCPSniffer) HandlePacket(packet gopacket.Packet) {
 		destIp:      dstIP,
 		destPort:    dstPort,
 		time:        captureTime,
+		srcPort:     srcPort,
 	})
 }
 
-func (s *TCPSniffer) getDestPort(packet gopacket.Packet, ip *layers.IPv4) (int, bool, error) {
+func (s *TCPSniffer) getSrcAndDestPort(packet gopacket.Packet, ip *layers.IPv4) (int, int, bool, error) {
 	layerType := ip.NextLayerType()
 	var portName string
-	var port int
+	var destPort int
+	var srcPort int
 	switch layerType {
 	case layers.LayerTypeTCP:
 		tcpLayer := packet.Layer(layers.LayerTypeTCP)
 		if tcpLayer == nil {
-			return 0, false, errors.New("Failed to parse TCP layer")
+			return 0, 0, false, errors.New("Failed to parse TCP layer")
 		}
 
 		tcp, ok := tcpLayer.(*layers.TCP)
 		if !ok {
-			return 0, false, errors.New("Failed to parse TCP layer")
+			return 0, 0, false, errors.New("Failed to parse TCP layer")
 		}
 
-		port = int(tcp.DstPort)
+		destPort = int(tcp.DstPort)
+		srcPort = int(tcp.SrcPort)
 		portName = tcp.DstPort.String()
 	default:
-		return 0, false, errors.New("Unknown transport layer")
+		return 0, 0, false, errors.New("Unknown transport layer")
 	}
 
-	logrus.Debugf("Detected ip port %s: %s", ip.DstIP.String(), portName)
-	return port, true, nil
+	logrus.Debugf("Detected dest ip and port %s: %s", ip.DstIP.String(), portName)
+	return srcPort, destPort, true, nil
 }
 
 func (s *TCPSniffer) RefreshHostsMapping() error {
@@ -174,7 +178,7 @@ func (s *TCPSniffer) RefreshHostsMapping() error {
 			logrus.Debugf("IP %s was resolved to %s, but now resolves to %s. skipping packet", p.srcIp, p.srcHostname, hostname)
 			continue
 		}
-		s.addCapturedRequest(p.srcIp, hostname, p.destIp, p.destIp, p.time, p.ttl, &p.destPort)
+		s.addCapturedRequest(p.srcIp, hostname, p.destIp, p.destIp, p.time, p.ttl, &p.destPort, &p.srcPort)
 	}
 	s.pending = make([]pendingTCPCapture, 0)
 	return nil
