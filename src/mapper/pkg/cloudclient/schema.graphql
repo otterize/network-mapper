@@ -552,6 +552,12 @@ enum ComponentType {
 	NETWORK_MAPPER
 }
 
+input ConnectionsCount {
+	current: Int!
+	removed: Int!
+	added: Int!
+}
+
 type CreateGitHubIntegrationResponse {
 	integration: Integration!
 	nextURL: String!
@@ -1427,7 +1433,7 @@ input IntentInput {
 	internet: InternetConfigInput
 	status: IntentStatusInput
 	resolutionData: String
-	connectionsCount: Int
+	connectionsCount: ConnectionsCount
 }
 
 input IntentRequestInput {

@@ -84,7 +84,7 @@ func intentInput(clientName string, namespace string, serverName string, serverN
 		Topics:           []*cloudclient.KafkaConfigInput{},
 		Resources:        []*cloudclient.HTTPConfigInput{},
 		ResolutionData:   lo.ToPtr("handleInternalTrafficTCPResult"),
-		ConnectionsCount: lo.ToPtr(1),
+		ConnectionsCount: lo.ToPtr(cloudclient.ConnectionsCount{Current: lo.ToPtr(1), Added: lo.ToPtr(1), Removed: lo.ToPtr(0)}),
 	}
 }
 
