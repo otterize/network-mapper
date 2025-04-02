@@ -147,6 +147,20 @@ func (mr *MockCloudClientMockRecorder) ReportNamespaceLabels(ctx, namespace, lab
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportNamespaceLabels", reflect.TypeOf((*MockCloudClient)(nil).ReportNamespaceLabels), ctx, namespace, labels)
 }
 
+// ReportNetworkPolicies mocks base method.
+func (m *MockCloudClient) ReportNetworkPolicies(ctx context.Context, namespace string, policies []cloudclient.NetworkPolicyInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportNetworkPolicies", ctx, namespace, policies)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportNetworkPolicies indicates an expected call of ReportNetworkPolicies.
+func (mr *MockCloudClientMockRecorder) ReportNetworkPolicies(ctx, namespace, policies interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportNetworkPolicies", reflect.TypeOf((*MockCloudClient)(nil).ReportNetworkPolicies), ctx, namespace, policies)
+}
+
 // ReportTrafficLevels mocks base method.
 func (m *MockCloudClient) ReportTrafficLevels(ctx context.Context, trafficLevels []cloudclient.TrafficLevelInput) error {
 	m.ctrl.T.Helper()

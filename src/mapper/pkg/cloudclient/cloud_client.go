@@ -19,6 +19,7 @@ type CloudClient interface {
 	ReportNamespaceLabels(ctx context.Context, namespace string, labels []LabelInput) error
 	ReportWorkloadsLabels(ctx context.Context, workloadsLabels []ReportServiceMetadataInput) error
 	ReportK8sResourceEligibleForMetricsCollection(ctx context.Context, namespace string, reason EligibleForMetricsCollectionReason, resources []K8sResourceEligibleForMetricsCollectionInput) error
+	ReportNetworkPolicies(ctx context.Context, namespace string, policies []NetworkPolicyInput) error
 }
 
 type CloudClientImpl struct {
@@ -153,6 +154,28 @@ func (c *CloudClientImpl) ReportWorkloadsLabels(ctx context.Context, workloadsLa
 		ctx,
 		c.client,
 		workloadsLabels,
+	)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportNetworkPolicies(
+	ctx context.Context,
+	namespace string,
+	policies []NetworkPolicyInput,
+) error {
+	logrus.WithField("namespace", namespace).
+		WithField("count", len(policies)).
+		Infof("Reporting network policies")
+
+	_, err := ReportNetworkPolicies(
+		ctx,
+		c.client,
+		namespace,
+		policies,
 	)
 	if err != nil {
 		return errors.Wrap(err)

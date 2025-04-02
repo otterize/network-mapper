@@ -215,6 +215,7 @@ type AccessLogEdge {
 	accessStatus: EdgeAccessStatus!
 }
 
+""" This enum should be removed after removing allowExternalTrafficPolicy from IntentsOperatorConfigurationInput, it is here for backward compatibility """
 enum AllowExternalTrafficPolicy {
 	OFF
 	ALWAYS
@@ -272,6 +273,12 @@ type AppliedIntentsRequestWithDetails {
 	status: AppliedIntentsRequestStatusLabel!
 	reason: String
 	clientIntents: ClientIntentsFileRepresentation!
+}
+
+enum AutomateThirdPartyNetworkPolicy {
+	OFF
+	ALWAYS
+	IF_BLOCKED_BY_OTTERIZE
 }
 
 enum AwsIamStep {
@@ -722,6 +729,8 @@ enum EdgeAccessStatusReason {
 	BLOCKED_BY_DEFAULT_DENY_MISSING_EXTERNAL_TRAFFIC_POLICY
 	BLOCKED_BY_APPLIED_INTENTS_MISSING_EXTERNAL_TRAFFIC_POLICY
 	ALLOWED_BY_EXTERNALLY_MANAGED_NETWORK_POLICY
+	ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
+	WOULD_BE_ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
 }
 
 enum EdgeAccessStatusVerdict {
@@ -1203,6 +1212,24 @@ input InputIntegrationAccessGraphFilter {
 	serviceFilterType: IDFilterOperators
 }
 
+""" Network policies filter """
+input InputNetworkPolicyFilter {
+""" Network policies filter """
+	search: String
+""" Network policies filter """
+	clusterIds: InputIDFilterValue
+""" Network policies filter """
+	namespaceIds: InputIDFilterValue
+""" Network policies filter """
+	environmentIds: InputIDFilterValue
+""" Network policies filter """
+	networkPolicyIds: InputIDFilterValue
+""" Network policies filter """
+	policyKinds: InputIDFilterValue
+""" Network policies filter """
+	since: InputTimeFilterValue
+}
+
 input InputResourceInventoryFilter {
 	serviceIds: InputIDFilterValue
 	environmentIds: InputIDFilterValue
@@ -1473,7 +1500,8 @@ input IntentsOperatorConfigurationInput {
 	awsALBLoadBalancerExemptionEnabled: Boolean
 	allowExternalTrafficPolicy: AllowExternalTrafficPolicy
 	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
-	automateThirdPartyNetworkPolicies: AllowExternalTrafficPolicy
+	automateThirdPartyNetworkPolicies: AutomateThirdPartyNetworkPolicy
+	prometheusServerConfigs: [PrometheusServerConfigInput!]
 }
 
 type IntentsOperatorState {
@@ -1509,11 +1537,6 @@ type Invite {
 enum InviteStatus {
 	PENDING
 	ACCEPTED
-}
-
-input IpBlockInput {
-	cidr: String!
-	except: [String!]
 }
 
 enum IpFamilyPolicy {
@@ -2009,10 +2032,6 @@ type Mutation {
 		intents: [IntentInput!]!
 		ossClusterId: String
 	): Boolean!
-	reportNetworkPolicies(
-		namespace: String!
-		policies: [NetworkPolicyInput!]!
-	): Boolean!
 	reportExternallyAccessibleServices(
 		namespace: String!
 		services: [ExternallyAccessibleServiceInput!]!
@@ -2063,6 +2082,10 @@ type Mutation {
 		name: String!
 		labels: [LabelInput!]
 	): Boolean!
+	reportNetworkPolicies(
+		namespace: String!
+		networkPolicies: [NetworkPolicyInput!]
+	): Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2073,6 +2096,9 @@ type Mutation {
 		name: String
 		imageURL: String
 		settings: OrganizationSettingsInput
+	): Organization!
+	updateDomainsDefaultRole(
+		defaultRole: OrgMembershipRole!
 	): Organization!
 """Remove user from organization"""
 	removeUserFromOrganization(
@@ -2180,20 +2206,44 @@ enum NetworkPoliciesStep {
 	COMPLETED
 }
 
-input NetworkPolicyEgressRuleInput {
-	to: [PeerInput!]!
+type NetworkPolicy {
+	id: ID!
+	name: String!
+	kind: NetworkPolicyKind!
+	cluster: Cluster!
+	namespace: Namespace
+	environment: Environment!
+	hits: Int!
+	workloads: [NetworkPolicyWorkload!]!
+	workloadsAffected: Int!
+	spec: String!
+	lastUsed: Time!
 }
 
 input NetworkPolicyInput {
-	namespace: String!
 	name: String!
-	serverName: String!
-	externalNetworkTrafficPolicy: Boolean!
-	spec: NetworkPolicySpecInput
+	yaml: String!
 }
 
-input NetworkPolicySpecInput {
-	egress: [NetworkPolicyEgressRuleInput!]
+enum NetworkPolicyKind {
+	NETWORK_POLICY
+	CILIUM_NETWORK_POLICY
+}
+
+enum NetworkPolicyScope {
+	PRIMARY
+	EGRESS
+	INGRESS
+}
+
+type NetworkPolicyWorkload {
+	scope: NetworkPolicyScope!
+	service: Service!
+}
+
+enum OrgMembershipRole {
+	ADMIN
+	VIEWER
 }
 
 type Organization {
@@ -2210,6 +2260,7 @@ type OrganizationSettings {
 	enforcedRegulations: [String!]
 	ignoredCloudDomains: [String!]
 	defaultIntentsApprovalActionByEnv: [DefaultIntentsApprovalActionByEnv!]!
+	domainsDefaultRole: OrgMembershipRole!
 }
 
 input OrganizationSettingsInput {
@@ -2235,14 +2286,16 @@ enum PathType {
 	EXACT
 }
 
-input PeerInput {
-	ipBlock: IpBlockInput!
-}
-
 input PortStatusInput {
 	port: Int!
 	protocol: K8sPortProtocol!
 	error: String
+}
+
+input PrometheusServerConfigInput {
+	name: String!
+	namespace: String!
+	kind: String!
 }
 
 input ProtectedServiceInput {
@@ -2283,6 +2336,10 @@ type Query {
 		targetServiceId: ID!
 		lastSeenAfter: Time!
 	): [String!]!
+	edgeNetworkPolicies(
+		clientServiceId: ID!
+		serverServiceId: ID!
+	): [NetworkPolicy!]!
 """Get access log"""
 	accessLog(
 		filter: InputAccessLogFilter
@@ -2408,6 +2465,12 @@ type Query {
 		clusterId: ID
 		name: String
 	): Namespace!
+	networkPolicy(
+		id: ID!
+	): NetworkPolicy
+	networkPolicies(
+		filter: InputNetworkPolicyFilter
+	): [NetworkPolicy!]!
 """List organizations"""
 	organizations: [Organization!]!
 """Get organization"""
@@ -2610,6 +2673,7 @@ type Service {
 	aliases: [ServerAlias!]
 	namespace: Namespace
 	environment: Environment!
+	networkPolicies: [NetworkPolicy!]
 """If service is Kafka, its KafkaServerConfig."""
 	kafkaServerConfig: KafkaServerConfig
 	certificateInformation: CertificateInformation

@@ -40,3 +40,7 @@ mutation ReportNamespaceLabels($name: String!, $labels: [LabelInput!]!) {
 mutation ReportWorkloadsLabels($workloadsLabels: [ReportServiceMetadataInput!]!) {
     reportServicesMetadata(servicesMeta: $workloadsLabels)
 }
+
+mutation ReportNetworkPolicies($namespace: String!, $networkPolicies: [NetworkPolicyInput!]!) {
+    reportNetworkPolicies(namespace: $namespace, networkPolicies: $networkPolicies)
+}

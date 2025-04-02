@@ -23,6 +23,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/labelreporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/metrics_collection_traffic"
+	"github.com/otterize/network-mapper/src/mapper/pkg/networkpolicyreport"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
@@ -259,6 +260,11 @@ func main() {
 		metricsCollectorEndpointsReconciler := metrics_collection_traffic.NewEndpointsReconciler(metricsCollectionTrafficHandler)
 		if err = metricsCollectorEndpointsReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create endpoints reconciler")
+		}
+
+		netpolReconciler := networkpolicyreport.NewNetworkPolicyReconciler(mgr.GetClient(), cloudClient)
+		if err := netpolReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create network policy reconciler")
 		}
 	}
 
