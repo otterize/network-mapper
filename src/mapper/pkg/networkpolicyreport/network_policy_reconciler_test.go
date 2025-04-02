@@ -7,12 +7,12 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/mocks"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
-	"gopkg.in/yaml.v3"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 	"testing"
 )
 
