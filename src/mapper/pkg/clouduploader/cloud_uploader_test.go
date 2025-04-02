@@ -49,9 +49,11 @@ func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, d
 	s.intentsHolder.AddIntent(
 		testTimestamp,
 		model.Intent{
-			Client: &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
-			Server: &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
+			Client:         &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
+			Server:         &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
+			ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult"),
 		},
+		[]*int64{lo.ToPtr(int64(20205))},
 	)
 }
 
@@ -75,12 +77,14 @@ func intentInput(clientName string, namespace string, serverName string, serverN
 	}
 
 	return cloudclient.IntentInput{
-		ClientName:      nilIfEmpty(clientName),
-		ServerName:      nilIfEmpty(serverName),
-		Namespace:       nilIfEmpty(namespace),
-		ServerNamespace: nilIfEmpty(serverNamespace),
-		Topics:          []*cloudclient.KafkaConfigInput{},
-		Resources:       []*cloudclient.HTTPConfigInput{},
+		ClientName:       nilIfEmpty(clientName),
+		ServerName:       nilIfEmpty(serverName),
+		Namespace:        nilIfEmpty(namespace),
+		ServerNamespace:  nilIfEmpty(serverNamespace),
+		Topics:           []*cloudclient.KafkaConfigInput{},
+		Resources:        []*cloudclient.HTTPConfigInput{},
+		ResolutionData:   lo.ToPtr("handleInternalTrafficTCPResult"),
+		ConnectionsCount: lo.ToPtr(1),
 	}
 }
 
@@ -151,7 +155,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 		},
 	}
 
-	s.intentsHolder.AddIntent(testTimestamp, discoveredProduce)
+	s.intentsHolder.AddIntent(testTimestamp, discoveredProduce, make([]*int64, 0))
 
 	discoveredConsume := model.Intent{
 		Client: &model.OtterizeServiceIdentity{Name: "client1", Namespace: s.testNamespace},
@@ -166,7 +170,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 		HTTPResources: []model.HTTPResource{},
 	}
 
-	s.intentsHolder.AddIntent(testTimestamp, discoveredConsume)
+	s.intentsHolder.AddIntent(testTimestamp, discoveredConsume, make([]*int64, 0))
 	cloudIntent := []cloudclient.IntentInput{
 		{
 			ClientName:      lo.ToPtr("client1"),
@@ -191,7 +195,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
 
 	newTimestamp := testTimestamp.Add(time.Hour)
-	s.intentsHolder.AddIntent(newTimestamp, discoveredProduce)
+	s.intentsHolder.AddIntent(newTimestamp, discoveredProduce, make([]*int64, 0))
 
 	produceOnly := []cloudclient.IntentInput{
 		{

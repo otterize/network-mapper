@@ -24,25 +24,30 @@ type IntentsStoreKey struct {
 }
 
 type TimestampedIntent struct {
-	Timestamp time.Time
-	Intent    model.Intent
+	Timestamp        time.Time
+	ConnectionsCount *int
+	Intent           model.Intent
 }
 
 type IntentsStore map[IntentsStoreKey]TimestampedIntent
 
+type IntentsConnectionCounter map[IntentsStoreKey]*ConnectionCounter
+
 type IntentsHolder struct {
-	accumulatingStore IntentsStore
-	sinceLastGetStore IntentsStore
-	lock              sync.Mutex
-	callbacks         []func(context.Context, []TimestampedIntent)
+	accumulatingStore              IntentsStore
+	sinceLastGetStore              IntentsStore
+	sinceLastGetConnectionsCounter IntentsConnectionCounter
+	lock                           sync.Mutex
+	callbacks                      []func(context.Context, []TimestampedIntent)
 }
 
 func NewIntentsHolder() *IntentsHolder {
 	return &IntentsHolder{
-		accumulatingStore: make(IntentsStore),
-		sinceLastGetStore: make(IntentsStore),
-		lock:              sync.Mutex{},
-		callbacks:         make([]func(context.Context, []TimestampedIntent), 0),
+		accumulatingStore:              make(IntentsStore),
+		sinceLastGetStore:              make(IntentsStore),
+		sinceLastGetConnectionsCounter: make(IntentsConnectionCounter),
+		lock:                           sync.Mutex{},
+		callbacks:                      make([]func(context.Context, []TimestampedIntent), 0),
 	}
 }
 
@@ -158,6 +163,22 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	store[key] = existingIntent
 }
 
+func (i *IntentsHolder) addUniqueCount(intent model.Intent, sourcePorts []int64) {
+	key := IntentsStoreKey{
+		Source:      intent.Client.AsNamespacedName(),
+		Destination: intent.Server.AsNamespacedName(),
+		Type:        lo.FromPtr(intent.Type),
+	}
+
+	_, existingCounterFound := i.sinceLastGetConnectionsCounter[key]
+	if !existingCounterFound {
+		i.sinceLastGetConnectionsCounter[key] = NewConnectionCounter()
+	}
+
+	i.sinceLastGetConnectionsCounter[key].AddConnection(CounterInput{intent, sourcePorts})
+
+}
+
 func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval time.Duration) {
 	logrus.Info("Starting periodic intents upload")
 
@@ -183,7 +204,7 @@ func (i *IntentsHolder) RegisterNotifyIntents(callback func(context.Context, []T
 	i.callbacks = append(i.callbacks, callback)
 }
 
-func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
+func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent, sourcePorts []int64) {
 	if config.ExcludedNamespaces().Contains(intent.Client.Namespace) || config.ExcludedNamespaces().Contains(intent.Server.Namespace) {
 		return
 	}
@@ -193,6 +214,8 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 
 	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
+	i.addUniqueCount(intent, sourcePorts)
+
 	intentLogger := logrus.WithFields(logrus.Fields{
 		"client":          intent.Client.Name,
 		"clientNamespace": intent.Client.Namespace,
@@ -245,6 +268,7 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 		nil)
 
 	i.sinceLastGetStore = make(IntentsStore)
+	i.sinceLastGetConnectionsCounter = make(IntentsConnectionCounter)
 	return intents
 }
 
@@ -299,6 +323,13 @@ func (i *IntentsHolder) getIntentsFromStore(
 			continue
 		}
 
+		counter, counterFound := i.sinceLastGetConnectionsCounter[pair]
+		if counterFound {
+			connectionsCount, isValid := counter.GetConnectionCount()
+			if isValid {
+				intent.ConnectionsCount = lo.ToPtr(connectionsCount)
+			}
+		}
 		result = append(result, intent)
 	}
 

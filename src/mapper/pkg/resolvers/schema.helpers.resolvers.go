@@ -170,6 +170,7 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	r.intentsHolder.AddIntent(
 		lastSeen,
 		intent,
+		dest.SrcPorts,
 	)
 
 	updateTelemetriesCounters(SourceTypeSocketScan, intent)
@@ -222,6 +223,7 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 	r.intentsHolder.AddIntent(
 		dest.LastSeen,
 		intent,
+		dest.SrcPorts,
 	)
 	updateTelemetriesCounters(SourceTypeSocketScan, intent)
 	prometheus.IncrementSocketScanReports(1)
@@ -437,6 +439,7 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 	r.intentsHolder.AddIntent(
 		dest.LastSeen,
 		intent,
+		make([]int64, 0),
 	)
 	updateTelemetriesCounters(SourceTypeDNSCapture, intent)
 
@@ -656,6 +659,7 @@ func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdenti
 	r.intentsHolder.AddIntent(
 		dest.LastSeen,
 		intent,
+		dest.SrcPorts,
 	)
 	updateTelemetriesCounters(SourceTypeTCPScan, intent)
 }
@@ -807,6 +811,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 		r.intentsHolder.AddIntent(
 			result.LastSeen,
 			intent,
+			make([]int64, 0),
 		)
 		newResults++
 	}
@@ -862,7 +867,7 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 		}
 
 		updateTelemetriesCounters(SourceTypeIstio, intent)
-		r.intentsHolder.AddIntent(result.LastSeen, intent)
+		r.intentsHolder.AddIntent(result.LastSeen, intent, make([]int64, 0))
 		newResults++
 	}
 

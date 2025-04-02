@@ -237,6 +237,7 @@ type IntentInput struct {
 	Internet                          *InternetConfigInput      `json:"internet"`
 	Status                            *IntentStatusInput        `json:"status"`
 	ResolutionData                    *string                   `json:"resolutionData"`
+	ConnectionsCount                  *int                      `json:"connectionsCount"`
 }
 
 // GetNamespace returns IntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -319,6 +320,9 @@ func (v *IntentInput) GetStatus() *IntentStatusInput { return v.Status }
 
 // GetResolutionData returns IntentInput.ResolutionData, and is useful for accessing the field via an interface.
 func (v *IntentInput) GetResolutionData() *string { return v.ResolutionData }
+
+// GetConnectionsCount returns IntentInput.ConnectionsCount, and is useful for accessing the field via an interface.
+func (v *IntentInput) GetConnectionsCount() *int { return v.ConnectionsCount }
 
 type IntentStatusInput struct {
 	IstioStatus *IstioStatusInput `json:"istioStatus"`
