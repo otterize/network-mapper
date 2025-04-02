@@ -58,6 +58,11 @@ func (c *CloudUploader) NotifyIntents(ctx context.Context, intents []intentsstor
 				Resources: httpResourceToHTTPConfInput(intent.Intent.HTTPResources),
 			},
 		}
+
+		if intent.ConnectionsCount != nil {
+			toCloud.Intent.ConnectionsCount = intent.ConnectionsCount
+		}
+
 		if intent.Intent.Client.PodOwnerKind != nil && intent.Intent.Client.PodOwnerKind.Kind != "" {
 			toCloud.Intent.ClientWorkloadKind = lo.ToPtr(intent.Intent.Client.PodOwnerKind.Kind)
 		}
