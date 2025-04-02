@@ -30,6 +30,7 @@ type Destination struct {
 	DestinationPort nilable.Nilable[int]    `json:"destinationPort"`
 	TTL             nilable.Nilable[int]    `json:"TTL"`
 	LastSeen        time.Time               `json:"lastSeen"`
+	SrcPorts        []int                   `json:"srcPorts"`
 }
 
 // GetDestination returns Destination.Destination, and is useful for accessing the field via an interface.
@@ -46,6 +47,9 @@ func (v *Destination) GetTTL() nilable.Nilable[int] { return v.TTL }
 
 // GetLastSeen returns Destination.LastSeen, and is useful for accessing the field via an interface.
 func (v *Destination) GetLastSeen() time.Time { return v.LastSeen }
+
+// GetSrcPorts returns Destination.SrcPorts, and is useful for accessing the field via an interface.
+func (v *Destination) GetSrcPorts() []int { return v.SrcPorts }
 
 // IntentsIntentsIntent includes the requested fields of the GraphQL type Intent.
 type IntentsIntentsIntent struct {

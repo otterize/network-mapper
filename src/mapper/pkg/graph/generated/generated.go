@@ -677,6 +677,10 @@ input Destination {
     destinationPort: Int
     TTL: Int
     lastSeen: Time!
+    # It feel like this should belong to RecordedDestinationsForSrc and not the Destination, but we use the source port
+    # only for counting unique connections to to the same destination. By putting it here, we reduce the amount of traffic
+    # we pass from the sniffer to the mapper (this way we can send the src&dest ip only once).
+    srcPorts: [Int!]
 }
 
 input RecordedDestinationsForSrc {
@@ -5516,7 +5520,7 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"destination", "destinationIP", "destinationPort", "TTL", "lastSeen"}
+	fieldsInOrder := [...]string{"destination", "destinationIP", "destinationPort", "TTL", "lastSeen", "srcPorts"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5558,6 +5562,13 @@ func (ec *executionContext) unmarshalInputDestination(ctx context.Context, obj i
 				return it, err
 			}
 			it.LastSeen = data
+		case "srcPorts":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("srcPorts"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SrcPorts = data
 		}
 	}
 
@@ -7903,6 +7914,44 @@ func (ec *executionContext) marshalOIdentityResolutionData2ᚖgithubᚗcomᚋott
 		return graphql.Null
 	}
 	return ec._IdentityResolutionData(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚕint64ᚄ(ctx context.Context, v interface{}) ([]int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]int64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt2int64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOInt2ᚕint64ᚄ(ctx context.Context, sel ast.SelectionSet, v []int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt2int64(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint64(ctx context.Context, v interface{}) (*int64, error) {

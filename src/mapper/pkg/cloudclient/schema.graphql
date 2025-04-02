@@ -2559,6 +2559,9 @@ enum RegulationCode {
 	ZERO_TRUST_EGRESS_ACCESS_COVERED
 	ZERO_TRUST_EXTERNAL_INGRESS_TAGGED
 	ZERO_TRUST_ALL_INTRA_CLUSTER_ACCESS_COVERED
+	THREAT_INTELLIGENCE
+"""Detect known IOCs (IPs, domain names) against ingress and egress Internet traffic"""
+	THREAT_INTELLIGENCE_KNOWN_IOCS
 }
 
 enum RegulationStandard {
@@ -2566,6 +2569,7 @@ enum RegulationStandard {
 	PII
 	HIPAA
 	ZERO_TRUST
+	THREAT_INTELLIGENCE
 }
 
 input ReportServiceMetadataInput {

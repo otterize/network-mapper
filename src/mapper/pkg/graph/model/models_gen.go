@@ -39,6 +39,7 @@ type Destination struct {
 	DestinationPort *int64    `json:"destinationPort,omitempty"`
 	TTL             *int64    `json:"TTL,omitempty"`
 	LastSeen        time.Time `json:"lastSeen"`
+	SrcPorts        []int64   `json:"srcPorts,omitempty"`
 }
 
 type GCPOperation struct {
