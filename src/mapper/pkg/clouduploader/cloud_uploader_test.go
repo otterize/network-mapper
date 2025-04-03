@@ -254,6 +254,8 @@ func (s *CloudUploaderTestSuite) TestUploadSameIntentOnce() {
 
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
 
+	// We will upload the same intent twice, so we expect the add count to be 0
+	intents[0].ConnectionsCount.Added = lo.ToPtr(0)
 	s.clientMock.EXPECT().ReportDiscoveredIntents(gomock.Any(), GetMatcher(intents)).Return(nil).Times(1)
 	s.addIntent("client", s.testNamespace, "server", s.testNamespace)
 	s.cloudUploader.NotifyIntents(context.Background(), s.intentsHolder.GetNewIntentsSinceLastGet())
