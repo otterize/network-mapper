@@ -82,6 +82,16 @@ func (s *NetworkPolicyReconcilerTestSuite) TestNetworkPolicyUpload() {
 	s.True(res.IsZero())
 }
 
+func (s *NetworkPolicyReconcilerTestSuite) TestNetworkPolicyUpload_EmptyNamespace() {
+	emptyList := networkingv1.NetworkPolicyList{}
+	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&emptyList), gomock.Eq(client.InNamespace("test-namespace"))).Return(nil)
+	s.cloudClient.EXPECT().ReportNetworkPolicies(gomock.Any(), "test-namespace", gomock.Eq(make([]cloudclient.NetworkPolicyInput, 0))).Return(nil)
+
+	res, err := s.reconciler.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-networkpolicy", Namespace: "test-namespace"}})
+	s.NoError(err)
+	s.True(res.IsZero())
+}
+
 func TestNetworkPolicyReconcilerTestSuite(t *testing.T) {
 	suite.Run(t, new(NetworkPolicyReconcilerTestSuite))
 }
