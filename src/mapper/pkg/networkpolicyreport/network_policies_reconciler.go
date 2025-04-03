@@ -52,7 +52,7 @@ func (r *NetworkPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *NetworkPolicyReconciler) convertToNetworkPolicyInputs(netpols []networkingv1.NetworkPolicy) ([]cloudclient.NetworkPolicyInput, error) {
-	var netpolsToReport []cloudclient.NetworkPolicyInput
+	netpolsToReport := make([]cloudclient.NetworkPolicyInput, 0)
 	for _, netpol := range netpols {
 		netpolToReport, err := r.convertToNetworkPolicyInput(netpol)
 		if err != nil {
