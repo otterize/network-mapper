@@ -13,6 +13,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
+	"github.com/otterize/network-mapper/src/mapper/pkg/intentsstore"
 	"github.com/otterize/network-mapper/src/mapper/pkg/kubefinder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/prometheus"
 	sharedconfig "github.com/otterize/network-mapper/src/shared/config"
@@ -164,7 +165,7 @@ func (r *Resolver) addSocketScanServiceIntent(ctx context.Context, srcSvcIdentit
 	intent := model.Intent{
 		Client:         &srcSvcIdentity,
 		Server:         &dstSvcIdentity,
-		ResolutionData: lo.ToPtr("addSocketScanServiceIntent"),
+		ResolutionData: lo.ToPtr(intentsstore.SocketScanServiceIntentResolution),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -204,7 +205,7 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 			PodHostname:       lo.ToPtr(destPod.Name),
 			Port:              dest.DestinationPort,
 			IsService:         lo.ToPtr(false),
-			ExtraInfo:         lo.ToPtr("addSocketScanPodIntent"),
+			ExtraInfo:         lo.ToPtr(intentsstore.SocketScanPodIntentResolution),
 			LastSeen:          lo.ToPtr(dest.LastSeen.String()),
 			Uptime:            lo.ToPtr(time.Since(destPod.CreationTimestamp.Time).String()),
 			HasLinkerdSidecar: lo.ToPtr(hasLinkerdSidecar(destPod)),
@@ -217,7 +218,7 @@ func (r *Resolver) addSocketScanPodIntent(ctx context.Context, srcSvcIdentity mo
 	intent := model.Intent{
 		Client:         &srcSvcIdentity,
 		Server:         dstSvcIdentity,
-		ResolutionData: lo.ToPtr("addSocketScanPodIntent"),
+		ResolutionData: lo.ToPtr(intentsstore.SocketScanPodIntentResolution),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -433,7 +434,7 @@ func (r *Resolver) handleDNSCaptureResultsAsKubernetesPods(ctx context.Context, 
 	intent := model.Intent{
 		Client:         &srcSvcIdentity,
 		Server:         dstSvcIdentity,
-		ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods"),
+		ResolutionData: lo.ToPtr(intentsstore.DNSTrafficIntentResolution),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -653,7 +654,7 @@ func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdenti
 	intent := model.Intent{
 		Client:         &srcIdentity,
 		Server:         &destIdentity,
-		ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult"),
+		ResolutionData: lo.ToPtr(intentsstore.TCPTrafficIntentResolution),
 	}
 
 	r.intentsHolder.AddIntent(
@@ -804,7 +805,7 @@ func (r *Resolver) handleReportKafkaMapperResults(ctx context.Context, results m
 					Operations: []model.KafkaOperation{operation},
 				},
 			},
-			ResolutionData: lo.ToPtr("handleReportKafkaMapperResults"),
+			ResolutionData: lo.ToPtr(intentsstore.KafkaResultIntentResolution),
 		}
 
 		updateTelemetriesCounters(SourceTypeKafkaMapper, intent)
@@ -863,7 +864,7 @@ func (r *Resolver) handleReportIstioConnectionResults(ctx context.Context, resul
 			Server:         &dstSvcIdentity,
 			Type:           lo.ToPtr(model.IntentTypeHTTP),
 			HTTPResources:  []model.HTTPResource{{Path: result.Path, Methods: result.Methods}},
-			ResolutionData: lo.ToPtr("handleReportIstioConnectionResults"),
+			ResolutionData: lo.ToPtr(intentsstore.IstioResultIntentResolution),
 		}
 
 		updateTelemetriesCounters(SourceTypeIstio, intent)

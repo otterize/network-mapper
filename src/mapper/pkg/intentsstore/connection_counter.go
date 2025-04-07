@@ -68,14 +68,14 @@ func (c *ConnectionCounter) GetConnectionCount() (int, bool) {
 }
 
 func (c *ConnectionCounter) shouldHandleIntentAsDNSCount(intent model.Intent) bool {
-	return intent.ResolutionData != nil && *(intent.ResolutionData) == "handleDNSCaptureResultsAsKubernetesPods"
+	return intent.ResolutionData != nil && *(intent.ResolutionData) == DNSTrafficIntentResolution
 }
 
 func (c *ConnectionCounter) shouldHandleIntentAsSrcPortCount(intent model.Intent) bool {
 	return intent.ResolutionData != nil &&
-		(*(intent.ResolutionData) == "addSocketScanServiceIntent" ||
-			*intent.ResolutionData == "addSocketScanPodIntent" ||
-			*intent.ResolutionData == "handleInternalTrafficTCPResult")
+		(*(intent.ResolutionData) == SocketScanServiceIntentResolution ||
+			*intent.ResolutionData == SocketScanPodIntentResolution ||
+			*intent.ResolutionData == TCPTrafficIntentResolution)
 }
 
 func (c *ConnectionCounter) GetConnectionCountDiff(other *ConnectionCounter) (cloudclient.ConnectionsCount, bool) {

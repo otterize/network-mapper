@@ -32,20 +32,20 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test only DNS intents",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 				SourcePorts: make([]int64, 0),
 			},
 			ExpectedConnectionsCount: 4,
@@ -54,16 +54,16 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test only addSocketScanServiceIntent intents",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanServiceIntent")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanServiceIntent")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
 					SourcePorts: []int64{int64(2)},
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanServiceIntent")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
@@ -72,16 +72,16 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test only addSocketScanPodIntent intents",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanPodIntent")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanPodIntent")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
 					SourcePorts: []int64{int64(2)},
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanPodIntent")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
@@ -90,16 +90,16 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test only handleInternalTrafficTCPResult intents",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(2)},
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
@@ -108,16 +108,16 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test mix socket-scan and tcp-traffic intents",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanPodIntent")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
 					SourcePorts: []int64{int64(2)},
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanServiceIntent")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
@@ -126,16 +126,16 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test mix tcp-traffic intents wins over DNS",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("addSocketScanServiceIntent")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 1,
@@ -144,16 +144,16 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 			Description: "Test each port is counted only once",
 			SetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 			},
 			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+				Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 				SourcePorts: []int64{int64(1)},
 			},
 			ExpectedConnectionsCount: 1,
@@ -213,13 +213,13 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 			Description: "Current count by DNS previous by DNS - all connections are new",
 			PrevSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 			},
 			CurrentSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 			},
@@ -233,13 +233,13 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 			Description: "Current count by TCP previous by TCP - same port, should count as existing connection",
 			PrevSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 			},
 			CurrentSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 			},
@@ -253,13 +253,13 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 			Description: "Current count by TCP previous by TCP - different port, should count as new connection",
 			PrevSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(10)},
 				},
 			},
 			CurrentSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 			},
@@ -273,13 +273,13 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 			Description: "Current count by TCP previous by TCP - mixed of same and different port, should be smart diff",
 			PrevSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1), int64(10), int64(100)},
 				},
 			},
 			CurrentSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(100), int64(200)},
 				},
 			},
@@ -293,17 +293,17 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 			Description: "Current count by TCP previous by DNS - all connections are new",
 			PrevSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 			},
 			CurrentSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 			},
@@ -317,17 +317,17 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 			Description: "Current count by DNS previous by TCP - all connections are new",
 			PrevSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
 					SourcePorts: []int64{int64(1)},
 				},
 			},
 			CurrentSetupInput: []CounterInput{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr("handleDNSCaptureResultsAsKubernetesPods")},
+					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
 					SourcePorts: make([]int64, 0),
 				},
 			},
