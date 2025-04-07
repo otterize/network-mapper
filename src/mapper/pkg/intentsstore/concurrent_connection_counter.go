@@ -4,6 +4,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
+	"sync"
 )
 
 type SourcePortsSet map[int64]struct{}
@@ -25,6 +26,7 @@ type ConnectionCounter struct {
 	SourcePorts SourcePortsSet
 	DNSCounter  int
 	countMethod CountMethod
+	lock        sync.Mutex
 }
 
 func NewConnectionCounter() *ConnectionCounter {
@@ -32,10 +34,14 @@ func NewConnectionCounter() *ConnectionCounter {
 		SourcePorts: make(SourcePortsSet),
 		DNSCounter:  0,
 		countMethod: CountMethodUnset,
+		lock:        sync.Mutex{},
 	}
 }
 
 func (c *ConnectionCounter) AddConnection(input CounterInput) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.shouldHandleIntentAsSrcPortCount(input.Intent) {
 		// TCP source port connections wins over DNS (in terms of connections count)
 		c.countMethod = CountMethodSourcePort
@@ -56,6 +62,13 @@ func (c *ConnectionCounter) AddConnection(input CounterInput) {
 }
 
 func (c *ConnectionCounter) GetConnectionCount() (int, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.getConnectionCountUnsafe()
+}
+
+func (c *ConnectionCounter) getConnectionCountUnsafe() (int, bool) {
 	if c.countMethod == CountMethodSourcePort {
 		return len(c.SourcePorts), true
 	}
@@ -79,12 +92,17 @@ func (c *ConnectionCounter) shouldHandleIntentAsSrcPortCount(intent model.Intent
 }
 
 func (c *ConnectionCounter) GetConnectionCountDiff(other *ConnectionCounter) (cloudclient.ConnectionsCount, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.countMethod == CountMethodUnset || other.countMethod == CountMethodUnset {
 		return cloudclient.ConnectionsCount{}, false
 	}
 
-	currentCount, _ := c.GetConnectionCount()
-	otherCount, _ := other.GetConnectionCount()
+	// Note that we call the usafe version since we already locked the lock ar the function entrance, wnad mutex lock are
+	// not reentrant in GO.
+	currentCount, _ := c.getConnectionCountUnsafe()
+	otherCount, _ := other.getConnectionCountUnsafe()
 
 	if c.countMethod != other.countMethod {
 		return cloudclient.ConnectionsCount{
