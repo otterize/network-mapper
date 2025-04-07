@@ -8,6 +8,10 @@ input Destination {
     destinationPort: Int
     TTL: Int
     lastSeen: Time!
+    # It feel like this should belong to RecordedDestinationsForSrc and not the Destination, but we use the source port
+    # only for counting unique connections to to the same destination. By putting it here, we reduce the amount of traffic
+    # we pass from the sniffer to the mapper (this way we can send the src&dest ip only once).
+    srcPorts: [Int!]
 }
 
 input RecordedDestinationsForSrc {

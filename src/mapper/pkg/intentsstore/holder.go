@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/otterize/intents-operator/src/shared/errors"
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"strings"
 	"sync"
 	"time"
@@ -24,25 +25,32 @@ type IntentsStoreKey struct {
 }
 
 type TimestampedIntent struct {
-	Timestamp time.Time
-	Intent    model.Intent
+	Timestamp        time.Time
+	ConnectionsCount *cloudclient.ConnectionsCount
+	Intent           model.Intent
 }
 
 type IntentsStore map[IntentsStoreKey]TimestampedIntent
 
+type IntentsConnectionCounter map[IntentsStoreKey]*ConnectionCounter
+
 type IntentsHolder struct {
-	accumulatingStore IntentsStore
-	sinceLastGetStore IntentsStore
-	lock              sync.Mutex
-	callbacks         []func(context.Context, []TimestampedIntent)
+	accumulatingStore              IntentsStore
+	sinceLastGetStore              IntentsStore
+	sinceLastGetConnectionsCounter IntentsConnectionCounter
+	previousScanConnectionsCounter IntentsConnectionCounter
+	lock                           sync.Mutex
+	callbacks                      []func(context.Context, []TimestampedIntent)
 }
 
 func NewIntentsHolder() *IntentsHolder {
 	return &IntentsHolder{
-		accumulatingStore: make(IntentsStore),
-		sinceLastGetStore: make(IntentsStore),
-		lock:              sync.Mutex{},
-		callbacks:         make([]func(context.Context, []TimestampedIntent), 0),
+		accumulatingStore:              make(IntentsStore),
+		sinceLastGetStore:              make(IntentsStore),
+		sinceLastGetConnectionsCounter: make(IntentsConnectionCounter),
+		previousScanConnectionsCounter: make(IntentsConnectionCounter),
+		lock:                           sync.Mutex{},
+		callbacks:                      make([]func(context.Context, []TimestampedIntent), 0),
 	}
 }
 
@@ -158,6 +166,21 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	store[key] = existingIntent
 }
 
+func (i *IntentsHolder) addUniqueCount(intent model.Intent, sourcePorts []int64) {
+	key := IntentsStoreKey{
+		Source:      intent.Client.AsNamespacedName(),
+		Destination: intent.Server.AsNamespacedName(),
+		Type:        lo.FromPtr(intent.Type),
+	}
+
+	_, existingCounterFound := i.sinceLastGetConnectionsCounter[key]
+	if !existingCounterFound {
+		i.sinceLastGetConnectionsCounter[key] = NewConnectionCounter()
+	}
+
+	i.sinceLastGetConnectionsCounter[key].AddConnection(CounterInput{intent, sourcePorts})
+}
+
 func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval time.Duration) {
 	logrus.Info("Starting periodic intents upload")
 
@@ -183,7 +206,7 @@ func (i *IntentsHolder) RegisterNotifyIntents(callback func(context.Context, []T
 	i.callbacks = append(i.callbacks, callback)
 }
 
-func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
+func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent, sourcePorts []int64) {
 	if config.ExcludedNamespaces().Contains(intent.Client.Namespace) || config.ExcludedNamespaces().Contains(intent.Server.Namespace) {
 		return
 	}
@@ -193,6 +216,8 @@ func (i *IntentsHolder) AddIntent(newTimestamp time.Time, intent model.Intent) {
 
 	i.addIntentToStore(i.accumulatingStore, newTimestamp, intent)
 	i.addIntentToStore(i.sinceLastGetStore, newTimestamp, intent)
+	i.addUniqueCount(intent, sourcePorts)
+
 	intentLogger := logrus.WithFields(logrus.Fields{
 		"client":          intent.Client.Name,
 		"clientNamespace": intent.Client.Namespace,
@@ -245,6 +270,8 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 		nil)
 
 	i.sinceLastGetStore = make(IntentsStore)
+	i.previousScanConnectionsCounter = i.sinceLastGetConnectionsCounter
+	i.sinceLastGetConnectionsCounter = make(IntentsConnectionCounter)
 	return intents
 }
 
@@ -299,10 +326,53 @@ func (i *IntentsHolder) getIntentsFromStore(
 			continue
 		}
 
+		connectionsCount, connectionsCountValid := i.calcConnectionsCount(pair)
+		if connectionsCountValid {
+			intent.ConnectionsCount = lo.ToPtr(connectionsCount)
+		}
 		result = append(result, intent)
 	}
 
 	return result, nil
+}
+
+func (i *IntentsHolder) calcConnectionsCount(intentKey IntentsStoreKey) (cloudclient.ConnectionsCount, bool) {
+	currentScanCounter, currentScanCounterFound := i.sinceLastGetConnectionsCounter[intentKey]
+	prevScanCounter, prevScanCounterFound := i.previousScanConnectionsCounter[intentKey]
+	if currentScanCounterFound && !prevScanCounterFound {
+		connectionsCount, isValue := currentScanCounter.GetConnectionCount()
+		if isValue {
+			return cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(connectionsCount),
+				Added:   lo.ToPtr(connectionsCount),
+				Removed: lo.ToPtr(0),
+			}, true
+		}
+		return cloudclient.ConnectionsCount{}, false
+	}
+
+	// Is it possible?
+	if !currentScanCounterFound && prevScanCounterFound {
+		connectionsCount, isValue := prevScanCounter.GetConnectionCount()
+		if isValue {
+			return cloudclient.ConnectionsCount{
+				Current: lo.ToPtr(0),
+				Added:   lo.ToPtr(0),
+				Removed: lo.ToPtr(connectionsCount),
+			}, true
+		}
+		return cloudclient.ConnectionsCount{}, false
+	}
+
+	if currentScanCounterFound && prevScanCounterFound {
+		_, isValidCurrentCount := prevScanCounter.GetConnectionCount()
+		connectionDiff, valid := currentScanCounter.GetConnectionCountDiff(prevScanCounter)
+		if isValidCurrentCount && valid {
+			return connectionDiff, true
+		}
+	}
+
+	return cloudclient.ConnectionsCount{}, false
 }
 
 func getAllClientsCallingServer(serverName string, serverNamespace string, store IntentsStore) []types.NamespacedName {
