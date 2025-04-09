@@ -1,4 +1,4 @@
-package intentsstore
+package concurrentconnectioncounter
 
 import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
