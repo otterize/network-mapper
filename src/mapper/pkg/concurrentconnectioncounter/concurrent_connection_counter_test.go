@@ -358,6 +358,34 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 	}
 }
 
+func (s *ConnectionCounterTestSuite) TestCounter_Diff_ExternalTraffic() {
+	prevCounter := NewConnectionCounter[*CountableIntentExternalTrafficIntent]()
+	prevCounter.AddConnection(CounterInput[*CountableIntentExternalTrafficIntent]{
+		Intent: NewCountableIntentExternalTrafficIntent(), SourcePorts: make([]int64, 0),
+	})
+	prevCounter.AddConnection(CounterInput[*CountableIntentExternalTrafficIntent]{
+		Intent: NewCountableIntentExternalTrafficIntent(), SourcePorts: make([]int64, 0),
+	})
+	prevCounter.AddConnection(CounterInput[*CountableIntentExternalTrafficIntent]{
+		Intent: NewCountableIntentExternalTrafficIntent(), SourcePorts: make([]int64, 0),
+	})
+
+	currentCounter := NewConnectionCounter[*CountableIntentExternalTrafficIntent]()
+	currentCounter.AddConnection(CounterInput[*CountableIntentExternalTrafficIntent]{
+		Intent: NewCountableIntentExternalTrafficIntent(), SourcePorts: make([]int64, 0),
+	})
+
+	diff, isValid := currentCounter.GetConnectionCountDiff(prevCounter)
+	s.True(isValid, "Expected connection count diff to be valid")
+	expected := cloudclient.ConnectionsCount{
+		Current: lo.ToPtr(1),
+		Added:   lo.ToPtr(1),
+		Removed: lo.ToPtr(3),
+	}
+	s.Equal(expected, diff)
+
+}
+
 func TestConnectionCounterSuite(t *testing.T) {
 	suite.Run(t, new(ConnectionCounterTestSuite))
 }

@@ -29,3 +29,18 @@ func (c *CountableIntentIntent) ShouldCountUsingSrcPortMethod() bool {
 func (c *CountableIntentIntent) ShouldCountUsingDNSMethod() bool {
 	return c.intent.ResolutionData != nil && *(c.intent.ResolutionData) == DNSTrafficIntentResolution
 }
+
+type CountableIntentExternalTrafficIntent struct {
+}
+
+func NewCountableIntentExternalTrafficIntent() *CountableIntentExternalTrafficIntent {
+	return &CountableIntentExternalTrafficIntent{}
+}
+
+func (c *CountableIntentExternalTrafficIntent) ShouldCountUsingSrcPortMethod() bool {
+	return false
+}
+
+func (c *CountableIntentExternalTrafficIntent) ShouldCountUsingDNSMethod() bool {
+	return true
+}

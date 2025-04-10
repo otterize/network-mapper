@@ -2,8 +2,11 @@ package externaltrafficholder
 
 import (
 	"context"
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	"github.com/otterize/network-mapper/src/mapper/pkg/concurrentconnectioncounter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
@@ -19,8 +22,9 @@ type ExternalTrafficIntent struct {
 }
 
 type TimestampedExternalTrafficIntent struct {
-	Timestamp time.Time
-	Intent    ExternalTrafficIntent
+	Timestamp        time.Time
+	Intent           ExternalTrafficIntent
+	ConnectionsCount *cloudclient.ConnectionsCount
 }
 
 type ExternalTrafficKey struct {
@@ -29,17 +33,21 @@ type ExternalTrafficKey struct {
 	DestDNSName     string
 }
 
+type IntentsConnectionCounter map[ExternalTrafficKey]*concurrentconnectioncounter.ConnectionCounter[*concurrentconnectioncounter.CountableIntentExternalTrafficIntent]
+
 type ExternalTrafficIntentsHolder struct {
-	intents   map[ExternalTrafficKey]TimestampedExternalTrafficIntent
-	lock      sync.Mutex
-	callbacks []ExternalTrafficCallbackFunc
+	intents                        map[ExternalTrafficKey]TimestampedExternalTrafficIntent
+	lock                           sync.Mutex
+	callbacks                      []ExternalTrafficCallbackFunc
+	sinceLastGetConnectionsCounter IntentsConnectionCounter
 }
 
 type ExternalTrafficCallbackFunc func(context.Context, []TimestampedExternalTrafficIntent)
 
 func NewExternalTrafficIntentsHolder() *ExternalTrafficIntentsHolder {
 	return &ExternalTrafficIntentsHolder{
-		intents: make(map[ExternalTrafficKey]TimestampedExternalTrafficIntent),
+		intents:                        make(map[ExternalTrafficKey]TimestampedExternalTrafficIntent),
+		sinceLastGetConnectionsCounter: make(IntentsConnectionCounter),
 	}
 }
 
@@ -78,10 +86,17 @@ func (h *ExternalTrafficIntentsHolder) GetNewIntentsSinceLastGet() []Timestamped
 	intents := make([]TimestampedExternalTrafficIntent, 0, len(h.intents))
 
 	for _, intent := range h.intents {
+		// Add connection count value
+		connectionsCount, connectionsCountValid := h.calcConnectionsCount(intent)
+		if connectionsCountValid {
+			intent.ConnectionsCount = lo.ToPtr(connectionsCount)
+		}
+
 		intents = append(intents, intent)
 	}
 
 	h.intents = make(map[ExternalTrafficKey]TimestampedExternalTrafficIntent)
+	h.sinceLastGetConnectionsCounter = make(IntentsConnectionCounter)
 
 	return intents
 }
@@ -100,6 +115,7 @@ func (h *ExternalTrafficIntentsHolder) AddIntent(intent ExternalTrafficIntent) {
 		DestDNSName:     intent.DNSName,
 	}
 	_, found := h.intents[key]
+	h.addUniqueCount(key)
 
 	if !found {
 		h.intents[key] = TimestampedExternalTrafficIntent{
@@ -119,4 +135,39 @@ func (h *ExternalTrafficIntentsHolder) AddIntent(intent ExternalTrafficIntent) {
 	}
 
 	h.intents[key] = mergedIntent
+}
+
+func (h *ExternalTrafficIntentsHolder) addUniqueCount(key ExternalTrafficKey) {
+	_, existingCounterFound := h.sinceLastGetConnectionsCounter[key]
+	if !existingCounterFound {
+		h.sinceLastGetConnectionsCounter[key] = concurrentconnectioncounter.NewConnectionCounter[*concurrentconnectioncounter.CountableIntentExternalTrafficIntent]()
+	}
+
+	counterInput := concurrentconnectioncounter.CounterInput[*concurrentconnectioncounter.CountableIntentExternalTrafficIntent]{}
+	h.sinceLastGetConnectionsCounter[key].AddConnection(counterInput)
+}
+
+func (h *ExternalTrafficIntentsHolder) calcConnectionsCount(intent TimestampedExternalTrafficIntent) (cloudclient.ConnectionsCount, bool) {
+	key := ExternalTrafficKey{
+		ClientName:      intent.Intent.Client.Name,
+		ClientNamespace: intent.Intent.Client.Namespace,
+		DestDNSName:     intent.Intent.DNSName,
+	}
+
+	currentScanCounter, currentScanCounterFound := h.sinceLastGetConnectionsCounter[key]
+	if !currentScanCounterFound {
+		return cloudclient.ConnectionsCount{}, false
+	}
+
+	connectionsCount, isValid := currentScanCounter.GetConnectionCount()
+	if !isValid {
+		return cloudclient.ConnectionsCount{}, false
+	}
+
+	return cloudclient.ConnectionsCount{
+		Current: lo.ToPtr(connectionsCount),
+		Added:   lo.ToPtr(connectionsCount),
+		Removed: lo.ToPtr(0),
+	}, true
+
 }
