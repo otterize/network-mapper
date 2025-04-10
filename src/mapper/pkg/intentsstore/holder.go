@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	"github.com/otterize/network-mapper/src/mapper/pkg/concurrentconnectioncounter"
 	"strings"
 	"sync"
 	"time"
@@ -32,7 +33,7 @@ type TimestampedIntent struct {
 
 type IntentsStore map[IntentsStoreKey]TimestampedIntent
 
-type IntentsConnectionCounter map[IntentsStoreKey]*ConnectionCounter
+type IntentsConnectionCounter map[IntentsStoreKey]*concurrentconnectioncounter.ConnectionCounter[*concurrentconnectioncounter.CountableIntentIntent]
 
 type IntentsHolder struct {
 	accumulatingStore              IntentsStore
@@ -175,10 +176,14 @@ func (i *IntentsHolder) addUniqueCount(intent model.Intent, sourcePorts []int64)
 
 	_, existingCounterFound := i.sinceLastGetConnectionsCounter[key]
 	if !existingCounterFound {
-		i.sinceLastGetConnectionsCounter[key] = NewConnectionCounter()
+		i.sinceLastGetConnectionsCounter[key] = concurrentconnectioncounter.NewConnectionCounter[*concurrentconnectioncounter.CountableIntentIntent]()
 	}
 
-	i.sinceLastGetConnectionsCounter[key].AddConnection(CounterInput{intent, sourcePorts})
+	counterInput := concurrentconnectioncounter.CounterInput[*concurrentconnectioncounter.CountableIntentIntent]{
+		Intent:      concurrentconnectioncounter.NewCountableIntentIntent(intent),
+		SourcePorts: sourcePorts,
+	}
+	i.sinceLastGetConnectionsCounter[key].AddConnection(counterInput)
 }
 
 func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval time.Duration) {

@@ -10,6 +10,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
+	"github.com/otterize/nilable"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -139,6 +140,9 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 		for ip := range intent.Intent.IPs {
 			output.Intent.Target.Ips = append(output.Intent.Target.Ips, lo.ToPtr(string(ip)))
 		}
+
+		output.Intent.ConnectionsCount = nilable.FromPtr(intent.ConnectionsCount)
+
 		return output
 	})
 

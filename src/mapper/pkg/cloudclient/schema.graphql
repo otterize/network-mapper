@@ -32,9 +32,20 @@ directive @include(
 	if: Boolean!
 ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
+"""@noRole indicates that the specified query / mutation / subscription can be executed regardless of the user's roles.
+This practically means that the query will not allow accessing any org-specific data."""
+directive @noRole on FIELD_DEFINITION
+
 """@noauth indicates that the specified query / mutation / subscription can be executed anonymously without
+user authentication, meaning anyone and everyone can execute it. USE WITH CAUTION.
 user authentication, meaning anyone and everyone can execute it. USE WITH CAUTION."""
 directive @noauth on FIELD_DEFINITION
+
+"""@requiresRole indicates that the specified query / mutation / subscription requires any of the provided roles to be executed.
+Users without any of the specified roles will not be able to execute the query / mutation / subscription."""
+directive @requiresRole(
+	roles: [AuthRole!]!
+) on FIELD_DEFINITION
 
 directive @restApiField(
 	action: ApiFieldAction
@@ -273,6 +284,11 @@ type AppliedIntentsRequestWithDetails {
 	status: AppliedIntentsRequestStatusLabel!
 	reason: String
 	clientIntents: ClientIntentsFileRepresentation!
+}
+
+enum AuthRole {
+	ADMIN
+	VIEWER
 }
 
 enum AutomateThirdPartyNetworkPolicy {
@@ -823,6 +839,7 @@ input ExternalTrafficIntentInput {
 	namespace: String!
 	clientName: String!
 	target: DNSIPPairInput!
+	connectionsCount: ConnectionsCount
 }
 
 input ExternallyAccessibleServiceInput {
@@ -1216,6 +1233,7 @@ input InputIntegrationAccessGraphFilter {
 	namespaceFilterType: IDFilterOperators
 	serviceIds: [ID!]
 	serviceFilterType: IDFilterOperators
+	targets: [IntentType!]
 }
 
 """ Network policies filter """
@@ -1341,6 +1359,7 @@ type IntegrationAccessGraphFilter {
 	serviceIds: [ID!]
 	serviceFilterType: IDFilterOperators
 	lastSeenAfter: Time
+	targets: [IntentType!]
 }
 
 type IntegrationComponents {
@@ -1458,6 +1477,7 @@ input IntentStatusInput {
 }
 
 enum IntentType {
+	KUBERNETES
 	HTTP
 	KAFKA
 	DATABASE
@@ -1535,6 +1555,7 @@ type Invite {
 	id: ID!
 	email: String!
 	organization: Organization!
+	organizationMembership: OrganizationMembership!
 	inviter: User!
 	created: Time!
 	acceptedAt: Time
@@ -2052,6 +2073,7 @@ type Mutation {
 """Create user invite"""
 	createInvite(
 		email: String!
+		organizationMembership: OrganizationMembershipInput
 	): Invite!
 """Delete user invite"""
 	deleteInvite(
@@ -2105,7 +2127,7 @@ type Mutation {
 		settings: OrganizationSettingsInput
 	): Organization!
 	updateDomainsDefaultRole(
-		defaultRole: OrgMembershipRole!
+		defaultRole: AuthRole!
 	): Organization!
 """Remove user from organization"""
 	removeUserFromOrganization(
@@ -2235,6 +2257,7 @@ input NetworkPolicyInput {
 enum NetworkPolicyKind {
 	NETWORK_POLICY
 	CILIUM_NETWORK_POLICY
+	CILIUM_CLUSTER_WIDE_NETWORK_POLICY
 }
 
 enum NetworkPolicyScope {
@@ -2248,11 +2271,6 @@ type NetworkPolicyWorkload {
 	service: Service!
 }
 
-enum OrgMembershipRole {
-	ADMIN
-	VIEWER
-}
-
 type Organization {
 	id: ID!
 	name: String!
@@ -2262,12 +2280,37 @@ type Organization {
 	created: Time!
 }
 
+type OrganizationMembership {
+	role: AuthRole!
+	restrictions: OrganizationMembershipRestrictions
+}
+
+input OrganizationMembershipInput {
+	role: AuthRole!
+	restrictions: OrganizationMembershipRestrictionsInput
+}
+
+type OrganizationMembershipRestrictions {
+	clusterIds: IDFilterValue
+	serviceIds: IDFilterValue
+	namespaceIds: IDFilterValue
+	environmentIds: IDFilterValue
+}
+
+input OrganizationMembershipRestrictionsInput {
+	clusterIds: InputIDFilterValue
+	serviceIds: InputIDFilterValue
+	namespaceIds: InputIDFilterValue
+	environmentIds: InputIDFilterValue
+}
+
 type OrganizationSettings {
 	domains: [String!]
 	enforcedRegulations: [String!]
 	ignoredCloudDomains: [String!]
 	defaultIntentsApprovalActionByEnv: [DefaultIntentsApprovalActionByEnv!]!
-	domainsDefaultRole: OrgMembershipRole!
+	ignoreInternetIntents: Boolean
+	domainsDefaultRole: AuthRole!
 }
 
 input OrganizationSettingsInput {
@@ -2275,6 +2318,7 @@ input OrganizationSettingsInput {
 	enforcedRegulations: [String]
 	ignoredCloudDomains: [String!]
 	defaultIntentsApprovalActionByEnv: [InputDefaultIntentsApprovalActionByEnv!]
+	ignoreInternetIntents: Boolean
 }
 
 input PaginationInput {
@@ -2979,6 +3023,7 @@ type User {
 	authProviderUserId: String!
 	tutorials: [UserTutorial!]
 	activeTutorial: UserTutorial!
+	orgMembership: OrganizationMembership!
 	awsCustomer: AWSCustomer
 }
 

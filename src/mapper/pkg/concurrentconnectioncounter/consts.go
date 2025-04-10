@@ -1,4 +1,4 @@
-package intentsstore
+package concurrentconnectioncounter
 
 const (
 	SocketScanServiceIntentResolution string = "addSocketScanServiceIntent"
