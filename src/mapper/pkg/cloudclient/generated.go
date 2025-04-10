@@ -129,9 +129,10 @@ func (v *ExternalTrafficDiscoveredIntentInput) GetIntent() ExternalTrafficIntent
 }
 
 type ExternalTrafficIntentInput struct {
-	Namespace  string         `json:"namespace"`
-	ClientName string         `json:"clientName"`
-	Target     DNSIPPairInput `json:"target"`
+	Namespace        string                            `json:"namespace"`
+	ClientName       string                            `json:"clientName"`
+	Target           DNSIPPairInput                    `json:"target"`
+	ConnectionsCount nilable.Nilable[ConnectionsCount] `json:"connectionsCount"`
 }
 
 // GetNamespace returns ExternalTrafficIntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -142,6 +143,11 @@ func (v *ExternalTrafficIntentInput) GetClientName() string { return v.ClientNam
 
 // GetTarget returns ExternalTrafficIntentInput.Target, and is useful for accessing the field via an interface.
 func (v *ExternalTrafficIntentInput) GetTarget() DNSIPPairInput { return v.Target }
+
+// GetConnectionsCount returns ExternalTrafficIntentInput.ConnectionsCount, and is useful for accessing the field via an interface.
+func (v *ExternalTrafficIntentInput) GetConnectionsCount() nilable.Nilable[ConnectionsCount] {
+	return v.ConnectionsCount
+}
 
 type HTTPConfigInput struct {
 	Path    *string       `json:"path"`
@@ -349,14 +355,15 @@ func (v *IntentStatusInput) GetIstioStatus() *IstioStatusInput { return v.IstioS
 type IntentType string
 
 const (
-	IntentTypeHttp     IntentType = "HTTP"
-	IntentTypeKafka    IntentType = "KAFKA"
-	IntentTypeDatabase IntentType = "DATABASE"
-	IntentTypeAws      IntentType = "AWS"
-	IntentTypeGcp      IntentType = "GCP"
-	IntentTypeAzure    IntentType = "AZURE"
-	IntentTypeS3       IntentType = "S3"
-	IntentTypeInternet IntentType = "INTERNET"
+	IntentTypeKubernetes IntentType = "KUBERNETES"
+	IntentTypeHttp       IntentType = "HTTP"
+	IntentTypeKafka      IntentType = "KAFKA"
+	IntentTypeDatabase   IntentType = "DATABASE"
+	IntentTypeAws        IntentType = "AWS"
+	IntentTypeGcp        IntentType = "GCP"
+	IntentTypeAzure      IntentType = "AZURE"
+	IntentTypeS3         IntentType = "S3"
+	IntentTypeInternet   IntentType = "INTERNET"
 )
 
 type InternetConfigInput struct {
