@@ -99,8 +99,9 @@ func (h *ExternalTrafficIntentsHolder) AddIntent(intent ExternalTrafficIntent) {
 		ClientNamespace: intent.Client.Namespace,
 		DestDNSName:     intent.DNSName,
 	}
-	_, ok := h.intents[key]
-	if !ok {
+	_, found := h.intents[key]
+
+	if !found {
 		h.intents[key] = TimestampedExternalTrafficIntent{
 			Timestamp: intent.LastSeen,
 			Intent:    intent,

@@ -14,15 +14,15 @@ type ConnectionCounterTestSuite struct {
 
 type TestCase struct {
 	Description              string
-	SetupInput               []CounterInput
-	TestIntent               CounterInput
+	SetupInput               []CounterInput[*CountableIntentIntent]
+	TestIntent               CounterInput[*CountableIntentIntent]
 	ExpectedConnectionsCount int
 }
 
 type DiffTestCase struct {
 	Description              string
-	CurrentSetupInput        []CounterInput
-	PrevSetupInput           []CounterInput
+	CurrentSetupInput        []CounterInput[*CountableIntentIntent]
+	PrevSetupInput           []CounterInput[*CountableIntentIntent]
 	ExpectedConnectionsCount cloudclient.ConnectionsCount
 }
 
@@ -30,130 +30,130 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 	testCases := []TestCase{
 		{
 			Description: "Test only DNS intents",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 				SourcePorts: make([]int64, 0),
 			},
 			ExpectedConnectionsCount: 4,
 		},
 		{
 			Description: "Test only addSocketScanServiceIntent intents",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)}),
 					SourcePorts: []int64{int64(2)},
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)}),
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
 		},
 		{
 			Description: "Test only addSocketScanPodIntent intents",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)}),
 					SourcePorts: []int64{int64(2)},
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)}),
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
 		},
 		{
 			Description: "Test only handleInternalTrafficTCPResult intents",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(2)},
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
 		},
 		{
 			Description: "Test mix socket-scan and tcp-traffic intents",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanPodIntentResolution)}),
 					SourcePorts: []int64{int64(2)},
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)}),
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 3,
 		},
 		{
 			Description: "Test mix tcp-traffic intents wins over DNS",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(SocketScanServiceIntentResolution)}),
 				SourcePorts: []int64{int64(3)},
 			},
 			ExpectedConnectionsCount: 1,
 		},
 		{
 			Description: "Test each port is counted only once",
-			SetupInput: []CounterInput{
+			SetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 			},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 				SourcePorts: []int64{int64(1)},
 			},
 			ExpectedConnectionsCount: 1,
@@ -162,7 +162,7 @@ func (s *ConnectionCounterTestSuite) TestCounter() {
 
 	for _, testCase := range testCases {
 		s.Run(testCase.Description, func() {
-			counter := NewConnectionCounter()
+			counter := NewConnectionCounter[*CountableIntentIntent]()
 			for _, input := range testCase.SetupInput {
 				counter.AddConnection(input)
 			}
@@ -179,18 +179,18 @@ func (s *ConnectionCounterTestSuite) TestCounter_InvalidForTypes() {
 	testCases := []TestCase{
 		{
 			Description: "handleReportKafkaMapperResults not supported",
-			SetupInput:  []CounterInput{},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("handleReportKafkaMapperResults")},
+			SetupInput:  []CounterInput[*CountableIntentIntent]{},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr("handleReportKafkaMapperResults")}),
 				SourcePorts: make([]int64, 0),
 			},
 			ExpectedConnectionsCount: 0,
 		},
 		{
 			Description: "handleReportIstioConnectionResults not supported",
-			SetupInput:  []CounterInput{},
-			TestIntent: CounterInput{
-				Intent:      model.Intent{ResolutionData: lo.ToPtr("handleReportIstioConnectionResults")},
+			SetupInput:  []CounterInput[*CountableIntentIntent]{},
+			TestIntent: CounterInput[*CountableIntentIntent]{
+				Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr("handleReportIstioConnectionResults")}),
 				SourcePorts: make([]int64, 0),
 			},
 			ExpectedConnectionsCount: 0,
@@ -199,10 +199,10 @@ func (s *ConnectionCounterTestSuite) TestCounter_InvalidForTypes() {
 
 	for _, testCase := range testCases {
 		s.Run(testCase.Description, func() {
-			counter := NewConnectionCounter()
+			counter := NewConnectionCounter[*CountableIntentIntent]()
 			counter.AddConnection(testCase.TestIntent)
 			_, isValid := counter.GetConnectionCount()
-			s.Falsef(isValid, "%s is not a valid intent type", *testCase.TestIntent.Intent.ResolutionData)
+			s.Falsef(isValid, "%s is not a valid intent type", *testCase.TestIntent.Intent.intent.ResolutionData)
 		})
 	}
 }
@@ -211,15 +211,15 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 	testCases := []DiffTestCase{
 		{
 			Description: "Current count by DNS previous by DNS - all connections are new",
-			PrevSetupInput: []CounterInput{
+			PrevSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 			},
-			CurrentSetupInput: []CounterInput{
+			CurrentSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 			},
@@ -231,15 +231,15 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 		},
 		{
 			Description: "Current count by TCP previous by TCP - same port, should count as existing connection",
-			PrevSetupInput: []CounterInput{
+			PrevSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 			},
-			CurrentSetupInput: []CounterInput{
+			CurrentSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 			},
@@ -251,15 +251,15 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 		},
 		{
 			Description: "Current count by TCP previous by TCP - different port, should count as new connection",
-			PrevSetupInput: []CounterInput{
+			PrevSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(10)},
 				},
 			},
-			CurrentSetupInput: []CounterInput{
+			CurrentSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 			},
@@ -271,15 +271,15 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 		},
 		{
 			Description: "Current count by TCP previous by TCP - mixed of same and different port, should be smart diff",
-			PrevSetupInput: []CounterInput{
+			PrevSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1), int64(10), int64(100)},
 				},
 			},
-			CurrentSetupInput: []CounterInput{
+			CurrentSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(100), int64(200)},
 				},
 			},
@@ -291,19 +291,19 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 		},
 		{
 			Description: "Current count by TCP previous by DNS - all connections are new",
-			PrevSetupInput: []CounterInput{
+			PrevSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 			},
-			CurrentSetupInput: []CounterInput{
+			CurrentSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 			},
@@ -315,19 +315,19 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 		},
 		{
 			Description: "Current count by DNS previous by TCP - all connections are new",
-			PrevSetupInput: []CounterInput{
+			PrevSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(TCPTrafficIntentResolution)}),
 					SourcePorts: []int64{int64(1)},
 				},
 			},
-			CurrentSetupInput: []CounterInput{
+			CurrentSetupInput: []CounterInput[*CountableIntentIntent]{
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 				{
-					Intent:      model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)},
+					Intent:      NewCountableIntentIntent(model.Intent{ResolutionData: lo.ToPtr(DNSTrafficIntentResolution)}),
 					SourcePorts: make([]int64, 0),
 				},
 			},
@@ -341,13 +341,13 @@ func (s *ConnectionCounterTestSuite) TestCounter_Diff() {
 
 	for _, testCase := range testCases {
 		s.Run(testCase.Description, func() {
-			prevCounter := NewConnectionCounter()
-			lo.ForEach(testCase.PrevSetupInput, func(input CounterInput, _ int) {
+			prevCounter := NewConnectionCounter[*CountableIntentIntent]()
+			lo.ForEach(testCase.PrevSetupInput, func(input CounterInput[*CountableIntentIntent], _ int) {
 				prevCounter.AddConnection(input)
 			})
 
-			currentCounter := NewConnectionCounter()
-			lo.ForEach(testCase.CurrentSetupInput, func(input CounterInput, _ int) {
+			currentCounter := NewConnectionCounter[*CountableIntentIntent]()
+			lo.ForEach(testCase.CurrentSetupInput, func(input CounterInput[*CountableIntentIntent], _ int) {
 				currentCounter.AddConnection(input)
 			})
 
