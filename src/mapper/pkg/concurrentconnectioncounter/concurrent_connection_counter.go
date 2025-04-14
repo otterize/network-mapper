@@ -1,8 +1,7 @@
-package intentsstore
+package concurrentconnectioncounter
 
 import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
-	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
 	"github.com/samber/lo"
 	"sync"
 )
@@ -17,20 +16,20 @@ const (
 	CountMethodSourcePort CountMethod = 2
 )
 
-type CounterInput struct {
-	Intent      model.Intent
+type CounterInput[T CountableIntent] struct {
+	Intent      T
 	SourcePorts []int64
 }
 
-type ConnectionCounter struct {
+type ConnectionCounter[T CountableIntent] struct {
 	SourcePorts SourcePortsSet
 	DNSCounter  int
 	countMethod CountMethod
 	lock        sync.Mutex
 }
 
-func NewConnectionCounter() *ConnectionCounter {
-	return &ConnectionCounter{
+func NewConnectionCounter[T CountableIntent]() *ConnectionCounter[T] {
+	return &ConnectionCounter[T]{
 		SourcePorts: make(SourcePortsSet),
 		DNSCounter:  0,
 		countMethod: CountMethodUnset,
@@ -38,11 +37,11 @@ func NewConnectionCounter() *ConnectionCounter {
 	}
 }
 
-func (c *ConnectionCounter) AddConnection(input CounterInput) {
+func (c *ConnectionCounter[T]) AddConnection(input CounterInput[T]) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if c.shouldHandleIntentAsSrcPortCount(input.Intent) {
+	if input.Intent.ShouldCountUsingSrcPortMethod() {
 		// TCP source port connections wins over DNS (in terms of connections count)
 		c.countMethod = CountMethodSourcePort
 		lo.ForEach(input.SourcePorts, func(port int64, _ int) {
@@ -51,7 +50,7 @@ func (c *ConnectionCounter) AddConnection(input CounterInput) {
 		return
 	}
 
-	if (c.countMethod == CountMethodUnset || c.countMethod == CountMethodDNS) && c.shouldHandleIntentAsDNSCount(input.Intent) {
+	if (c.countMethod == CountMethodUnset || c.countMethod == CountMethodDNS) && input.Intent.ShouldCountUsingDNSMethod() {
 		c.countMethod = CountMethodDNS
 		c.DNSCounter++
 		return
@@ -61,14 +60,14 @@ func (c *ConnectionCounter) AddConnection(input CounterInput) {
 	// or because it is an unknown intent type
 }
 
-func (c *ConnectionCounter) GetConnectionCount() (int, bool) {
+func (c *ConnectionCounter[T]) GetConnectionCount() (int, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	return c.getConnectionCountUnsafe()
 }
 
-func (c *ConnectionCounter) getConnectionCountUnsafe() (int, bool) {
+func (c *ConnectionCounter[T]) getConnectionCountUnsafe() (int, bool) {
 	if c.countMethod == CountMethodSourcePort {
 		return len(c.SourcePorts), true
 	}
@@ -80,18 +79,7 @@ func (c *ConnectionCounter) getConnectionCountUnsafe() (int, bool) {
 	return 0, false
 }
 
-func (c *ConnectionCounter) shouldHandleIntentAsDNSCount(intent model.Intent) bool {
-	return intent.ResolutionData != nil && *(intent.ResolutionData) == DNSTrafficIntentResolution
-}
-
-func (c *ConnectionCounter) shouldHandleIntentAsSrcPortCount(intent model.Intent) bool {
-	return intent.ResolutionData != nil &&
-		(*(intent.ResolutionData) == SocketScanServiceIntentResolution ||
-			*intent.ResolutionData == SocketScanPodIntentResolution ||
-			*intent.ResolutionData == TCPTrafficIntentResolution)
-}
-
-func (c *ConnectionCounter) GetConnectionCountDiff(other *ConnectionCounter) (cloudclient.ConnectionsCount, bool) {
+func (c *ConnectionCounter[T]) GetConnectionCountDiff(other *ConnectionCounter[T]) (cloudclient.ConnectionsCount, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
