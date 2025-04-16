@@ -53,6 +53,9 @@ const (
 
 	ControlPlaneIPv4CidrPrefixLength        = "control-plane-ipv4-cidr-prefix-length"
 	ControlPlaneIPv4CidrPrefixLengthDefault = 32
+
+	TCPDestResolveOnlyControlPlaneByIp        = "tcp-dest-resolve-only-control-plane-by-ip"
+	TCPDestResolveOnlyControlPlaneByIpDefault = true
 )
 
 var excludedNamespaces *goset.Set[string]
@@ -84,6 +87,7 @@ func init() {
 	viper.SetDefault(MetricsCollectionTrafficCacheSizeKey, MetricsCollectionTrafficCacheSizeDefault)
 	viper.SetDefault(TimeServerHasToLiveBeforeWeTrustItKey, TimeServerHasToLiveBeforeWeTrustItDefault)
 	viper.SetDefault(ControlPlaneIPv4CidrPrefixLength, ControlPlaneIPv4CidrPrefixLengthDefault)
+	viper.SetDefault(TCPDestResolveOnlyControlPlaneByIp, TCPDestResolveOnlyControlPlaneByIpDefault)
 
 	excludedNamespaces = goset.FromSlice(viper.GetStringSlice(ExcludedNamespacesKey))
 }

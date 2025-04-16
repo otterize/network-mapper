@@ -28,11 +28,13 @@ import (
 type SourceType string
 
 const (
-	SourceTypeDNSCapture  SourceType = "Capture"
-	SourceTypeTCPScan     SourceType = "TCPScan"
-	SourceTypeSocketScan  SourceType = "SocketScan"
-	SourceTypeKafkaMapper SourceType = "KafkaMapper"
-	SourceTypeIstio       SourceType = "Istio"
+	SourceTypeDNSCapture   SourceType = "Capture"
+	SourceTypeTCPScan      SourceType = "TCPScan"
+	SourceTypeSocketScan   SourceType = "SocketScan"
+	SourceTypeKafkaMapper  SourceType = "KafkaMapper"
+	SourceTypeIstio        SourceType = "Istio"
+	controlPlaneServerName            = "kubernetes"
+	controlPlaneNamespace             = "default"
 )
 
 func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
@@ -60,8 +62,25 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
-	destSvc, isTargetService, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
+func getDestIp(dest model.Destination, srcIdentity model.OtterizeServiceIdentity) string {
+	if viper.GetBool(config.TCPDestResolveOnlyControlPlaneByIp) &&
+		(srcIdentity.Name != controlPlaneServerName || srcIdentity.Namespace != controlPlaneNamespace) {
+		// Yep, you are right, this feels a bit hacky.
+		// We do this because we do not know how many new flows this bugfix will introduce, so we want to control
+		// the rollout of this fix.
+		return dest.Destination
+	}
+
+	if dest.DestinationIP != nil {
+		return *dest.DestinationIP
+	}
+
+	return dest.Destination
+}
+
+func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time, srcIdentity model.OtterizeServiceIdentity) (model.OtterizeServiceIdentity, bool, error) {
+	destIp := getDestIp(dest, srcIdentity)
+	destSvc, isTargetService, err := r.kubeFinder.ResolveIPToService(ctx, destIp)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
@@ -78,7 +97,7 @@ func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destin
 		}
 	}
 
-	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
+	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destIp)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", dest.Destination)
@@ -642,7 +661,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 
 func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
 	lastSeen := dest.LastSeen
-	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen)
+	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen, srcIdentity)
 	if err != nil {
 		logrus.WithError(err).Error("could not resolve destination identity")
 		return
