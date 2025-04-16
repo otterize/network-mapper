@@ -63,14 +63,14 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 }
 
 func getDestIp(dest model.Destination, srcIdentity model.OtterizeServiceIdentity) string {
-	if srcIdentity.Name != controlPlaneServerName || srcIdentity.Namespace != controlPlaneNamespace {
+	if viper.GetBool(config.TCPDestResolveOnlyControlPlaneByIp) &&
+		(srcIdentity.Name != controlPlaneServerName || srcIdentity.Namespace != controlPlaneNamespace) {
+		// Yep, you are right, this feels a bit hacky.
+		// We do this because we do not know how many new flows this bugfix will introduce, so we want to control
+		// the rollout of this fix.
 		return dest.Destination
 	}
 
-	// Yep, you are right, this is not trivial to have this logic only when the control plane is the source.
-	// The reason we do this, is because we had a bugfix that reduced a lot of noise when reporting on traffic.
-	// That bugfix caused a bug - where we did not report the traffic from the control plane. Since we don't want
-	// to risk it and introduce a lot of noise again, we currently apply this fix only when the source is the control plane.
 	if dest.DestinationIP != nil {
 		return *dest.DestinationIP
 	}
