@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	sdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 type OtelEdgeMetric struct {
@@ -25,7 +25,7 @@ type OtelEdgeMetric struct {
 func newResource() (*resource.Resource, error) {
 	return resource.Merge(resource.Default(),
 		resource.NewWithAttributes(semconv.SchemaURL,
-			semconv.OTelLibraryName("otterize/network-mapper"),
+			semconv.OTelScopeName("otterize/network-mapper"),
 		))
 }
 

@@ -206,6 +206,7 @@ type AccessGraphFilter {
 	lastSeen: TimeFilterValue
 	featureFlags: FeatureFlags
 	includeOnlyClientsMatchingFilter: Boolean
+	hits: NumericFilterValue
 }
 
 type AccessLog {
@@ -1142,6 +1143,7 @@ input InputAccessGraphFilter {
 	lastSeen: InputTimeFilterValue
 	featureFlags: InputFeatureFlags
 	includeOnlyClientsMatchingFilter: Boolean
+	hits: InputNumericFilterValue
 }
 
 """ Access log filter """
@@ -1252,6 +1254,11 @@ input InputNetworkPolicyFilter {
 	policyKinds: InputIDFilterValue
 """ Network policies filter """
 	since: InputTimeFilterValue
+}
+
+input InputNumericFilterValue {
+	value: Int!
+	operator: NumericFilterOperators!
 }
 
 input InputResourceInventoryFilter {
@@ -1817,12 +1824,18 @@ type Me {
 	user: User!
 """The organizations to which the current logged-in user belongs."""
 	organizations: [Organization!]!
+"""The organizations to which the current logged-in user belongs."""
+	userOrganizations: [UserOrganizationAssociation!]!
 """Organizations to which the current logged-in user may join."""
 	invites: [Invite!]!
 """The organization under which the current user request acts.
 This is selected by the X-Otterize-Organization header,
 or, for users with a single organization, this is that single selected organization."""
 	selectedOrganization: Organization!
+"""The organization under which the current user request acts.
+This is selected by the X-Otterize-Organization header,
+or, for users with a single organization, this is that single selected organization."""
+	selectedUserOrganization: UserOrganizationAssociation!
 }
 
 type MeMutation {
@@ -2115,6 +2128,9 @@ type Mutation {
 		namespace: String!
 		networkPolicies: [NetworkPolicyInput!]
 	): Boolean!
+	reportCiliumClusterWideNetworkPolicies(
+		networkPolicies: [NetworkPolicyInput!]
+	): Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2256,6 +2272,7 @@ input NetworkPolicyInput {
 
 enum NetworkPolicyKind {
 	NETWORK_POLICY
+	NETWORK_POLICY_MANAGED_BY_OTTERIZE
 	CILIUM_NETWORK_POLICY
 	CILIUM_CLUSTER_WIDE_NETWORK_POLICY
 }
@@ -2269,6 +2286,21 @@ enum NetworkPolicyScope {
 type NetworkPolicyWorkload {
 	scope: NetworkPolicyScope!
 	service: Service!
+}
+
+"""Numeric filters"""
+enum NumericFilterOperators {
+	EQUAL
+	NOT_EQUAL
+	GREATER_THAN
+	GREATER_THAN_OR_EQUAL
+	LESS_THAN
+	LESS_THAN_OR_EQUAL
+}
+
+type NumericFilterValue {
+	value: Int!
+	operator: NumericFilterOperators!
 }
 
 type Organization {
@@ -2577,6 +2609,7 @@ type Query {
 	): TerraformResourceInfo!
 """List users"""
 	users: [User!]!
+	orgUsers: [UserOrganizationAssociation!]!
 """Get user"""
 	user(
 		id: ID!
@@ -3023,7 +3056,6 @@ type User {
 	authProviderUserId: String!
 	tutorials: [UserTutorial!]
 	activeTutorial: UserTutorial!
-	orgMembership: OrganizationMembership!
 	awsCustomer: AWSCustomer
 }
 
@@ -3036,6 +3068,12 @@ enum UserErrorType {
 	CONFLICT
 	BAD_USER_INPUT
 	APPLIED_INTENTS_ERROR
+}
+
+type UserOrganizationAssociation {
+	org: Organization!
+	user: User!
+	membership: OrganizationMembership!
 }
 
 type UserTutorial {

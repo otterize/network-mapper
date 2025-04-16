@@ -160,13 +160,24 @@ func (r *queryResolver) ServiceIntents(ctx context.Context, namespaces []string,
 	intentsBySource := intentsstore.GroupIntentsBySource(discoveredIntents)
 
 	// sorting by service name so results are more consistent
-	slices.SortFunc(intentsBySource, func(intentsa, intentsb model.ServiceIntents) bool {
-		return intentsa.Client.AsNamespacedName().String() < intentsb.Client.AsNamespacedName().String()
+	slices.SortFunc(intentsBySource, func(intentsa, intentsb model.ServiceIntents) int {
+		if intentsa.Client.AsNamespacedName().String() < intentsb.Client.AsNamespacedName().String() {
+			return -1
+		} else if intentsa.Client.AsNamespacedName().String() > intentsb.Client.AsNamespacedName().String() {
+			return 1
+		}
+		return 0
 	})
 
 	for _, intents := range intentsBySource {
-		slices.SortFunc(intents.Intents, func(desta, destb model.OtterizeServiceIdentity) bool {
-			return desta.AsNamespacedName().String() < destb.AsNamespacedName().String()
+		slices.SortFunc(intents.Intents, func(desta, destb model.OtterizeServiceIdentity) int {
+			if desta.AsNamespacedName().String() < destb.AsNamespacedName().String() {
+				return -1
+			}
+			if desta.AsNamespacedName().String() > destb.AsNamespacedName().String() {
+				return 1
+			}
+			return 0
 		})
 	}
 
@@ -196,15 +207,24 @@ func (r *queryResolver) Intents(ctx context.Context, namespaces []string, includ
 	})
 
 	// sort by service names for consistent ordering
-	slices.SortFunc(intents, func(intenta, intentb model.Intent) bool {
+	slices.SortFunc(intents, func(intenta, intentb model.Intent) int {
 		clienta, clientb := intenta.Client.AsNamespacedName(), intentb.Client.AsNamespacedName()
 		servera, serverb := intenta.Server.AsNamespacedName(), intentb.Server.AsNamespacedName()
 
 		if clienta != clientb {
-			return clienta.String() < clientb.String()
+			if clienta.String() < clientb.String() {
+				return -1
+			}
+			return 1
 		}
 
-		return servera.String() < serverb.String()
+		if servera.String() < serverb.String() {
+			return -1
+		}
+		if servera.String() > serverb.String() {
+			return 1
+		}
+		return 0
 	})
 
 	return intents, nil

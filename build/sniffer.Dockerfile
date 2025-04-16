@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 golang:1.22.1-alpine AS buildenv
+FROM --platform=linux/amd64 golang:1.23.5-alpine AS buildenv
 RUN apk add --no-cache ca-certificates git protoc
 RUN apk add build-base libpcap-dev
 WORKDIR /src

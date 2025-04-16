@@ -35,6 +35,20 @@ func (m *MockCloudClient) EXPECT() *MockCloudClientMockRecorder {
 	return m.recorder
 }
 
+// ReportCiliumClusterWideNetworkPolicies mocks base method.
+func (m *MockCloudClient) ReportCiliumClusterWideNetworkPolicies(ctx context.Context, policies []cloudclient.NetworkPolicyInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportCiliumClusterWideNetworkPolicies", ctx, policies)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportCiliumClusterWideNetworkPolicies indicates an expected call of ReportCiliumClusterWideNetworkPolicies.
+func (mr *MockCloudClientMockRecorder) ReportCiliumClusterWideNetworkPolicies(ctx, policies interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportCiliumClusterWideNetworkPolicies", reflect.TypeOf((*MockCloudClient)(nil).ReportCiliumClusterWideNetworkPolicies), ctx, policies)
+}
+
 // ReportComponentStatus mocks base method.
 func (m *MockCloudClient) ReportComponentStatus(ctx context.Context, component cloudclient.ComponentType) error {
 	m.ctrl.T.Helper()

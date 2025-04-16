@@ -32,7 +32,8 @@ func (o *MetricExporterTestSuite) BeforeTest(s, testName string) {
 	controller := gomock.NewController(o.T())
 	o.edgeMock = NewMockEdgeMetric(controller)
 
-	metricExporter, _ := NewMetricExporter(context.Background())
+	metricExporter, err := NewMetricExporter(context.Background())
+	o.Require().NoError(err)
 	metricExporter.edgeMetric = o.edgeMock
 	o.metricExporter = metricExporter
 }

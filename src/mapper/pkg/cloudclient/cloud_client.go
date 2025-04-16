@@ -20,6 +20,7 @@ type CloudClient interface {
 	ReportWorkloadsLabels(ctx context.Context, workloadsLabels []ReportServiceMetadataInput) error
 	ReportK8sResourceEligibleForMetricsCollection(ctx context.Context, namespace string, reason EligibleForMetricsCollectionReason, resources []K8sResourceEligibleForMetricsCollectionInput) error
 	ReportNetworkPolicies(ctx context.Context, namespace string, policies []NetworkPolicyInput) error
+	ReportCiliumClusterWideNetworkPolicies(ctx context.Context, policies []NetworkPolicyInput) error
 }
 
 type CloudClientImpl struct {
@@ -175,6 +176,24 @@ func (c *CloudClientImpl) ReportNetworkPolicies(
 		ctx,
 		c.client,
 		namespace,
+		policies,
+	)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportCiliumClusterWideNetworkPolicies(
+	ctx context.Context,
+	policies []NetworkPolicyInput,
+) error {
+	logrus.Infof("Reporting cilium cluster wide network policies")
+
+	_, err := ReportCiliumClusterWideNetworkPolicies(
+		ctx,
+		c.client,
 		policies,
 	)
 	if err != nil {

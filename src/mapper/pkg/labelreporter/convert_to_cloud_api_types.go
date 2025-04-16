@@ -13,8 +13,29 @@ func labelsToLabelInput(labels map[string]string) []cloudclient.LabelInput {
 		labelsInput = append(labelsInput, cloudclient.LabelInput{Key: key, Value: nilable.From(value)})
 	}
 
-	slices.SortFunc(labelsInput, func(a, b cloudclient.LabelInput) bool {
-		return a.Key < b.Key
+	slices.SortFunc(labelsInput, func(a, b cloudclient.LabelInput) int {
+		if a.Key < b.Key {
+			return -1
+		}
+		if a.Key > b.Key {
+			return 1
+		}
+		if !a.Value.Set && !b.Value.Set {
+			return 0
+		}
+		if !a.Value.Set {
+			return -1
+		}
+		if !b.Value.Set {
+			return 1
+		}
+		if a.Value.Item < b.Value.Item {
+			return -1
+		}
+		if a.Value.Item > b.Value.Item {
+			return 1
+		}
+		return 0
 	})
 	return labelsInput
 }
