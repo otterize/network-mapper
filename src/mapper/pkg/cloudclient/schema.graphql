@@ -585,6 +585,10 @@ type CreateGitLabIntegrationResponse {
 	nextURL: String!
 }
 
+type CreateSIEMIntegrationResponse {
+	integration: Integration!
+}
+
 type CreateSlackIntegrationResponse {
 	integration: Integration!
 	nextURL: String!
@@ -1256,6 +1260,10 @@ input InputNetworkPolicyFilter {
 	since: InputTimeFilterValue
 }
 
+input InputNetworkPolicyHitsFilter {
+	since: InputTimeFilterValue
+}
+
 input InputNumericFilterValue {
 	value: Int!
 	operator: NumericFilterOperators!
@@ -1352,6 +1360,7 @@ type Integration {
 	gitLabSettings: GitLabSettings
 	slackSettings: SlackSettings
 	awsVisibilitySettings: AWSVisibilitySettings
+	siemSettings: SIEMSettings
 	organizationId: String!
 	status: IntegrationStatus
 }
@@ -1411,6 +1420,7 @@ enum IntegrationType {
 	AZURE
 	SLACK
 	AWS_VISIBILITY
+	SIEM
 }
 
 type Intent {
@@ -1984,6 +1994,17 @@ type Mutation {
 		name: String!
 		slackSettings: SlackSettingsInput!
 	): CreateSlackIntegrationResponse
+"""Create a new SIEM integration"""
+	createSIEMIntegration(
+		name: String!
+		siemSettings: SIEMSettingsInput!
+	): CreateSIEMIntegrationResponse
+"""Update SIEM integration"""
+	updateSIEMIntegration(
+		id: ID!
+		name: String!
+		siemSettings: SIEMSettingsInput!
+	): Integration
 """Update a Slack integration"""
 	updateSlackIntegration(
 		id: ID!
@@ -2125,10 +2146,7 @@ type Mutation {
 		labels: [LabelInput!]
 	): Boolean!
 	reportNetworkPolicies(
-		namespace: String!
-		networkPolicies: [NetworkPolicyInput!]
-	): Boolean!
-	reportCiliumClusterWideNetworkPolicies(
+		namespace: String
 		networkPolicies: [NetworkPolicyInput!]
 	): Boolean!
 """Create a new organization"""
@@ -2259,10 +2277,12 @@ type NetworkPolicy {
 	namespace: Namespace
 	environment: Environment!
 	hits: Int!
+	allowedHits: Int!
+	blockedHits: Int!
 	workloads: [NetworkPolicyWorkload!]!
 	workloadsAffected: Int!
 	spec: String!
-	lastUsed: Time!
+	lastUsed: Time
 }
 
 input NetworkPolicyInput {
@@ -2556,6 +2576,7 @@ type Query {
 	): Namespace!
 	networkPolicy(
 		id: ID!
+		filter: InputNetworkPolicyHitsFilter
 	): NetworkPolicy
 	networkPolicies(
 		filter: InputNetworkPolicyFilter
@@ -2682,6 +2703,44 @@ enum RowDiff {
 type RulesetsWithResources {
 	rulesets: [AccessApprovalRuleset!]!
 	resources: AccessApprovalRulesetResources!
+}
+
+type SIEMIntegrationTrigger {
+	isActive: Boolean!
+}
+
+input SIEMIntegrationTriggerInput {
+	isActive: Boolean!
+}
+
+type SIEMSettings {
+	isActive: Boolean!
+	syslogHostname: String!
+	syslogPort: Int!
+	syslogFacility: Int!
+	tlsConfiguration: TLSConfiguration
+	serviceTriggers: [SIEMTrigger!]!
+	findingTriggers: [SIEMTrigger!]!
+	integrationTriggers: SIEMIntegrationTrigger!
+}
+
+input SIEMSettingsInput {
+	isActive: Boolean!
+	syslogHostname: String!
+	syslogPort: Int!
+	syslogFacility: Int!
+	tlsConfiguration: TLSConfigurationInput
+	serviceTriggers: [SIEMTriggerInput!]!
+	findingTriggers: [SIEMTriggerInput!]!
+	integrationTriggers: SIEMIntegrationTriggerInput!
+}
+
+type SIEMTrigger {
+	filter: IntegrationAccessGraphFilter!
+}
+
+input SIEMTriggerInput {
+	filter: InputIntegrationAccessGraphFilter!
 }
 
 input SelectorKeyValueInput {
@@ -2935,6 +2994,17 @@ type StatusSummary {
 """The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
 scalar String
 
+type TLSConfiguration {
+	caCertificate: String
+	certificate: String!
+}
+
+input TLSConfigurationInput {
+	caCertificate: String
+	certificate: String!
+	key: String!
+}
+
 enum TelemetryComponentType {
 	INTENTS_OPERATOR
 	CREDENTIALS_OPERATOR
@@ -3068,6 +3138,7 @@ enum UserErrorType {
 	CONFLICT
 	BAD_USER_INPUT
 	APPLIED_INTENTS_ERROR
+	TIMEOUT
 }
 
 type UserOrganizationAssociation {

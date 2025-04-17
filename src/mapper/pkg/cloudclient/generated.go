@@ -883,12 +883,12 @@ func (v *PortStatusInput) GetError() nilable.Nilable[string] { return v.Error }
 
 // ReportCiliumClusterWideNetworkPoliciesResponse is returned by ReportCiliumClusterWideNetworkPolicies on success.
 type ReportCiliumClusterWideNetworkPoliciesResponse struct {
-	ReportCiliumClusterWideNetworkPolicies bool `json:"reportCiliumClusterWideNetworkPolicies"`
+	ReportNetworkPolicies bool `json:"reportNetworkPolicies"`
 }
 
-// GetReportCiliumClusterWideNetworkPolicies returns ReportCiliumClusterWideNetworkPoliciesResponse.ReportCiliumClusterWideNetworkPolicies, and is useful for accessing the field via an interface.
-func (v *ReportCiliumClusterWideNetworkPoliciesResponse) GetReportCiliumClusterWideNetworkPolicies() bool {
-	return v.ReportCiliumClusterWideNetworkPolicies
+// GetReportNetworkPolicies returns ReportCiliumClusterWideNetworkPoliciesResponse.ReportNetworkPolicies, and is useful for accessing the field via an interface.
+func (v *ReportCiliumClusterWideNetworkPoliciesResponse) GetReportNetworkPolicies() bool {
+	return v.ReportNetworkPolicies
 }
 
 // ReportComponentStatusResponse is returned by ReportComponentStatus on success.
@@ -1272,7 +1272,7 @@ func (v *__ReportWorkloadsLabelsInput) GetWorkloadsLabels() []ReportServiceMetad
 // The query or mutation executed by ReportCiliumClusterWideNetworkPolicies.
 const ReportCiliumClusterWideNetworkPolicies_Operation = `
 mutation ReportCiliumClusterWideNetworkPolicies ($networkPolicies: [NetworkPolicyInput!]!) {
-	reportCiliumClusterWideNetworkPolicies(networkPolicies: $networkPolicies)
+	reportNetworkPolicies(networkPolicies: $networkPolicies)
 }
 `
 
