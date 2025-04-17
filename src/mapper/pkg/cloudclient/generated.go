@@ -881,6 +881,16 @@ func (v *PortStatusInput) GetProtocol() K8sPortProtocol { return v.Protocol }
 // GetError returns PortStatusInput.Error, and is useful for accessing the field via an interface.
 func (v *PortStatusInput) GetError() nilable.Nilable[string] { return v.Error }
 
+// ReportCiliumClusterWideNetworkPoliciesResponse is returned by ReportCiliumClusterWideNetworkPolicies on success.
+type ReportCiliumClusterWideNetworkPoliciesResponse struct {
+	ReportNetworkPolicies bool `json:"reportNetworkPolicies"`
+}
+
+// GetReportNetworkPolicies returns ReportCiliumClusterWideNetworkPoliciesResponse.ReportNetworkPolicies, and is useful for accessing the field via an interface.
+func (v *ReportCiliumClusterWideNetworkPoliciesResponse) GetReportNetworkPolicies() bool {
+	return v.ReportNetworkPolicies
+}
+
 // ReportComponentStatusResponse is returned by ReportComponentStatus on success.
 type ReportComponentStatusResponse struct {
 	// Report integration components status
@@ -1123,6 +1133,16 @@ func (v *TrafficLevelInput) GetDataBytesPerSecond() int { return v.DataBytesPerS
 // GetFlowsCountPerSecond returns TrafficLevelInput.FlowsCountPerSecond, and is useful for accessing the field via an interface.
 func (v *TrafficLevelInput) GetFlowsCountPerSecond() int { return v.FlowsCountPerSecond }
 
+// __ReportCiliumClusterWideNetworkPoliciesInput is used internally by genqlient
+type __ReportCiliumClusterWideNetworkPoliciesInput struct {
+	NetworkPolicies []NetworkPolicyInput `json:"networkPolicies"`
+}
+
+// GetNetworkPolicies returns __ReportCiliumClusterWideNetworkPoliciesInput.NetworkPolicies, and is useful for accessing the field via an interface.
+func (v *__ReportCiliumClusterWideNetworkPoliciesInput) GetNetworkPolicies() []NetworkPolicyInput {
+	return v.NetworkPolicies
+}
+
 // __ReportComponentStatusInput is used internally by genqlient
 type __ReportComponentStatusInput struct {
 	Component ComponentType `json:"component"`
@@ -1247,6 +1267,39 @@ type __ReportWorkloadsLabelsInput struct {
 // GetWorkloadsLabels returns __ReportWorkloadsLabelsInput.WorkloadsLabels, and is useful for accessing the field via an interface.
 func (v *__ReportWorkloadsLabelsInput) GetWorkloadsLabels() []ReportServiceMetadataInput {
 	return v.WorkloadsLabels
+}
+
+// The query or mutation executed by ReportCiliumClusterWideNetworkPolicies.
+const ReportCiliumClusterWideNetworkPolicies_Operation = `
+mutation ReportCiliumClusterWideNetworkPolicies ($networkPolicies: [NetworkPolicyInput!]!) {
+	reportNetworkPolicies(networkPolicies: $networkPolicies)
+}
+`
+
+func ReportCiliumClusterWideNetworkPolicies(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	networkPolicies []NetworkPolicyInput,
+) (*ReportCiliumClusterWideNetworkPoliciesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportCiliumClusterWideNetworkPolicies",
+		Query:  ReportCiliumClusterWideNetworkPolicies_Operation,
+		Variables: &__ReportCiliumClusterWideNetworkPoliciesInput{
+			NetworkPolicies: networkPolicies,
+		},
+	}
+	var err_ error
+
+	var data_ ReportCiliumClusterWideNetworkPoliciesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
 }
 
 // The query or mutation executed by ReportComponentStatus.

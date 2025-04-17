@@ -128,8 +128,14 @@ func (s *SocketScannerTestSuite) TestScanProcDir() {
 			},
 		},
 	}
-	slices.SortFunc(results, func(a, b mapperclient.RecordedDestinationsForSrc) bool {
-		return a.SrcIp < b.SrcIp
+	slices.SortFunc(results, func(a, b mapperclient.RecordedDestinationsForSrc) int {
+		if a.SrcIp < b.SrcIp {
+			return -1
+		}
+		if a.SrcIp > b.SrcIp {
+			return 1
+		}
+		return 0
 	})
 	assert.DeepEqual(s.T(), expectedResults, results, cmpopts.IgnoreTypes(time.Time{}))
 }

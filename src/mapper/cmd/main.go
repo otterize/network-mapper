@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bombsimon/logrusr/v3"
+	ciliumv2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	otterizev2alpha1 "github.com/otterize/intents-operator/src/operator/api/v2alpha1"
 	"github.com/otterize/intents-operator/src/shared"
@@ -73,6 +74,7 @@ func init() {
 	utilruntime.Must(otterizev1beta1.AddToScheme(scheme))
 	utilruntime.Must(otterizev2alpha1.AddToScheme(scheme))
 	utilruntime.Must(otterizev2beta1.AddToScheme(scheme))
+	utilruntime.Must(ciliumv2.AddToScheme(scheme))
 }
 
 func getClusterDomainOrDefault() string {
@@ -265,6 +267,16 @@ func main() {
 		netpolReconciler := networkpolicyreport.NewNetworkPolicyReconciler(mgr.GetClient(), cloudClient)
 		if err := netpolReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create network policy reconciler")
+		}
+
+		hasClusterWideCilium, err := networkpolicyreport.IsCiliumClusterWideInstalledInstalled(errGroupCtx, mgr.GetClient())
+		if err != nil {
+			logrus.WithError(err).Panic("unable to check if Cilium is installed")
+		}
+		if hasClusterWideCilium {
+			if err := networkpolicyreport.NewCiliumClusterWideNetworkPolicyReconciler(mgr.GetClient(), cloudClient).SetupWithManager(mgr); err != nil {
+				logrus.WithError(err).Panic("unable to create cilium network policy reconciler")
+			}
 		}
 	}
 

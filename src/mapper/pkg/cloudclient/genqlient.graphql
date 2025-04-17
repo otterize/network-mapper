@@ -44,3 +44,7 @@ mutation ReportWorkloadsLabels($workloadsLabels: [ReportServiceMetadataInput!]!)
 mutation ReportNetworkPolicies($namespace: String!, $networkPolicies: [NetworkPolicyInput!]!) {
     reportNetworkPolicies(namespace: $namespace, networkPolicies: $networkPolicies)
 }
+
+mutation ReportCiliumClusterWideNetworkPolicies($networkPolicies: [NetworkPolicyInput!]!) {
+    reportNetworkPolicies(networkPolicies: $networkPolicies)
+}

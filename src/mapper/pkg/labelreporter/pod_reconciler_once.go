@@ -54,8 +54,14 @@ func (r *PodReconciler) syncPodsInNamespace(ctx context.Context, namespace strin
 	}
 
 	inputs := lo.Values(serviceIdentityToReportInput)
-	slices.SortFunc(inputs, func(a, b cloudclient.ReportServiceMetadataInput) bool {
-		return a.Identity.Name < b.Identity.Name
+	slices.SortFunc(inputs, func(a, b cloudclient.ReportServiceMetadataInput) int {
+		if a.Identity.Name < b.Identity.Name {
+			return -1
+		}
+		if a.Identity.Name > b.Identity.Name {
+			return 1
+		}
+		return 0
 	})
 
 	err = r.cloudClient.ReportWorkloadsLabels(ctx, inputs)
