@@ -14,6 +14,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+	"strings"
 	"testing"
 )
 
@@ -33,9 +34,13 @@ func (s *CiliumClusterwidePolicyReconcilerTestSuite) SetupTest() {
 
 func (s *CiliumClusterwidePolicyReconcilerTestSuite) TestCiliumClusterWidePolicyUpload() {
 	resourceName := "test-cilium-policy"
-	expectedPolicy := v2.CiliumClusterwideNetworkPolicy{
+	policy := v2.CiliumClusterwideNetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: resourceName,
+			Annotations: map[string]string{
+				"keyLarge": strings.Repeat("a", 1000),
+				"keySmall": "value",
+			},
 		},
 		Spec: &api.Rule{
 			Ingress: make([]api.IngressRule, 0),
@@ -43,10 +48,13 @@ func (s *CiliumClusterwidePolicyReconcilerTestSuite) TestCiliumClusterWidePolicy
 	}
 	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&v2.CiliumClusterwideNetworkPolicyList{})).DoAndReturn(
 		func(ctx context.Context, list *v2.CiliumClusterwideNetworkPolicyList, opts ...client.ListOption) error {
-			list.Items = append(list.Items, expectedPolicy)
+			list.Items = append(list.Items, policy)
 			return nil
 		})
 
+	expectedPolicy := policy.DeepCopy()
+	// filter large annotation
+	delete(expectedPolicy.Annotations, "keyLarge")
 	expectedContent, err := yaml.Marshal(expectedPolicy)
 	s.Require().NoError(err)
 	cloudInput := cloudclient.NetworkPolicyInput{
