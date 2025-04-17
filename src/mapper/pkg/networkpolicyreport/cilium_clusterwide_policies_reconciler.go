@@ -67,9 +67,7 @@ func (r *CiliumClusterWideNetworkPolicyReconciler) convertToNetworkPolicyInputs(
 }
 
 func (r *CiliumClusterWideNetworkPolicyReconciler) convertToNetworkPolicyInput(ciliumClusterWideNetpol ciliumv2.CiliumClusterwideNetworkPolicy) (cloudclient.NetworkPolicyInput, error) {
-	ciliumClusterWideNetpol.ManagedFields = nil
-	ciliumClusterWideNetpol.OwnerReferences = nil
-	ciliumClusterWideNetpol.Finalizers = nil
+	ciliumClusterWideNetpol.ObjectMeta = filterObjectMetadata(ciliumClusterWideNetpol.ObjectMeta)
 	ciliumClusterWideNetpol.Status = ciliumv2.CiliumNetworkPolicyStatus{}
 
 	yamlString, err := yaml.Marshal(ciliumClusterWideNetpol)
