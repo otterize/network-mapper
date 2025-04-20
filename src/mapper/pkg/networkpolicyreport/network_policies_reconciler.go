@@ -64,9 +64,7 @@ func (r *NetworkPolicyReconciler) convertToNetworkPolicyInputs(netpols []network
 }
 
 func (r *NetworkPolicyReconciler) convertToNetworkPolicyInput(netpol networkingv1.NetworkPolicy) (cloudclient.NetworkPolicyInput, error) {
-	netpol.ManagedFields = nil
-	netpol.OwnerReferences = nil
-	netpol.Finalizers = nil
+	netpol.ObjectMeta = filterObjectMetadata(netpol.ObjectMeta)
 	yamlBytes, err := yaml.Marshal(netpol)
 	if err != nil {
 		return cloudclient.NetworkPolicyInput{}, errors.Wrap(err)

@@ -13,6 +13,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+	"strings"
 	"testing"
 )
 
@@ -33,10 +34,14 @@ func (s *NetworkPolicyReconcilerTestSuite) SetupTest() {
 func (s *NetworkPolicyReconcilerTestSuite) TestNetworkPolicyUpload() {
 	resourceName := "test-networkpolicy"
 	testNamespace := "test-namespace"
-	expectedNetworkPolicy := networkingv1.NetworkPolicy{
+	networkPolicy := networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      resourceName,
 			Namespace: testNamespace,
+			Annotations: map[string]string{
+				"keyLarge": strings.Repeat("a", 1000),
+				"keySmall": "value",
+			},
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
@@ -64,11 +69,15 @@ func (s *NetworkPolicyReconcilerTestSuite) TestNetworkPolicyUpload() {
 	}
 	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&networkingv1.NetworkPolicyList{}), gomock.Eq(client.InNamespace(testNamespace))).DoAndReturn(
 		func(ctx context.Context, list *networkingv1.NetworkPolicyList, opts ...client.ListOption) error {
-			list.Items = append(list.Items, expectedNetworkPolicy)
+			list.Items = append(list.Items, networkPolicy)
 			return nil
 		})
 
-	expectedContent, err := yaml.Marshal(expectedNetworkPolicy)
+	expectedPolicy := networkPolicy.DeepCopy()
+	// filter large annotation
+	delete(expectedPolicy.Annotations, "keyLarge")
+
+	expectedContent, err := yaml.Marshal(expectedPolicy)
 	s.Require().NoError(err)
 	cloudInput := cloudclient.NetworkPolicyInput{
 		Name: resourceName,
