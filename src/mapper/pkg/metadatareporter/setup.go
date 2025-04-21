@@ -41,7 +41,7 @@ func Setup(client client.Client, cloudClient cloudclient.CloudClient, resolver s
 func initIndexes(mgr ctrl.Manager) error {
 	if err := mgr.GetFieldIndexer().IndexField(
 		context.Background(),
-		&corev1.Pod{},
+		&corev1.Endpoints{},
 		endpointsPodNamesIndexField,
 		func(object client.Object) []string {
 			var res []string
