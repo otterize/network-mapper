@@ -60,8 +60,24 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time) (model.OtterizeServiceIdentity, bool, error) {
-	destSvc, isTargetService, err := r.kubeFinder.ResolveIPToService(ctx, dest.Destination)
+func getDestIp(dest model.Destination, srcIsControlPlane bool) string {
+	if viper.GetBool(config.TCPDestResolveOnlyControlPlaneByIp) && !srcIsControlPlane {
+		// Yep, you are right, this feels a bit hacky. But by default we want to support this bugfix only for traffic
+		// originated from the control plane. We do this because we do not know how many new flows this bugfix will introduce,
+		// so we want to control the rollout of this fix.
+		return dest.Destination
+	}
+
+	if dest.DestinationIP != nil {
+		return *dest.DestinationIP
+	}
+
+	return dest.Destination
+}
+
+func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time, srcIsControlPlane bool) (model.OtterizeServiceIdentity, bool, error) {
+	destIp := getDestIp(dest, srcIsControlPlane)
+	destSvc, isTargetService, err := r.kubeFinder.ResolveIPToService(ctx, destIp)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
 	}
@@ -78,7 +94,7 @@ func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destin
 		}
 	}
 
-	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, dest.Destination)
+	destPod, err := r.kubeFinder.ResolveIPToPod(ctx, destIp)
 	if err != nil {
 		if errors.Is(err, kubefinder.ErrFoundMoreThanOnePod) {
 			logrus.WithError(err).Debugf("Ip %s belongs to more than one pod, ignoring", dest.Destination)
@@ -612,8 +628,15 @@ func (r *Resolver) handleTCPCaptureResult(ctx context.Context, captureItem model
 		logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
 		return nil
 	}
+
+	_, srcIsControlPlane, err := r.kubeFinder.ResolveIPToControlPlane(ctx, captureItem.SrcIP)
+	if err != nil {
+		logrus.WithError(err).Debugf("could not discover src identity for '%s'", captureItem.SrcIP)
+		return nil
+	}
+
 	for _, dest := range captureItem.Destinations {
-		r.handleInternalTrafficTCPResult(ctx, srcSvcIdentity, dest)
+		r.handleInternalTrafficTCPResult(ctx, srcSvcIdentity, dest, srcIsControlPlane)
 	}
 	return nil
 }
@@ -640,9 +663,9 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 	return nil
 }
 
-func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination) {
+func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination, srcIsControlPlane bool) {
 	lastSeen := dest.LastSeen
-	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen)
+	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen, srcIsControlPlane)
 	if err != nil {
 		logrus.WithError(err).Error("could not resolve destination identity")
 		return
