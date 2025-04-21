@@ -845,6 +845,7 @@ input ExternalTrafficIntentInput {
 	clientName: String!
 	target: DNSIPPairInput!
 	connectionsCount: ConnectionsCount
+	ttl: Time
 }
 
 input ExternallyAccessibleServiceInput {
@@ -2149,6 +2150,7 @@ type Mutation {
 		namespace: String
 		networkPolicies: [NetworkPolicyInput!]
 	): Boolean!
+	computeNetworkPoliciesForOrg: Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2207,6 +2209,9 @@ type Mutation {
 	saveOnboardingFeedback(
 		userEmail: String!
 		feedback: String!
+	): Boolean!
+	saveOrgMemberships(
+		memberships: [UserOrgMembershipInput!]!
 	): Boolean!
 	createOrActivateTutorial(
 		tutorialName: TutorialName!
@@ -2335,11 +2340,19 @@ type Organization {
 type OrganizationMembership {
 	role: AuthRole!
 	restrictions: OrganizationMembershipRestrictions
+	restrictionResources: OrganizationMembershipRestrictionResources
 }
 
 input OrganizationMembershipInput {
 	role: AuthRole!
 	restrictions: OrganizationMembershipRestrictionsInput
+}
+
+type OrganizationMembershipRestrictionResources {
+	clusters: [Cluster!]!
+	services: [Service!]!
+	namespaces: [Namespace!]!
+	environments: [Environment!]!
 }
 
 type OrganizationMembershipRestrictions {
@@ -2630,6 +2643,8 @@ type Query {
 	): TerraformResourceInfo!
 """List users"""
 	users: [User!]!
+"""List users with restriction resources"""
+	orgUsersWithRestrictionResources: UsersWithRestrictionResources!
 	orgUsers: [UserOrganizationAssociation!]!
 """Get user"""
 	user(
@@ -2902,6 +2917,8 @@ input ServiceMetadataInput {
 	tags: [String!]
 	awsRoles: [String!]
 	labels: [LabelInput!]
+	podIps: [String!]
+	serviceIps: [String!]
 }
 
 enum ServiceType {
@@ -3141,6 +3158,11 @@ enum UserErrorType {
 	TIMEOUT
 }
 
+input UserOrgMembershipInput {
+	userId: ID!
+	membership: OrganizationMembershipInput!
+}
+
 type UserOrganizationAssociation {
 	org: Organization!
 	user: User!
@@ -3157,6 +3179,11 @@ type UserTutorial {
 	isCompleted: Boolean!
 	step: String!
 	stepSeen: String!
+}
+
+type UsersWithRestrictionResources {
+	orgUsers: [UserOrganizationAssociation!]!
+	restrictionResources: OrganizationMembershipRestrictionResources
 }
 
 """ Used to validate ID based filters """

@@ -133,6 +133,7 @@ type ExternalTrafficIntentInput struct {
 	ClientName       string                            `json:"clientName"`
 	Target           DNSIPPairInput                    `json:"target"`
 	ConnectionsCount nilable.Nilable[ConnectionsCount] `json:"connectionsCount"`
+	Ttl              nilable.Nilable[time.Time]        `json:"ttl"`
 }
 
 // GetNamespace returns ExternalTrafficIntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -148,6 +149,9 @@ func (v *ExternalTrafficIntentInput) GetTarget() DNSIPPairInput { return v.Targe
 func (v *ExternalTrafficIntentInput) GetConnectionsCount() nilable.Nilable[ConnectionsCount] {
 	return v.ConnectionsCount
 }
+
+// GetTtl returns ExternalTrafficIntentInput.Ttl, and is useful for accessing the field via an interface.
+func (v *ExternalTrafficIntentInput) GetTtl() nilable.Nilable[time.Time] { return v.Ttl }
 
 type HTTPConfigInput struct {
 	Path    *string       `json:"path"`
@@ -998,14 +1002,14 @@ type ReportTrafficLevelsResponse struct {
 // GetReportTrafficLevels returns ReportTrafficLevelsResponse.ReportTrafficLevels, and is useful for accessing the field via an interface.
 func (v *ReportTrafficLevelsResponse) GetReportTrafficLevels() bool { return v.ReportTrafficLevels }
 
-// ReportWorkloadsLabelsResponse is returned by ReportWorkloadsLabels on success.
-type ReportWorkloadsLabelsResponse struct {
+// ReportWorkloadsMetadataResponse is returned by ReportWorkloadsMetadata on success.
+type ReportWorkloadsMetadataResponse struct {
 	// update multiple service metadata from operator
 	ReportServicesMetadata bool `json:"reportServicesMetadata"`
 }
 
-// GetReportServicesMetadata returns ReportWorkloadsLabelsResponse.ReportServicesMetadata, and is useful for accessing the field via an interface.
-func (v *ReportWorkloadsLabelsResponse) GetReportServicesMetadata() bool {
+// GetReportServicesMetadata returns ReportWorkloadsMetadataResponse.ReportServicesMetadata, and is useful for accessing the field via an interface.
+func (v *ReportWorkloadsMetadataResponse) GetReportServicesMetadata() bool {
 	return v.ReportServicesMetadata
 }
 
@@ -1078,9 +1082,11 @@ const (
 )
 
 type ServiceMetadataInput struct {
-	Tags     []string     `json:"tags"`
-	AwsRoles []string     `json:"awsRoles"`
-	Labels   []LabelInput `json:"labels"`
+	Tags       []string     `json:"tags"`
+	AwsRoles   []string     `json:"awsRoles"`
+	Labels     []LabelInput `json:"labels"`
+	PodIps     []string     `json:"podIps"`
+	ServiceIps []string     `json:"serviceIps"`
 }
 
 // GetTags returns ServiceMetadataInput.Tags, and is useful for accessing the field via an interface.
@@ -1091,6 +1097,12 @@ func (v *ServiceMetadataInput) GetAwsRoles() []string { return v.AwsRoles }
 
 // GetLabels returns ServiceMetadataInput.Labels, and is useful for accessing the field via an interface.
 func (v *ServiceMetadataInput) GetLabels() []LabelInput { return v.Labels }
+
+// GetPodIps returns ServiceMetadataInput.PodIps, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetPodIps() []string { return v.PodIps }
+
+// GetServiceIps returns ServiceMetadataInput.ServiceIps, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetServiceIps() []string { return v.ServiceIps }
 
 type SessionAffinity string
 
@@ -1259,13 +1271,13 @@ type __ReportTrafficLevelsInput struct {
 // GetTrafficLevels returns __ReportTrafficLevelsInput.TrafficLevels, and is useful for accessing the field via an interface.
 func (v *__ReportTrafficLevelsInput) GetTrafficLevels() []TrafficLevelInput { return v.TrafficLevels }
 
-// __ReportWorkloadsLabelsInput is used internally by genqlient
-type __ReportWorkloadsLabelsInput struct {
+// __ReportWorkloadsMetadataInput is used internally by genqlient
+type __ReportWorkloadsMetadataInput struct {
 	WorkloadsLabels []ReportServiceMetadataInput `json:"workloadsLabels"`
 }
 
-// GetWorkloadsLabels returns __ReportWorkloadsLabelsInput.WorkloadsLabels, and is useful for accessing the field via an interface.
-func (v *__ReportWorkloadsLabelsInput) GetWorkloadsLabels() []ReportServiceMetadataInput {
+// GetWorkloadsLabels returns __ReportWorkloadsMetadataInput.WorkloadsLabels, and is useful for accessing the field via an interface.
+func (v *__ReportWorkloadsMetadataInput) GetWorkloadsLabels() []ReportServiceMetadataInput {
 	return v.WorkloadsLabels
 }
 
@@ -1644,28 +1656,28 @@ func ReportTrafficLevels(
 	return &data_, err_
 }
 
-// The query or mutation executed by ReportWorkloadsLabels.
-const ReportWorkloadsLabels_Operation = `
-mutation ReportWorkloadsLabels ($workloadsLabels: [ReportServiceMetadataInput!]!) {
+// The query or mutation executed by ReportWorkloadsMetadata.
+const ReportWorkloadsMetadata_Operation = `
+mutation ReportWorkloadsMetadata ($workloadsLabels: [ReportServiceMetadataInput!]!) {
 	reportServicesMetadata(servicesMeta: $workloadsLabels)
 }
 `
 
-func ReportWorkloadsLabels(
+func ReportWorkloadsMetadata(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	workloadsLabels []ReportServiceMetadataInput,
-) (*ReportWorkloadsLabelsResponse, error) {
+) (*ReportWorkloadsMetadataResponse, error) {
 	req_ := &graphql.Request{
-		OpName: "ReportWorkloadsLabels",
-		Query:  ReportWorkloadsLabels_Operation,
-		Variables: &__ReportWorkloadsLabelsInput{
+		OpName: "ReportWorkloadsMetadata",
+		Query:  ReportWorkloadsMetadata_Operation,
+		Variables: &__ReportWorkloadsMetadataInput{
 			WorkloadsLabels: workloadsLabels,
 		},
 	}
 	var err_ error
 
-	var data_ ReportWorkloadsLabelsResponse
+	var data_ ReportWorkloadsMetadataResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

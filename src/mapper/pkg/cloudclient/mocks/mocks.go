@@ -189,16 +189,16 @@ func (mr *MockCloudClientMockRecorder) ReportTrafficLevels(ctx, trafficLevels in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportTrafficLevels", reflect.TypeOf((*MockCloudClient)(nil).ReportTrafficLevels), ctx, trafficLevels)
 }
 
-// ReportWorkloadsLabels mocks base method.
-func (m *MockCloudClient) ReportWorkloadsLabels(ctx context.Context, workloadsLabels []cloudclient.ReportServiceMetadataInput) error {
+// ReportWorkloadsMetadata mocks base method.
+func (m *MockCloudClient) ReportWorkloadsMetadata(ctx context.Context, workloadsLabels []cloudclient.ReportServiceMetadataInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportWorkloadsLabels", ctx, workloadsLabels)
+	ret := m.ctrl.Call(m, "ReportWorkloadsMetadata", ctx, workloadsLabels)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ReportWorkloadsLabels indicates an expected call of ReportWorkloadsLabels.
-func (mr *MockCloudClientMockRecorder) ReportWorkloadsLabels(ctx, workloadsLabels interface{}) *gomock.Call {
+// ReportWorkloadsMetadata indicates an expected call of ReportWorkloadsMetadata.
+func (mr *MockCloudClientMockRecorder) ReportWorkloadsMetadata(ctx, workloadsLabels interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportWorkloadsLabels", reflect.TypeOf((*MockCloudClient)(nil).ReportWorkloadsLabels), ctx, workloadsLabels)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportWorkloadsMetadata", reflect.TypeOf((*MockCloudClient)(nil).ReportWorkloadsMetadata), ctx, workloadsLabels)
 }

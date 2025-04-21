@@ -1,4 +1,4 @@
-package labelreporter
+package metadatareporter
 
 import (
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
