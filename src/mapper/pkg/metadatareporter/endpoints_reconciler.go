@@ -42,7 +42,7 @@ func (r *EndpointsReconciler) mapServicesToEndpoints(_ context.Context, obj clie
 	service := obj.(*corev1.Service)
 	logrus.Debugf("Enqueueing endpoints for service %s", service.Name)
 
-	return []reconcile.Request{{types.NamespacedName{Namespace: service.GetNamespace(), Name: service.GetName()}}}
+	return []reconcile.Request{{NamespacedName: types.NamespacedName{Namespace: service.GetNamespace(), Name: service.GetName()}}}
 }
 
 func (r *EndpointsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

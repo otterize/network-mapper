@@ -35,21 +35,6 @@ func (c *workloadMetadataCache) IsCached(key serviceIdentityKey, value metadataC
 	return cachedValue == value
 }
 
-func checksumLabels(labels map[string]string) metadataChecksum {
-	labelKeys := make([]string, 0, len(labels))
-	for key := range labels {
-		labelKeys = append(labelKeys, key)
-	}
-	sort.Strings(labelKeys)
-	labelString := ""
-	for _, key := range labelKeys {
-		labelString += key + labels[key]
-	}
-
-	labelHash := crc32.ChecksumIEEE([]byte(labelString))
-	return metadataChecksum(labelHash)
-}
-
 func checksumMetadata(labels map[string]string, podIps []string, serviceIps []string) metadataChecksum {
 	labelKeys := make([]string, 0, len(labels))
 	for key := range labels {
