@@ -133,6 +133,7 @@ type ExternalTrafficIntentInput struct {
 	ClientName       string                            `json:"clientName"`
 	Target           DNSIPPairInput                    `json:"target"`
 	ConnectionsCount nilable.Nilable[ConnectionsCount] `json:"connectionsCount"`
+	Ttl              nilable.Nilable[time.Time]        `json:"ttl"`
 }
 
 // GetNamespace returns ExternalTrafficIntentInput.Namespace, and is useful for accessing the field via an interface.
@@ -148,6 +149,9 @@ func (v *ExternalTrafficIntentInput) GetTarget() DNSIPPairInput { return v.Targe
 func (v *ExternalTrafficIntentInput) GetConnectionsCount() nilable.Nilable[ConnectionsCount] {
 	return v.ConnectionsCount
 }
+
+// GetTtl returns ExternalTrafficIntentInput.Ttl, and is useful for accessing the field via an interface.
+func (v *ExternalTrafficIntentInput) GetTtl() nilable.Nilable[time.Time] { return v.Ttl }
 
 type HTTPConfigInput struct {
 	Path    *string       `json:"path"`
@@ -1078,9 +1082,11 @@ const (
 )
 
 type ServiceMetadataInput struct {
-	Tags     []string     `json:"tags"`
-	AwsRoles []string     `json:"awsRoles"`
-	Labels   []LabelInput `json:"labels"`
+	Tags       []string     `json:"tags"`
+	AwsRoles   []string     `json:"awsRoles"`
+	Labels     []LabelInput `json:"labels"`
+	PodIps     []string     `json:"podIps"`
+	ServiceIps []string     `json:"serviceIps"`
 }
 
 // GetTags returns ServiceMetadataInput.Tags, and is useful for accessing the field via an interface.
@@ -1091,6 +1097,12 @@ func (v *ServiceMetadataInput) GetAwsRoles() []string { return v.AwsRoles }
 
 // GetLabels returns ServiceMetadataInput.Labels, and is useful for accessing the field via an interface.
 func (v *ServiceMetadataInput) GetLabels() []LabelInput { return v.Labels }
+
+// GetPodIps returns ServiceMetadataInput.PodIps, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetPodIps() []string { return v.PodIps }
+
+// GetServiceIps returns ServiceMetadataInput.ServiceIps, and is useful for accessing the field via an interface.
+func (v *ServiceMetadataInput) GetServiceIps() []string { return v.ServiceIps }
 
 type SessionAffinity string
 

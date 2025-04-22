@@ -7,14 +7,17 @@ directive @constraint(
 	example: String!
 ) on ENUM_VALUE
 
-"""The @defer directive may be specified on a fragment spread to imply de-prioritization, that causes the fragment to be omitted in the initial response, and delivered as a subsequent response afterward. A query with @defer directive will cause the request to potentially return multiple responses, where non-deferred data is delivered in the initial response and data deferred delivered in a subsequent response. @include and @skip take precedence over @defer."""
+"""Directs the executor to defer this fragment when the `if` argument is true or undefined."""
 directive @defer(
+"""Deferred when true or undefined."""
 	if: Boolean
+"""Unique name"""
 	label: String
 ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
 
-"""The @deprecated built-in directive is used within the type system definition language to indicate deprecated portions of a GraphQL service's schema, such as deprecated fields on a type, arguments on a field, input fields on an input type, or values of an enum type."""
+"""Marks an element of a GraphQL schema as no longer supported."""
 directive @deprecated(
+"""Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/)."""
 	reason: String
 ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 
@@ -27,8 +30,9 @@ directive @httpError(
 	statusCode: Int!
 ) on ENUM_VALUE
 
-"""The @include directive may be provided for fields, fragment spreads, and inline fragments, and allows for conditional inclusion during execution as described by the if argument."""
+"""Directs the executor to include this field or fragment only when the `if` argument is true."""
 directive @include(
+"""Included when true."""
 	if: Boolean!
 ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
@@ -40,6 +44,9 @@ directive @noRole on FIELD_DEFINITION
 user authentication, meaning anyone and everyone can execute it. USE WITH CAUTION.
 user authentication, meaning anyone and everyone can execute it. USE WITH CAUTION."""
 directive @noauth on FIELD_DEFINITION
+
+"""Indicates exactly one field must be supplied and this field must not be `null`."""
+directive @oneOf on INPUT_OBJECT
 
 """@requiresRole indicates that the specified query / mutation / subscription requires any of the provided roles to be executed.
 Users without any of the specified roles will not be able to execute the query / mutation / subscription."""
@@ -57,13 +64,15 @@ directive @restApiRoute(
 	tags: [String!]!
 ) on FIELD_DEFINITION
 
-"""The @skip directive may be provided for fields, fragment spreads, and inline fragments, and allows for conditional exclusion during execution as described by the if argument."""
+"""Directs the executor to skip this field or fragment when the `if` argument is true."""
 directive @skip(
+"""Skipped when true."""
 	if: Boolean!
 ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
-"""The @specifiedBy built-in directive is used within the type system definition language to provide a scalar specification URL for specifying the behavior of custom scalar types."""
+"""Exposes a URL that specifies the behavior of this scalar."""
 directive @specifiedBy(
+"""The URL that specifies the behavior of this scalar."""
 	url: String!
 ) on SCALAR
 
@@ -845,6 +854,7 @@ input ExternalTrafficIntentInput {
 	clientName: String!
 	target: DNSIPPairInput!
 	connectionsCount: ConnectionsCount
+	ttl: Time
 }
 
 input ExternallyAccessibleServiceInput {
@@ -2149,6 +2159,7 @@ type Mutation {
 		namespace: String
 		networkPolicies: [NetworkPolicyInput!]
 	): Boolean!
+	computeNetworkPoliciesForOrg: Boolean!
 """Create a new organization"""
 	createOrganization(
 		name: String
@@ -2207,6 +2218,9 @@ type Mutation {
 	saveOnboardingFeedback(
 		userEmail: String!
 		feedback: String!
+	): Boolean!
+	saveOrgMemberships(
+		memberships: [UserOrgMembershipInput!]!
 	): Boolean!
 	createOrActivateTutorial(
 		tutorialName: TutorialName!
@@ -2335,11 +2349,19 @@ type Organization {
 type OrganizationMembership {
 	role: AuthRole!
 	restrictions: OrganizationMembershipRestrictions
+	restrictionResources: OrganizationMembershipRestrictionResources
 }
 
 input OrganizationMembershipInput {
 	role: AuthRole!
 	restrictions: OrganizationMembershipRestrictionsInput
+}
+
+type OrganizationMembershipRestrictionResources {
+	clusters: [Cluster!]!
+	services: [Service!]!
+	namespaces: [Namespace!]!
+	environments: [Environment!]!
 }
 
 type OrganizationMembershipRestrictions {
@@ -2630,6 +2652,8 @@ type Query {
 	): TerraformResourceInfo!
 """List users"""
 	users: [User!]!
+"""List users with restriction resources"""
+	orgUsersWithRestrictionResources: UsersWithRestrictionResources!
 	orgUsers: [UserOrganizationAssociation!]!
 """Get user"""
 	user(
@@ -2902,6 +2926,8 @@ input ServiceMetadataInput {
 	tags: [String!]
 	awsRoles: [String!]
 	labels: [LabelInput!]
+	podIps: [String!]
+	serviceIps: [String!]
 }
 
 enum ServiceType {
@@ -3141,6 +3167,11 @@ enum UserErrorType {
 	TIMEOUT
 }
 
+input UserOrgMembershipInput {
+	userId: ID!
+	membership: OrganizationMembershipInput!
+}
+
 type UserOrganizationAssociation {
 	org: Organization!
 	user: User!
@@ -3157,6 +3188,11 @@ type UserTutorial {
 	isCompleted: Boolean!
 	step: String!
 	stepSeen: String!
+}
+
+type UsersWithRestrictionResources {
+	orgUsers: [UserOrganizationAssociation!]!
+	restrictionResources: OrganizationMembershipRestrictionResources
 }
 
 """ Used to validate ID based filters """
