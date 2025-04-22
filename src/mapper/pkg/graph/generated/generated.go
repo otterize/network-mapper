@@ -59,15 +59,16 @@ type ComplexityRoot struct {
 	}
 
 	IdentityResolutionData struct {
-		ExtraInfo         func(childComplexity int) int
-		HasLinkerdSidecar func(childComplexity int) int
-		Host              func(childComplexity int) int
-		IsService         func(childComplexity int) int
-		LastSeen          func(childComplexity int) int
-		PodHostname       func(childComplexity int) int
-		Port              func(childComplexity int) int
-		ProcfsHostname    func(childComplexity int) int
-		Uptime            func(childComplexity int) int
+		ExtraInfo             func(childComplexity int) int
+		HasLinkerdSidecar     func(childComplexity int) int
+		Host                  func(childComplexity int) int
+		IsService             func(childComplexity int) int
+		LastSeen              func(childComplexity int) int
+		PodHostname           func(childComplexity int) int
+		Port                  func(childComplexity int) int
+		ProcfsHostname        func(childComplexity int) int
+		TCPDestResolveFixData func(childComplexity int) int
+		Uptime                func(childComplexity int) int
 	}
 
 	Intent struct {
@@ -122,6 +123,11 @@ type ComplexityRoot struct {
 	ServiceIntents struct {
 		Client  func(childComplexity int) int
 		Intents func(childComplexity int) int
+	}
+
+	TCPDestResolveBugfixData struct {
+		IsSrcControlPlane func(childComplexity int) int
+		ResolvedUsingIP   func(childComplexity int) int
 	}
 }
 
@@ -252,6 +258,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.IdentityResolutionData.ProcfsHostname(childComplexity), true
+
+	case "IdentityResolutionData.tcpDestResolveFixData":
+		if e.complexity.IdentityResolutionData.TCPDestResolveFixData == nil {
+			break
+		}
+
+		return e.complexity.IdentityResolutionData.TCPDestResolveFixData(childComplexity), true
 
 	case "IdentityResolutionData.uptime":
 		if e.complexity.IdentityResolutionData.Uptime == nil {
@@ -546,6 +559,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ServiceIntents.Intents(childComplexity), true
 
+	case "TCPDestResolveBugfixData.isSrcControlPlane":
+		if e.complexity.TCPDestResolveBugfixData.IsSrcControlPlane == nil {
+			break
+		}
+
+		return e.complexity.TCPDestResolveBugfixData.IsSrcControlPlane(childComplexity), true
+
+	case "TCPDestResolveBugfixData.resolvedUsingIp":
+		if e.complexity.TCPDestResolveBugfixData.ResolvedUsingIP == nil {
+			break
+		}
+
+		return e.complexity.TCPDestResolveBugfixData.ResolvedUsingIP(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -712,6 +739,11 @@ type GroupVersionKind {
     kind: String!
 }
 
+type TCPDestResolveBugfixData {
+    isSrcControlPlane: Boolean!
+    resolvedUsingIp: Boolean!
+}
+
 type IdentityResolutionData {
     host: String
     podHostname: String
@@ -722,6 +754,7 @@ type IdentityResolutionData {
     lastSeen: String
     extraInfo: String
     hasLinkerdSidecar: Boolean
+    tcpDestResolveFixData: TCPDestResolveBugfixData
 }
 
 type OtterizeServiceIdentity {
@@ -1770,6 +1803,53 @@ func (ec *executionContext) fieldContext_IdentityResolutionData_hasLinkerdSideca
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IdentityResolutionData_tcpDestResolveFixData(ctx context.Context, field graphql.CollectedField, obj *model.IdentityResolutionData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IdentityResolutionData_tcpDestResolveFixData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TCPDestResolveFixData, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.TCPDestResolveBugfixData)
+	fc.Result = res
+	return ec.marshalOTCPDestResolveBugfixData2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTCPDestResolveBugfixData(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IdentityResolutionData_tcpDestResolveFixData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IdentityResolutionData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "isSrcControlPlane":
+				return ec.fieldContext_TCPDestResolveBugfixData_isSrcControlPlane(ctx, field)
+			case "resolvedUsingIp":
+				return ec.fieldContext_TCPDestResolveBugfixData_resolvedUsingIp(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TCPDestResolveBugfixData", field.Name)
 		},
 	}
 	return fc, nil
@@ -2966,6 +3046,8 @@ func (ec *executionContext) fieldContext_OtterizeServiceIdentity_resolutionData(
 				return ec.fieldContext_IdentityResolutionData_extraInfo(ctx, field)
 			case "hasLinkerdSidecar":
 				return ec.fieldContext_IdentityResolutionData_hasLinkerdSidecar(ctx, field)
+			case "tcpDestResolveFixData":
+				return ec.fieldContext_IdentityResolutionData_tcpDestResolveFixData(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IdentityResolutionData", field.Name)
 		},
@@ -3571,6 +3653,94 @@ func (ec *executionContext) fieldContext_ServiceIntents_intents(ctx context.Cont
 				return ec.fieldContext_OtterizeServiceIdentity_kubernetesService(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type OtterizeServiceIdentity", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TCPDestResolveBugfixData_isSrcControlPlane(ctx context.Context, field graphql.CollectedField, obj *model.TCPDestResolveBugfixData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TCPDestResolveBugfixData_isSrcControlPlane(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsSrcControlPlane, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TCPDestResolveBugfixData_isSrcControlPlane(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TCPDestResolveBugfixData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TCPDestResolveBugfixData_resolvedUsingIp(ctx context.Context, field graphql.CollectedField, obj *model.TCPDestResolveBugfixData) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TCPDestResolveBugfixData_resolvedUsingIp(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResolvedUsingIP, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TCPDestResolveBugfixData_resolvedUsingIp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TCPDestResolveBugfixData",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6150,6 +6320,8 @@ func (ec *executionContext) _IdentityResolutionData(ctx context.Context, sel ast
 			out.Values[i] = ec._IdentityResolutionData_extraInfo(ctx, field, obj)
 		case "hasLinkerdSidecar":
 			out.Values[i] = ec._IdentityResolutionData_hasLinkerdSidecar(ctx, field, obj)
+		case "tcpDestResolveFixData":
+			out.Values[i] = ec._IdentityResolutionData_tcpDestResolveFixData(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6612,6 +6784,50 @@ func (ec *executionContext) _ServiceIntents(ctx context.Context, sel ast.Selecti
 			}
 		case "intents":
 			out.Values[i] = ec._ServiceIntents_intents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var tCPDestResolveBugfixDataImplementors = []string{"TCPDestResolveBugfixData"}
+
+func (ec *executionContext) _TCPDestResolveBugfixData(ctx context.Context, sel ast.SelectionSet, obj *model.TCPDestResolveBugfixData) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tCPDestResolveBugfixDataImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TCPDestResolveBugfixData")
+		case "isSrcControlPlane":
+			out.Values[i] = ec._TCPDestResolveBugfixData_isSrcControlPlane(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolvedUsingIp":
+			out.Values[i] = ec._TCPDestResolveBugfixData_resolvedUsingIp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8215,6 +8431,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTCPDestResolveBugfixData2ᚖgithubᚗcomᚋotterizeᚋnetworkᚑmapperᚋsrcᚋmapperᚋpkgᚋgraphᚋmodelᚐTCPDestResolveBugfixData(ctx context.Context, sel ast.SelectionSet, v *model.TCPDestResolveBugfixData) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TCPDestResolveBugfixData(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

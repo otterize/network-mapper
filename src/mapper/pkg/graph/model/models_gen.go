@@ -61,15 +61,16 @@ type HTTPResource struct {
 }
 
 type IdentityResolutionData struct {
-	Host              *string `json:"host,omitempty"`
-	PodHostname       *string `json:"podHostname,omitempty"`
-	ProcfsHostname    *string `json:"procfsHostname,omitempty"`
-	Port              *int64  `json:"port,omitempty"`
-	IsService         *bool   `json:"isService,omitempty"`
-	Uptime            *string `json:"uptime,omitempty"`
-	LastSeen          *string `json:"lastSeen,omitempty"`
-	ExtraInfo         *string `json:"extraInfo,omitempty"`
-	HasLinkerdSidecar *bool   `json:"hasLinkerdSidecar,omitempty"`
+	Host                  *string                   `json:"host,omitempty"`
+	PodHostname           *string                   `json:"podHostname,omitempty"`
+	ProcfsHostname        *string                   `json:"procfsHostname,omitempty"`
+	Port                  *int64                    `json:"port,omitempty"`
+	IsService             *bool                     `json:"isService,omitempty"`
+	Uptime                *string                   `json:"uptime,omitempty"`
+	LastSeen              *string                   `json:"lastSeen,omitempty"`
+	ExtraInfo             *string                   `json:"extraInfo,omitempty"`
+	HasLinkerdSidecar     *bool                     `json:"hasLinkerdSidecar,omitempty"`
+	TCPDestResolveFixData *TCPDestResolveBugfixData `json:"tcpDestResolveFixData,omitempty"`
 }
 
 type Intent struct {
@@ -161,6 +162,11 @@ type ServiceIntents struct {
 
 type SocketScanResults struct {
 	Results []RecordedDestinationsForSrc `json:"results"`
+}
+
+type TCPDestResolveBugfixData struct {
+	IsSrcControlPlane bool `json:"isSrcControlPlane"`
+	ResolvedUsingIP   bool `json:"resolvedUsingIp"`
 }
 
 type TrafficLevelResult struct {

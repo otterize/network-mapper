@@ -43,6 +43,11 @@ type GroupVersionKind {
     kind: String!
 }
 
+type TCPDestResolveBugfixData {
+    isSrcControlPlane: Boolean!
+    resolvedUsingIp: Boolean!
+}
+
 type IdentityResolutionData {
     host: String
     podHostname: String
@@ -53,6 +58,7 @@ type IdentityResolutionData {
     lastSeen: String
     extraInfo: String
     hasLinkerdSidecar: Boolean
+    tcpDestResolveFixData: TCPDestResolveBugfixData
 }
 
 type OtterizeServiceIdentity {
