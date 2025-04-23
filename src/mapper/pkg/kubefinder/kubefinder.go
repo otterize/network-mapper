@@ -42,6 +42,7 @@ type KubeFinder struct {
 	client            client.Client
 	serviceIdResolver *serviceidresolver.Resolver
 	seenIPsTTLCache   *expirable.LRU[string, struct{}]
+	podToIPCache      *expirable.LRU[types.NamespacedName, map[string]struct{}]
 }
 
 var (
@@ -54,6 +55,7 @@ var (
 func NewKubeFinder(ctx context.Context, mgr manager.Manager) (*KubeFinder, error) {
 	finder := &KubeFinder{client: mgr.GetClient(), mgr: mgr, serviceIdResolver: serviceidresolver.NewResolver(mgr.GetClient())}
 	finder.initSeenIPsCache()
+	finder.podToIPCache = expirable.NewLRU[types.NamespacedName, map[string]struct{}](50000, nil, -1)
 	err := finder.initIndexes(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -91,10 +93,28 @@ func (k *KubeFinder) initIndexes(ctx context.Context) error {
 			return res
 		}
 
+		cachedIps, found := k.podToIPCache.Get(types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace})
+		if found && len(cachedIps) > len(pod.Status.PodIP) {
+			logrus.WithFields(logrus.Fields{
+				"podName":      pod.Name,
+				"podNamespace": pod.Namespace,
+				"cachedIps":    cachedIps,
+				"podIps":       pod.Status.PodIPs,
+			}).Error("Assertion failed: there are more cached IPs than pod IPs, meaning pod IPs have been removed")
+		}
+
+		ipList := make(map[string]struct{})
 		for _, ip := range pod.Status.PodIPs {
 			k.seenIPsTTLCache.Add(ip.IP, struct{}{})
 			res = append(res, ip.IP)
+			ipList[ip.IP] = struct{}{}
 		}
+		if found {
+			for ip := range ipList {
+				cachedIps[ip] = struct{}{}
+			}
+		}
+		k.podToIPCache.Add(types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, ipList)
 		return res
 	})
 	if err != nil {
