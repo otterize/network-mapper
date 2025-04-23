@@ -3,6 +3,7 @@ package clouduploader
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/intents-operator/src/shared/serviceidresolver/serviceidentity"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
@@ -126,20 +127,36 @@ func (c *CloudUploader) NotifyExternalTrafficIntents(ctx context.Context, intent
 	logrus.Debugf("Got external traffic notification, len %d", len(intents))
 
 	discoveredIntents := lo.Map(intents, func(intent externaltrafficholder.TimestampedExternalTrafficIntent, _ int) cloudclient.ExternalTrafficDiscoveredIntentInput {
-		output := cloudclient.ExternalTrafficDiscoveredIntentInput{
-			DiscoveredAt: intent.Timestamp,
-			Intent: cloudclient.ExternalTrafficIntentInput{
-				ClientName: intent.Intent.Client.Name,
-				Namespace:  intent.Intent.Client.Namespace,
-				Target: cloudclient.DNSIPPairInput{
-					DnsName: lo.ToPtr(intent.Intent.DNSName),
+		switch typedIntent := intent.Intent.(type) {
+		case externaltrafficholder.DNSExternalTrafficIntent:
+			output := cloudclient.ExternalTrafficDiscoveredIntentInput{
+				DiscoveredAt: intent.Timestamp,
+				Intent: cloudclient.ExternalTrafficIntentInput{
+					ClientName: typedIntent.Client.Name,
+					Namespace:  typedIntent.Client.Namespace,
+					Target: cloudclient.DNSIPPairInput{
+						DnsName: lo.ToPtr(typedIntent.DNSName),
+					},
 				},
-			},
+			}
+			for ip := range typedIntent.IPs {
+				output.Intent.Target.Ips = append(output.Intent.Target.Ips, lo.ToPtr(string(ip)))
+			}
+			return output
+		case externaltrafficholder.IPExternalTrafficIntent:
+			output := cloudclient.ExternalTrafficDiscoveredIntentInput{
+				DiscoveredAt: intent.Timestamp,
+				Intent: cloudclient.ExternalTrafficIntentInput{
+					ClientName: typedIntent.Client.Name,
+					Namespace:  typedIntent.Client.Namespace,
+					Target: cloudclient.DNSIPPairInput{
+						Ips: []*string{lo.ToPtr(string(typedIntent.IP))},
+					},
+				},
+			}
+			return output
 		}
-		for ip := range intent.Intent.IPs {
-			output.Intent.Target.Ips = append(output.Intent.Target.Ips, lo.ToPtr(string(ip)))
-		}
-		return output
+		panic(fmt.Sprintf("Unexpected external traffic intent type: %T", intent))
 	})
 
 	exponentialBackoff := backoff.NewExponentialBackOff()
