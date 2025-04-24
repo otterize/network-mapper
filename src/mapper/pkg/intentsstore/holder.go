@@ -164,6 +164,13 @@ func (i *IntentsHolder) addIntentToStore(store IntentsStore, newTimestamp time.T
 	existingIntent.Intent.Client.Labels = intent.Client.Labels
 	existingIntent.Intent.Server.Labels = intent.Server.Labels
 
+	if existingIntent.Intent.Server.ResolutionData.TCPDestResolveFixData == nil || intent.Server.ResolutionData.TCPDestResolveFixData == nil {
+		// One of the intents was not discovered using the bugfix, so we want to keep it that way.
+		// This is important because we might drop some of the discovered intents using the bugfix in Otterize-cloud, based on
+		// the fact they were discovered using the bugfix.
+		existingIntent.Intent.Server.ResolutionData.TCPDestResolveFixData = nil
+	}
+
 	store[key] = existingIntent
 }
 
