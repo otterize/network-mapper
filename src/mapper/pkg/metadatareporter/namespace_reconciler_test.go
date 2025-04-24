@@ -1,4 +1,4 @@
-package labelreporter
+package metadatareporter
 
 import (
 	"context"

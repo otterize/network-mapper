@@ -22,7 +22,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/externaltrafficholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/gcpintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
-	"github.com/otterize/network-mapper/src/mapper/pkg/labelreporter"
+	"github.com/otterize/network-mapper/src/mapper/pkg/metadatareporter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/metrics_collection_traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/networkpolicyreport"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
@@ -237,14 +237,8 @@ func main() {
 			logrus.WithError(err).Panic("unable to create service reconciler")
 		}
 
-		podReconciler := labelreporter.NewPodReconciler(mgr.GetClient(), cloudClient, serviceIdResolver)
-		if err := podReconciler.SetupWithManager(mgr); err != nil {
-			logrus.WithError(err).Panic("unable to create pod reconciler")
-		}
-
-		namespaceReconciler := labelreporter.NewNamespaceReconciler(mgr.GetClient(), cloudClient)
-		if err := namespaceReconciler.SetupWithManager(mgr); err != nil {
-			logrus.WithError(err).Panic("unable to create namespace reconciler")
+		if err := metadatareporter.Setup(mgr.GetClient(), cloudClient, serviceIdResolver, mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create metadata reporter")
 		}
 
 		metricsCollectionTrafficHandler := metrics_collection_traffic.NewMetricsCollectionTrafficHandler(mgr.GetClient(), serviceidresolver.NewResolver(mgr.GetClient()), cloudClient)
