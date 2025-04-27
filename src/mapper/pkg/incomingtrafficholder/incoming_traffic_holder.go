@@ -15,16 +15,16 @@ import (
 type IP string
 
 type IncomingTrafficIntent struct {
-	Server           model.OtterizeServiceIdentity `json:"client"`
-	LastSeen         time.Time
-	IP               string
-	SrcPorts         []int64
-	ConnectionsCount *cloudclient.ConnectionsCount
+	Server   model.OtterizeServiceIdentity `json:"client"`
+	LastSeen time.Time
+	IP       string
+	SrcPorts []int64
 }
 
 type TimestampedIncomingTrafficIntent struct {
-	Timestamp time.Time
-	Intent    IncomingTrafficIntent
+	Timestamp        time.Time
+	Intent           IncomingTrafficIntent
+	ConnectionsCount *cloudclient.ConnectionsCount
 }
 
 type IncomingTrafficKey struct {
@@ -84,15 +84,10 @@ func (h *IncomingTrafficIntentsHolder) GetNewIntentsSinceLastGet() []Timestamped
 
 	intents := make([]TimestampedIncomingTrafficIntent, 0, len(h.intents))
 
-	for _, intent := range h.intents {
-		key := IncomingTrafficKey{
-			ServerName:      intent.Intent.Server.Name,
-			ServerNamespace: intent.Intent.Server.Namespace,
-			IP:              intent.Intent.IP,
-		}
+	for key, intent := range h.intents {
 		connectionsCount, connectionsCountValid := h.connectionCountDiffer.GetDiff(key)
 		if connectionsCountValid {
-			intent.Intent.ConnectionsCount = lo.ToPtr(connectionsCount)
+			intent.ConnectionsCount = lo.ToPtr(connectionsCount)
 		}
 		intents = append(intents, intent)
 	}

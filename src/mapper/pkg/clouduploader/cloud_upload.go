@@ -184,8 +184,8 @@ func (c *CloudUploader) NotifyIncomingTrafficIntents(ctx context.Context, intent
 				},
 			},
 		}
-		if intent.Intent.ConnectionsCount != nil {
-			output.Intent.ConnectionsCount = nilable.FromPtr(intent.Intent.ConnectionsCount)
+		if intent.ConnectionsCount != nil {
+			output.Intent.ConnectionsCount = nilable.FromPtr(intent.ConnectionsCount)
 		}
 		return output
 	})

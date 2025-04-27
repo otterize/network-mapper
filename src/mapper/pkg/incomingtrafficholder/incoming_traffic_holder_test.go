@@ -38,6 +38,7 @@ func (s *IncomingTrafficHolderSuite) TestIncomingTrafficHolder() {
 		Server:   server,
 		LastSeen: timestamp,
 		IP:       ipAddressA,
+		SrcPorts: []int64{1, 2, 3},
 	}
 
 	var called bool
@@ -59,6 +60,8 @@ func (s *IncomingTrafficHolderSuite) TestIncomingTrafficHolder() {
 	s.Require().Equal(incomingA.Server.Name, uploaded[0].Intent.Server.Name)
 	s.Require().Equal(incomingA.Server.Namespace, uploaded[0].Intent.Server.Namespace)
 	s.Require().Equal(incomingA.IP, uploaded[0].Intent.IP)
+	s.Require().NotNil(uploaded[0].ConnectionsCount)
+	s.Require().Equal(3, lo.FromPtr(uploaded[0].ConnectionsCount.Current))
 
 	called = false
 	uploaded = make([]TimestampedIncomingTrafficIntent, 0)
@@ -70,12 +73,14 @@ func (s *IncomingTrafficHolderSuite) TestIncomingTrafficHolder() {
 		Server:   server,
 		LastSeen: timestamp.Add(time.Second),
 		IP:       ipAddressB,
+		SrcPorts: []int64{10},
 	}
 
 	incomingC := IncomingTrafficIntent{
 		Server:   server,
 		LastSeen: timestamp.Add(time.Second * 2),
 		IP:       ipAddressC,
+		SrcPorts: []int64{10},
 	}
 
 	s.holder.AddIntent(incomingB)
@@ -96,6 +101,8 @@ func (s *IncomingTrafficHolderSuite) TestIncomingTrafficHolder() {
 	s.Require().Equal(incomingB.Server.Name, uploadedB.Intent.Server.Name)
 	s.Require().Equal(incomingB.Server.Namespace, uploadedB.Intent.Server.Namespace)
 	s.Require().Equal(incomingB.IP, uploadedB.Intent.IP)
+	s.Require().NotNil(uploadedB.ConnectionsCount)
+	s.Require().Equal(1, lo.FromPtr(uploadedB.ConnectionsCount.Current))
 
 	uploadedC, found := lo.Find(uploaded, func(intent TimestampedIncomingTrafficIntent) bool {
 		return intent.Intent.IP == ipAddressC
@@ -104,6 +111,8 @@ func (s *IncomingTrafficHolderSuite) TestIncomingTrafficHolder() {
 	s.Require().Equal(incomingC.Server.Name, uploadedC.Intent.Server.Name)
 	s.Require().Equal(incomingC.Server.Namespace, uploadedC.Intent.Server.Namespace)
 	s.Require().Equal(incomingC.IP, uploadedC.Intent.IP)
+	s.Require().NotNil(uploadedC.ConnectionsCount)
+	s.Require().Equal(1, lo.FromPtr(uploadedC.ConnectionsCount.Current))
 }
 
 func (s *IncomingTrafficHolderSuite) TestReportOnlyLatest() {
