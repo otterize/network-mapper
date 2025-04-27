@@ -60,11 +60,8 @@ func updateTelemetriesCounters(sourceType SourceType, intent model.Intent) {
 	}
 }
 
-func getDestIp(dest model.Destination, srcIsControlPlane bool) string {
-	if viper.GetBool(config.TCPDestResolveOnlyControlPlaneByIp) && !srcIsControlPlane {
-		// Yep, you are right, this feels a bit hacky. But by default we want to support this bugfix only for traffic
-		// originated from the control plane. We do this because we do not know how many new flows this bugfix will introduce,
-		// so we want to control the rollout of this fix.
+func getDestIp(dest model.Destination, fixParams model.TCPDestResolveBugfixData) string {
+	if !fixParams.ResolvedUsingIP {
 		return dest.Destination
 	}
 
@@ -75,8 +72,8 @@ func getDestIp(dest model.Destination, srcIsControlPlane bool) string {
 	return dest.Destination
 }
 
-func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time, srcIsControlPlane bool) (model.OtterizeServiceIdentity, bool, error) {
-	destIp := getDestIp(dest, srcIsControlPlane)
+func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destination, lastSeen time.Time, fixParams model.TCPDestResolveBugfixData) (model.OtterizeServiceIdentity, bool, error) {
+	destIp := getDestIp(dest, fixParams)
 	destSvc, isTargetService, err := r.kubeFinder.ResolveIPToService(ctx, destIp)
 	if err != nil {
 		return model.OtterizeServiceIdentity{}, false, errors.Wrap(err)
@@ -143,6 +140,11 @@ func (r *Resolver) resolveDestIdentityTCP(ctx context.Context, dest model.Destin
 			HasLinkerdSidecar: lo.ToPtr(hasLinkerdSidecar(destPod)),
 		},
 	}
+
+	if fixParams.ResolvedUsingIP {
+		dstSvcIdentity.ResolutionData.TCPDestResolveFixData = lo.ToPtr(fixParams)
+	}
+
 	if dstService.OwnerObject != nil {
 		dstSvcIdentity.PodOwnerKind = model.GroupVersionKindFromKubeGVK(dstService.OwnerObject.GetObjectKind().GroupVersionKind())
 	}
@@ -665,13 +667,29 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 
 func (r *Resolver) handleInternalTrafficTCPResult(ctx context.Context, srcIdentity model.OtterizeServiceIdentity, dest model.Destination, srcIsControlPlane bool) {
 	lastSeen := dest.LastSeen
-	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen, srcIsControlPlane)
+	tcpResolveDesFixParams := model.TCPDestResolveBugfixData{
+		ResolvedUsingIP:   false,
+		IsSrcControlPlane: srcIsControlPlane,
+	}
+
+	destIdentity, ok, err := r.resolveDestIdentityTCP(ctx, dest, lastSeen, tcpResolveDesFixParams)
 	if err != nil {
 		logrus.WithError(err).Error("could not resolve destination identity")
 		return
 	}
+
 	if !ok {
-		return
+		// let's try again, now using the fix
+		tcpResolveDesFixParams.ResolvedUsingIP = true
+		destIdentity, ok, err = r.resolveDestIdentityTCP(ctx, dest, lastSeen, tcpResolveDesFixParams)
+		if err != nil {
+			logrus.WithError(err).Error("could not resolve destination identity, even with the fix")
+			return
+		}
+
+		if !ok {
+			return
+		}
 	}
 
 	intent := model.Intent{

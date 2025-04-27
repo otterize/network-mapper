@@ -50,7 +50,7 @@ func (s *CloudUploaderTestSuite) addIntent(source string, srcNamespace string, d
 		testTimestamp,
 		model.Intent{
 			Client:         &model.OtterizeServiceIdentity{Name: source, Namespace: srcNamespace},
-			Server:         &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace},
+			Server:         &model.OtterizeServiceIdentity{Name: destination, Namespace: dstNamespace, ResolutionData: lo.ToPtr(model.IdentityResolutionData{})},
 			ResolutionData: lo.ToPtr("handleInternalTrafficTCPResult"),
 		},
 		[]int64{int64(20205)},
@@ -145,7 +145,7 @@ func (s *CloudUploaderTestSuite) TestUploadIncomingTrafficIntents() {
 func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 	discoveredProduce := model.Intent{
 		Client: &model.OtterizeServiceIdentity{Name: "client1", Namespace: s.testNamespace},
-		Server: &model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace},
+		Server: &model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace, ResolutionData: lo.ToPtr(model.IdentityResolutionData{})},
 		Type:   lo.ToPtr(model.IntentTypeKafka),
 		KafkaTopics: []model.KafkaConfig{
 			{
@@ -159,7 +159,7 @@ func (s *CloudUploaderTestSuite) TestUploadIntentsWithOperations() {
 
 	discoveredConsume := model.Intent{
 		Client: &model.OtterizeServiceIdentity{Name: "client1", Namespace: s.testNamespace},
-		Server: &model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace},
+		Server: &model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace, ResolutionData: lo.ToPtr(model.IdentityResolutionData{})},
 		Type:   lo.ToPtr(model.IntentTypeKafka),
 		KafkaTopics: []model.KafkaConfig{
 			{
