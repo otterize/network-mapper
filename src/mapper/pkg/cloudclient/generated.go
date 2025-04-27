@@ -207,9 +207,10 @@ func (v *IncomingTrafficDiscoveredIntentInput) GetIntent() IncomingTrafficIntent
 }
 
 type IncomingTrafficIntentInput struct {
-	ServerName string                      `json:"serverName"`
-	Namespace  string                      `json:"namespace"`
-	Source     IncomingInternetSourceInput `json:"source"`
+	ServerName       string                            `json:"serverName"`
+	Namespace        string                            `json:"namespace"`
+	Source           IncomingInternetSourceInput       `json:"source"`
+	ConnectionsCount nilable.Nilable[ConnectionsCount] `json:"connectionsCount"`
 }
 
 // GetServerName returns IncomingTrafficIntentInput.ServerName, and is useful for accessing the field via an interface.
@@ -220,6 +221,11 @@ func (v *IncomingTrafficIntentInput) GetNamespace() string { return v.Namespace 
 
 // GetSource returns IncomingTrafficIntentInput.Source, and is useful for accessing the field via an interface.
 func (v *IncomingTrafficIntentInput) GetSource() IncomingInternetSourceInput { return v.Source }
+
+// GetConnectionsCount returns IncomingTrafficIntentInput.ConnectionsCount, and is useful for accessing the field via an interface.
+func (v *IncomingTrafficIntentInput) GetConnectionsCount() nilable.Nilable[ConnectionsCount] {
+	return v.ConnectionsCount
+}
 
 type IntOrStringInput struct {
 	IsInt  bool                    `json:"isInt"`

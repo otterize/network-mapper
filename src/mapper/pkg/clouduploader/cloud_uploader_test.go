@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/awsintentsholder"
 	"github.com/otterize/network-mapper/src/mapper/pkg/incomingtrafficholder"
+	"github.com/otterize/nilable"
 	"testing"
 	"time"
 
@@ -118,6 +119,7 @@ func (s *CloudUploaderTestSuite) TestUploadIncomingTrafficIntents() {
 		Server:   model.OtterizeServiceIdentity{Name: "server1", Namespace: s.testNamespace},
 		LastSeen: testTimestamp,
 		IP:       sourceIP,
+		SrcPorts: []int64{10},
 	}
 	s.incomingHolder.AddIntent(incomingIntent)
 
@@ -130,6 +132,7 @@ func (s *CloudUploaderTestSuite) TestUploadIncomingTrafficIntents() {
 				Source: cloudclient.IncomingInternetSourceInput{
 					Ip: sourceIP,
 				},
+				ConnectionsCount: nilable.From(cloudclient.ConnectionsCount{Current: lo.ToPtr(1), Added: lo.ToPtr(1), Removed: lo.ToPtr(0)}),
 			},
 		},
 	}

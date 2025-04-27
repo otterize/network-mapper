@@ -659,6 +659,7 @@ func (r *Resolver) reportIncomingInternetTraffic(ctx context.Context, srcIP stri
 			LastSeen: dest.LastSeen,
 			Server:   destSvcIdentity,
 			IP:       srcIP,
+			SrcPorts: dest.SrcPorts,
 		}
 		r.incomingTrafficHolder.AddIntent(intent)
 	}

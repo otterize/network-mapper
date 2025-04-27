@@ -44,3 +44,18 @@ func (c *CountableIntentExternalTrafficIntent) ShouldCountUsingSrcPortMethod() b
 func (c *CountableIntentExternalTrafficIntent) ShouldCountUsingDNSMethod() bool {
 	return true
 }
+
+type CountableIncomingInternetTrafficIntent struct {
+}
+
+func NewCountableIncomingInternetTrafficIntent() *CountableIncomingInternetTrafficIntent {
+	return &CountableIncomingInternetTrafficIntent{}
+}
+
+func (c *CountableIncomingInternetTrafficIntent) ShouldCountUsingSrcPortMethod() bool {
+	return true
+}
+
+func (c *CountableIncomingInternetTrafficIntent) ShouldCountUsingDNSMethod() bool {
+	return false
+}
