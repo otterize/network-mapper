@@ -36,22 +36,20 @@ type IntentsStore map[IntentsStoreKey]TimestampedIntent
 type IntentsConnectionCounter map[IntentsStoreKey]*concurrentconnectioncounter.ConnectionCounter[*concurrentconnectioncounter.CountableIntentIntent]
 
 type IntentsHolder struct {
-	accumulatingStore              IntentsStore
-	sinceLastGetStore              IntentsStore
-	sinceLastGetConnectionsCounter IntentsConnectionCounter
-	previousScanConnectionsCounter IntentsConnectionCounter
-	lock                           sync.Mutex
-	callbacks                      []func(context.Context, []TimestampedIntent)
+	accumulatingStore      IntentsStore
+	sinceLastGetStore      IntentsStore
+	connectionsCountDiffer *concurrentconnectioncounter.ConnectionCountDiffer[IntentsStoreKey, *concurrentconnectioncounter.CountableIntentIntent]
+	lock                   sync.Mutex
+	callbacks              []func(context.Context, []TimestampedIntent)
 }
 
 func NewIntentsHolder() *IntentsHolder {
 	return &IntentsHolder{
-		accumulatingStore:              make(IntentsStore),
-		sinceLastGetStore:              make(IntentsStore),
-		sinceLastGetConnectionsCounter: make(IntentsConnectionCounter),
-		previousScanConnectionsCounter: make(IntentsConnectionCounter),
-		lock:                           sync.Mutex{},
-		callbacks:                      make([]func(context.Context, []TimestampedIntent), 0),
+		accumulatingStore:      make(IntentsStore),
+		sinceLastGetStore:      make(IntentsStore),
+		connectionsCountDiffer: concurrentconnectioncounter.NewConnectionCountDiffer[IntentsStoreKey, *concurrentconnectioncounter.CountableIntentIntent](),
+		lock:                   sync.Mutex{},
+		callbacks:              make([]func(context.Context, []TimestampedIntent), 0),
 	}
 }
 
@@ -181,16 +179,10 @@ func (i *IntentsHolder) addUniqueCount(intent model.Intent, sourcePorts []int64)
 		Type:        lo.FromPtr(intent.Type),
 	}
 
-	_, existingCounterFound := i.sinceLastGetConnectionsCounter[key]
-	if !existingCounterFound {
-		i.sinceLastGetConnectionsCounter[key] = concurrentconnectioncounter.NewConnectionCounter[*concurrentconnectioncounter.CountableIntentIntent]()
-	}
-
-	counterInput := concurrentconnectioncounter.CounterInput[*concurrentconnectioncounter.CountableIntentIntent]{
+	i.connectionsCountDiffer.Increment(key, concurrentconnectioncounter.CounterInput[*concurrentconnectioncounter.CountableIntentIntent]{
 		Intent:      concurrentconnectioncounter.NewCountableIntentIntent(intent),
 		SourcePorts: sourcePorts,
-	}
-	i.sinceLastGetConnectionsCounter[key].AddConnection(counterInput)
+	})
 }
 
 func (i *IntentsHolder) PeriodicIntentsUpload(ctx context.Context, interval time.Duration) {
@@ -282,8 +274,7 @@ func (i *IntentsHolder) GetNewIntentsSinceLastGet() []TimestampedIntent {
 		nil)
 
 	i.sinceLastGetStore = make(IntentsStore)
-	i.previousScanConnectionsCounter = i.sinceLastGetConnectionsCounter
-	i.sinceLastGetConnectionsCounter = make(IntentsConnectionCounter)
+	i.connectionsCountDiffer.Reset()
 	return intents
 }
 
@@ -338,7 +329,7 @@ func (i *IntentsHolder) getIntentsFromStore(
 			continue
 		}
 
-		connectionsCount, connectionsCountValid := i.calcConnectionsCount(pair)
+		connectionsCount, connectionsCountValid := i.connectionsCountDiffer.GetDiff(pair)
 		if connectionsCountValid {
 			intent.ConnectionsCount = lo.ToPtr(connectionsCount)
 		}
@@ -346,45 +337,6 @@ func (i *IntentsHolder) getIntentsFromStore(
 	}
 
 	return result, nil
-}
-
-func (i *IntentsHolder) calcConnectionsCount(intentKey IntentsStoreKey) (cloudclient.ConnectionsCount, bool) {
-	currentScanCounter, currentScanCounterFound := i.sinceLastGetConnectionsCounter[intentKey]
-	prevScanCounter, prevScanCounterFound := i.previousScanConnectionsCounter[intentKey]
-	if currentScanCounterFound && !prevScanCounterFound {
-		connectionsCount, isValue := currentScanCounter.GetConnectionCount()
-		if isValue {
-			return cloudclient.ConnectionsCount{
-				Current: lo.ToPtr(connectionsCount),
-				Added:   lo.ToPtr(connectionsCount),
-				Removed: lo.ToPtr(0),
-			}, true
-		}
-		return cloudclient.ConnectionsCount{}, false
-	}
-
-	// Is it possible?
-	if !currentScanCounterFound && prevScanCounterFound {
-		connectionsCount, isValue := prevScanCounter.GetConnectionCount()
-		if isValue {
-			return cloudclient.ConnectionsCount{
-				Current: lo.ToPtr(0),
-				Added:   lo.ToPtr(0),
-				Removed: lo.ToPtr(connectionsCount),
-			}, true
-		}
-		return cloudclient.ConnectionsCount{}, false
-	}
-
-	if currentScanCounterFound && prevScanCounterFound {
-		_, isValidCurrentCount := prevScanCounter.GetConnectionCount()
-		connectionDiff, valid := currentScanCounter.GetConnectionCountDiff(prevScanCounter)
-		if isValidCurrentCount && valid {
-			return connectionDiff, true
-		}
-	}
-
-	return cloudclient.ConnectionsCount{}, false
 }
 
 func getAllClientsCallingServer(serverName string, serverNamespace string, store IntentsStore) []types.NamespacedName {

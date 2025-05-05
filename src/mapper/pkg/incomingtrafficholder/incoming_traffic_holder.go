@@ -2,8 +2,11 @@ package incomingtrafficholder
 
 import (
 	"context"
+	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
+	"github.com/otterize/network-mapper/src/mapper/pkg/concurrentconnectioncounter"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
@@ -15,11 +18,13 @@ type IncomingTrafficIntent struct {
 	Server   model.OtterizeServiceIdentity `json:"client"`
 	LastSeen time.Time
 	IP       string
+	SrcPorts []int64
 }
 
 type TimestampedIncomingTrafficIntent struct {
-	Timestamp time.Time
-	Intent    IncomingTrafficIntent
+	Timestamp        time.Time
+	Intent           IncomingTrafficIntent
+	ConnectionsCount *cloudclient.ConnectionsCount
 }
 
 type IncomingTrafficKey struct {
@@ -29,16 +34,19 @@ type IncomingTrafficKey struct {
 }
 
 type IncomingTrafficIntentsHolder struct {
-	intents   map[IncomingTrafficKey]TimestampedIncomingTrafficIntent
-	lock      sync.Mutex
-	callbacks []IncomingTrafficCallbackFunc
+	intents               map[IncomingTrafficKey]TimestampedIncomingTrafficIntent
+	lock                  sync.Mutex
+	callbacks             []IncomingTrafficCallbackFunc
+	connectionCountDiffer *concurrentconnectioncounter.ConnectionCountDiffer[IncomingTrafficKey, *concurrentconnectioncounter.CountableIncomingInternetTrafficIntent]
 }
 
 type IncomingTrafficCallbackFunc func(context.Context, []TimestampedIncomingTrafficIntent)
+type IntentsConnectionCounter map[IncomingTrafficKey]*concurrentconnectioncounter.ConnectionCounter[*concurrentconnectioncounter.CountableIncomingInternetTrafficIntent]
 
 func NewIncomingTrafficIntentsHolder() *IncomingTrafficIntentsHolder {
 	return &IncomingTrafficIntentsHolder{
-		intents: make(map[IncomingTrafficKey]TimestampedIncomingTrafficIntent),
+		intents:               make(map[IncomingTrafficKey]TimestampedIncomingTrafficIntent),
+		connectionCountDiffer: concurrentconnectioncounter.NewConnectionCountDiffer[IncomingTrafficKey, *concurrentconnectioncounter.CountableIncomingInternetTrafficIntent](),
 	}
 }
 
@@ -76,11 +84,16 @@ func (h *IncomingTrafficIntentsHolder) GetNewIntentsSinceLastGet() []Timestamped
 
 	intents := make([]TimestampedIncomingTrafficIntent, 0, len(h.intents))
 
-	for _, intent := range h.intents {
+	for key, intent := range h.intents {
+		connectionsCount, connectionsCountValid := h.connectionCountDiffer.GetDiff(key)
+		if connectionsCountValid {
+			intent.ConnectionsCount = lo.ToPtr(connectionsCount)
+		}
 		intents = append(intents, intent)
 	}
 
 	h.intents = make(map[IncomingTrafficKey]TimestampedIncomingTrafficIntent)
+	h.connectionCountDiffer.Reset()
 
 	return intents
 }
@@ -98,6 +111,12 @@ func (h *IncomingTrafficIntentsHolder) AddIntent(intent IncomingTrafficIntent) {
 		ServerNamespace: intent.Server.Namespace,
 		IP:              intent.IP,
 	}
+
+	h.connectionCountDiffer.Increment(key, concurrentconnectioncounter.CounterInput[*concurrentconnectioncounter.CountableIncomingInternetTrafficIntent]{
+		Intent:      concurrentconnectioncounter.NewCountableIncomingInternetTrafficIntent(),
+		SourcePorts: intent.SrcPorts,
+	})
+
 	mergedIntent, ok := h.intents[key]
 	if !ok {
 		h.intents[key] = TimestampedIncomingTrafficIntent{
