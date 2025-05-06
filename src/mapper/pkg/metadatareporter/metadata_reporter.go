@@ -185,7 +185,7 @@ func (r *MetadataReporter) fetchServiceIPs(ctx context.Context, serviceIdentity 
 		}
 
 		for _, ip := range service.Spec.ClusterIPs {
-			if ip != "" {
+			if ip != "" && ip != "None" {
 				serviceIps.Add(ip)
 			}
 		}
