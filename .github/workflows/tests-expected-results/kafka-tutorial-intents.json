@@ -1,0 +1,84 @@
+[
+  {
+    "kind": "ClientIntents",
+    "apiVersion": "k8s.otterize.com/v2beta1",
+    "metadata": {
+      "name": "client",
+      "namespace": "otterize-tutorial-kafka-mapping",
+      "creationTimestamp": null
+    },
+    "spec": {
+      "workload": {
+        "name": "client",
+        "kind": "Deployment"
+      },
+      "targets": [
+        {
+          "kafka": {
+            "name": "kafka.kafka",
+            "topics": [
+              {
+                "name": "mytopic",
+                "operations": [
+                  "consume",
+                  "describe"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kubernetes": {
+            "name": "kafka.kafka",
+            "kind": "StatefulSet"
+          }
+        }
+      ]
+    },
+    "status": {
+      "upToDate": false,
+      "observedGeneration": 0
+    }
+  },
+  {
+    "kind": "ClientIntents",
+    "apiVersion": "k8s.otterize.com/v2beta1",
+    "metadata": {
+      "name": "client-2",
+      "namespace": "otterize-tutorial-kafka-mapping",
+      "creationTimestamp": null
+    },
+    "spec": {
+      "workload": {
+        "name": "client-2",
+        "kind": "Deployment"
+      },
+      "targets": [
+        {
+          "kafka": {
+            "name": "kafka.kafka",
+            "topics": [
+              {
+                "name": "mytopic",
+                "operations": [
+                  "describe",
+                  "produce"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kubernetes": {
+            "name": "kafka.kafka",
+            "kind": "StatefulSet"
+          }
+        }
+      ]
+    },
+    "status": {
+      "upToDate": false,
+      "observedGeneration": 0
+    }
+  }
+]
