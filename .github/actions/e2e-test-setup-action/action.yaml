@@ -1,0 +1,100 @@
+name: E2E Setup
+description: This workflow is used to set up the environment for the E2E tests.
+inputs:
+    mapper-tag:
+        required: true
+        type: string
+    sniffer-tag:
+        required: true
+        type: string
+    mapper-image:
+        required: true
+        type: string
+    sniffer-image:
+        required: true
+        type: string
+    registry:
+        required: true
+        type: string
+        default: us-central1-docker.pkg.dev/main-383408/otterize
+
+runs:
+  using: "composite"
+  steps:
+    - name: Start minikube
+      uses: medyagh/setup-minikube@master
+      with:
+        start-args: "--network-plugin=cni --cni=calico"
+
+    - name: Load images from GitHub Artifacts
+      if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.REGISTRY }}_${{ github.actor }}_mapper_${{ github.sha }}.tar
+
+    - name: Load Docker image
+      if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+      run: |-
+        docker image load -i mapper.tar
+        minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/mapper:${{ github.sha }}
+      shell: bash
+
+    - name: Load images from GitHub Artifacts
+      if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.REGISTRY }}_${{ github.actor }}_sniffer_${{ github.sha }}.tar
+
+    - name: Load Docker image
+      if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+      run: |-
+        docker image load -i sniffer.tar
+        minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/sniffer:${{ github.sha }}
+      shell: bash
+
+    - name: Load images from GitHub Artifacts
+      if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.REGISTRY }}_${{ github.actor }}_kafka-watcher_${{ github.sha }}.tar
+
+    - name: Load Docker image
+      if: github.repository != 'otterize/network-mapper' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'otterize/network-mapper')
+      run: |-
+        docker image load -i kafka-watcher.tar
+        minikube image load ${{ env.REGISTRY }}/${{ github.actor }}/kafka-watcher:${{ github.sha }}
+      shell: bash
+
+    - name: Load Docker images from GCR
+      if: (github.event_name == 'push' && github.repository == 'otterize/network-mapper') || github.event.pull_request.head.repo.full_name == 'otterize/network-mapper'
+      run: |-
+        docker pull ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}	
+        minikube image load ${{ env.REGISTRY }}/mapper:${{ inputs.mapper-tag }}	
+        docker pull ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}	
+        minikube image load  ${{ env.REGISTRY }}/sniffer:${{ inputs.sniffer-tag }}
+      shell: bash
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+
+    - name: Wait for Calico startup
+      run: |-
+        kubectl wait pods -n kube-system -l k8s-app=calico-kube-controllers --for condition=Ready --timeout=90s
+        kubectl wait pods -n kube-system -l k8s-app=calico-node --for condition=Ready --timeout=90s
+        kubectl wait pods -n kube-system -l k8s-app=calico-kube-controllers --for condition=Ready --timeout=90s
+      shell: bash
+
+    - name: Deploy Network Mapper
+      run: |-
+        MAPPER_FLAGS="--set-string mapper.repository=${{ env.REGISTRY }} --set-string mapper.image=${{ inputs.mapper-image }} --set-string mapper.tag=${{ inputs.mapper-tag }} --set-string mapper.pullPolicy=Never"
+        SNIFFER_FLAGS="--set-string sniffer.repository=${{ env.REGISTRY }} --set-string sniffer.image=${{ inputs.sniffer-image }} --set-string sniffer.tag=${{ inputs.sniffer-tag }} --set-string sniffer.pullPolicy=Never"
+        TELEMETRY_FLAG="--set global.telemetry.enabled=false"
+        helm dep up ./helm-charts/network-mapper
+        helm install otterize ./helm-charts/network-mapper -n otterize-system --create-namespace --set debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG
+      shell: bash
+
+    - name: Wait for Otterize
+      run: |-
+        kubectl wait pods -n otterize-system -l app=otterize-network-sniffer --for condition=Ready --timeout=90s
+        kubectl wait pods -n otterize-system -l app=otterize-network-mapper --for condition=Ready --timeout=90s
+      shell: bash
