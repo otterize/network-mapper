@@ -97,6 +97,13 @@ runs:
         helm install otterize ./helm-charts/network-mapper -n otterize-system --create-namespace --set debug=true $MAPPER_FLAGS $SNIFFER_FLAGS $TELEMETRY_FLAG ${{inputs.install-extra-flags}}
       shell: bash
 
+    - name: Install CLI
+      run: |-
+        wget --header="X-Otterize-Test: true" https://get.otterize.com/otterize-cli/v2.0.3/otterize_linux_x86_64.tar.gz
+        tar xf otterize_linux_x86_64.tar.gz
+        sudo cp otterize /usr/local/bin
+      shell: bash
+
     - name: Wait for Otterize
       run: |-
         kubectl wait pods -n otterize-system -l app=otterize-network-sniffer --for condition=Ready --timeout=90s

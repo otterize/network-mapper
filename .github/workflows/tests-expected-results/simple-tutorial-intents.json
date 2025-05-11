@@ -1,40 +1,56 @@
 [
   {
     "kind": "ClientIntents",
-    "apiVersion": "k8s.otterize.com/v1alpha2",
+    "apiVersion": "k8s.otterize.com/v2beta1",
     "metadata": {
       "name": "client",
       "namespace": "otterize-tutorial-mapper",
       "creationTimestamp": null
     },
     "spec": {
-      "service": {
-        "name": "client"
+      "workload": {
+        "name": "client",
+        "kind": "Deployment"
       },
-      "calls": [
+      "targets": [
         {
-          "name": "server"
+          "kubernetes": {
+            "name": "server",
+            "kind": "Deployment"
+          }
         }
       ]
+    },
+    "status": {
+      "upToDate": false,
+      "observedGeneration": 0
     }
   },
   {
     "kind": "ClientIntents",
-    "apiVersion": "k8s.otterize.com/v1alpha2",
+    "apiVersion": "k8s.otterize.com/v2beta1",
     "metadata": {
       "name": "client2",
       "namespace": "otterize-tutorial-mapper",
       "creationTimestamp": null
     },
     "spec": {
-      "service": {
-        "name": "client2"
+      "workload": {
+        "name": "client2",
+        "kind": "Deployment"
       },
-      "calls": [
+      "targets": [
         {
-          "name": "server"
+          "kubernetes": {
+            "name": "server",
+            "kind": "Deployment"
+          }
         }
       ]
+    },
+    "status": {
+      "upToDate": false,
+      "observedGeneration": 0
     }
   }
 ]

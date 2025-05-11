@@ -59,12 +59,6 @@ jobs:
           sniffer-image: ${{ inputs.sniffer-image }}
           registry: ${{ inputs.registry }}
 
-      - name: Install CLI
-        run: |-
-          wget --header="X-Otterize-Test: true" https://get.otterize.com/otterize-cli/v0.1.30/otterize_linux_x86_64.tar.gz
-          tar xf otterize_linux_x86_64.tar.gz
-          sudo cp otterize /usr/local/bin
-
       - name: Deploy Tutorial services
         run: |-
           kubectl apply -n otterize-tutorial-mapper -f https://docs.otterize.com/code-examples/network-mapper/all.yaml
@@ -130,12 +124,6 @@ jobs:
           sniffer-image: ${{ inputs.sniffer-image }}
           registry: ${{ inputs.registry }}
           install-extra-flags: " --set kafkawatcher.enable=true --set kafkawatcher.kafkaServers={\"kafka-0.kafka\"} "
-
-      - name: Install CLI
-        run: |-
-          wget --header="X-Otterize-Test: true" https://get.otterize.com/otterize-cli/v2.0.3/otterize_linux_x86_64.tar.gz
-          tar xf otterize_linux_x86_64.tar.gz
-          sudo cp otterize /usr/local/bin
 
       - name: Deploy Kafka
         run: |-
