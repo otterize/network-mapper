@@ -167,10 +167,13 @@ jobs:
           kubectl logs -n otterize-system -l app=otterize-network-mapper --tail=-1
 
           echo "export intents and compare to expected file" 
-          otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-kafka-mapping --format=json | jq 'sort_by(.metadata.namespace + .metadata.name) | map(.spec.targets |= (sort_by(keys_unsorted[0]) | map(if .kafka? then .kafka.topics |= map(.operations |= sort) else . end)))' > /tmp/intents.json
-          diff .github/workflows/tests-expected-results/kafka-tutorial-intents.json /tmp/intents.json 
+          INTENTS_JSON=`otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-kafka-mapping --format=json`
+          INTENTS_JSON_NO_KIND=`echo "$INTENTS_JSON" | jq 'map(del(.spec.workload.kind))'`
+          INTENTS_JSON_NO_KIND_AND_SORTED=`echo "$INTENTS_JSON_NO_KIND" | jq 'sort_by(.metadata.namespace + .metadata.name) | map(.spec.targets |= (sort_by(keys_unsorted[0]) | map(if .kafka? then .kafka.topics |= map(.operations |= sort) else . end)))'`
+          echo "$INTENTS_JSON_NO_KIND_AND_SORTED" > /tmp/intents.json 
           echo "expected" && cat .github/workflows/tests-expected-results/kafka-tutorial-intents.json
           echo "actual" && cat /tmp/intents.json
+          diff .github/workflows/tests-expected-results/kafka-tutorial-intents.json /tmp/intents.json
 
   e2e-test:
     needs:

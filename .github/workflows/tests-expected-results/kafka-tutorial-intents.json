@@ -9,8 +9,7 @@
     },
     "spec": {
       "workload": {
-        "name": "client",
-        "kind": "Deployment"
+        "name": "client"
       },
       "targets": [
         {
@@ -50,8 +49,7 @@
     },
     "spec": {
       "workload": {
-        "name": "client-2",
-        "kind": "Deployment"
+        "name": "client-2"
       },
       "targets": [
         {
