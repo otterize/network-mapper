@@ -812,6 +812,29 @@ const (
 	K8sServiceTypeExternalName K8sServiceType = "EXTERNAL_NAME"
 )
 
+type K8sWebhookServiceInput struct {
+	OtterizeName string      `json:"otterizeName"`
+	ServiceName  string      `json:"serviceName"`
+	Namespace    string      `json:"namespace"`
+	WebhookName  string      `json:"webhookName"`
+	WebhookType  WebhookType `json:"webhookType"`
+}
+
+// GetOtterizeName returns K8sWebhookServiceInput.OtterizeName, and is useful for accessing the field via an interface.
+func (v *K8sWebhookServiceInput) GetOtterizeName() string { return v.OtterizeName }
+
+// GetServiceName returns K8sWebhookServiceInput.ServiceName, and is useful for accessing the field via an interface.
+func (v *K8sWebhookServiceInput) GetServiceName() string { return v.ServiceName }
+
+// GetNamespace returns K8sWebhookServiceInput.Namespace, and is useful for accessing the field via an interface.
+func (v *K8sWebhookServiceInput) GetNamespace() string { return v.Namespace }
+
+// GetWebhookName returns K8sWebhookServiceInput.WebhookName, and is useful for accessing the field via an interface.
+func (v *K8sWebhookServiceInput) GetWebhookName() string { return v.WebhookName }
+
+// GetWebhookType returns K8sWebhookServiceInput.WebhookType, and is useful for accessing the field via an interface.
+func (v *K8sWebhookServiceInput) GetWebhookType() WebhookType { return v.WebhookType }
+
 type KafkaConfigInput struct {
 	Name       *string           `json:"name"`
 	Operations []*KafkaOperation `json:"operations"`
@@ -967,6 +990,16 @@ type ReportK8sServicesResponse struct {
 
 // GetReportK8sServices returns ReportK8sServicesResponse.ReportK8sServices, and is useful for accessing the field via an interface.
 func (v *ReportK8sServicesResponse) GetReportK8sServices() bool { return v.ReportK8sServices }
+
+// ReportK8sWebhookServicesResponse is returned by ReportK8sWebhookServices on success.
+type ReportK8sWebhookServicesResponse struct {
+	ReportK8sWebhookServices bool `json:"reportK8sWebhookServices"`
+}
+
+// GetReportK8sWebhookServices returns ReportK8sWebhookServicesResponse.ReportK8sWebhookServices, and is useful for accessing the field via an interface.
+func (v *ReportK8sWebhookServicesResponse) GetReportK8sWebhookServices() bool {
+	return v.ReportK8sWebhookServices
+}
 
 // ReportNamespaceLabelsResponse is returned by ReportNamespaceLabels on success.
 type ReportNamespaceLabelsResponse struct {
@@ -1151,6 +1184,14 @@ func (v *TrafficLevelInput) GetDataBytesPerSecond() int { return v.DataBytesPerS
 // GetFlowsCountPerSecond returns TrafficLevelInput.FlowsCountPerSecond, and is useful for accessing the field via an interface.
 func (v *TrafficLevelInput) GetFlowsCountPerSecond() int { return v.FlowsCountPerSecond }
 
+type WebhookType string
+
+const (
+	WebhookTypeValidatingWebhook WebhookType = "VALIDATING_WEBHOOK"
+	WebhookTypeMutatingWebhook   WebhookType = "MUTATING_WEBHOOK"
+	WebhookTypeConversionWebhook WebhookType = "CONVERSION_WEBHOOK"
+)
+
 // __ReportCiliumClusterWideNetworkPoliciesInput is used internally by genqlient
 type __ReportCiliumClusterWideNetworkPoliciesInput struct {
 	NetworkPolicies []NetworkPolicyInput `json:"networkPolicies"`
@@ -1242,6 +1283,14 @@ func (v *__ReportK8sServicesInput) GetNamespace() string { return v.Namespace }
 
 // GetServices returns __ReportK8sServicesInput.Services, and is useful for accessing the field via an interface.
 func (v *__ReportK8sServicesInput) GetServices() []K8sServiceInput { return v.Services }
+
+// __ReportK8sWebhookServicesInput is used internally by genqlient
+type __ReportK8sWebhookServicesInput struct {
+	Services []K8sWebhookServiceInput `json:"services"`
+}
+
+// GetServices returns __ReportK8sWebhookServicesInput.Services, and is useful for accessing the field via an interface.
+func (v *__ReportK8sWebhookServicesInput) GetServices() []K8sWebhookServiceInput { return v.Services }
 
 // __ReportNamespaceLabelsInput is used internally by genqlient
 type __ReportNamespaceLabelsInput struct {
@@ -1548,6 +1597,39 @@ func ReportK8sServices(
 	var err_ error
 
 	var data_ ReportK8sServicesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by ReportK8sWebhookServices.
+const ReportK8sWebhookServices_Operation = `
+mutation ReportK8sWebhookServices ($services: [K8sWebhookServiceInput!]!) {
+	reportK8sWebhookServices(services: $services)
+}
+`
+
+func ReportK8sWebhookServices(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	services []K8sWebhookServiceInput,
+) (*ReportK8sWebhookServicesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "ReportK8sWebhookServices",
+		Query:  ReportK8sWebhookServices_Operation,
+		Variables: &__ReportK8sWebhookServicesInput{
+			Services: services,
+		},
+	}
+	var err_ error
+
+	var data_ ReportK8sWebhookServicesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

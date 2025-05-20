@@ -1793,6 +1793,14 @@ enum K8sServiceType {
 	EXTERNAL_NAME
 }
 
+input K8sWebhookServiceInput {
+	otterizeName: String!
+	serviceName: String!
+	namespace: String!
+	webhookName: String!
+	webhookType: WebhookType!
+}
+
 type KafkaConfig {
 	name: String!
 	operations: [KafkaOperation!]
@@ -2192,6 +2200,9 @@ type Mutation {
 		namespace: String!
 		reason: EligibleForMetricsCollectionReason!
 		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
+	): Boolean!
+	reportK8sWebhookServices(
+		services: [K8sWebhookServiceInput!]!
 	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
@@ -3275,6 +3286,12 @@ type ValidIDFilter {
 	namespaceIds: IDFilterValue
 	regulationIds: IDFilterValue
 	environmentIds: IDFilterValue
+}
+
+enum WebhookType {
+	VALIDATING_WEBHOOK
+	MUTATING_WEBHOOK
+	CONVERSION_WEBHOOK
 }
 
 type Workload {

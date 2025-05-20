@@ -26,6 +26,7 @@ import (
 	"github.com/otterize/network-mapper/src/mapper/pkg/metrics_collection_traffic"
 	"github.com/otterize/network-mapper/src/mapper/pkg/networkpolicyreport"
 	"github.com/otterize/network-mapper/src/mapper/pkg/resourcevisibility"
+	"github.com/otterize/network-mapper/src/mapper/pkg/webhook_traffic"
 	"github.com/otterize/network-mapper/src/shared/echologrus"
 	"golang.org/x/sync/errgroup"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -256,6 +257,11 @@ func main() {
 		metricsCollectorEndpointsReconciler := metrics_collection_traffic.NewEndpointsReconciler(metricsCollectionTrafficHandler)
 		if err = metricsCollectorEndpointsReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create endpoints reconciler")
+		}
+
+		validatingWebhooksReconciler := webhook_traffic.NewValidatingWebhookReconciler(mgr.GetClient(), cloudClient, kubeFinder)
+		if err = validatingWebhooksReconciler.SetupWithManager(mgr); err != nil {
+			logrus.WithError(err).Panic("unable to create validating webhooks reconciler")
 		}
 
 		netpolReconciler := networkpolicyreport.NewNetworkPolicyReconciler(mgr.GetClient(), cloudClient)

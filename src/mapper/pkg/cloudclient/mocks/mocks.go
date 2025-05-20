@@ -147,6 +147,20 @@ func (mr *MockCloudClientMockRecorder) ReportK8sServices(ctx, namespace, service
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sServices", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sServices), ctx, namespace, services)
 }
 
+// ReportK8sWebhookServices mocks base method.
+func (m *MockCloudClient) ReportK8sWebhookServices(ctx context.Context, services []cloudclient.K8sWebhookServiceInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReportK8sWebhookServices", ctx, services)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReportK8sWebhookServices indicates an expected call of ReportK8sWebhookServices.
+func (mr *MockCloudClientMockRecorder) ReportK8sWebhookServices(ctx, services interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportK8sWebhookServices", reflect.TypeOf((*MockCloudClient)(nil).ReportK8sWebhookServices), ctx, services)
+}
+
 // ReportNamespaceLabels mocks base method.
 func (m *MockCloudClient) ReportNamespaceLabels(ctx context.Context, namespace string, labels []cloudclient.LabelInput) error {
 	m.ctrl.T.Helper()
