@@ -260,8 +260,8 @@ func main() {
 		}
 
 		webhookServicesHandler := webhook_traffic.NewWebhookServicesHandler(mgr.GetClient(), cloudClient, kubeFinder)
-		validatingWebhooksReconciler := webhook_traffic.NewValidatingWebhookReconciler(webhookServicesHandler)
-		if err = validatingWebhooksReconciler.SetupWithManager(mgr); err != nil {
+		webhookTrafficReconcilerManager := webhook_traffic.NewWebhookTrafficReconcilerManager(mgr.GetClient(), webhookServicesHandler)
+		if err = webhookTrafficReconcilerManager.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create validating webhooks reconciler")
 		}
 
