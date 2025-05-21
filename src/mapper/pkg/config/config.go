@@ -38,6 +38,8 @@ const (
 	ServiceCacheSizeDefault                  = 10000
 	MetricsCollectionTrafficCacheSizeKey     = "metrics-collection-traffic-cache-size"
 	MetricsCollectionTrafficCacheSizeDefault = 10000
+	WebhookServicesCacheSizeKey              = "webhook-services-cache-size"
+	WebhookServicesCacheSizeDefault          = 10000
 
 	EnableIstioCollectionKey                  = "enable-istio-collection"
 	EnableIstioCollectionDefault              = false
@@ -85,6 +87,7 @@ func init() {
 	viper.SetDefault(ServiceCacheTTLDurationKey, ServiceCacheTTLDurationDefault)
 	viper.SetDefault(ServiceCacheSizeKey, ServiceCacheSizeDefault)
 	viper.SetDefault(MetricsCollectionTrafficCacheSizeKey, MetricsCollectionTrafficCacheSizeDefault)
+	viper.SetDefault(WebhookServicesCacheSizeKey, WebhookServicesCacheSizeDefault)
 	viper.SetDefault(TimeServerHasToLiveBeforeWeTrustItKey, TimeServerHasToLiveBeforeWeTrustItDefault)
 	viper.SetDefault(ControlPlaneIPv4CidrPrefixLength, ControlPlaneIPv4CidrPrefixLengthDefault)
 	viper.SetDefault(TCPDestResolveOnlyControlPlaneByIp, TCPDestResolveOnlyControlPlaneByIpDefault)
