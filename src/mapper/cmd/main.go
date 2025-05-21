@@ -259,7 +259,8 @@ func main() {
 			logrus.WithError(err).Panic("unable to create endpoints reconciler")
 		}
 
-		validatingWebhooksReconciler := webhook_traffic.NewValidatingWebhookReconciler(mgr.GetClient(), cloudClient, kubeFinder)
+		webhookServicesHandler := webhook_traffic.NewWebhookServicesHandler(mgr.GetClient(), cloudClient, kubeFinder)
+		validatingWebhooksReconciler := webhook_traffic.NewValidatingWebhookReconciler(webhookServicesHandler)
 		if err = validatingWebhooksReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Panic("unable to create validating webhooks reconciler")
 		}
