@@ -9,6 +9,7 @@ import (
 	"github.com/samber/lo"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,7 +44,26 @@ func (h *WebhookServicesHandler) HandleAll(ctx context.Context) error {
 		return errors.Wrap(err)
 	}
 
-	err = h.otterizeCloud.ReportK8sWebhookServices(ctx, validatingWebhookServices)
+	mutatingWebhookServices, err := h.collectMutatingWebhooksServices(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	conversionWebhookServices, err := h.collectConversionWebhooksServices(ctx)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	allWebhookServices := append(validatingWebhookServices, mutatingWebhookServices...)
+	allWebhookServices = append(allWebhookServices, conversionWebhookServices...)
+
+	// dedup
+	allWebhookServices = lo.UniqBy(allWebhookServices, func(service cloudclient.K8sWebhookServiceInput) string {
+		return fmt.Sprintf("%s#%s#%s#%s", service.Namespace, service.ServiceName, service.WebhookName, service.WebhookType)
+
+	})
+
+	err = h.otterizeCloud.ReportK8sWebhookServices(ctx, allWebhookServices)
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -83,12 +103,80 @@ func (h *WebhookServicesHandler) collectValidatingWebhooksServices(ctx context.C
 		}
 	}
 
-	validatingWebhookServices = lo.UniqBy(validatingWebhookServices, func(service cloudclient.K8sWebhookServiceInput) string {
-		return fmt.Sprintf("%s#%s#%s#%s", service.Namespace, service.ServiceName, service.WebhookName, service.WebhookType)
+	return validatingWebhookServices, nil
+}
 
+func (h *WebhookServicesHandler) collectMutatingWebhooksServices(ctx context.Context) ([]cloudclient.K8sWebhookServiceInput, error) {
+	mutatingWebhookConfigurationList := &admissionv1.MutatingWebhookConfigurationList{}
+	err := h.Client.List(ctx, mutatingWebhookConfigurationList)
+	if err != nil {
+		return make([]cloudclient.K8sWebhookServiceInput, 0), errors.Wrap(err)
+	}
+
+	mutatingWebhookServices := make([]cloudclient.K8sWebhookServiceInput, 0)
+	for _, webhookConfiguration := range mutatingWebhookConfigurationList.Items {
+		for _, webhook := range webhookConfiguration.Webhooks {
+			if webhook.ClientConfig.Service != nil {
+
+				identity, found, err := h.getServiceIdentity(ctx, webhook.ClientConfig.Service.Name, webhook.ClientConfig.Service.Namespace)
+				if err != nil {
+					return make([]cloudclient.K8sWebhookServiceInput, 0), errors.Wrap(err)
+				}
+
+				if !found {
+					continue
+				}
+
+				mutatingWebhookServices = append(mutatingWebhookServices, cloudclient.K8sWebhookServiceInput{
+					OtterizeName: identity.Name,
+					ServiceName:  webhook.ClientConfig.Service.Name,
+					Namespace:    webhook.ClientConfig.Service.Namespace,
+					WebhookName:  webhookConfiguration.Name,
+					WebhookType:  cloudclient.WebhookTypeMutatingWebhook,
+				})
+			}
+		}
+	}
+
+	return mutatingWebhookServices, nil
+}
+
+func (h *WebhookServicesHandler) collectConversionWebhooksServices(ctx context.Context) ([]cloudclient.K8sWebhookServiceInput, error) {
+	crdsList := &apiextensionsv1.CustomResourceDefinitionList{}
+	err := h.Client.List(ctx, crdsList)
+	if err != nil {
+		return make([]cloudclient.K8sWebhookServiceInput, 0), errors.Wrap(err)
+	}
+
+	conversionWebhookConfigurationList := lo.Filter(crdsList.Items, func(crd apiextensionsv1.CustomResourceDefinition, _ int) bool {
+		return crd.Spec.Conversion != nil && crd.Spec.Conversion.Webhook != nil && crd.Spec.Conversion.Webhook.ClientConfig != nil
 	})
 
-	return validatingWebhookServices, nil
+	conversionWebhookServices := make([]cloudclient.K8sWebhookServiceInput, 0)
+	for _, webhookCRD := range conversionWebhookConfigurationList {
+		webhookCRDService := webhookCRD.Spec.Conversion.Webhook.ClientConfig.Service
+		if webhookCRDService != nil {
+			identity, found, err := h.getServiceIdentity(ctx, webhookCRDService.Name, webhookCRDService.Namespace)
+			if err != nil {
+				return make([]cloudclient.K8sWebhookServiceInput, 0), errors.Wrap(err)
+			}
+
+			if !found {
+				continue
+			}
+
+			conversionWebhookServices = append(conversionWebhookServices, cloudclient.K8sWebhookServiceInput{
+				OtterizeName: identity.Name,
+				ServiceName:  webhookCRDService.Name,
+				Namespace:    webhookCRDService.Namespace,
+				WebhookName:  webhookCRD.Name,
+				WebhookType:  cloudclient.WebhookTypeConversionWebhook,
+			})
+		}
+
+	}
+
+	return conversionWebhookServices, nil
 }
 
 func (h *WebhookServicesHandler) getServiceIdentity(ctx context.Context, name string, namespace string) (model.OtterizeServiceIdentity, bool, error) {
