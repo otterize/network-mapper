@@ -313,6 +313,12 @@ enum AutomateThirdPartyNetworkPolicy {
 	IF_BLOCKED_BY_OTTERIZE
 }
 
+enum AutomatedThirdPartyPolicyTypes {
+	EXTERNAL_TRAFFIC
+	METRICS_TRAFFIC
+	WEBHOOK_TRAFFIC
+}
+
 enum AwsIamStep {
 	CREATE_CLUSTER
 	CONNECT_CLUSTER
@@ -624,7 +630,7 @@ enum CustomConstraint {
 }
 
 input DNSIPPairInput {
-	dnsName: String!
+	dnsName: String
 	ips: [String!]
 }
 
@@ -777,6 +783,8 @@ enum EdgeAccessStatusReason {
 	ALLOWED_BY_EXTERNALLY_MANAGED_NETWORK_POLICY
 	ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
 	WOULD_BE_ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
+	ALLOWED_BY_WEBHOOK_TRAFFIC_NETWORK_POLICY
+	WOULD_BE_ALLOWED_BY_WEBHOOK_TRAFFIC_NETWORK_POLICY
 }
 
 enum EdgeAccessStatusVerdict {
@@ -1600,6 +1608,7 @@ input IntentsOperatorConfigurationInput {
 	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
 	automateThirdPartyNetworkPolicies: AutomateThirdPartyNetworkPolicy
 	prometheusServerConfigs: [PrometheusServerConfigInput!]
+	automatedThirdPartyPolicyTypes: [AutomatedThirdPartyPolicyTypes!]
 }
 
 type IntentsOperatorState {
@@ -1610,7 +1619,7 @@ type IntentsOperatorState {
 
 type InternetConfig {
 	appliedDomains: [String!]
-	dnsName: String!
+	dnsName: String
 	ips: [String!]
 	ports: [Int!]
 }
@@ -1794,9 +1803,9 @@ enum K8sServiceType {
 }
 
 input K8sWebhookServiceInput {
-	otterizeName: String!
-	serviceName: String!
+	name: String!
 	namespace: String!
+	kind: String!
 	webhookName: String!
 	webhookType: WebhookType!
 }
