@@ -41,13 +41,10 @@ func (d *DNSCache) GetResolvedIPs(dnsName string) []string {
 
 func (d *DNSCache) GetResolvedIPsForWildcard(dnsName string) []string {
 	dnsSuffix := strings.TrimPrefix(dnsName, "*") // Strip the wildcard, leave the '.example.com' suffix
-	result := make([]string, 0)
-	for entry := range d.cache.items {
-		if strings.HasSuffix(entry, dnsSuffix) {
-			// Calling cache.Get() to utilize the LRU instead of iterating over the value too
-			result = append(result, d.cache.Get(entry)...)
-		}
-	}
+	result := d.cache.Filter(func(key string) bool {
+		return strings.HasSuffix(key, dnsSuffix)
+	})
+
 	return result
 }
 
