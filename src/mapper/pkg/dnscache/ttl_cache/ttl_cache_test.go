@@ -1,4 +1,4 @@
-package dnscache
+package ttl_cache
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ type TTLCacheTestSuite struct {
 	suite.Suite
 }
 
-func (s *DNSCacheTestSuite) TestCacheFilterWhileWrite() {
+func (s *TTLCacheTestSuite) TestCacheFilterWhileWrite() {
 	cache := NewTTLCache[string, string](100)
 	stop := make(chan struct{})
 
@@ -38,6 +38,23 @@ func (s *DNSCacheTestSuite) TestCacheFilterWhileWrite() {
 	// so we hope that 15 seconds are good enough interval to reproduce the error if it exists
 	time.Sleep(15 * time.Second)
 	close(stop)
+}
+
+func (s *TTLCacheTestSuite) TestTTL() {
+	cache := NewTTLCache[string, string](100)
+
+	cache.Insert("my-future-blog.de", "ip1", 1*time.Second)
+	ips := cache.Get("my-future-blog.de")
+	s.Require().Len(ips, 1)
+	s.Require().Equal("ip1", ips[0])
+
+	// This is the only place where we sleep in the test, to make sure the TTL works as expected
+	time.Sleep(2 * time.Second)
+
+	cache.cleanupExpired()
+
+	ips = cache.Get("my-future-blog.de")
+	s.Require().Len(ips, 0)
 }
 
 func TestTTLCacheTestSuite(t *testing.T) {

@@ -1,4 +1,4 @@
-package dnscache
+package ttl_cache
 
 import (
 	"container/list"
@@ -7,6 +7,12 @@ import (
 )
 
 type Predicate[K comparable] func(key K) bool
+
+// CacheValue holds the value and its expiration time
+type CacheValue[V any] struct {
+	Value      V
+	Expiration time.Time
+}
 
 // CacheEntry represents an entry in the cache, linking the key with its list element for LRU
 type CacheEntry[K comparable, V comparable] struct {

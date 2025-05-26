@@ -66,24 +66,6 @@ func (s *DNSCacheTestSuite) TestCapacityConfig() {
 	}
 }
 
-func (s *DNSCacheTestSuite) TestTTL() {
-	cache := NewDNSCache()
-
-	cache.AddOrUpdateDNSData("my-future-blog.de", IP1, 1*time.Second)
-	ips := cache.GetResolvedIPs("my-future-blog.de")
-	s.Require().Len(ips, 1)
-	s.Require().Equal(IP1, ips[0])
-
-	// This is the only place where we sleep in the test, to make sure the TTL works as expected
-	time.Sleep(2 * time.Second)
-
-	cache.cache.cleanupExpired()
-
-	ips = cache.GetResolvedIPs("my-future-blog.de")
-	s.Require().Len(ips, 0)
-
-}
-
 func (s *DNSCacheTestSuite) TestWildcardIP() {
 	cache := NewDNSCache()
 	cache.AddOrUpdateDNSData("www.surf-forecast.com", IP1, 60*time.Second)

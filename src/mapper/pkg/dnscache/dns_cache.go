@@ -3,6 +3,7 @@ package dnscache
 import (
 	"context"
 	"github.com/otterize/network-mapper/src/mapper/pkg/config"
+	"github.com/otterize/network-mapper/src/mapper/pkg/dnscache/ttl_cache"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"net"
@@ -11,7 +12,7 @@ import (
 )
 
 type DNSCache struct {
-	cache *TTLCache[string, string]
+	cache *ttl_cache.TTLCache[string, string]
 }
 
 type Resolver interface {
@@ -23,7 +24,7 @@ func NewDNSCache() *DNSCache {
 	if capacity == 0 {
 		logrus.Panic("Capacity cannot be 0")
 	}
-	dnsRecordCache := NewTTLCache[string, string](capacity)
+	dnsRecordCache := ttl_cache.NewTTLCache[string, string](capacity)
 
 	return &DNSCache{
 		cache: dnsRecordCache,
@@ -46,10 +47,4 @@ func (d *DNSCache) GetResolvedIPsForWildcard(dnsName string) []string {
 	})
 
 	return result
-}
-
-// CacheValue holds the value and its expiration time
-type CacheValue[V any] struct {
-	Value      V
-	Expiration time.Time
 }
