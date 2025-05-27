@@ -13,6 +13,11 @@ import (
 func Setup(client client.Client, cloudClient cloudclient.CloudClient, resolver serviceidresolver.ServiceResolver, mgr ctrl.Manager) error {
 	reporter := NewMetadataReporter(client, cloudClient, resolver)
 
+	// Initialize indexes
+	if err := initIndexes(mgr); err != nil {
+		return errors.Wrap(err)
+	}
+
 	// Initialize the EndpointsReconciler
 	endpointsReconciler := NewEndpointsReconciler(client, resolver, reporter)
 	if err := endpointsReconciler.SetupWithManager(mgr); err != nil {
@@ -28,11 +33,6 @@ func Setup(client client.Client, cloudClient cloudclient.CloudClient, resolver s
 	// Initialize the NamespaceReconciler
 	namespaceReconciler := NewNamespaceReconciler(mgr.GetClient(), cloudClient)
 	if err := namespaceReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err)
-	}
-
-	// Initialize indexes
-	if err := initIndexes(mgr); err != nil {
 		return errors.Wrap(err)
 	}
 
