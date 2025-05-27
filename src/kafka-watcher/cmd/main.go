@@ -74,10 +74,10 @@ func main() {
 			logrus.WithError(err).Panic("could not initialize log file watcher")
 		}
 	case config.KubernetesLogReadMode:
-		kafkaServers, parseErr := parseKafkaServers(viper.GetStringSlice(config.KafkaServersKey))
+		kafkaServers, err := parseKafkaServers(viper.GetStringSlice(config.KafkaServersKey))
 		logrus.Infof("Reading from k8s logs - %d servers", len(kafkaServers))
 
-		if parseErr != nil {
+		if err != nil {
 			logrus.WithError(err).Panic("could not parse Kafka servers list")
 		}
 
