@@ -1,10 +1,18 @@
-package dnscache
+package ttl_cache
 
 import (
 	"container/list"
 	"sync"
 	"time"
 )
+
+type Predicate[K comparable] func(key K) bool
+
+// CacheValue holds the value and its expiration time
+type CacheValue[V any] struct {
+	Value      V
+	Expiration time.Time
+}
 
 // CacheEntry represents an entry in the cache, linking the key with its list element for LRU
 type CacheEntry[K comparable, V comparable] struct {
@@ -95,6 +103,10 @@ func (c *TTLCache[K, V]) Get(key K) []V {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	return c.getUnsafe(key)
+}
+
+func (c *TTLCache[K, V]) getUnsafe(key K) []V {
 	// Check if the key exists
 	if _, exists := c.items[key]; !exists {
 		return make([]V, 0)
@@ -143,6 +155,22 @@ func (c *TTLCache[K, V]) cleanupExpired() {
 			delete(c.items, key)
 		}
 	}
+}
+
+// Filter returns all the values that matches the predicator and removes any expired values
+func (c *TTLCache[K, V]) Filter(predicate Predicate[K]) []V {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	result := make([]V, 0)
+	for key, _ := range c.items {
+		if predicate(key) {
+			// Calling `getUnsafe` to utilize the LRU instead of iterating over the value too
+			result = append(result, c.getUnsafe(key)...)
+		}
+	}
+
+	return result
 }
 
 // lruValueExpiration gets the expiration time for a given LRU element
