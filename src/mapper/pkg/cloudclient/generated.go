@@ -813,21 +813,13 @@ const (
 )
 
 type K8sWebhookServiceInput struct {
-	Name        string      `json:"name"`
-	Namespace   string      `json:"namespace"`
-	Kind        string      `json:"kind"`
-	WebhookName string      `json:"webhookName"`
-	WebhookType WebhookType `json:"webhookType"`
+	Identity    ServiceIdentityInput `json:"identity"`
+	WebhookName string               `json:"webhookName"`
+	WebhookType WebhookType          `json:"webhookType"`
 }
 
-// GetName returns K8sWebhookServiceInput.Name, and is useful for accessing the field via an interface.
-func (v *K8sWebhookServiceInput) GetName() string { return v.Name }
-
-// GetNamespace returns K8sWebhookServiceInput.Namespace, and is useful for accessing the field via an interface.
-func (v *K8sWebhookServiceInput) GetNamespace() string { return v.Namespace }
-
-// GetKind returns K8sWebhookServiceInput.Kind, and is useful for accessing the field via an interface.
-func (v *K8sWebhookServiceInput) GetKind() string { return v.Kind }
+// GetIdentity returns K8sWebhookServiceInput.Identity, and is useful for accessing the field via an interface.
+func (v *K8sWebhookServiceInput) GetIdentity() ServiceIdentityInput { return v.Identity }
 
 // GetWebhookName returns K8sWebhookServiceInput.WebhookName, and is useful for accessing the field via an interface.
 func (v *K8sWebhookServiceInput) GetWebhookName() string { return v.WebhookName }

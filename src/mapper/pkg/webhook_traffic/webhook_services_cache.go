@@ -44,7 +44,7 @@ func (c *WebhookServicesCache) key(namespace string, serviceName string, webhook
 
 func (c *WebhookServicesCache) GenerateValue(webhookServices []cloudclient.K8sWebhookServiceInput) (CacheValue, error) {
 	values := lo.Map(webhookServices, func(item cloudclient.K8sWebhookServiceInput, _ int) string {
-		return c.key(item.Namespace, item.Name, item.WebhookName, item.WebhookType)
+		return c.key(item.Identity.Namespace, item.Identity.Name, item.WebhookName, item.WebhookType)
 	})
 
 	slices.Sort(values)
