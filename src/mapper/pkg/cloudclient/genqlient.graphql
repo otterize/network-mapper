@@ -48,3 +48,7 @@ mutation ReportNetworkPolicies($namespace: String!, $networkPolicies: [NetworkPo
 mutation ReportCiliumClusterWideNetworkPolicies($networkPolicies: [NetworkPolicyInput!]!) {
     reportNetworkPolicies(networkPolicies: $networkPolicies)
 }
+
+mutation ReportK8sWebhookServices($services: [K8sWebhookServiceInput!]!) {
+    reportK8sWebhookServices(services: $services)
+}
