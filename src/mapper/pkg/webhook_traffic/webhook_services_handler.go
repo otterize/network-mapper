@@ -6,6 +6,7 @@ import (
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
+	"github.com/otterize/nilable"
 	"github.com/samber/lo"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -59,7 +60,7 @@ func (h *WebhookServicesHandler) HandleAll(ctx context.Context) error {
 
 	// dedup
 	allWebhookServices = lo.UniqBy(allWebhookServices, func(service cloudclient.K8sWebhookServiceInput) string {
-		return fmt.Sprintf("%s#%s#%s#%s", service.Namespace, service.Name, service.WebhookName, service.WebhookType)
+		return fmt.Sprintf("%s#%s#%s#%s", service.Identity.Namespace, service.Identity.Name, service.WebhookName, service.WebhookType)
 
 	})
 
@@ -164,14 +165,20 @@ func (h *WebhookServicesHandler) createWebhookServiceInput(ctx context.Context, 
 	}
 
 	input := cloudclient.K8sWebhookServiceInput{
-		Name:        identity.Name,
-		Namespace:   namespace,
+		Identity: cloudclient.ServiceIdentityInput{
+			Name:      identity.Name,
+			Namespace: namespace,
+		},
 		WebhookName: webhookName,
 		WebhookType: webhookType,
 	}
 
 	if identity.PodOwnerKind != nil {
-		input.Kind = identity.PodOwnerKind.Kind
+		input.Identity.Kind = identity.PodOwnerKind.Kind
+	}
+
+	if identity.NameResolvedUsingAnnotation != nil {
+		input.Identity.NameResolvedUsingAnnotation = nilable.From(*identity.NameResolvedUsingAnnotation)
 	}
 
 	return input, true, nil

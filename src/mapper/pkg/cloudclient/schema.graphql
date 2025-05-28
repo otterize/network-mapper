@@ -1803,9 +1803,7 @@ enum K8sServiceType {
 }
 
 input K8sWebhookServiceInput {
-	name: String!
-	namespace: String!
-	kind: String!
+	identity: ServiceIdentityInput!
 	webhookName: String!
 	webhookType: WebhookType!
 }
@@ -2403,7 +2401,7 @@ enum NetworkPolicyScope {
 }
 
 type NetworkPolicyWorkload {
-	scope: NetworkPolicyScope!
+	scopes: [NetworkPolicyScope!]!
 	service: Service!
 }
 
@@ -2527,6 +2525,9 @@ type Query {
 	accessGraphServices(
 		filter: InputAccessGraphFilter
 	): [Service!]!
+	accessGraphNamespaces(
+		filter: InputAccessGraphFilter
+	): [Namespace!]!
 	serviceAccessGraph(
 		id: ID!
 	): ServiceAccessGraph!

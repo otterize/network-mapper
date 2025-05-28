@@ -106,23 +106,29 @@ func (s *WebhookServiceHandlerTestSuite) TestReportingAllWebhooks() {
 
 	expected := []cloudclient.K8sWebhookServiceInput{
 		{
-			Namespace:   serviceNamespace,
-			Name:        otterizeServiceIdentityName,
-			Kind:        "",
+			Identity: cloudclient.ServiceIdentityInput{
+				Namespace: serviceNamespace,
+				Name:      otterizeServiceIdentityName,
+				Kind:      "",
+			},
 			WebhookName: ValidatingWebhook.Name,
 			WebhookType: cloudclient.WebhookTypeValidatingWebhook,
 		},
 		{
-			Namespace:   serviceNamespace,
-			Name:        otterizeServiceIdentityName,
-			Kind:        "",
+			Identity: cloudclient.ServiceIdentityInput{
+				Namespace: serviceNamespace,
+				Name:      otterizeServiceIdentityName,
+				Kind:      "",
+			},
 			WebhookName: MutatingWebhook.Name,
 			WebhookType: cloudclient.WebhookTypeMutatingWebhook,
 		},
 		{
-			Namespace:   serviceNamespace,
-			Name:        otterizeServiceIdentityName,
-			Kind:        "",
+			Identity: cloudclient.ServiceIdentityInput{
+				Namespace: serviceNamespace,
+				Name:      otterizeServiceIdentityName,
+				Kind:      "",
+			},
 			WebhookName: ConversionWebhook.Name,
 			WebhookType: cloudclient.WebhookTypeConversionWebhook,
 		},
@@ -146,16 +152,20 @@ func (s *WebhookServiceHandlerTestSuite) TestReportingAllWebhooks_SameWebhookNam
 
 	expected := []cloudclient.K8sWebhookServiceInput{
 		{
-			Namespace:   serviceNamespace,
-			Name:        otterizeServiceIdentityName,
-			Kind:        "",
+			Identity: cloudclient.ServiceIdentityInput{
+				Namespace: serviceNamespace,
+				Name:      otterizeServiceIdentityName,
+				Kind:      "",
+			},
 			WebhookName: ValidatingWebhook.Name,
 			WebhookType: cloudclient.WebhookTypeValidatingWebhook,
 		},
 		{
-			Namespace:   serviceNamespace,
-			Name:        otterizeServiceIdentityName,
-			Kind:        "",
+			Identity: cloudclient.ServiceIdentityInput{
+				Namespace: serviceNamespace,
+				Name:      otterizeServiceIdentityName,
+				Kind:      "",
+			},
 			WebhookName: ValidatingWebhook.Name,
 			WebhookType: cloudclient.WebhookTypeMutatingWebhook,
 		},
@@ -179,9 +189,11 @@ func (s *WebhookServiceHandlerTestSuite) TestReportingAllWebhooks_SameServiceTwi
 
 	expected := []cloudclient.K8sWebhookServiceInput{
 		{
-			Namespace:   serviceNamespace,
-			Name:        otterizeServiceIdentityName,
-			Kind:        "",
+			Identity: cloudclient.ServiceIdentityInput{
+				Namespace: serviceNamespace,
+				Name:      otterizeServiceIdentityName,
+				Kind:      "",
+			},
 			WebhookName: ValidatingWebhook.Name,
 			WebhookType: cloudclient.WebhookTypeValidatingWebhook,
 		},
