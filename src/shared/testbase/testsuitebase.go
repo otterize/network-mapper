@@ -24,8 +24,8 @@ import (
 	"time"
 )
 
-const waitForCreationInterval = 200 * time.Millisecond
-const waitForCreationTimeout = 3 * time.Second
+const waitForInterval = 200 * time.Millisecond
+const waitForTimeout = 3 * time.Second
 
 type ControllerManagerTestSuiteBase struct {
 	suite.Suite
@@ -92,8 +92,8 @@ func (s *ControllerManagerTestSuiteBase) TearDownTest() {
 // waitForObjectToBeCreated tries to get an object multiple times until it is available in the k8s API server
 func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Object) {
 	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
-		waitForCreationInterval,
-		waitForCreationTimeout,
+		waitForInterval,
+		waitForTimeout,
 		true,
 		func(ctx context.Context) (done bool, err error) {
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
@@ -104,6 +104,24 @@ func (s *ControllerManagerTestSuiteBase) waitForObjectToBeCreated(obj client.Obj
 				return false, errors.Wrap(err)
 			}
 			return true, nil
+		}),
+	)
+}
+
+func (s *ControllerManagerTestSuiteBase) WaitForObjectToBeDeleted(obj client.Object) {
+	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
+		waitForInterval,
+		waitForTimeout,
+		true,
+		func(ctx context.Context) (done bool, err error) {
+			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+			if k8serrors.IsNotFound(err) {
+				return true, nil
+			}
+			if err != nil {
+				return false, errors.Wrap(err)
+			}
+			return false, nil
 		}),
 	)
 }
@@ -305,8 +323,8 @@ func (s *ControllerManagerTestSuiteBase) AddIngress(name string, serviceName str
 func (s *ControllerManagerTestSuiteBase) GetAPIServerService() *corev1.Service {
 	service := &corev1.Service{}
 	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
-		waitForCreationInterval,
-		waitForCreationTimeout,
+		waitForInterval,
+		waitForTimeout,
 		true,
 		func(ctx context.Context) (done bool, err error) {
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: "kubernetes", Namespace: "default"}, service)
@@ -325,8 +343,8 @@ func (s *ControllerManagerTestSuiteBase) GetAPIServerService() *corev1.Service {
 func (s *ControllerManagerTestSuiteBase) GetAPIServerEndpoints() *corev1.Endpoints {
 	endpoints := &corev1.Endpoints{}
 	s.Require().NoError(wait.PollUntilContextTimeout(context.Background(),
-		waitForCreationInterval,
-		waitForCreationTimeout,
+		waitForInterval,
+		waitForTimeout,
 		true,
 		func(ctx context.Context) (done bool, err error) {
 			err = s.Mgr.GetClient().Get(ctx, types.NamespacedName{Name: "kubernetes", Namespace: "default"}, endpoints)
