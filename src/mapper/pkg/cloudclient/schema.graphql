@@ -313,6 +313,12 @@ enum AutomateThirdPartyNetworkPolicy {
 	IF_BLOCKED_BY_OTTERIZE
 }
 
+enum AutomatedThirdPartyPolicyTypes {
+	EXTERNAL_TRAFFIC
+	METRICS_TRAFFIC
+	WEBHOOK_TRAFFIC
+}
+
 enum AwsIamStep {
 	CREATE_CLUSTER
 	CONNECT_CLUSTER
@@ -777,6 +783,8 @@ enum EdgeAccessStatusReason {
 	ALLOWED_BY_EXTERNALLY_MANAGED_NETWORK_POLICY
 	ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
 	WOULD_BE_ALLOWED_BY_METRICS_COLLECTION_TRAFFIC_NETWORK_POLICY
+	ALLOWED_BY_WEBHOOK_TRAFFIC_NETWORK_POLICY
+	WOULD_BE_ALLOWED_BY_WEBHOOK_TRAFFIC_NETWORK_POLICY
 }
 
 enum EdgeAccessStatusVerdict {
@@ -1602,6 +1610,7 @@ input IntentsOperatorConfigurationInput {
 	externallyManagedPolicyWorkloads: [ExternallyManagedPolicyWorkloadInput!]
 	automateThirdPartyNetworkPolicies: AutomateThirdPartyNetworkPolicy
 	prometheusServerConfigs: [PrometheusServerConfigInput!]
+	automatedThirdPartyPolicyTypes: [AutomatedThirdPartyPolicyTypes!]
 }
 
 type IntentsOperatorState {
@@ -1794,6 +1803,12 @@ enum K8sServiceType {
 	NODE_PORT
 	LOAD_BALANCER
 	EXTERNAL_NAME
+}
+
+input K8sWebhookServiceInput {
+	identity: ServiceIdentityInput!
+	webhookName: String!
+	webhookType: WebhookType!
 }
 
 type KafkaConfig {
@@ -2195,6 +2210,9 @@ type Mutation {
 		namespace: String!
 		reason: EligibleForMetricsCollectionReason!
 		resources: [K8sResourceEligibleForMetricsCollectionInput!]!
+	): Boolean!
+	reportK8sWebhookServices(
+		services: [K8sWebhookServiceInput!]!
 	): Boolean!
 	reportKafkaServerConfigs(
 		namespace: String!
@@ -3292,6 +3310,12 @@ type ValidIDFilter {
 	namespaceIds: IDFilterValue
 	regulationIds: IDFilterValue
 	environmentIds: IDFilterValue
+}
+
+enum WebhookType {
+	VALIDATING_WEBHOOK
+	MUTATING_WEBHOOK
+	CONVERSION_WEBHOOK
 }
 
 type Workload {
