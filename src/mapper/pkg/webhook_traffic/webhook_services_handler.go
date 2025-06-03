@@ -1,8 +1,8 @@
 package webhook_traffic
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/network-mapper/src/mapper/pkg/graph/model"
@@ -58,16 +58,35 @@ func (h *WebhookServicesHandler) HandleAll(ctx context.Context) error {
 	allWebhookServices := append(validatingWebhookServices, mutatingWebhookServices...)
 	allWebhookServices = append(allWebhookServices, conversionWebhookServices...)
 
-	// dedup
-	allWebhookServices = lo.UniqBy(allWebhookServices, func(service cloudclient.K8sWebhookServiceInput) string {
-		return fmt.Sprintf("%s#%s#%s#%s", service.Identity.Namespace, service.Identity.Name, service.WebhookName, service.WebhookType)
+	err = h.reportToCloud(ctx, allWebhookServices)
+	if err != nil {
+		return errors.Wrap(err)
+	}
 
-	})
+	return nil
+}
+
+func (h *WebhookServicesHandler) reportToCloud(ctx context.Context, allWebhookServices []cloudclient.K8sWebhookServiceInput) error {
+	// dedup
+	allWebhookServices = lo.UniqBy(allWebhookServices, K8sWebhookServiceInputKey)
+
+	newCacheValue, err := h.cache.GenerateValue(allWebhookServices)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	currentCacheValue, found := h.cache.Get()
+	if found && bytes.Equal(currentCacheValue, newCacheValue) {
+		// current cache value is same as the new one, no need to report
+		return nil
+	}
 
 	err = h.otterizeCloud.ReportK8sWebhookServices(ctx, allWebhookServices)
 	if err != nil {
 		return errors.Wrap(err)
 	}
+
+	h.cache.Set(newCacheValue)
 
 	return nil
 }

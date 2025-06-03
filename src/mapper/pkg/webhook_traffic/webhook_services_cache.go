@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 	"hash/crc32"
+	"time"
 )
 
 type CacheValue []byte
@@ -21,30 +22,32 @@ type WebhookServicesCache struct {
 
 func NewWebhookServicesCache() *WebhookServicesCache {
 	size := viper.GetInt(config.WebhookServicesCacheSizeKey)
-	// We don't want the cache to expire. It does not contain a lot of data, and we want to keep it as long as possible
-	// so we won't send unnecessary requests to the cloud.
-	cache := expirable.NewLRU[string, CacheValue](size, OnEvict, 0)
+	cache := expirable.NewLRU[string, CacheValue](size, OnEvict, 5*time.Hour)
 
 	return &WebhookServicesCache{
 		cache: cache,
 	}
 }
 
-func (c *WebhookServicesCache) Get(namespace string, serviceName string, webhookName string, webhookType cloudclient.WebhookType) (CacheValue, bool) {
-	return c.cache.Get(c.key(namespace, serviceName, webhookName, webhookType))
+func (c *WebhookServicesCache) Get() (CacheValue, bool) {
+	return c.cache.Get("webhooks")
 }
 
-func (c *WebhookServicesCache) Set(namespace string, serviceName string, webhookName string, webhookType cloudclient.WebhookType, value CacheValue) bool {
-	return c.cache.Add(c.key(namespace, serviceName, webhookName, webhookType), value)
+func (c *WebhookServicesCache) Set(value CacheValue) bool {
+	return c.cache.Add("webhooks", value)
 }
 
-func (c *WebhookServicesCache) key(namespace string, serviceName string, webhookName string, webhookType cloudclient.WebhookType) string {
-	return fmt.Sprintf("%s#%s#%s#%s", namespace, serviceName, webhookName, webhookType)
+func K8sWebhookServiceInputKey(webhookService cloudclient.K8sWebhookServiceInput) string {
+	return fmt.Sprintf("%s#%s#%s#%s",
+		webhookService.Identity.Namespace,
+		webhookService.Identity.Name,
+		webhookService.WebhookName,
+		webhookService.WebhookType)
 }
 
 func (c *WebhookServicesCache) GenerateValue(webhookServices []cloudclient.K8sWebhookServiceInput) (CacheValue, error) {
 	values := lo.Map(webhookServices, func(item cloudclient.K8sWebhookServiceInput, _ int) string {
-		return c.key(item.Identity.Namespace, item.Identity.Name, item.WebhookName, item.WebhookType)
+		return K8sWebhookServiceInputKey(item)
 	})
 
 	slices.Sort(values)

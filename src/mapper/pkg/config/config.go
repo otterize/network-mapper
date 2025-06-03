@@ -39,7 +39,7 @@ const (
 	MetricsCollectionTrafficCacheSizeKey     = "metrics-collection-traffic-cache-size"
 	MetricsCollectionTrafficCacheSizeDefault = 10000
 	WebhookServicesCacheSizeKey              = "webhook-services-cache-size"
-	WebhookServicesCacheSizeDefault          = 10000
+	WebhookServicesCacheSizeDefault          = 10
 
 	EnableIstioCollectionKey                  = "enable-istio-collection"
 	EnableIstioCollectionDefault              = false
