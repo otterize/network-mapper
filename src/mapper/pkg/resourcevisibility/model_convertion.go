@@ -1,6 +1,7 @@
 package resourcevisibility
 
 import (
+	"cmp"
 	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
@@ -582,7 +583,7 @@ func getRelatedPodsNamedPortsMap(ctx context.Context, k8sClient client.Client, s
 	labelSelector := client.MatchingLabels(service.Spec.Selector)
 	err := k8sClient.List(ctx, relatedPods, labelSelector, client.InNamespace(service.Namespace))
 	if err != nil {
-		logrus.WithError(err).Errorf("Failed to list pods for service %s/%s", service.Namespace, service.Name)
+		logrus.WithFields(logrus.Fields{"service": service.Name, "namespace": service.Namespace}).WithError(err).Errorf("Failed listing pods for service")
 		return nil
 	}
 
@@ -604,23 +605,14 @@ func getRelatedPodsNamedPortsMap(ctx context.Context, k8sClient client.Client, s
 
 	namedPorts = lo.Uniq(namedPorts)
 	slices.SortFunc(namedPorts, func(a, b cloudclient.NamedPortInput) int {
-		if a.Name < b.Name {
-			return -1
+		if cmp.Compare(a.Name, b.Name) != 0 {
+			return cmp.Compare(a.Name, b.Name)
 		}
-		if a.Name > b.Name {
-			return 1
+		if cmp.Compare(a.Port, b.Port) != 0 {
+			return cmp.Compare(a.Port, b.Port)
 		}
-		if a.Port < b.Port {
-			return -1
-		}
-		if a.Port > b.Port {
-			return 1
-		}
-		if a.Protocol < b.Protocol {
-			return -1
-		}
-		if a.Protocol > b.Protocol {
-			return 1
+		if cmp.Compare(a.Protocol, b.Protocol) != 0 {
+			return cmp.Compare(a.Protocol, b.Protocol)
 		}
 		return 0
 	})
