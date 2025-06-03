@@ -899,7 +899,6 @@ type FeatureFlags {
 	enableInternetIntentsSuggestions: Boolean
 	enableIAMIntentsSuggestions: Boolean
 	enableNetworkPoliciesInAccessGraph: Boolean
-	enableTrafficFromTCPResolveDestBugfixInAccessGraph: Boolean
 }
 
 type Finding {
@@ -1249,7 +1248,6 @@ input InputFeatureFlags {
 	enableInternetIntentsSuggestions: Boolean
 	enableIAMIntentsSuggestions: Boolean
 	enableNetworkPoliciesInAccessGraph: Boolean
-	enableTrafficFromTCPResolveDestBugfixInAccessGraph: Boolean
 }
 
 """ Findings filter """
@@ -1742,7 +1740,6 @@ input K8sResourceLoadBalancerIngressInput {
 input K8sResourceServiceInput {
 	spec: K8sResourceServiceSpecInput!
 	status: K8sResourceServiceStatusInput
-	targetNamedPorts: [NamedPortInput!]
 }
 
 input K8sResourceServiceLoadBalancerIngressInput {
@@ -2317,12 +2314,6 @@ type Mutation {
 	): Boolean!
 }
 
-input NamedPortInput {
-	name: String!
-	port: Int!
-	protocol: K8sPortProtocol!
-}
-
 type Namespace {
 	id: ID!
 	name: String!
@@ -2564,9 +2555,6 @@ type Query {
 	edgeNetworkPolicies(
 		clientServiceId: ID!
 		serverServiceId: ID!
-	): [NetworkPolicy!]!
-	serviceNetworkPolicies(
-		serviceId: ID!
 	): [NetworkPolicy!]!
 """ Get edge connections count """
 	edgeConnectionsCount(
@@ -3127,8 +3115,6 @@ scalar String
 type TLSConfiguration {
 	caCertificate: String
 	certificate: String
-	caCertificateFingerprint: String
-	certificateFingerprint: String
 }
 
 input TLSConfigurationInput {

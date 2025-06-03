@@ -21,6 +21,7 @@ type CloudClient interface {
 	ReportK8sResourceEligibleForMetricsCollection(ctx context.Context, namespace string, reason EligibleForMetricsCollectionReason, resources []K8sResourceEligibleForMetricsCollectionInput) error
 	ReportNetworkPolicies(ctx context.Context, namespace string, policies []NetworkPolicyInput) error
 	ReportCiliumClusterWideNetworkPolicies(ctx context.Context, policies []NetworkPolicyInput) error
+	ReportK8sWebhookServices(ctx context.Context, services []K8sWebhookServiceInput) error
 }
 
 type CloudClientImpl struct {
@@ -196,6 +197,17 @@ func (c *CloudClientImpl) ReportCiliumClusterWideNetworkPolicies(
 		c.client,
 		policies,
 	)
+	if err != nil {
+		return errors.Wrap(err)
+	}
+
+	return nil
+}
+
+func (c *CloudClientImpl) ReportK8sWebhookServices(ctx context.Context, services []K8sWebhookServiceInput) error {
+	logrus.Infof("Reporting webhook services")
+
+	_, err := ReportK8sWebhookServices(ctx, c.client, services)
 	if err != nil {
 		return errors.Wrap(err)
 	}
