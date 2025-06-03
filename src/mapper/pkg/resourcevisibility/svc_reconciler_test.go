@@ -83,6 +83,36 @@ func (s *ServiceVisibilityTestSuite) TestServiceUpload() {
 	}
 	s.kubeFinder.EXPECT().ResolveOtterizeIdentityForService(gomock.Any(), &service, gomock.Any()).Return(serviceIdentity, true, nil)
 
+	// Expect pod listing for TargetNamedPorts
+	podList := corev1.PodList{}
+	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&podList), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, list *corev1.PodList, opts ...client.ListOption) error {
+			list.Items = []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: testNamespace,
+						Labels:    map[string]string{"app": deploymentName},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "container-1",
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8080,
+										Protocol:      corev1.ProtocolTCP,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			return nil
+		})
+
 	serviceInput := cloudclient.K8sServiceInput{
 		OtterizeServer: deploymentName,
 		Namespace:      testNamespace,
@@ -97,6 +127,13 @@ func (s *ServiceVisibilityTestSuite) TestServiceUpload() {
 					},
 				},
 				Selector: []cloudclient.SelectorKeyValueInput{{Key: nilable.From("app"), Value: nilable.From(deploymentName)}},
+			},
+			TargetNamedPorts: []cloudclient.NamedPortInput{
+				{
+					Name:     "http",
+					Port:     8080,
+					Protocol: cloudclient.K8sPortProtocol(corev1.ProtocolTCP),
+				},
 			},
 		},
 	}
@@ -125,6 +162,35 @@ func (s *ServiceVisibilityTestSuite) TestServiceUpload() {
 		})
 
 	s.kubeFinder.EXPECT().ResolveOtterizeIdentityForService(gomock.Any(), &service, gomock.Any()).Return(serviceIdentity, true, nil)
+
+	// Expect pod listing for TargetNamedPorts again
+	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&podList), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, list *corev1.PodList, opts ...client.ListOption) error {
+			list.Items = []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: testNamespace,
+						Labels:    map[string]string{"app": deploymentName},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "container-1",
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8080,
+										Protocol:      corev1.ProtocolTCP,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			return nil
+		})
 
 	// Reconcile again should not upload cause re-upload due to caching
 	res, err = s.reconciler.Reconcile(context.Background(), req)
@@ -169,6 +235,36 @@ func (s *ServiceVisibilityTestSuite) TestServiceReUploadOnIdentityChange() {
 	}
 	s.kubeFinder.EXPECT().ResolveOtterizeIdentityForService(gomock.Any(), &service, gomock.Any()).Return(serviceIdentity, true, nil)
 
+	// Expect pod listing for TargetNamedPorts
+	podList := corev1.PodList{}
+	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&podList), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, list *corev1.PodList, opts ...client.ListOption) error {
+			list.Items = []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: testNamespace,
+						Labels:    map[string]string{"app": deploymentName},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "container-1",
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8080,
+										Protocol:      corev1.ProtocolTCP,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			return nil
+		})
+
 	serviceInput := cloudclient.K8sServiceInput{
 		OtterizeServer: deploymentName,
 		Namespace:      testNamespace,
@@ -184,6 +280,13 @@ func (s *ServiceVisibilityTestSuite) TestServiceReUploadOnIdentityChange() {
 					},
 				},
 				Selector: []cloudclient.SelectorKeyValueInput{{Key: nilable.From("app"), Value: nilable.From(deploymentName)}},
+			},
+			TargetNamedPorts: []cloudclient.NamedPortInput{
+				{
+					Name:     "http",
+					Port:     8080,
+					Protocol: cloudclient.K8sPortProtocol(corev1.ProtocolTCP),
+				},
 			},
 		},
 	}
@@ -220,6 +323,35 @@ func (s *ServiceVisibilityTestSuite) TestServiceReUploadOnIdentityChange() {
 
 	s.kubeFinder.EXPECT().ResolveOtterizeIdentityForService(gomock.Any(), &service, gomock.Any()).Return(newIdentity, true, nil)
 
+	// Expect pod listing for TargetNamedPorts again
+	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&podList), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, list *corev1.PodList, opts ...client.ListOption) error {
+			list.Items = []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: testNamespace,
+						Labels:    map[string]string{"app": deploymentName},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "container-1",
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8080,
+										Protocol:      corev1.ProtocolTCP,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			return nil
+		})
+
 	newServiceInput := cloudclient.K8sServiceInput{
 		OtterizeServer: "another-server",
 		Namespace:      testNamespace,
@@ -235,6 +367,13 @@ func (s *ServiceVisibilityTestSuite) TestServiceReUploadOnIdentityChange() {
 					},
 				},
 				Selector: []cloudclient.SelectorKeyValueInput{{Key: nilable.From("app"), Value: nilable.From(deploymentName)}},
+			},
+			TargetNamedPorts: []cloudclient.NamedPortInput{
+				{
+					Name:     "http",
+					Port:     8080,
+					Protocol: cloudclient.K8sPortProtocol(corev1.ProtocolTCP),
+				},
 			},
 		},
 	}
@@ -277,6 +416,35 @@ func (s *ServiceVisibilityTestSuite) TestServiceReUploadOnIdentityChange() {
 
 	s.kubeFinder.EXPECT().ResolveOtterizeIdentityForService(gomock.Any(), &nodePortService, gomock.Any()).Return(newIdentity, true, nil)
 
+	// Expect pod listing for TargetNamedPorts for nodePortService
+	s.k8sClient.EXPECT().List(gomock.Any(), gomock.Eq(&podList), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, list *corev1.PodList, opts ...client.ListOption) error {
+			list.Items = []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: testNamespace,
+						Labels:    map[string]string{"app": deploymentName},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "container-1",
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8080,
+										Protocol:      corev1.ProtocolTCP,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			return nil
+		})
+
 	nodePortServiceInput := cloudclient.K8sServiceInput{
 		OtterizeServer: "another-server",
 		Namespace:      testNamespace,
@@ -292,6 +460,13 @@ func (s *ServiceVisibilityTestSuite) TestServiceReUploadOnIdentityChange() {
 					},
 				},
 				Selector: []cloudclient.SelectorKeyValueInput{{Key: nilable.From("app"), Value: nilable.From(deploymentName)}},
+			},
+			TargetNamedPorts: []cloudclient.NamedPortInput{
+				{
+					Name:     "http",
+					Port:     8080,
+					Protocol: cloudclient.K8sPortProtocol(corev1.ProtocolTCP),
+				},
 			},
 		},
 	}
