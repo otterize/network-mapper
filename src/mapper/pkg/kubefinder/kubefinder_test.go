@@ -128,9 +128,7 @@ func (s *KubeFinderTestSuite) TestIsSrcIpClusterInternal() {
 	s.Require().True(s.Mgr.GetCache().WaitForCacheSync(context.Background()))
 
 	// Check pod doesn't exist in the manager's cache
-	pod, err = s.kubeFinder.ResolveIPToPod(context.Background(), "1.1.1.1")
-	s.Require().Nil(pod)
-	s.Require().Error(err)
+	s.WaitForObjectToBeDeleted(pod)
 
 	// Check isInternal with the deleted pod's ip
 	isInternal, err = s.kubeFinder.IsSrcIpClusterInternal(context.Background(), "1.1.1.1")
