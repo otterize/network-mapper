@@ -1,14 +1,18 @@
 package resourcevisibility
 
 import (
+	"cmp"
+	"context"
 	"github.com/otterize/intents-operator/src/shared/errors"
 	"github.com/otterize/network-mapper/src/mapper/pkg/cloudclient"
 	"github.com/otterize/nilable"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func convertPortProtocol(protocol corev1.Protocol) (*cloudclient.K8sPortProtocol, error) {
@@ -294,7 +298,7 @@ func convertIngressLoadBalancerStatus(status networkingv1.IngressStatus) (nilabl
 	return nilable.From(ingressStatusInput), nil
 }
 
-func convertServiceResource(service corev1.Service) (cloudclient.K8sResourceServiceInput, error) {
+func convertServiceResource(ctx context.Context, k8sClient client.Client, service corev1.Service) (cloudclient.K8sResourceServiceInput, error) {
 	ports := make([]cloudclient.K8sServicePort, 0)
 	for _, port := range service.Spec.Ports {
 		protocol, err := convertPortProtocol(port.Protocol)
@@ -389,6 +393,11 @@ func convertServiceResource(service corev1.Service) (cloudclient.K8sResourceServ
 
 	if status.Set {
 		input.Status = status
+	}
+
+	targetNamedPorts := getRelatedPodsNamedPortsMap(ctx, k8sClient, &service)
+	if len(targetNamedPorts) > 0 {
+		input.TargetNamedPorts = targetNamedPorts
 	}
 
 	return input, nil
@@ -564,4 +573,61 @@ func convertIngressResource(ingress networkingv1.Ingress) (cloudclient.K8sResour
 	}
 
 	return input, true, nil
+}
+
+func getRelatedPodsNamedPortsMap(ctx context.Context, k8sClient client.Client, service *corev1.Service) []cloudclient.NamedPortInput {
+	if len(service.Spec.Selector) == 0 {
+		return nil
+	}
+	relatedPods := &corev1.PodList{}
+	labelSelector := client.MatchingLabels(service.Spec.Selector)
+	err := k8sClient.List(ctx, relatedPods, labelSelector, client.InNamespace(service.Namespace))
+	if err != nil {
+		logrus.WithFields(logrus.Fields{"service": service.Name, "namespace": service.Namespace}).WithError(err).Errorf("Failed listing pods for service")
+		return nil
+	}
+
+	namedPorts := make([]cloudclient.NamedPortInput, 0)
+	for _, pod := range relatedPods.Items {
+		for _, container := range pod.Spec.Containers {
+			for _, port := range container.Ports {
+				if port.Name == "" {
+					continue // We are only interested in named ports
+				}
+				namedPorts = append(namedPorts, cloudclient.NamedPortInput{
+					Name:     port.Name,
+					Port:     int(port.ContainerPort),
+					Protocol: convertProtocolToCloudFormat(port.Protocol),
+				})
+			}
+		}
+	}
+
+	namedPorts = lo.Uniq(namedPorts)
+	slices.SortFunc(namedPorts, func(a, b cloudclient.NamedPortInput) int {
+		if cmp.Compare(a.Name, b.Name) != 0 {
+			return cmp.Compare(a.Name, b.Name)
+		}
+		if cmp.Compare(a.Port, b.Port) != 0 {
+			return cmp.Compare(a.Port, b.Port)
+		}
+		if cmp.Compare(a.Protocol, b.Protocol) != 0 {
+			return cmp.Compare(a.Protocol, b.Protocol)
+		}
+		return 0
+	})
+	return namedPorts
+}
+
+func convertProtocolToCloudFormat(proto corev1.Protocol) cloudclient.K8sPortProtocol {
+	switch proto {
+	case corev1.ProtocolTCP:
+		return cloudclient.K8sPortProtocolTcp
+	case corev1.ProtocolUDP:
+		return cloudclient.K8sPortProtocolUdp
+	case corev1.ProtocolSCTP:
+		return cloudclient.K8sPortProtocolSctp
+	default:
+		return cloudclient.K8sPortProtocolTcp
+	}
 }

@@ -601,8 +601,9 @@ func (v *K8sResourceLoadBalancerIngressInput) GetHostname() nilable.Nilable[stri
 func (v *K8sResourceLoadBalancerIngressInput) GetPorts() []PortStatusInput { return v.Ports }
 
 type K8sResourceServiceInput struct {
-	Spec   K8sResourceServiceSpecInput                    `json:"spec"`
-	Status nilable.Nilable[K8sResourceServiceStatusInput] `json:"status"`
+	Spec             K8sResourceServiceSpecInput                    `json:"spec"`
+	Status           nilable.Nilable[K8sResourceServiceStatusInput] `json:"status"`
+	TargetNamedPorts []NamedPortInput                               `json:"targetNamedPorts"`
 }
 
 // GetSpec returns K8sResourceServiceInput.Spec, and is useful for accessing the field via an interface.
@@ -612,6 +613,9 @@ func (v *K8sResourceServiceInput) GetSpec() K8sResourceServiceSpecInput { return
 func (v *K8sResourceServiceInput) GetStatus() nilable.Nilable[K8sResourceServiceStatusInput] {
 	return v.Status
 }
+
+// GetTargetNamedPorts returns K8sResourceServiceInput.TargetNamedPorts, and is useful for accessing the field via an interface.
+func (v *K8sResourceServiceInput) GetTargetNamedPorts() []NamedPortInput { return v.TargetNamedPorts }
 
 type K8sResourceServiceLoadBalancerIngressInput struct {
 	Ip       nilable.Nilable[string]             `json:"ip"`
@@ -871,6 +875,21 @@ const (
 	LoadBalancerIPModeVip   LoadBalancerIPMode = "VIP"
 	LoadBalancerIPModeProxy LoadBalancerIPMode = "PROXY"
 )
+
+type NamedPortInput struct {
+	Name     string          `json:"name"`
+	Port     int             `json:"port"`
+	Protocol K8sPortProtocol `json:"protocol"`
+}
+
+// GetName returns NamedPortInput.Name, and is useful for accessing the field via an interface.
+func (v *NamedPortInput) GetName() string { return v.Name }
+
+// GetPort returns NamedPortInput.Port, and is useful for accessing the field via an interface.
+func (v *NamedPortInput) GetPort() int { return v.Port }
+
+// GetProtocol returns NamedPortInput.Protocol, and is useful for accessing the field via an interface.
+func (v *NamedPortInput) GetProtocol() K8sPortProtocol { return v.Protocol }
 
 type NetworkPolicyInput struct {
 	Name string `json:"name"`

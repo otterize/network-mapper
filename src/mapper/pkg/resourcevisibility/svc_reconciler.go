@@ -120,7 +120,11 @@ func (r *ServiceReconciler) getCachedValue(servicesToReport []cloudclient.K8sSer
 }
 
 func reportedServicesCacheValuePart(service cloudclient.K8sServiceInput) string {
-	return fmt.Sprintf("%s-%s-%s", service.ResourceName, service.OtterizeServer, service.Service.Spec.Type.Item)
+	namedPortsStr := ""
+	for _, namedPort := range service.Service.TargetNamedPorts {
+		namedPortsStr += fmt.Sprintf("%s-%d-%s", namedPort.Name, namedPort.Port, namedPort.Protocol)
+	}
+	return fmt.Sprintf("%s-%s-%s-%s", service.ResourceName, service.OtterizeServer, service.Service.Spec.Type.Item, namedPortsStr)
 }
 
 func (r *ServiceReconciler) convertToCloudServices(ctx context.Context, services []corev1.Service) ([]cloudclient.K8sServiceInput, error) {
@@ -153,7 +157,7 @@ func (r *ServiceReconciler) convertToCloudService(ctx context.Context, service c
 		return cloudclient.K8sServiceInput{}, false, nil
 	}
 
-	serviceInput, err := convertServiceResource(service)
+	serviceInput, err := convertServiceResource(ctx, r.Client, service)
 	if err != nil {
 		return cloudclient.K8sServiceInput{}, false, errors.Wrap(err)
 	}
