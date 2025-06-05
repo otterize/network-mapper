@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+const (
+	cacheTTL = 5 * time.Hour
+)
+
 type CacheValue []byte
 
 type WebhookServicesCache struct {
@@ -22,7 +26,7 @@ type WebhookServicesCache struct {
 
 func NewWebhookServicesCache() *WebhookServicesCache {
 	size := viper.GetInt(config.WebhookServicesCacheSizeKey)
-	cache := expirable.NewLRU[string, CacheValue](size, OnEvict, 5*time.Hour)
+	cache := expirable.NewLRU[string, CacheValue](size, OnEvict, cacheTTL)
 
 	return &WebhookServicesCache{
 		cache: cache,

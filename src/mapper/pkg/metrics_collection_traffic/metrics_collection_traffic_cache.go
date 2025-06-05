@@ -11,6 +11,11 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 	"hash/crc32"
+	"time"
+)
+
+const (
+	cacheTTL = 5 * time.Hour
 )
 
 type CacheValue []byte
@@ -21,9 +26,7 @@ type MetricsCollectionTrafficCache struct {
 
 func NewMetricsCollectionTrafficCache() *MetricsCollectionTrafficCache {
 	size := viper.GetInt(config.MetricsCollectionTrafficCacheSizeKey)
-	// We don't want the cache to expire. It does not contain a lot of data, and we want to keep it as long as possible
-	// so we won't send unnecessary requests to the cloud.
-	cache := expirable.NewLRU[string, CacheValue](size, OnEvict, 0)
+	cache := expirable.NewLRU[string, CacheValue](size, OnEvict, cacheTTL)
 
 	return &MetricsCollectionTrafficCache{
 		cache: cache,
