@@ -150,7 +150,14 @@ jobs:
           for i in {1..5}
           do
             OUTPUT_JSON=`otterize network-mapper export --telemetry-enabled=false -n otterize-tutorial-kafka-mapping --format=json`
-            if [ `echo "$OUTPUT_JSON" | jq ". | length"` != 2 ] || [ `echo "$OUTPUT_JSON" | jq '[.[] | select(.spec.targets[] | has("kafka"))] | length'` != 2 ] ; then
+            
+            if \
+               #  Check that the output had 2 records (for client & client2)
+               [ `echo "$OUTPUT_JSON" | jq ". | length"` != 2 ] || \ 
+               #  Check that both has kafka defined
+               [ `echo "$OUTPUT_JSON" | jq '[.[] | select(.spec.targets[] | has("kafka"))] | length'` != 2 ] \
+               #  Check that both has have 2 operations for kafka
+               [ `echo "$OUTPUT_JSON" | jq '[.[] | .spec.targets[] | select(has("kafka")) | select(.kafka.topics[0].operations | length != 2)] | length'` != 0 ] ; then
               echo "wait for discovered intents";
               echo _SNIFFER LOGS_
               kubectl logs --since=15s -n otterize-system -l app=otterize-network-sniffer
