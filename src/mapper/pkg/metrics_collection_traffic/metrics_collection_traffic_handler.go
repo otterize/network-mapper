@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 type MetricsCollectionTrafficHandler struct {
@@ -19,6 +20,7 @@ type MetricsCollectionTrafficHandler struct {
 	serviceIdResolver *serviceidresolver.Resolver
 	otterizeCloud     cloudclient.CloudClient
 	cache             *MetricsCollectionTrafficCache
+	reportToCloudLock sync.Mutex
 }
 
 func NewMetricsCollectionTrafficHandler(client client.Client, serviceIdResolver *serviceidresolver.Resolver, otterizeCloud cloudclient.CloudClient) *MetricsCollectionTrafficHandler {
@@ -108,6 +110,9 @@ func (r *MetricsCollectionTrafficHandler) HandleAllServicesInNamespace(ctx conte
 }
 
 func (r *MetricsCollectionTrafficHandler) reportToCloud(ctx context.Context, namespace string, reason cloudclient.EligibleForMetricsCollectionReason, pods []cloudclient.K8sResourceEligibleForMetricsCollectionInput) error {
+	r.reportToCloudLock.Lock()
+	defer r.reportToCloudLock.Unlock()
+
 	// Remove duplicates - in case we have multiple pods that indicates on the same workload
 	pods = lo.UniqBy(pods, func(item cloudclient.K8sResourceEligibleForMetricsCollectionInput) string {
 		return item.Name

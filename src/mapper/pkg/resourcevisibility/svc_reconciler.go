@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"slices"
+	"sync"
 	"time"
 )
 
@@ -29,6 +30,7 @@ type ServiceReconciler struct {
 	otterizeCloud                    cloudclient.CloudClient
 	kubeFinder                       KubeFinder
 	namespaceToReportedServicesCache *expirable.LRU[string, []byte]
+	reportToCloudLock                sync.Mutex
 }
 
 type KubeFinder interface {
@@ -79,6 +81,9 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, errors.Wrap(err)
 	}
+
+	r.reportToCloudLock.Lock()
+	defer r.reportToCloudLock.Unlock()
 
 	hashSum, err := r.getCachedValue(servicesToReport)
 	if err != nil {
