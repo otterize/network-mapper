@@ -14,6 +14,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 	"time"
 )
 
@@ -23,9 +24,10 @@ type KubeFinder interface {
 
 type WebhookServicesHandler struct {
 	client.Client
-	otterizeCloud cloudclient.CloudClient
-	kubeFinder    KubeFinder
-	cache         *WebhookServicesCache
+	otterizeCloud     cloudclient.CloudClient
+	kubeFinder        KubeFinder
+	cache             *WebhookServicesCache
+	reportToCloudLock sync.Mutex
 }
 
 func NewWebhookServicesHandler(client client.Client, otterizeCloud cloudclient.CloudClient, kubeFinder KubeFinder) *WebhookServicesHandler {
@@ -67,6 +69,9 @@ func (h *WebhookServicesHandler) HandleAll(ctx context.Context) error {
 }
 
 func (h *WebhookServicesHandler) reportToCloud(ctx context.Context, allWebhookServices []cloudclient.K8sWebhookServiceInput) error {
+	h.reportToCloudLock.Lock()
+	defer h.reportToCloudLock.Unlock()
+
 	// dedup
 	allWebhookServices = lo.UniqBy(allWebhookServices, K8sWebhookServiceInputKey)
 
